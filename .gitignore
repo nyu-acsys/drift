@@ -1,0 +1,11 @@
+_build/
+*.native
+*.smt2
+*.dot
+model.html
+out
+out.spl
+*.pdf
+*.png
+*~
+*.o
