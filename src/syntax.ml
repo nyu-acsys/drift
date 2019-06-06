@@ -5,6 +5,7 @@ open Util
 
 (** Variable names *)
 type var = string
+type pos = int
 
 (** Binary infix operators *)
 type binop =
