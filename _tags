@@ -1,2 +1,2 @@
 <src/*.ml>: annot, bin_annot
-<src/*.ml>: package(apron), package(apron.boxD), package(apron.boxD), package(apron.boxMPFR)
+<src/*.ml>: package(apron), package(apron.boxD), package(apron.boxMPFR), package(apron.boxMPQ), package(apron.octD), package(apron.octMPQ)

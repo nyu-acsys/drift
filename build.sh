@@ -2,9 +2,9 @@
 
 set -e
 
-DIRS="-Is src"
-TARGET="src/tests "
-APRONPKG="apron,apron.boxD,apron.boxMPFR,apron.boxMPQ"
+DIRS="-Is src/utils,src/domain,src/main,src/algo"
+TARGET="src/main/tests "
+APRONPKG="apron,apron.boxD,apron.boxMPFR,apron.boxMPQ,apron.octD,apron.octMPQ"
 FLAGS="-cflag -g -lflag -g -libs str -pkgs $APRONPKG $DIRS"
 OCAMLBUILD=ocamlbuild
 MENHIR=menhir

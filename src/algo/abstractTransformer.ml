@@ -1,8 +1,9 @@
-
 open AbstractDomain
 open Syntax
+open SemanticDomain
 open SemanticsDomain
 open Util
+open Config
 
 let rec prop v1 v2 = match v1, v2 with
     | Top, Bot | Table _, Top -> Top, Top
@@ -43,14 +44,14 @@ let rec step term env m =
       let vx = equal_V (find nx m) "cur_v" ("lab_" ^ string_of_int l) in
       let v = find n m in (*M[env*l]*)
       let tx', t' = prop vx v in
-      (if debug then
+      (if !debug then
       Printf.printf "Test pass var prop %d\n" l
       );
       (*pr_env Format.std_formatter (VarMap.bindings env);*)
       m |> NodeMap.add nx tx' |> NodeMap.add n (iterEnv_v env m t')
     | App (e1, e2, l) ->
         let m1 = step e1 env m in
-        (if debug then
+        (if !debug then
         Printf.printf "Test pass e1 %d; " (loc e1)
         );
         let n1 = EN (env, loc e1) in
@@ -62,7 +63,7 @@ let rec step term env m =
         m1 |> NodeMap.add n Top)
         else
             let m2 = step e2 env m1 in
-            (if debug then
+            (if !debug then
             Printf.printf "Test pass e2 %d\n" (loc e2)
             );
             let n2 = EN (env, loc e2) in

@@ -1,5 +1,5 @@
-
 open AbstractDomain
+open SemanticDomain
 open AbstractTransformer
 open Syntax
 open Util
@@ -59,10 +59,14 @@ let fun_test =
 let tests = [fun_test]
 
 let _ = List.iter (fun e ->
+  let line = input_line stdin in
+  Config.parse_options line;
   let el = label e in
   print_endline "Executing:";
   print_exp stdout el;
   print_endline "\n";
-  Printexc.record_backtrace true;
+  print_endline ("Domain specification: " ^ !Config.domain);
+  print_endline "\n";
+  Printexc.record_backtrace !Config.bt;
   ignore (s el);
   print_newline ()) tests
