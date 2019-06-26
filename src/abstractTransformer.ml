@@ -19,10 +19,13 @@ let rec prop v1 v2 = match v1, v2 with
 
 let iterUpdate m v l = NodeMap.map (fun x -> arrow_V (string_of_int l) x v) m
 
-let iterMap m c = NodeMap.fold (fun n x v -> let EN (env, label) = n in
-    c_V v x (string_of_int label)) m (init_V_c c)
+let iterEnv_c env m c = VarMap.fold (fun var n a ->
+    let v = NodeMap.find_opt n m |> Opt.get_or_else Top in
+    c_V a v var) env (init_V_c c)
 
-let iterEnv env v = VarMap.fold (fun var n a -> scop_V var n a) env v
+let iterEnv_v env m v = VarMap.fold (fun var n a -> 
+    let ai = NodeMap.find_opt n m |> Opt.get_or_else Top in
+    scop_V var ai a) env v
 
 let rec step term env m =
     let n = EN (env, loc term) in
@@ -31,18 +34,25 @@ let rec step term env m =
     | Const (c, l) ->
         let v = find n m in (*M[env*l]*)
         if v = Bot then
-        let cv = iterMap m c in
+        let cv = iterEnv_c env m c in
         let v' = join_V v cv in
         m |> NodeMap.add n v'
         else m
     | Var (x, l) ->
       let nx = VarMap.find x env in
-      let vx = equal_V (find nx m) (string_of_int l) x in
+      let vx = equal_V (find nx m) "cur_v" ("lab_" ^ string_of_int l) in
       let v = find n m in (*M[env*l]*)
       let tx', t' = prop vx v in
-      m |> NodeMap.add nx tx' |> NodeMap.add n t'
+      (if debug then
+      Printf.printf "Test pass var prop %d\n" l
+      );
+      (*pr_env Format.std_formatter (VarMap.bindings env);*)
+      m |> NodeMap.add nx tx' |> NodeMap.add n (iterEnv_v env m t')
     | App (e1, e2, l) ->
         let m1 = step e1 env m in
+        (if debug then
+        Printf.printf "Test pass e1 %d; " (loc e1)
+        );
         let n1 = EN (env, loc e1) in
         let t1 = find n1 m1 in
         if t1 = Bot then m1
@@ -52,6 +62,9 @@ let rec step term env m =
         m1 |> NodeMap.add n Top)
         else
             let m2 = step e2 env m1 in
+            (if debug then
+            Printf.printf "Test pass e2 %d\n" (loc e2)
+            );
             let n2 = EN (env, loc e2) in
             let t2 = find n2 m2 in (*M[env*l2]*)
             (match t2 with
@@ -70,16 +83,15 @@ let rec step term env m =
         let t1 = find n1 m1 in
         let n2 = EN (env, loc e2) in
         let t2 = find n2 m2 in
-        let t' = op_V t1 t2 bop in
-        let t'' = arrow_V (string_of_int (loc e1)) t' t1 in
-        let res_t = arrow_V (string_of_int (loc e2)) t'' t2 in
+        let t = find n m in
+        let t' = Relation (op_R ("lab_" ^ (loc e1 |> string_of_int)) ("lab_" ^ (loc e2 |> string_of_int)) bop) in
         (if is_Relation t1 then 
             if is_Relation t2 then ()
             else (Printf.printf "Error at location %s: expected value, but found %s.\n"
             (string_of_int (loc e2)) (string_of_value t2))
         else (Printf.printf "Error at location %s: expected value, but found %s.\n"
         (string_of_int (loc e1)) (string_of_value t1))) ;
-        m2 |> NodeMap.add n1 t1 |> NodeMap.add n2 t2 |> NodeMap.add n res_t
+        m2 |> NodeMap.add n1 t1 |> NodeMap.add n2 t2 |> NodeMap.add n (join_V t (iterEnv_v env m t'))
     | Ite (e0, e1, e2, l) ->
         let m0 = step e0 env m in
         let n0 = EN (env, loc e0) in
@@ -115,11 +127,11 @@ let rec step term env m =
                 (Opt.map (uncurry VarMap.add) f_nf_opt |>
                  Opt.get_or_else (fun env -> env))
             in
-            let n1 = EN (env, loc e1) in 
+            let n1 = EN (env1, loc e1) in 
             let tx = find nx m in
-            let t1 = equal_V (find n1 m) (dx_T t) (string_of_int lx) in
-            let prop_t = Table ((dx_T t), tx, t1) in
-            let px_t, t1' = prop prop_t t in
+            let temp_t = equal_V (find n1 m) (dx_T t) ("lab_" ^ string_of_int lx) in
+            let prop_t = Table ((dx_T t), tx, temp_t) in
+            let px_t, t1 = prop prop_t t in
             let nf_t2_tf'_opt =
                 Opt.map (fun (_, nf) ->
                   let tf = find nf m in
@@ -127,9 +139,9 @@ let rec step term env m =
                   nf, t2, tf') f_nf_opt
             in
             let tx', t1' = io_T px_t in
-            let m1 = m |> NodeMap.add nx tx' |> NodeMap.add n1 (equal_V t1' (string_of_int lx) (dx_T t)) |>
-            (Opt.map (fun (nf, t'', tf') -> fun m' -> m' |> NodeMap.add nf tf' |> NodeMap.add n (join_V t1' t''))
-            nf_t2_tf'_opt |> Opt.get_or_else (NodeMap.add n t1')) in
+            let m1 = m |> NodeMap.add nx tx' |> NodeMap.add n1 (equal_V t1' ("lab_" ^ string_of_int lx) (dx_T t)) |>
+            (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> NodeMap.add nf tf' |> NodeMap.add n (join_V t1 t2))
+            nf_t2_tf'_opt |> Opt.get_or_else (NodeMap.add n t1)) in
             step e1 env1 m1
         end 
         
@@ -149,31 +161,3 @@ let rec fix e k env m =
 
 (** Semantic function *)
 let s e = fix e 0 VarMap.empty NodeMap.empty
-
-let label e =
-    let rec l k = function
-      | Const (c, _) -> Const (c, k), k + 1
-      | Var (x, _) -> Var (x, k), k + 1
-      | App (e1, e2, _) ->
-          let e1', k1 = l k e1 in
-          let e2', k2 = l k1 e2 in
-          App (e1', e2', k2), k2 + 1
-      | Rec (fopt, x, _, e1, _) ->
-          let fopt', k1 =
-            fopt |>
-            Opt.map (function (f, _) -> Some (f, k), k + 1) |>
-            Opt.get_or_else (None, k)
-          in
-          let e1', k2 = l (k1 + 1) e1 in
-        Rec (fopt', x, k1, e1', k2), k2 + 1
-      | Ite (e0, e1, e2, _) ->
-          let e0', k0 = l k e0 in
-          let e1', k1 = l k0 e1 in
-          let e2', k2 = l k1 e2 in
-          Ite (e0', e1', e2', k2), k2 + 1
-      | BinOp (bop, e1, e2, _) ->
-        let e1', k1 = l k e1 in
-        let e2', k2 = l k1 e2 in
-        BinOp (bop, e1, e2, k2), k2 + 1
-    in
-    l 0 e |> fst

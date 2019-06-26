@@ -3,6 +3,9 @@ open Apron
 open Syntax
 open Util
 
+let debug = let x = read_int () in 
+    if x = 0 then false else true
+
 (*
  *******************************
  ** Abstract domain for value **
@@ -26,16 +29,17 @@ module BoxManager: ManagerType =
 module type AbstractDomainType =
   sig
     type t
+    val lc_env: t -> t -> t * t
     val leq: t -> t -> bool
     val init_c: int -> t
     val join: t -> t -> t
     val meet: t -> t -> t
     val alpha_rename: t -> var -> var -> t
     val forget_var: var -> t -> t
-    val equal_var: var -> var -> t
+    val equal_var: t -> var -> var -> t
     val widening: t -> t -> t
     val expanding: var -> t -> t -> t
-    val operator: t -> t -> binop -> t
+    val operator: var -> var -> binop -> t
     val print_abs: Format.formatter -> t -> unit
   end
 
@@ -48,30 +52,65 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         let tab = Parser.lincons1_of_lstring env [expr] in
         (* Creation of abstract value v = c *)
         Abstract1.of_lincons_array Man.man env tab
-    let leq v1 v2 = Abstract1.is_leq Man.man v1 v2
-    let join v1 v2 = Abstract1.join Man.man v1 v2
-    let meet v1 v2 = Abstract1.meet Man.man v1 v2
+    let lc_env v1 v2 = 
+      let env1 = Abstract1.env v1 in
+      let env2 = Abstract1.env v2 in
+      let env = Environment.lce env1 env2 in
+      let v1' = Abstract1.change_environment Man.man v1 env false in
+      let v2' = Abstract1.change_environment Man.man v2 env false in
+      (v1', v2')
+    let leq v1 v2 = 
+      let v1',v2' = lc_env v1 v2 in
+      Abstract1.is_leq Man.man v1' v2'
+    let join v1 v2 = 
+      let v1',v2' = lc_env v1 v2 in
+      Abstract1.join Man.man v1' v2'
+    let meet v1 v2 = 
+      let v1',v2' = lc_env v1 v2 in
+      (if debug then
+        (Abstract1.print Format.std_formatter v1;
+        Abstract1.print Format.std_formatter v2;)
+        );
+      Abstract1.meet Man.man v1' v2'
     let alpha_rename v prevar var =
         let (int_vars, real_vars) = Environment.vars (Abstract1.env v) in
         let int_vars_new = Array.map
-            (fun x -> if (Var.to_string x) = var then Var.of_string var else x )
+            (fun x -> if (Var.to_string x) = prevar then Var.of_string var else x )
             int_vars in
-        Abstract1.rename_array Man.man v int_vars_new real_vars
+        Abstract1.rename_array Man.man v int_vars int_vars_new
     let forget_var var v =
         let vari = var |> Var.of_string in
         let arr = [|vari|] in
+        (if debug then
+        Abstract1.print Format.std_formatter v);
         Abstract1.forget_array Man.man v arr true
-    let equal_var vl vr = let var_l = vl |> Var.of_string and var_r = vr |> Var.of_string in
+    let equal_var v vl vr = let var_l = vl |> Var.of_string and var_r = vr |> Var.of_string in
         let env = Environment.make [|var_l; var_r|] [||] in
-        let expr = vl ^ vr in
+        let expr = vl ^ "=" ^ vr in
         let tab = Parser.lincons1_of_lstring env [expr] in
         (* Creation of abstract value vl = vr *)
-        Abstract1.of_lincons_array Man.man env tab
-    let widening v1 v2 = Abstract1.widening Man.man v1 v2
-    let expanding var vi v = join v (alpha_rename vi "cur_v" var)
-    let operator v1 v2 op = 
-        (*TODO: Discuss with professor*)
-        join v1 v2
+        (if debug then
+        Abstract1.print Format.std_formatter v);
+        let res = Abstract1.of_lincons_array Man.man env tab in
+        res
+    let widening v1 v2 = let v1',v2' = lc_env v1 v2 in
+      Abstract1.widening Man.man v1' v2'
+    let expanding var vi v = let temp = (alpha_rename vi "cur_v" var) in
+      (if debug then Abstract1.print Format.std_formatter temp;
+      Abstract1.print Format.std_formatter v);
+      let res = join v temp in
+      res 
+    let operator vl vr op = 
+      let var_l = vl |> Var.of_string and var_r = vr |> Var.of_string in
+      let env = Environment.make [|var_l; var_r|] [||] in
+      let temp = (match op with
+        | Plus -> "+"
+        | Ge -> ">="
+      )in
+      let expr = vl ^ temp ^ vr in
+      let tab = Parser.lincons1_of_lstring env [expr] in
+      (* Creation of abstract value vl op vr *)
+      Abstract1.of_lincons_array Man.man env tab
     let print_abs ppf a = Abstract1.print ppf a
   end
 
@@ -141,17 +180,17 @@ module SemanticsDomain =
     and arrow_R var a1 a2 = meet_R a1 (alpha_rename_R a2 "cur_v" var)
     and forget_R var a = match a with
         | (a, v) -> (a, AbstractValue.forget_var var v)
-    and equal_R a var x = let t,v = a in meet_R a (t, AbstractValue.equal_var var x)
+    and equal_R a var x = let t,v = a in meet_R a (t, AbstractValue.equal_var v var x)
     and wid_R a1 a2 = match a1, a2 with
       | (Int,v1), (Int,v2) -> (Int, AbstractValue.widening v1 v2)
       | (Bool,v1), (Bool,v2) -> (Bool, AbstractValue.widening v1 v2)
       | _, _ -> raise (Invalid_argument "Base Type not equal")
     and scop_R var ai a = match a, ai with
       | (ty, v), (_, vi) -> (ty, AbstractValue.expanding var vi v)
-    and op_R a1 a2 op = match a1, a2 with
-      | (Int,v1), (Int,v2) -> (Int, AbstractValue.operator v1 v2 op)
-      | (Bool,v1), (Bool,v2) -> (Bool, AbstractValue.operator v1 v2 op)
-      | _, _ -> raise (Invalid_argument "Base Type not equal")
+    and op_R l r op = match op with
+      | Plus -> (Int, AbstractValue.operator l r op)
+      | Ge -> (Bool, AbstractValue.operator l r op)
+      
     (*
      *******************************
      ** Abstract domain for Table **
@@ -194,6 +233,11 @@ module SemanticsDomain =
         if z1 = z2 then (z1, wid_V v1i v2i, wid_V v1o v2o) else (*a renaming*)
          let v1o' = alpha_rename_V v1o z1 "z" and v2o' = alpha_rename_V v2o z2 "z"
          in ("z", wid_V v1i v2i, wid_V v1o' v2o') in t
+     and equal_T t var x = let (z, vi, vo) = t in
+        let vo' = if z = var || z = x then 
+        alpha_rename_V vo z "z1"
+        else vo in
+        (z, equal_V vi var x, equal_V vo' var x)
      (*
       ***************************************
       ** Abstract domain for Execution Map **
@@ -222,7 +266,7 @@ module SemanticsDomain =
       and c_V v1 v2 label = match v2 with
         | Relation r -> (match v1 with
           | Relation r' -> let tempr = alpha_rename_R r "cur_v" label in
-          (try Relation (join_R r' tempr)
+          (try Relation (meet_R r' tempr)
           with Invalid_argument s -> Relation r')
           | _ -> v1)
         | _ -> v1
@@ -265,10 +309,8 @@ module SemanticsDomain =
         | Relation r -> Relation (forget_R var r)
       and equal_V v var x = match v with
         | Relation r -> Relation (equal_R r var x)
+        | Table t -> Table (equal_T t var x)
         | _ -> v
-      and op_V v1 v2 op = match v1, v2 with
-        | Relation r1, Relation r2 -> Relation (op_R r1 r2 op)
-        | _, _ -> Top
       and wid_V v1 v2 = match v1, v2 with
         | Relation r1, Relation r2 -> Relation (wid_R r1 r2)
         | Table t1, Table t2 -> Table (wid_T t1 t2)
@@ -362,7 +404,7 @@ let rec pr_value ppf v = let open SemanticsDomain in match v with
 | Table t -> pr_table ppf t
 
 and pr_table ppf t = let open SemanticsDomain in let (z, vi, vo) = t in
-    Format.fprintf ppf "@[<2>%s: {%a} ->@ {%a}@]" z pr_value vi pr_value vo
+    Format.fprintf ppf "@[<2>%s: %a ->@ %a@]" z pr_value vi pr_value vo
 
 let print_value out_ch v = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" pr_value v
 
@@ -377,6 +419,6 @@ and pr_exec_rows ppf = function
 | row :: rows -> Format.fprintf ppf "%a@\n@\n%a" pr_exec_row row pr_exec_rows rows
 
 and pr_exec_row ppf (n, v) =
-Format.fprintf ppf "@[<2>%a ->@ @[<2>%a@]@]" pr_node n pr_value v
+Format.fprintf ppf "@[<2>%a |->@ @[<2>%a@]@]" pr_node n pr_value v
 
 let print_exec_map out_ch m = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" pr_exec_map m
