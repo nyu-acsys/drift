@@ -3,64 +3,75 @@ open SemanticDomain
 open AbstractTransformer
 open Syntax
 open Util
-
-let label e =
-    let rec l k = function
-      | Const (c, _) -> Const (c, k), k + 1
-      | Var (x, _) -> Var (x, k), k + 1
-      | App (e1, e2, _) ->
-          let e1', k1 = l k e1 in
-          let e2', k2 = l k1 e2 in
-          App (e1', e2', k2), k2 + 1
-      | Rec (fopt, x, _, e1, _) ->
-          let fopt', k1 =
-            fopt |>
-            Opt.map (function (f, _) -> Some (f, k), k + 1) |>
-            Opt.get_or_else (None, k)
-          in
-          let e1', k2 = l (k1 + 1) e1 in
-        Rec (fopt', x, k1, e1', k2), k2 + 1
-      | Ite (e0, e1, e2, _) ->
-          let e0', k0 = l k e0 in
-          let e1', k1 = l k0 e1 in
-          let e2', k2 = l k1 e2 in
-          Ite (e0', e1', e2', k2), k2 + 1
-      | BinOp (bop, e1, e2, _) ->
-        let e1', k1 = l k e1 in
-        let e2', k2 = l k1 e2 in
-        BinOp (bop, e1, e2, k2), k2 + 1
-    in
-    l 0 e |> fst
-
-let mk_int k = Const (Integer k, 0)
-let mk_bool b = Const (Boolean b, 0)
-let mk_var x = Var (x, 0)
-let mk_app e1 e2 = App (e1, e2, 0)
-let mk_lambda x e = Rec (None, x, 0, e, 0)
-let mk_rec f x e = Rec (Some (f, 0), x, 0, e, 0)
-let mk_ite e0 e1 e2 = Ite (e0, e1, e2, 0)
-
-let mk_let x def e = mk_app (mk_lambda x  e) def
-let mk_lets defs e =
-  List.fold_right (fun (x, def) e -> mk_let x def e) defs e
+open Parser
 
 let x = "x"
 let y = "y"
+let f = "f"
+let g = "g"
+let r = "r"
+let dec = "dec"
 let id = "id"
+let loop = "loop"
 
 let test_1 = mk_lets [id, mk_lambda x (mk_var x)]
 (mk_app
    (mk_app (mk_var id) (mk_var id))
    (mk_int 1))
 
+let overview_test =
+let dec_def = mk_lambda y (mk_op Plus (mk_int (-1)) (mk_var y)) in
+let f_def =
+  mk_lambda x
+    (mk_lambda g
+        (mk_ite
+          (mk_op Ge (mk_int 0) (mk_var x))
+          (mk_app (mk_var g) (mk_var x))
+          (mk_var x)))
+in
+mk_lets
+  [dec, dec_def;
+    f, f_def]
+  (mk_app
+      (mk_app
+        (mk_var f)
+        (mk_app
+            (mk_app (mk_var f) (mk_int 1))
+            (mk_var dec)))
+      (mk_var dec))
+
+let id_test1 =
+  mk_lets
+    [id, mk_lambda x (mk_var x);
+      x, mk_app (mk_var id) (mk_int 1);
+      y, mk_app (mk_var id) (mk_int 2)]
+    (mk_var y)
+
+let id_test2 =
+  mk_lets
+    [id, mk_lambda x (mk_var x)]
+    (mk_app
+        (mk_app (mk_var id) (mk_var id))
+        (mk_int 1))
+
 let fun_test = 
   (mk_app (mk_lambda x (mk_app (mk_var x) (mk_int 1))) (mk_lambda y (mk_var y)))
 
-let tests = [fun_test]
+let op_test = let dec_def = mk_lambda y (mk_op Plus (mk_int (-1)) (mk_var y)) in
+  (mk_app dec_def (mk_int 1))
+
+let op_test_2 = let dec_def = mk_lambda x (mk_lambda y (mk_op Plus (mk_var x) (mk_var y))) in
+  (mk_app (mk_app dec_def (mk_int 1)) (mk_int 2))
+
+let if_test = let def_if = (mk_lambda x (mk_lambda y (mk_ite (mk_op Gt (mk_var x) (mk_var y)) (mk_var x) (mk_var y)))) in
+  (mk_app (mk_app def_if (mk_int 1)) (mk_int 2))
+
+let p_test = parse_from_string "let f a b = a + b in f 1 2"
+
+let tests = [p_test]
 
 let _ = List.iter (fun e ->
-  let line = input_line stdin in
-  Config.parse_options line;
+  Config.parse;
   let el = label e in
   print_endline "Executing:";
   print_exp stdout el;

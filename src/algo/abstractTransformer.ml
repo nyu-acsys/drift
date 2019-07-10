@@ -5,13 +5,18 @@ open SemanticsDomain
 open Util
 open Config
 
+let z_index = ref 0;; (* first definition *)
+
+let incr_z() = 
+    z_index := !z_index + 1;;
+
 let rec prop v1 v2 = match v1, v2 with
     | Top, Bot | Table _, Top -> Top, Top
     | Table t, Bot -> v1, Table (init_T (dx_T v1))
     | Relation r1, Relation r2 -> Relation r1, Relation (join_R r1 r2)
     | Table t1, Table t2 -> let t1', t2' = alpha_rename t1 t2 in
         let (z1, v1i, v1o) = t1' and (z2, v2i, v2o) = t2' in
-        let v1, v2 = let v2i', v1i' = prop v2i v1i and v1o', v2o' = prop (arrow_V "z" v1o v2i) (arrow_V "z" v2o v2i) in
+        let v1, v2 = let v2i', v1i' = prop v2i v1i and v1o', v2o' = prop (arrow_V z1 v1o v2i) (arrow_V z1 v2o v2i) in
         (v1i', join_V v1o v1o'), (v2i', join_V v2o v2o')
         in
         let t1'' = (z1, fst v1, snd v1) and t2'' = (z1, fst v2, snd v2) in
@@ -41,7 +46,7 @@ let rec step term env m =
         else m
     | Var (x, l) ->
       let nx = VarMap.find x env in
-      let vx = equal_V (find nx m) "cur_v" ("lab_" ^ string_of_int l) in
+      let vx = equal_V (find nx m) "cur_v" ("lab_" ^ (l |> string_of_int)) in
       let v = find n m in (*M[env*l]*)
       let tx', t' = prop vx v in
       (if !debug then
@@ -52,19 +57,19 @@ let rec step term env m =
     | App (e1, e2, l) ->
         let m1 = step e1 env m in
         (if !debug then
-        Printf.printf "Test pass e1 %d; " (loc e1)
+        Format.printf "Test pass e1 %d; " (loc e1)
         );
         let n1 = EN (env, loc e1) in
         let t1 = find n1 m1 in
         if t1 = Bot then m1
         else if not @@ is_table t1 then
-        (Printf.printf "Error at location %s: expected function, but found %s.\n"
+        (Format.printf "Error at location %s: expected function, but found %s.\n"
         (string_of_int (loc e1)) (string_of_value t1);
         m1 |> NodeMap.add n Top)
         else
             let m2 = step e2 env m1 in
             (if !debug then
-            Printf.printf "Test pass e2 %d\n" (loc e2)
+            Format.printf "Test pass e2 %d\n" (loc e2)
             );
             let n2 = EN (env, loc e2) in
             let t2 = find n2 m2 in (*M[env*l2]*)
@@ -78,19 +83,39 @@ let rec step term env m =
                 m2 |> NodeMap.add n1 t1' |> NodeMap.add n2 t2' |> NodeMap.add n t'
             )
     | BinOp (bop, e1, e2, l) ->
+        (if !debug then
+        begin
+            Format.printf "\n";
+            Format.printf "Test Operation\n"
+        end);
         let m1 = step e1 env m in
         let m2 = step e2 env m in
         let n1 = EN (env, loc e1) in
         let t1 = find n1 m1 in
+        (if !debug then
+        begin
+        pr_value Format.std_formatter t1;
+        Format.printf "\n"
+        end);
         let n2 = EN (env, loc e2) in
         let t2 = find n2 m2 in
+        (if !debug then
+        begin
+        pr_value Format.std_formatter t2;
+        Format.printf "\n"
+        end);
         let t = find n m in
         let t' = Relation (op_R ("lab_" ^ (loc e1 |> string_of_int)) ("lab_" ^ (loc e2 |> string_of_int)) bop) in
+        (if !debug then
+        begin
+        pr_value Format.std_formatter t';
+        Format.printf "\n"
+        end);
         (if is_Relation t1 then 
             if is_Relation t2 then ()
-            else (Printf.printf "Error at location %s: expected value, but found %s.\n"
+            else (Format.printf "Error at location %s: expected value, but found %s.\n"
             (string_of_int (loc e2)) (string_of_value t2))
-        else (Printf.printf "Error at location %s: expected value, but found %s.\n"
+        else (Format.printf "Error at location %s: expected value, but found %s.\n"
         (string_of_int (loc e1)) (string_of_value t1))) ;
         m2 |> NodeMap.add n1 t1 |> NodeMap.add n2 t2 |> NodeMap.add n (join_V t (iterEnv_v env m t'))
     | Ite (e0, e1, e2, l) ->
@@ -115,7 +140,13 @@ let rec step term env m =
         end
     | Rec (f_opt, x, lx, e1, l) -> 
         let t0 = find n m in
-        let t = if t0 = Bot then Table (init_T "z") else t0 in
+        let t = if t0 = Bot then 
+            begin
+                let te = init_T ("z"^(string_of_int !z_index)) in
+                incr_z();
+                Table (te)
+            end
+            else t0 in
         let tl, tr = io_T t in
         if tl = Bot then m |> NodeMap.add n t
         else 
@@ -153,8 +184,8 @@ let widening m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot 
 
 (** Fixpoint loop *)
 let rec fix e k env m =
-  Printf.printf "step %d\n" k;
-  print_exec_map stdout m;
+  Format.printf "step %d\n" k;
+  print_exec_map m;
   let m' = step e env m in
   let m'' = widening m m' in
   if leq_M m'' m then m

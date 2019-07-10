@@ -68,11 +68,9 @@ open Util
        | (Int,v1), (Int,v2) -> (Int, AbstractValue.widening v1 v2)
        | (Bool,v1), (Bool,v2) -> (Bool, AbstractValue.widening v1 v2)
        | _, _ -> raise (Invalid_argument "Base Type not equal")
-     and scop_R var ai a = match a, ai with
-       | (ty, v), (_, vi) -> (ty, AbstractValue.expanding var vi v)
      and op_R l r op = match op with
-       | Plus -> (Int, AbstractValue.operator l r op)
-       | Ge -> (Bool, AbstractValue.operator l r op)
+       | Plus | Mult | Div | Mod | Minus -> (Int, AbstractValue.operator l r op)
+       | Ge | Eq | Ne | Lt | Gt | Le -> (Bool, AbstractValue.operator l r op)
        
      (*
       *******************************
@@ -192,19 +190,13 @@ open Util
          | Relation r -> Relation (forget_R var r)
        and equal_V v var x = match v with
          | Relation r -> Relation (equal_R r var x)
-         | Table t -> Table (equal_T t var x)
+         | Table t -> if var = "x" then v else Table (equal_T t var x)
          | _ -> v
        and wid_V v1 v2 = match v1, v2 with
          | Relation r1, Relation r2 -> Relation (wid_R r1 r2)
          | Table t1, Table t2 -> Table (wid_T t1 t2)
          | _, _ -> join_V v1 v2
-       and scop_V var vi v = match v with
-         | Relation r -> (
-           match vi with
-           | Relation ri -> Relation (scop_R var ri r)
-           | _ -> v
-           )
-         | _ -> v
+       and scop_V var vi v = arrow_V var v vi
        and dx_T v = match v with
          | Table t -> dx_Ta t
          | _ -> raise (Invalid_argument "Should be table when using dx_T")
@@ -225,9 +217,7 @@ open Util
    | Boolean b -> Format.fprintf ppf "%s" (string_of_bool b) 
    | Integer k -> Format.fprintf ppf "%s" (string_of_int k)
  
- let pr_op ppf = function
-   | Plus -> Format.fprintf ppf "+"
-   | Ge -> Format.fprintf ppf ">="
+ let pr_op ppf op = Format.fprintf ppf "%s" (string_of_op op)
  
  let rec pr_exp pl ppf = function
  | Const (c, l) ->
@@ -304,5 +294,5 @@ open Util
  and pr_exec_row ppf (n, v) =
  Format.fprintf ppf "@[<2>%a |->@ @[<2>%a@]@]" pr_node n pr_value v
  
- let print_exec_map out_ch m = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" pr_exec_map m
+ let print_exec_map m = Format.fprintf Format.std_formatter "%a@?" pr_exec_map m
  

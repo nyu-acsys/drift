@@ -9,7 +9,7 @@ let keyword_table = Hashtbl.create 32
 let _ =
   List.iter (fun (kwd, tok) -> Hashtbl.add keyword_table kwd tok)
     ([("else", ELSE);
-      ("false", BOOLVAL false);
+      ("false", BOOLCONST false);
       ("fun", FUN);
       ("if", IF);
       ("in", IN);
@@ -18,14 +18,11 @@ let _ =
       ("not", NOT);
       ("rec", REC);
       ("then", THEN);
-      ("true", BOOLVAL true)])
+      ("true", BOOLCONST true)])
 
 let lexical_error lexbuf msg =
   let pos = lexeme_start_p lexbuf in 
-  let spos = 
-    { pos_line = pos.pos_lnum;
-      pos_col = pos.pos_cnum - pos.pos_bol;
-    } 
+  let spos = 0
   in
   fail spos "Syntax error"
 
@@ -48,8 +45,6 @@ rule token = parse
 | "<>" { NE }
 | "<" { LT }
 | ">" { GT }
-| "||" { OR }
-| "&&" { AND }
 | '+' { PLUS }
 | '-' { MINUS }
 | '/' { DIV }
@@ -62,7 +57,7 @@ rule token = parse
     with Not_found ->
       IDENT (kw)
     }
-| digits as num { INTVAL (int_of_string num) }
+| digits as num { INTCONST (int_of_string num) }
 | eof { EOF }
 | _ { lexical_error lexbuf None }
 
