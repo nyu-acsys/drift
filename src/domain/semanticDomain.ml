@@ -27,7 +27,8 @@ open Util
       ** Abstract domain for Relation **
       **********************************
       *)
-     type relation_t = baseType * AbstractValue.t
+     type relation_t = Int of AbstractValue.t
+       | Bool of AbstractValue.t * AbstractValue.t
      type value_t =
        | Bot
        | Top
@@ -35,43 +36,62 @@ open Util
        | Table of table_t
      and table_t = var * value_t * value_t
      and exec_map_t = value_t NodeMap.t
-     let rec alpha_rename_R r prevar var = let (a, v) = r in
-         (a, AbstractValue.alpha_rename v prevar var)
+     let rec alpha_rename_R a prevar var = match a with
+          | Int v -> Int (AbstractValue.alpha_rename v prevar var)
+          | Bool (vt, vf) -> Bool ((AbstractValue.alpha_rename vt prevar var), (AbstractValue.alpha_rename vf prevar var))
+     and top_R = function
+      | Plus | Mult | Div | Mod | Minus -> (Int AbstractValue.top)
+      | Ge | Eq | Ne | Lt | Gt | Le -> (Bool (AbstractValue.top, AbstractValue.top))
      and is_bool_R a = match a with
-         | Int, _ -> false
-         | Bool, _ -> true
+         | Int _ -> false
+         | Bool _ -> true
      and init_R_c (c:value) = match c with
-         | Boolean true -> (Bool, AbstractValue.init_c 1)
-         | Boolean false -> (Bool, AbstractValue.init_c 0)
-         | Integer i -> (Int, AbstractValue.init_c i)
+         | Boolean true -> Bool (AbstractValue.init_c 1, AbstractValue.init_c 0)
+         | Boolean false -> Bool (AbstractValue.init_c 0, AbstractValue.init_c 1)
+         | Integer i -> Int (AbstractValue.init_c i)
      and init_R_b b = init_R_c (Boolean b)
      and join_R a1 a2 =
          match a1, a2 with
-           | (Int,v1), (Int,v2) -> (Int, AbstractValue.join v1 v2)
-           | (Bool,v1), (Bool,v2) -> (Bool, AbstractValue.join v1 v2)
-           | _, _ -> raise (Invalid_argument "Base Type not equal")
+           | (Int v1), (Int v2) -> Int (AbstractValue.join v1 v2)
+           | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> Bool (AbstractValue.join v1t v2t, AbstractValue.join v1f v2f)
+           | _, _ -> raise (Invalid_argument "Join: Base Type not equal")
      and meet_R a1 a2 =
          match a1, a2 with
-           | (Int,v1), (Int,v2) -> (Int, AbstractValue.meet v1 v2)
-           | (Bool,v1), (Bool,v2) -> (Bool, AbstractValue.meet v1 v2)
-           | _, _ -> raise (Invalid_argument "Base Type not equal")
+           | (Int v1), (Int v2) -> Int  (AbstractValue.meet v1 v2)
+           | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> Bool (AbstractValue.meet v1t v2t, AbstractValue.meet v1f v2f)
+           | _, _ -> raise (Invalid_argument "Meet: Base Type not equal")
      and leq_R a1 a2 =
          match a1, a2 with
-           | (Int,v1), (Int,v2) -> AbstractValue.leq v1 v2
-           | (Bool,v1), (Bool,v2) -> AbstractValue.leq v1 v2
+           | (Int v1), (Int v2) -> AbstractValue.leq v1 v2
+           | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> AbstractValue.leq v1t v2t && AbstractValue.leq v1f v2f
            | _, _ -> false
-     and arrow_R var a1 a2 = meet_R a1 (alpha_rename_R a2 "cur_v" var)
+     and arrow_R var a1 a2 = let a2' = alpha_rename_R a2 "cur_v" var in
+          match a1, a2' with
+          | Int _, Int _ -> meet_R a1 a2'
+          | Bool _, Bool _ -> meet_R a1 a2'
+          | Int _, Bool (vt, vf) -> meet_R a1 (Int vt)
+          | Bool _ , Int v -> meet_R a1 (Bool (v, v))
      and forget_R var a = match a with
-         | (a, v) -> (a, AbstractValue.forget_var var v)
-     and equal_R a var x = let t,v = a in meet_R a (t, AbstractValue.equal_var v var x)
+         | Int v -> Int (AbstractValue.forget_var var v)
+         | Bool (vt, vf) -> Bool (AbstractValue.forget_var var vt, AbstractValue.forget_var var vf)
+     and equal_R a var x = let eq_a = match a with
+        | Int v -> Int (AbstractValue.equal_var v var x)
+        | Bool (vt, vf) -> Bool ((AbstractValue.equal_var vt var x), (AbstractValue.equal_var vf var x))
+        in
+        meet_R a eq_a
      and wid_R a1 a2 = match a1, a2 with
-       | (Int,v1), (Int,v2) -> (Int, AbstractValue.widening v1 v2)
-       | (Bool,v1), (Bool,v2) -> (Bool, AbstractValue.widening v1 v2)
-       | _, _ -> raise (Invalid_argument "Base Type not equal")
-     and op_R l r op = match op with
-       | Plus | Mult | Div | Mod | Minus -> (Int, AbstractValue.operator l r op)
-       | Ge | Eq | Ne | Lt | Gt | Le -> (Bool, AbstractValue.operator l r op)
-       
+       | (Int v1), (Int v2) -> Int (AbstractValue.widening v1 v2)
+       | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> Bool (AbstractValue.widening v1t v2t, AbstractValue.widening v1f v2f)
+       | _, _ -> raise (Invalid_argument "Widening: Base Type not equal")
+     and op_R l r op a = 
+       match op with
+       | Plus | Mult | Div | Mod | Minus -> (match a with
+          | Int v -> Int (AbstractValue.operator l r op v)
+          | Bool (vt, vf) -> raise (Invalid_argument "Conditional value given, expect arithmetic one"))
+       | Ge | Eq | Ne | Lt | Gt | Le -> (match a with
+          | Int v -> Bool (AbstractValue.operator l r op v, AbstractValue.operator l r (rev_op op) v)
+          | Bool (vt, vf) -> Bool (AbstractValue.operator l r op vt, AbstractValue.operator l r (rev_op op) vf))
+     and replace_R a var x = alpha_rename_R a var x
      (*
       *******************************
       ** Abstract domain for Table **
@@ -119,6 +139,8 @@ open Util
          alpha_rename_V vo z "z1"
          else vo in
          (z, equal_V vi var x, equal_V vo' var x)
+      and replace_T t var x = let (z, vi, vo) = t in
+        (z, replace_V vi var x, replace_V vo var x)
       (*
        ***************************************
        ** Abstract domain for Execution Map **
@@ -190,25 +212,36 @@ open Util
          | Relation r -> Relation (forget_R var r)
        and equal_V v var x = match v with
          | Relation r -> Relation (equal_R r var x)
-         | Table t -> if var = "x" then v else Table (equal_T t var x)
+         | Table t -> Table (equal_T t var x)
          | _ -> v
        and wid_V v1 v2 = match v1, v2 with
          | Relation r1, Relation r2 -> Relation (wid_R r1 r2)
          | Table t1, Table t2 -> Table (wid_T t1 t2)
          | _, _ -> join_V v1 v2
        and scop_V var vi v = arrow_V var v vi
+       and op_V sl sr op v = match v with
+         | Bot | Top -> Top
+         | Relation r -> Relation (op_R sl sr op r)
+         | Table t -> raise (Invalid_argument "Should be a relation type when using op_V")
        and dx_T v = match v with
          | Table t -> dx_Ta t
          | _ -> raise (Invalid_argument "Should be table when using dx_T")
        and io_T v = match v with
          | Table t -> io_Ta t
          | _ -> raise (Invalid_argument "Should be table when using io_T")
+      and is_Bot_V = function
+        | Bot -> true
+        | _ -> false
+      and replace_V v var x = match v with
+        | Bot | Top -> v
+        | Table t -> Table (replace_T t var x)
+        | Relation r -> Relation (replace_R r var x)
    end
  
  (** Pretty printing *)
  let pr_relation ppf a = let open SemanticsDomain in match a with
- | (Bool,v) -> Format.fprintf ppf "{cur_v: Bool | ";  (AbstractValue.print_abs ppf v); Format.fprintf ppf "}"
- | (Int,v) -> Format.fprintf ppf "{cur_v: Int | ";  (AbstractValue.print_abs ppf v); Format.fprintf ppf "}"
+ | Bool (vt, vf) -> Format.fprintf ppf "@[<1>{@ cur_v:@ Bool@ |@ TRUE:@ %a,@ FALSE:@ %a@ }@]"  AbstractValue.print_abs vt AbstractValue.print_abs vf
+ | (Int v) -> Format.fprintf ppf "@[<1>{@ cur_v:@ Int@ |@ %a@ }@]" AbstractValue.print_abs v
  
  let pr_label pl ppf l =
  if pl then Format.fprintf ppf "^%s" (string_of_int l) else ()

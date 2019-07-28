@@ -58,6 +58,23 @@ let string_of_op = function
   | Gt    (* > *) -> ">"
   | Le    (* <= *) -> "<="
 
+let cond_op = function
+  | Plus | Mult | Div | Mod | Minus -> false
+  | Ge | Eq | Ne | Lt | Gt | Le -> true
+
+let str_of_val = function
+  | Integer i -> string_of_int i
+  | Boolean b -> string_of_bool b
+
+let rev_op = function
+  | Ge -> Lt
+  | Le -> Gt
+  | Eq -> Ne
+  | Ne -> Eq
+  | Lt -> Ge
+  | Gt -> Le
+  | op -> op 
+
 let label e =
     let rec l k = function
       | Const (c, _) -> Const (c, k), k + 1
