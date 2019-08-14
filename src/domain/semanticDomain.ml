@@ -69,7 +69,7 @@ open Util
           match a1, a2' with
           | Int _, Int _ -> meet_R a1 a2'
           | Bool _, Bool _ -> meet_R a1 a2'
-          | Int _, Bool (vt, vf) -> meet_R a1 (Int vt)
+          | Int _, Bool (vt, vf) -> join_R (meet_R a1 (Int vt)) (meet_R a1 (Int vf)) (* {v:int| a^at V a^af} *)
           | Bool _ , Int v -> meet_R a1 (Bool (v, v))
      and forget_R var a = match a with
          | Int v -> Int (AbstractValue.forget_var var v)
@@ -92,19 +92,20 @@ open Util
           | Int v -> Bool (AbstractValue.operator l r op v, AbstractValue.operator l r (rev_op op) v)
           | Bool (vt, vf) -> Bool (AbstractValue.operator l r op vt, AbstractValue.operator l r (rev_op op) vf))
      and replace_R a var x = alpha_rename_R a var x
+     and extrac_bool_R v b = match v,b with
+      | Bool (vt, _), true -> Int vt
+      | Bool (_, vf), false -> Int vf
+      | _,_ -> raise (Invalid_argument "Extract abstract value for condition, expect bool one")
      (*
       *******************************
       ** Abstract domain for Table **
       *******************************
       *)
-      and init_T var = let vo = Bot in
-       (var, Bot, vo)
+      and init_T var = (var, Bot, Bot)
       and dx_Ta t = let (z, vi, vo) = t in z
       and io_Ta t = let (z, vi, vo) = t in vi, vo
       and alpha_rename_T t prevar var = let (z, vi, vo) = t in
-         if z = var then (prevar, alpha_rename_V vi z prevar, alpha_rename_V vo z prevar)
-         else
-             (z, alpha_rename_V vi prevar var, alpha_rename_V vo prevar var)
+         (z, alpha_rename_V vi prevar var, alpha_rename_V vo prevar var)
       and alpha_rename t1 t2 = let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
          if z1 = z2 then t1, t2
          else (*a renaming*)
@@ -236,6 +237,9 @@ open Util
         | Bot | Top -> v
         | Table t -> Table (replace_T t var x)
         | Relation r -> Relation (replace_R r var x)
+      and extrac_bool_V v b = match v with
+        | Relation r -> Relation (extrac_bool_R r b)
+        | _ -> raise (Invalid_argument "Should be relation when split if statement")
    end
  
  (** Pretty printing *)

@@ -57,59 +57,81 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
       Abstract1.is_leq Man.man v1' v2'
     let join v1 v2 = 
       let v1',v2' = lc_env v1 v2 in
-      Abstract1.join Man.man v1' v2'
+      let res = Abstract1.join Man.man v1' v2' in
+      Abstract1.minimize_environment Man.man res
     let meet v1 v2 = 
       let v1',v2' = lc_env v1 v2 in
-      Abstract1.meet Man.man v1' v2'
+      let res = Abstract1.meet Man.man v1' v2' in
+      Abstract1.minimize_environment Man.man res
     let alpha_rename v prevar var =
         (if !debug then
         begin
-          Format.pp_print_string Format.std_formatter "\n\nA rename";
-          Format.pp_print_string Format.std_formatter ("\n" ^ prevar ^ " -> " ^ var ^ "\n");
+          Format.printf "\n\nA rename";
+          Format.printf "\n %s -> %s \n" prevar var;
           Abstract1.print Format.std_formatter v;
-          Format.pp_print_string Format.std_formatter ("\nEnv: ");
+          Format.printf "\nEnv: ";
           Environment.print Format.std_formatter (Abstract1.env v);
-          Format.pp_print_string Format.std_formatter "\n";
+          Format.printf "\n";
         end
         );
         let (int_vars, real_vars) = Environment.vars (Abstract1.env v) in
+        (* Check previous variable is exist or not *)
         let pre_b = Array.fold_left (fun b x -> prevar = Var.to_string x || b) false int_vars in
-        if pre_b = false then v
-        else
-        begin
-        let v_b = Array.fold_left (fun b x -> var = Var.to_string x || b) false int_vars in
-        let v' = if v_b = true then 
+        let v' = if pre_b = false then v (* ignore rename if prevar does not exist *)
+          else
           begin
-            let int_vars_new = Array.fold_left (fun ary x -> if prevar <> Var.to_string x then Array.append ary [|x|] else ary) [||] int_vars in
-            let env' = Environment.make int_vars_new real_vars in
-            Abstract1.change_environment Man.man v env' true
+            (* Check new variable is exist or not *)
+            let v_b = Array.fold_left (fun b x -> var = Var.to_string x || b) false int_vars in
+            if v_b = true then 
+              begin
+                (* check prevar and newvar has the same constraint or not *)
+                (* TODO: If not the same, return bottom *)
+                (* If same, project prevar *)
+                let int_vars_new = Array.fold_left (fun ary x -> if prevar <> Var.to_string x then Array.append ary [|x|] else ary) [||] int_vars in
+                let env' = Environment.make int_vars_new real_vars in
+                Abstract1.change_environment Man.man v env' true
+              end
+            else
+              (* new var does not exist, change environment *)
+              begin
+              let var_V = Var.of_string var in
+              let int_vars_new = Array.map (fun x -> if prevar = Var.to_string x then var_V else x) int_vars in
+              Abstract1.rename_array Man.man v int_vars int_vars_new
+              end
           end
-        else
-        begin
-        let var_V = Var.of_string var in
-        let int_vars_new = Array.map (fun x -> if prevar = Var.to_string x then var_V else x) int_vars in
-        Abstract1.rename_array Man.man v int_vars int_vars_new
-        end
         in
         (if !debug then 
         begin
-          Format.pp_print_string Format.std_formatter ("Result: ");
+          Format.printf ("Result: ");
           Abstract1.print Format.std_formatter v';
         end);
-        v'
-        end
+        Abstract1.minimize_environment Man.man v'
     let forget_var var v =
+        (if !debug then
+          begin
+          Format.printf "\n\nProjection %s at:\n" var;
+          Abstract1.print Format.std_formatter v;
+          Format.printf "\nEnv: ";
+          Environment.print Format.std_formatter (Abstract1.env v);
+          Format.printf "\n";
+          end
+        );
+        let (int_vars, real_vars) = Environment.vars (Abstract1.env v) in
+        let var_b = Array.fold_left (fun b x -> var = Var.to_string x || b) false int_vars in
+        if var_b = false then v
+        else
+        begin
         let vari = var |> Var.of_string in
         let arr = [|vari|] in
         let v' = Abstract1.forget_array Man.man v arr false in
         (if !debug then
         begin
-          Format.printf "\n\nProjection %s\n" var;
           Format.printf "result: " ;
           Abstract1.print Format.std_formatter v';
           Format.printf "\n";
         end);
-        v'
+        Abstract1.minimize_environment Man.man v'
+        end
     let top = let env = Environment.make [||] [||] in
         Abstract1.top Man.man env
     let equal_var v vl vr = let var_l = vl |> Var.of_string and var_r = vr |> Var.of_string in
@@ -135,9 +157,10 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
           Abstract1.print Format.std_formatter res;
           Format.printf "\n";
         end);
-        res
+        Abstract1.minimize_environment Man.man res
     let widening v1 v2 = let v1',v2' = lc_env v1 v2 in
-      Abstract1.widening Man.man v1' v2'
+      let res = Abstract1.join Man.man v1' v2' in
+      Abstract1.minimize_environment Man.man res
     let make_var var = 
       try let _ = int_of_string var in None
       with e -> Some (var |> Var.of_string)
@@ -164,16 +187,27 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         Format.printf "\n";
       end);
       let temp = string_of_op op in
-      
       let env_v = Abstract1.env v in
       let env' = Environment.lce env env_v in
       let v' = Abstract1.change_environment Man.man v env' false in
       let res = 
         if cond_op op = true then
           (
+          if temp = "!=" then (* '!=' not support by parser, use make texpr *)
+          begin
+            let expr = vl ^ "-" ^ vr in
+            let texp = Parser.texpr1_of_string env expr in
+            let test = Tcons1.make texp Tcons1.DISEQ in
+            let tab = Tcons1.array_make env 1 in
+            Tcons1.array_set tab 0 test;
+            Abstract1.meet_tcons_array Man.man v' tab
+          end
+          else
+          begin 
             let expr = vl ^ temp ^ vr in
-          let tab = Parser.tcons1_of_lstring env [expr] in
-          Abstract1.meet_tcons_array Man.man v' tab)
+            let tab = Parser.tcons1_of_lstring env [expr] in
+            Abstract1.meet_tcons_array Man.man v' tab
+          end)
         else
           (let expr = "cur_v=" ^ vl ^ temp ^ vr in
             let tab = Parser.lincons1_of_lstring env [expr] in
@@ -186,7 +220,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
           Abstract1.print Format.std_formatter res;
           Format.printf "\n";
         end);
-      res
+      Abstract1.minimize_environment Man.man res
     let print_abs ppf a = Abstract1.print ppf a
     let print_env ppf a = let env = Abstract1.env a in
         Environment.print ppf env

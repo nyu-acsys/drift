@@ -117,4 +117,9 @@ let mk_let x def e = mk_app (mk_lambda x e) def
 let mk_lets defs e =
   List.fold_right (fun (x, def) e -> mk_let x def e) defs e
 
-let mk_let_rec x def e = mk_app (mk_rec x x e) def
+let lam_to_mu f = function
+  | Rec(_, x, lx, e, le) -> Rec (Some (f, 0), x, lx, e, le)
+  | _ -> raise (Invalid_argument "Invalid function lambda")
+
+let mk_let_rec x def e = 
+  mk_app (mk_lambda x e) (lam_to_mu x def)

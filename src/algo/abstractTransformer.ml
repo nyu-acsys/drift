@@ -7,21 +7,20 @@ open Config
 
 let z_index = ref 0 (* first definition *)
 
-let incr_z = 
+let incr_z () =
     z_index := !z_index + 1
 
 let rec prop v1 v2 = match v1, v2 with
     | Top, Bot | Table _, Top -> Top, Top
-    | Table t, Bot -> let t' = Table (init_T ("z"^(string_of_int !z_index)))in
-        incr_z;
-        v1, t'
+    | Table t, Bot -> let t' = init_T (dx_Ta t)  in
+        v1, Table (t')
     | Relation r1, Relation r2 -> Relation r1, Relation (join_R r1 r2)
     | Table t1, Table t2 -> let t1', t2' = alpha_rename t1 t2 in
         let (z1, v1i, v1o) = t1' and (z2, v2i, v2o) = t2' in
-        let v1, v2 = let v2i', v1i' = prop v2i v1i and v1o', v2o' = prop (arrow_V z1 v1o v2i) (arrow_V z1 v2o v2i) in
+        let p1, p2 = let v2i', v1i' = prop v2i v1i and v1o', v2o' = prop (arrow_V z1 v1o v2i) (arrow_V z1 v2o v2i) in
         (v1i', join_V v1o v1o'), (v2i', join_V v2o v2o')
         in
-        let t1'' = (z1, fst v1, snd v1) and t2'' = (z1, fst v2, snd v2) in
+        let t1'' = (dx_Ta t1, fst p1, snd p1) and t2'' = (dx_Ta t2, fst p2, snd p2) in
         Table t1'', Table t2''
     | _, _ -> v1, join_V v1 v2
 
@@ -79,9 +78,6 @@ let rec step term env m =
         end
         );
         let m1 = step e1 env m in
-        (if !debug then
-        Format.printf "Test pass e1 %d; " (loc e1)
-        );
         let n1 = EN (env, loc e1) in
         let t1 = find n1 m1 in
         if t1 = Bot then m1
@@ -91,9 +87,6 @@ let rec step term env m =
         m1 |> NodeMap.add n Top)
         else
             let m2 = step e2 env m1 in
-            (if !debug then
-            Format.printf "Test pass e2 %d\n" (loc e2)
-            );
             let n2 = EN (env, loc e2) in
             let t2 = find n2 m2 in (*M[env*l2]*)
             (match t2 with
@@ -120,8 +113,7 @@ let rec step term env m =
         let n2 = EN (env, loc e2) in
         let t2 = find n2 m2 in
         let t = find n m in
-        let td = if is_Bot_V t then Relation (top_R bop)
-        else t in
+        let td = Relation (top_R bop) in
         (* {v:int | a(t) ^ v = n1 + n2 }[n1 <- t1, n2 <- t2] *)
         let node_1 = e1 |> loc |> name_of_node in
         let node_2 = e2 |> loc |> name_of_node in
@@ -129,6 +121,11 @@ let rec step term env m =
         let t'' = arrow_V node_2 t' t2 in
         let t''' = op_V node_1 node_2 bop t'' in
         let _, re_t = prop t''' t in
+        (
+            Format.printf "\n";
+            pr_value Format.std_formatter t''';
+            Format.printf "\n";
+        );
         (if is_Relation t1 then 
             if is_Relation t2 then ()
             else (Format.printf "Error at location %s: expected value, but found %s.\n"
@@ -151,10 +148,10 @@ let rec step term env m =
         if not @@ SemanticsDomain.is_bool_V t0 then m0 |> NodeMap.add n Top else
         begin
             let node_0 = e0 |> loc |> name_of_node in
-            let t_true = meet_V (init_V_b true) t0 in
-            let t_false = meet_V (init_V_b false) t0 in
-            let m1 = step e1 env (iterUpdate m t_true node_0) in
-            let m2 = step e2 env (iterUpdate m t_false node_0) in
+            let t_true = extrac_bool_V t0 true in
+            let t_false = extrac_bool_V t0 false in
+            let m1 = step e1 env (iterUpdate m0 t_true node_0) in
+            let m2 = step e2 env (iterUpdate m0 t_false node_0) in
             let n1 = EN (env, loc e1) in
             let t1 = find n1 m1 in
             let n2 = EN (env, loc e2) in
@@ -176,7 +173,7 @@ let rec step term env m =
         let t = if t0 = Bot then 
             begin
                 let te = init_T ("z"^(string_of_int !z_index)) in
-                incr_z;
+                incr_z ();
                 Table (te)
             end
             else t0 in
@@ -206,7 +203,7 @@ let rec step term env m =
             in
             let tx', t1' = io_T px_t in
             let m1 = m |> NodeMap.add nx tx' |> NodeMap.add n1 (replace_V t1' node_x (dx_T t)) |>
-            (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> NodeMap.add nf tf' |> NodeMap.add n (join_V t1 t2))
+            (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> NodeMap.add nf tf' |> NodeMap.add n t2)
             nf_t2_tf'_opt |> Opt.get_or_else (NodeMap.add n t1)) in
             step e1 env1 m1
         end 
@@ -219,7 +216,7 @@ let widening m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot 
 (** Fixpoint loop *)
 let rec fix e k env m =
   Format.printf "step %d\n" k;
-  print_exec_map m;
+  if k < 9 then print_exec_map m else exit 0;
   let m' = step e env m in
   let m'' = widening m m' in
   if leq_M m'' m then m
