@@ -132,7 +132,7 @@ let rec step term env m =
             (string_of_int (loc e2)) (string_of_value t2))
         else (Format.printf "Error at location %s: expected value, but found %s.\n"
         (string_of_int (loc e1)) (string_of_value t1))) ;
-        m2 |> NodeMap.add n re_t
+        join_M m1 m2 |> NodeMap.add n re_t
     | Ite (e0, e1, e2, l) ->
         (if !debug then
         begin
@@ -216,7 +216,7 @@ let widening m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot 
 (** Fixpoint loop *)
 let rec fix e k env m =
   Format.printf "step %d\n" k;
-  if k < 9 then print_exec_map m else exit 0;
+  if k < 8 then print_exec_map m else exit 0;
   let m' = step e env m in
   let m'' = widening m m' in
   if leq_M m'' m then m

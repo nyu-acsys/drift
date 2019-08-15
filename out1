@@ -1,6 +1,6 @@
 Executing:
 ((lambda f^0. (f^1 9^2)^3)^4
-  (mu f^5 a^6. ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
+  (mu f^5 a^6. ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
 
 Domain specification: Box
 
@@ -12,7 +12,7 @@ step 0
 <=== App ===>
 ((lambda f^0. (f^1 9^2)^3)^4
                  (mu f^5 a^6.
-                    ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
+                    ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
 
 <=== Func ===>
 
@@ -20,7 +20,7 @@ step 0
 
 <=== Func ===>
 (mu f^5 a^6.
-                                               ((a^7 = 10^8)^9 ? 10^10 :
+                                               ((a^7 > 9^8)^9 ? 10^10 :
                                                  (f^11 (a^12 + 1^13)^14)^15)^16)^17
 step 1
 ----
@@ -35,7 +35,7 @@ step 1
 <=== App ===>
 ((lambda f^0. (f^1 9^2)^3)^4
                  (mu f^5 a^6.
-                    ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
+                    ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
 
 <=== Func ===>
 
@@ -52,7 +52,7 @@ f^1
 
 <=== Func ===>
 
-(mu f^5 a^6. ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17
+(mu f^5 a^6. ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17
 step 2
 ----
 
@@ -74,7 +74,7 @@ step 2
 <=== App ===>
 ((lambda f^0. (f^1 9^2)^3)^4
                  (mu f^5 a^6.
-                    ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
+                    ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
 
 <=== Func ===>
 
@@ -91,7 +91,7 @@ f^1
 
 <=== Func ===>
 
-(mu f^5 a^6. ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17
+(mu f^5 a^6. ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17
 step 3
 ----
 
@@ -113,7 +113,7 @@ step 3
 <=== App ===>
 ((lambda f^0. (f^1 9^2)^3)^4
                  (mu f^5 a^6.
-                    ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
+                    ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
 
 <=== Func ===>
 
@@ -137,7 +137,7 @@ result: [|cur_v-9=0; lab_1-9=0|]
 
 <=== Func ===>
 
-(mu f^5 a^6. ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17
+(mu f^5 a^6. ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17
 step 4
 ----
 
@@ -159,7 +159,7 @@ step 4
 <=== App ===>
 ((lambda f^0. (f^1 9^2)^3)^4
                  (mu f^5 a^6.
-                    ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
+                    ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
 
 <=== Func ===>
 
@@ -183,15 +183,15 @@ result: [|cur_v-9=0; lab_1-9=0|]
 
 <=== Func ===>
 
-(mu f^5 a^6. ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17
+(mu f^5 a^6. ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17
 
 <=== Ite ===>
 
-((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16
+((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16
 
 <=== Binop ===>
 
-(a^7 = 10^8)^9
+(a^7 > 9^8)^9
 
 <=== Var ===>
 a^7
@@ -211,7 +211,7 @@ cur_v-9=0|]
 Env: [|0> cur_v:int|]
 Result: [|a-9=0|]
 <=== Const ===>
-10^8
+9^8
 
 
 A rename
@@ -231,28 +231,54 @@ a-9=0; lab_7-9=0|]
 
 A rename
  cur_v -> lab_8 
-[|a-9=0; cur_v-10=0|]
+[|a-9=0; cur_v-9=0|]
 Env: [|
 0> a:int; 1> cur_v:int|]
-Result: [|a-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_8-9=0|]
 Operator abs
-lab_7 != lab_8
+lab_7 <= lab_8
 Env: [|
 0> cur_v:int; 1> lab_7:int; 2> lab_8:int|]
 Before: [|a-9=0; lab_7-9=0;
-                                                     lab_8-10=0|]
+                                                     lab_8-9=0|]
 result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 Operator abs
-lab_7 = lab_8
+lab_7 > lab_8
 Env: [|0> cur_v:int;
-                                                                  1> lab_7:int;
-                                                                  2> lab_8:int|]
+                                                                 1> lab_7:int;
+                                                                 2> lab_8:int|]
 Before: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 result: bottom
 
+{ cur_v: Bool | TRUE: bottom,
+                                               FALSE:
+                                               [|a-9=0; lab_7-9=0; lab_8-9=0|]
+                                               }
+
+
+A rename
+ cur_v -> lab_9 
+bottom
+Env: [|
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int|]
+Result: bottom
+
+A rename
+ cur_v -> lab_9 
+bottom
+Env: [|
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int|]
+Result: bottom
+
+A rename
+ cur_v -> lab_9 
+bottom
+Env: [|
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int|]
+Result: bottom
 
 A rename
  cur_v -> lab_9 
@@ -309,60 +335,83 @@ Result: bottom
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
+
+A rename
+ cur_v -> lab_9 
+[|
+a-9=0; lab_7-9=0; lab_8-9=0|]
+Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|
+a-9=0; lab_7-9=0; lab_8-9=0|]
+
+A rename
+ cur_v -> lab_9 
+[|a-9=0; lab_7-9=0;
+                                                           lab_8-9=0|]
+Env: [|
+0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
+
+A rename
+ cur_v -> lab_9 
+[|
+a-9=0; lab_7-9=0; lab_8-9=0|]
+Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|
+a-9=0; lab_7-9=0; lab_8-9=0|]
 <=== App ===>
-
 (f^11 (a^12 + 1^13)^14)^15
 
 <=== Var ===>
 f^11
 
 <=== Binop ===>
-(a^12 +
-                                                                   1^13)^14
+
+(a^12 + 1^13)^14
 
 <=== Var ===>
 a^12
@@ -371,20 +420,20 @@ a^12
  = operation 
 cur_v=lab_12 
 Before: [|
-a-9=0; cur_v-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-9=0; lab_7-9=0; lab_8-9=0|]
 result: [|a-9=0; cur_v-9=0;
-                                                    lab_12-9=0; lab_7-9=0;
-                                                    lab_8-10=0|]
+                                                   lab_12-9=0; lab_7-9=0;
+                                                   lab_8-9=0|]
 
 
 A rename
  cur_v -> a 
 [|
-a-9=0; cur_v-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> cur_v:int;
-                                                 2> lab_7:int; 3> lab_8:int|]
+                                                2> lab_7:int; 3> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 <=== Const ===>
 1^13
 
@@ -392,41 +441,51 @@ a-9=0; lab_7-9=0; lab_8-10=0|]
 A rename
  cur_v -> a 
 [|
-a-9=0; cur_v-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> cur_v:int;
-                                                 2> lab_7:int; 3> lab_8:int|]
+                                                2> lab_7:int; 3> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_12 
-[|a-9=0;
-                                                             cur_v-9=0;
-                                                             lab_12-9=0;
-                                                             lab_7-9=0;
-                                                             lab_8-10=0|]
+[|a-9=0; cur_v-9=0;
+                                                            lab_12-9=0;
+                                                            lab_7-9=0;
+                                                            lab_8-9=0|]
 Env: [|
 0> a:int; 1> cur_v:int; 2> lab_12:int; 3> lab_7:int; 4> lab_8:int|]
 Result: [|
-a-9=0; lab_12-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_12-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_13 
 [|
-a-9=0; cur_v-1=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-1=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> cur_v:int;
-                                                 2> lab_7:int; 3> lab_8:int|]
+                                                2> lab_7:int; 3> lab_8:int|]
 Result: [|
-a-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|]
 Operator abs
 lab_12 + lab_13
 Env: [|
 0> cur_v:int; 1> lab_12:int; 2> lab_13:int|]
 Before: [|a-9=0; lab_12-9=0;
                                                        lab_13-1=0; lab_7-9=0;
-                                                       lab_8-10=0|]
+                                                       lab_8-9=0|]
 result: [|
-a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|]
+
+{ cur_v:
+                                                                    Int |
+                                                                    [|
+                                                                    a-9=0;
+                                                                    cur_v-10=0;
+                                                                    lab_12-9=0;
+                                                                    lab_13-1=0;
+                                                                    lab_7-9=0;
+                                                                    lab_8-9=0|]
+                                                                    }
 step 5
 ----
 
@@ -442,22 +501,27 @@ step 5
 
 18 |-> _|_
 
-8 |-> { cur_v: Int | [|a-9=0; cur_v-10=0|] }
+7 |-> { cur_v: Int | [|a-9=0; cur_v-9=0; lab_7-9=0|] }
 
-9 |-> { cur_v: Bool | TRUE: bottom, FALSE: [|a-9=0; lab_7-9=0; lab_8-10=0|] }
+8 |-> { cur_v: Int | [|a-9=0; cur_v-9=0|] }
+
+9 |-> { cur_v: Bool | TRUE: bottom, FALSE: [|a-9=0; lab_7-9=0; lab_8-9=0|] }
 
 10 |-> { cur_v: Int | bottom }
 
 11 |->
   z1: { cur_v: Int |
-       [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|] } ->
+       [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|] } ->
     _|_
 
-13 |-> { cur_v: Int | [|a-9=0; cur_v-1=0; lab_7-9=0; lab_8-10=0|] }
+12 |->
+  { cur_v: Int | [|a-9=0; cur_v-9=0; lab_12-9=0; lab_7-9=0; lab_8-9=0|] }
+
+13 |-> { cur_v: Int | [|a-9=0; cur_v-1=0; lab_7-9=0; lab_8-9=0|] }
 
 14 |->
   { cur_v: Int |
-   [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|] }
+   [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|] }
 
 15 |-> _|_
 
@@ -473,7 +537,7 @@ step 5
 <=== App ===>
 ((lambda f^0. (f^1 9^2)^3)^4
                  (mu f^5 a^6.
-                    ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
+                    ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
 
 <=== Func ===>
 
@@ -497,7 +561,7 @@ result: [|cur_v-9=0; lab_1-9=0|]
 
 <=== Func ===>
 
-(mu f^5 a^6. ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17
+(mu f^5 a^6. ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17
 
 
 A rename
@@ -522,11 +586,11 @@ Env: [|
 Result: bottom
 <=== Ite ===>
 
-((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16
+((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16
 
 <=== Binop ===>
 
-(a^7 = 10^8)^9
+(a^7 > 9^8)^9
 
 <=== Var ===>
 a^7
@@ -546,7 +610,7 @@ cur_v-9=0|]
 Env: [|0> cur_v:int|]
 Result: [|a-9=0|]
 <=== Const ===>
-10^8
+9^8
 
 
 A rename
@@ -559,117 +623,137 @@ a-9=0; lab_7-9=0|]
 
 A rename
  cur_v -> lab_8 
-[|a-9=0; cur_v-10=0|]
+[|a-9=0; cur_v-9=0|]
 Env: [|
 0> a:int; 1> cur_v:int|]
-Result: [|a-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_8-9=0|]
 Operator abs
-lab_7 != lab_8
+lab_7 <= lab_8
 Env: [|
 0> cur_v:int; 1> lab_7:int; 2> lab_8:int|]
 Before: [|a-9=0; lab_7-9=0;
-                                                     lab_8-10=0|]
+                                                     lab_8-9=0|]
 result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 Operator abs
-lab_7 = lab_8
+lab_7 > lab_8
 Env: [|0> cur_v:int;
-                                                                  1> lab_7:int;
-                                                                  2> lab_8:int|]
-Before: bottom
+                                                                 1> lab_7:int;
+                                                                 2> lab_8:int|]
+Before: [|
+a-9=0; lab_7-9=0; lab_8-9=0|]
 result: bottom
 
+{ cur_v: Bool | TRUE: bottom,
+                                               FALSE:
+                                               [|a-9=0; lab_7-9=0; lab_8-9=0|]
+                                               }
+
 
 A rename
  cur_v -> lab_9 
 bottom
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int|]
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
 Result: bottom
 
 A rename
  cur_v -> lab_9 
 bottom
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int|]
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
 Result: bottom
 
 A rename
  cur_v -> lab_9 
 bottom
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int|]
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
 Result: bottom
 
 A rename
  cur_v -> lab_9 
 bottom
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int|]
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
 Result: bottom
 
 A rename
  cur_v -> lab_9 
 bottom
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int|]
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
 Result: bottom
 
 A rename
  cur_v -> lab_9 
 bottom
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int|]
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
 Result: bottom
 
 A rename
  cur_v -> lab_9 
 bottom
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int|]
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
 Result: bottom
 
 A rename
  cur_v -> lab_9 
 bottom
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int|]
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
 Result: bottom
 
 A rename
  cur_v -> lab_9 
 bottom
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int|]
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
 Result: bottom
 
 A rename
  cur_v -> lab_9 
 bottom
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int|]
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
 Result: bottom
 
 A rename
  cur_v -> lab_9 
 bottom
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int|]
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
 Result: bottom
 
 A rename
  cur_v -> lab_9 
 bottom
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int|]
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
 Result: bottom
 
 A rename
  cur_v -> lab_9 
 bottom
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int|]
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
+Result: bottom
+
+A rename
+ cur_v -> lab_9 
+bottom
+Env: [|
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
+Result: bottom
+
+A rename
+ cur_v -> lab_9 
+bottom
+Env: [|
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
 Result: bottom
 <=== Const ===>
 10^10
@@ -678,106 +762,122 @@ Result: bottom
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
+
+A rename
+ cur_v -> lab_9 
+[|a-9=0; lab_7-9=0;
+                                                           lab_8-9=0|]
+Env: [|
+0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
+
+A rename
+ cur_v -> lab_9 
+[|
+a-9=0; lab_7-9=0; lab_8-9=0|]
+Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|
+a-9=0; lab_7-9=0; lab_8-9=0|]
 <=== App ===>
 (f^11 (a^12 + 1^13)^14)^15
 
@@ -788,11 +888,11 @@ f^11
 A rename
  cur_v -> a 
 [|
-a-9=0; cur_v-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> cur_v:int;
-                                                 2> lab_7:int; 3> lab_8:int|]
+                                                2> lab_7:int; 3> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 <=== Binop ===>
 (a^12 + 1^13)^14
 
@@ -803,20 +903,20 @@ a^12
  = operation 
 cur_v=lab_12 
 Before: [|
-a-9=0; cur_v-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-9=0; lab_7-9=0; lab_8-9=0|]
 result: [|a-9=0; cur_v-9=0;
-                                                    lab_12-9=0; lab_7-9=0;
-                                                    lab_8-10=0|]
+                                                   lab_12-9=0; lab_7-9=0;
+                                                   lab_8-9=0|]
 
 
 A rename
  cur_v -> a 
 [|
-a-9=0; cur_v-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> cur_v:int;
-                                                 2> lab_7:int; 3> lab_8:int|]
+                                                2> lab_7:int; 3> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 <=== Const ===>
 1^13
 
@@ -824,33 +924,43 @@ a-9=0; lab_7-9=0; lab_8-10=0|]
 A rename
  cur_v -> lab_12 
 [|
-a-9=0; cur_v-9=0; lab_12-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-9=0; lab_12-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int;
-                                                             1> cur_v:int;
-                                                             2> lab_12:int;
-                                                             3> lab_7:int;
-                                                             4> lab_8:int|]
+                                                            1> cur_v:int;
+                                                            2> lab_12:int;
+                                                            3> lab_7:int;
+                                                            4> lab_8:int|]
 Result: [|
-a-9=0; lab_12-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_12-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_13 
 [|
-a-9=0; cur_v-1=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-1=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> cur_v:int;
-                                                 2> lab_7:int; 3> lab_8:int|]
+                                                2> lab_7:int; 3> lab_8:int|]
 Result: [|
-a-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|]
 Operator abs
 lab_12 + lab_13
 Env: [|
 0> cur_v:int; 1> lab_12:int; 2> lab_13:int|]
-Before: [|a-9=0; cur_v-10=0;
-                                                       lab_12-9=0;
+Before: [|a-9=0; lab_12-9=0;
                                                        lab_13-1=0; lab_7-9=0;
-                                                       lab_8-10=0|]
+                                                       lab_8-9=0|]
 result: [|
-a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|]
+
+{ cur_v:
+                                                                    Int |
+                                                                    [|
+                                                                    a-9=0;
+                                                                    cur_v-10=0;
+                                                                    lab_12-9=0;
+                                                                    lab_13-1=0;
+                                                                    lab_7-9=0;
+                                                                    lab_8-9=0|]
+                                                                    }
 step 6
 ----
 
@@ -860,7 +970,7 @@ step 6
 
 5 |->
   z1: { cur_v: Int |
-       [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|] } ->
+       [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|] } ->
     _|_
 
 6 |-> { cur_v: Int | [|cur_v-9=0|] }
@@ -869,22 +979,27 @@ step 6
 
 18 |-> _|_
 
-8 |-> { cur_v: Int | [|a-9=0; cur_v-10=0|] }
+7 |-> { cur_v: Int | [|a-9=0; cur_v-9=0; lab_7-9=0|] }
 
-9 |-> { cur_v: Bool | TRUE: bottom, FALSE: [|a-9=0; lab_7-9=0; lab_8-10=0|] }
+8 |-> { cur_v: Int | [|a-9=0; cur_v-9=0|] }
+
+9 |-> { cur_v: Bool | TRUE: bottom, FALSE: [|a-9=0; lab_7-9=0; lab_8-9=0|] }
 
 10 |-> { cur_v: Int | bottom }
 
 11 |->
   z1: { cur_v: Int |
-       [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|] } ->
+       [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|] } ->
     _|_
 
-13 |-> { cur_v: Int | [|a-9=0; cur_v-1=0; lab_7-9=0; lab_8-10=0|] }
+12 |->
+  { cur_v: Int | [|a-9=0; cur_v-9=0; lab_12-9=0; lab_7-9=0; lab_8-9=0|] }
+
+13 |-> { cur_v: Int | [|a-9=0; cur_v-1=0; lab_7-9=0; lab_8-9=0|] }
 
 14 |->
   { cur_v: Int |
-   [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|] }
+   [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|] }
 
 15 |-> _|_
 
@@ -900,7 +1015,7 @@ step 6
 <=== App ===>
 ((lambda f^0. (f^1 9^2)^3)^4
                  (mu f^5 a^6.
-                    ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
+                    ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
 
 <=== Func ===>
 
@@ -924,7 +1039,7 @@ result: [|cur_v-9=0; lab_1-9=0|]
 
 <=== Func ===>
 
-(mu f^5 a^6. ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17
+(mu f^5 a^6. ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17
 
 
 A rename
@@ -949,14 +1064,14 @@ Env: [|
 5> lab_9:int; 6> z1:int|]
 Result: bottom
 <=== Ite ===>
-((a^7 = 10^8)^9 ?
-                                                         10^10 :
+((a^7 > 9^8)^9 ? 10^10
+                                                         :
                                                          (f^11
                                                            (a^12 + 1^13)^14)^15)^16
 
 <=== Binop ===>
 
-(a^7 = 10^8)^9
+(a^7 > 9^8)^9
 
 <=== Var ===>
 a^7
@@ -976,7 +1091,7 @@ cur_v-9=0|]
 Env: [|0> cur_v:int|]
 Result: [|a-9=0|]
 <=== Const ===>
-10^8
+9^8
 
 
 A rename
@@ -989,27 +1104,47 @@ a-9=0; lab_7-9=0|]
 
 A rename
  cur_v -> lab_8 
-[|a-9=0; cur_v-10=0|]
+[|a-9=0; cur_v-9=0|]
 Env: [|
 0> a:int; 1> cur_v:int|]
-Result: [|a-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_8-9=0|]
 Operator abs
-lab_7 != lab_8
+lab_7 <= lab_8
 Env: [|
 0> cur_v:int; 1> lab_7:int; 2> lab_8:int|]
 Before: [|a-9=0; lab_7-9=0;
-                                                     lab_8-10=0|]
+                                                     lab_8-9=0|]
 result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 Operator abs
-lab_7 = lab_8
+lab_7 > lab_8
 Env: [|0> cur_v:int;
-                                                                  1> lab_7:int;
-                                                                  2> lab_8:int|]
-Before: bottom
+                                                                 1> lab_7:int;
+                                                                 2> lab_8:int|]
+Before: [|
+a-9=0; lab_7-9=0; lab_8-9=0|]
 result: bottom
 
+{ cur_v: Bool | TRUE: bottom,
+                                               FALSE:
+                                               [|a-9=0; lab_7-9=0; lab_8-9=0|]
+                                               }
+
+
+A rename
+ cur_v -> lab_9 
+bottom
+Env: [|
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
+Result: bottom
+
+A rename
+ cur_v -> lab_9 
+bottom
+Env: [|
+0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
+Result: bottom
 
 A rename
  cur_v -> lab_9 
@@ -1115,114 +1250,130 @@ Result: bottom
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
+
+A rename
+ cur_v -> lab_9 
+[|
+a-9=0; lab_7-9=0; lab_8-9=0|]
+Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|
+a-9=0; lab_7-9=0; lab_8-9=0|]
+
+A rename
+ cur_v -> lab_9 
+[|a-9=0; lab_7-9=0;
+                                                           lab_8-9=0|]
+Env: [|
+0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 <=== App ===>
 
 (f^11 (a^12 + 1^13)^14)^15
@@ -1234,19 +1385,19 @@ f^11
  = operation 
 cur_v=lab_11 
 Before: [|
-a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|]
 result: [|
-a-9=0; cur_v-10=0; lab_11-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-10=0; lab_11-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|]
 
 
 A rename
  cur_v -> a 
 [|
-a-9=0; cur_v-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> cur_v:int;
-                                                 2> lab_7:int; 3> lab_8:int|]
+                                                2> lab_7:int; 3> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 <=== Binop ===>
 (a^12 + 1^13)^14
 
@@ -1257,20 +1408,20 @@ a^12
  = operation 
 cur_v=lab_12 
 Before: [|
-a-9=0; cur_v-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-9=0; lab_7-9=0; lab_8-9=0|]
 result: [|a-9=0; cur_v-9=0;
-                                                    lab_12-9=0; lab_7-9=0;
-                                                    lab_8-10=0|]
+                                                   lab_12-9=0; lab_7-9=0;
+                                                   lab_8-9=0|]
 
 
 A rename
  cur_v -> a 
 [|
-a-9=0; cur_v-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> cur_v:int;
-                                                 2> lab_7:int; 3> lab_8:int|]
+                                                2> lab_7:int; 3> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 <=== Const ===>
 1^13
 
@@ -1278,33 +1429,43 @@ a-9=0; lab_7-9=0; lab_8-10=0|]
 A rename
  cur_v -> lab_12 
 [|
-a-9=0; cur_v-9=0; lab_12-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-9=0; lab_12-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int;
-                                                             1> cur_v:int;
-                                                             2> lab_12:int;
-                                                             3> lab_7:int;
-                                                             4> lab_8:int|]
+                                                            1> cur_v:int;
+                                                            2> lab_12:int;
+                                                            3> lab_7:int;
+                                                            4> lab_8:int|]
 Result: [|
-a-9=0; lab_12-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_12-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_13 
 [|
-a-9=0; cur_v-1=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-1=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> cur_v:int;
-                                                 2> lab_7:int; 3> lab_8:int|]
+                                                2> lab_7:int; 3> lab_8:int|]
 Result: [|
-a-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|]
 Operator abs
 lab_12 + lab_13
 Env: [|
 0> cur_v:int; 1> lab_12:int; 2> lab_13:int|]
-Before: [|a-9=0; cur_v-10=0;
-                                                       lab_12-9=0;
+Before: [|a-9=0; lab_12-9=0;
                                                        lab_13-1=0; lab_7-9=0;
-                                                       lab_8-10=0|]
+                                                       lab_8-9=0|]
 result: [|
-a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|]
+
+{ cur_v:
+                                                                    Int |
+                                                                    [|
+                                                                    a-9=0;
+                                                                    cur_v-10=0;
+                                                                    lab_12-9=0;
+                                                                    lab_13-1=0;
+                                                                    lab_7-9=0;
+                                                                    lab_8-9=0|]
+                                                                    }
 step 7
 ----
 
@@ -1314,7 +1475,7 @@ step 7
 
 5 |->
   z1: { cur_v: Int |
-       [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|] } ->
+       [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|] } ->
     _|_
 
 6 |-> { cur_v: Int | [|cur_v-9=0|] }
@@ -1323,22 +1484,27 @@ step 7
 
 18 |-> _|_
 
-8 |-> { cur_v: Int | [|a-9=0; cur_v-10=0|] }
+7 |-> { cur_v: Int | [|a-9=0; cur_v-9=0; lab_7-9=0|] }
 
-9 |-> { cur_v: Bool | TRUE: bottom, FALSE: [|a-9=0; lab_7-9=0; lab_8-10=0|] }
+8 |-> { cur_v: Int | [|a-9=0; cur_v-9=0|] }
+
+9 |-> { cur_v: Bool | TRUE: bottom, FALSE: [|a-9=0; lab_7-9=0; lab_8-9=0|] }
 
 10 |-> { cur_v: Int | bottom }
 
 11 |->
   z1: { cur_v: Int |
-       [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|] } ->
+       [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|] } ->
     _|_
 
-13 |-> { cur_v: Int | [|a-9=0; cur_v-1=0; lab_7-9=0; lab_8-10=0|] }
+12 |->
+  { cur_v: Int | [|a-9=0; cur_v-9=0; lab_12-9=0; lab_7-9=0; lab_8-9=0|] }
+
+13 |-> { cur_v: Int | [|a-9=0; cur_v-1=0; lab_7-9=0; lab_8-9=0|] }
 
 14 |->
   { cur_v: Int |
-   [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|] }
+   [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|] }
 
 15 |-> _|_
 
@@ -1354,7 +1520,7 @@ step 7
 <=== App ===>
 ((lambda f^0. (f^1 9^2)^3)^4
                  (mu f^5 a^6.
-                    ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
+                    ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
 
 <=== Func ===>
 
@@ -1378,7 +1544,7 @@ result: [|cur_v-9=0; lab_1-9=0|]
 
 <=== Func ===>
 
-(mu f^5 a^6. ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17
+(mu f^5 a^6. ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17
 
 
 A rename
@@ -1403,14 +1569,14 @@ Env: [|
 5> lab_9:int; 6> z1:int|]
 Result: bottom
 <=== Ite ===>
-((a^7 = 10^8)^9 ?
-                                                         10^10 :
+((a^7 > 9^8)^9 ? 10^10
+                                                         :
                                                          (f^11
                                                            (a^12 + 1^13)^14)^15)^16
 
 <=== Binop ===>
 
-(a^7 = 10^8)^9
+(a^7 > 9^8)^9
 
 <=== Var ===>
 a^7
@@ -1431,7 +1597,7 @@ cur_v-9>=0; -cur_v+10>=0|]
 Env: [|0> cur_v:int|]
 Result: [|a-9>=0; -a+10>=0|]
 <=== Const ===>
-10^8
+9^8
 
 
 A rename
@@ -1446,125 +1612,178 @@ Result: [|a-9>=0; -a+10>=0;
 A rename
  cur_v -> lab_8 
 [|
-a-9=0; cur_v-10=0|]
+a-9=0; cur_v-9=0|]
 Env: [|0> a:int; 1> cur_v:int|]
-Result: [|a-9=0;
-                                                              lab_8-10=0|]
+Result: [|a-9=0; lab_8-9=0|]
 Operator abs
-lab_7 != lab_8
+lab_7 <= lab_8
 Env: [|
 0> cur_v:int; 1> lab_7:int; 2> lab_8:int|]
-Before: [|a-9=0; lab_7-9=0;
-                                                     lab_8-10=0|]
+Before: [|a-9=0; lab_7-9>=0;
+                                                     -lab_7+10>=0; lab_8-9=0|]
 result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 Operator abs
-lab_7 = lab_8
+lab_7 > lab_8
 Env: [|0> cur_v:int;
-                                                                  1> lab_7:int;
-                                                                  2> lab_8:int|]
-Before: bottom
-result: bottom
+                                                                 1> lab_7:int;
+                                                                 2> lab_8:int|]
+Before: [|
+a-9=0; lab_7-9>=0; -lab_7+10>=0; lab_8-9=0|]
+result: [|a-9=0; lab_7-10=0;
+                                                       lab_8-9=0|]
+
+{ cur_v:
+                                                                    Bool |
+                                                                    TRUE:
+                                                                    [|
+                                                                    a-9=0;
+                                                                    lab_7-10=0;
+                                                                    lab_8-9=0|],
+                                                                    FALSE:
+                                                                    [|
+                                                                    a-9=0;
+                                                                    lab_7-9=0;
+                                                                    lab_8-9=0|]
+                                                                    }
 
 
 A rename
  cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
+[|
+a-9=0; lab_7-10=0; lab_8-9=0|]
+Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|
+a-9=0; lab_7-10=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
-bottom
+[|a-9=0;
+                                                            lab_7-10=0;
+                                                            lab_8-9=0|]
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
+0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|a-9=0; lab_7-10=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
+[|
+a-9=0; lab_7-10=0; lab_8-9=0|]
+Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|
+a-9=0; lab_7-10=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
-bottom
+[|a-9=0;
+                                                            lab_7-10=0;
+                                                            lab_8-9=0|]
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
+0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|a-9=0; lab_7-10=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
+[|
+a-9=0; lab_7-10=0; lab_8-9=0|]
+Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|
+a-9=0; lab_7-10=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
-bottom
+[|a-9=0;
+                                                            lab_7-10=0;
+                                                            lab_8-9=0|]
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
+0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|a-9=0; lab_7-10=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
+[|
+a-9=0; lab_7-10=0; lab_8-9=0|]
+Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|
+a-9=0; lab_7-10=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
-bottom
+[|a-9=0;
+                                                            lab_7-10=0;
+                                                            lab_8-9=0|]
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
+0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|a-9=0; lab_7-10=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
+[|
+a-9=0; lab_7-10=0; lab_8-9=0|]
+Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|
+a-9=0; lab_7-10=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
-bottom
+[|a-9=0;
+                                                            lab_7-10=0;
+                                                            lab_8-9=0|]
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
+0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|a-9=0; lab_7-10=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
+[|
+a-9=0; lab_7-10=0; lab_8-9=0|]
+Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|
+a-9=0; lab_7-10=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
-bottom
+[|a-9=0;
+                                                            lab_7-10=0;
+                                                            lab_8-9=0|]
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
+0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|a-9=0; lab_7-10=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
+[|
+a-9=0; lab_7-10=0; lab_8-9=0|]
+Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|
+a-9=0; lab_7-10=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
-bottom
+[|a-9=0;
+                                                            lab_7-10=0;
+                                                            lab_8-9=0|]
 Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
+0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|a-9=0; lab_7-10=0; lab_8-9=0|]
+
+A rename
+ cur_v -> lab_9 
+[|
+a-9=0; lab_7-10=0; lab_8-9=0|]
+Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|
+a-9=0; lab_7-10=0; lab_8-9=0|]
+
+A rename
+ cur_v -> lab_9 
+[|a-9=0;
+                                                            lab_7-10=0;
+                                                            lab_8-9=0|]
+Env: [|
+0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|a-9=0; lab_7-10=0; lab_8-9=0|]
 <=== Const ===>
 10^10
 
@@ -1572,114 +1791,130 @@ Result: bottom
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 
 A rename
  cur_v -> lab_9 
 [|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
+                                                           lab_8-9=0|]
 Env: [|
 0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
+
+A rename
+ cur_v -> lab_9 
+[|
+a-9=0; lab_7-9=0; lab_8-9=0|]
+Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|
+a-9=0; lab_7-9=0; lab_8-9=0|]
+
+A rename
+ cur_v -> lab_9 
+[|a-9=0; lab_7-9=0;
+                                                           lab_8-9=0|]
+Env: [|
+0> a:int; 1> lab_7:int; 2> lab_8:int|]
+Result: [|a-9=0; lab_7-9=0; lab_8-9=0|]
 <=== App ===>
 
 (f^11 (a^12 + 1^13)^14)^15
@@ -1691,21 +1926,21 @@ f^11
  = operation 
 cur_v=lab_11 
 Before: [|
-a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|]
 result: [|
-a-9=0; cur_v-10=0; lab_11-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-10=0; lab_11-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|]
 
 
 A rename
  cur_v -> a 
 [|
-a-9=0; cur_v-9>=0; -cur_v+10>=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-9>=0; -cur_v+10>=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int;
-                                                                1> cur_v:int;
-                                                                2> lab_7:int;
-                                                                3> lab_8:int|]
+                                                               1> cur_v:int;
+                                                               2> lab_7:int;
+                                                               3> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 <=== Binop ===>
 (a^12 + 1^13)^14
 
@@ -1716,26 +1951,26 @@ a^12
  = operation 
 cur_v=lab_12 
 Before: [|
-a-9=0; cur_v-9>=0; -cur_v+10>=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-9>=0; -cur_v+10>=0; lab_7-9=0; lab_8-9=0|]
 result: [|a-9=0;
-                                                                   cur_v-9>=0;
-                                                                   -cur_v+10>=0;
-                                                                   lab_12-9>=0;
-                                                                   -lab_12+10>=0;
-                                                                   lab_7-9=0;
-                                                                   lab_8-10=0|]
+                                                                  cur_v-9>=0;
+                                                                  -cur_v+10>=0;
+                                                                  lab_12-9>=0;
+                                                                  -lab_12+10>=0;
+                                                                  lab_7-9=0;
+                                                                  lab_8-9=0|]
 
 
 A rename
  cur_v -> a 
 [|
-a-9=0; cur_v-9>=0; -cur_v+10>=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-9>=0; -cur_v+10>=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int;
-                                                                1> cur_v:int;
-                                                                2> lab_7:int;
-                                                                3> lab_8:int|]
+                                                               1> cur_v:int;
+                                                               2> lab_7:int;
+                                                               3> lab_8:int|]
 Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_7-9=0; lab_8-9=0|]
 <=== Const ===>
 1^13
 
@@ -1744,493 +1979,35 @@ A rename
  cur_v -> lab_12 
 [|
 a-9=0; cur_v-9>=0; -cur_v+10>=0; lab_12-9>=0; -lab_12+10>=0; lab_7-9=0;
-lab_8-10=0|]
+lab_8-9=0|]
 Env: [|0> a:int; 1> cur_v:int; 2> lab_12:int; 3> lab_7:int;
-                    4> lab_8:int|]
+                   4> lab_8:int|]
 Result: [|a-9=0; lab_12-9>=0;
-                                             -lab_12+10>=0; lab_7-9=0;
-                                             lab_8-10=0|]
+                                            -lab_12+10>=0; lab_7-9=0;
+                                            lab_8-9=0|]
 
 A rename
  cur_v -> lab_13 
 [|
-a-9=0; cur_v-1=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-1=0; lab_7-9=0; lab_8-9=0|]
 Env: [|0> a:int; 1> cur_v:int;
-                                                 2> lab_7:int; 3> lab_8:int|]
+                                                2> lab_7:int; 3> lab_8:int|]
 Result: [|
-a-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|]
 Operator abs
 lab_12 + lab_13
 Env: [|
 0> cur_v:int; 1> lab_12:int; 2> lab_13:int|]
-Before: [|a-9=0; cur_v-10=0;
-                                                       lab_12-9=0;
+Before: [|a-9=0; lab_12-9>=0;
+                                                       -lab_12+10>=0;
                                                        lab_13-1=0; lab_7-9=0;
-                                                       lab_8-10=0|]
+                                                       lab_8-9=0|]
 result: [|
-a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|]
+a-9=0; cur_v-10>=0; -cur_v+11>=0; lab_12-9>=0; -lab_12+10>=0; lab_13-1=0;
+lab_7-9=0; lab_8-9=0|]
+
+{ cur_v: Int |
+                         [|a-9=0; cur_v-10>=0; -cur_v+11>=0; lab_12-9>=0;
+                           -lab_12+10>=0; lab_13-1=0; lab_7-9=0; lab_8-9=0|]
+                         }
 step 8
-----
-
-0 |-> z1: { cur_v: Int | [|cur_v-9=0|] } -> _|_
-
-4 |-> z0: z1: { cur_v: Int | [|cur_v-9=0|] } -> _|_ -> _|_
-
-5 |->
-  z1: { cur_v: Int |
-       [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|] } ->
-    _|_
-
-6 |-> { cur_v: Int | [|cur_v-9>=0; -cur_v+10>=0|] }
-
-17 |-> z1: { cur_v: Int | [|cur_v-9>=0; -cur_v+10>=0|] } -> _|_
-
-18 |-> _|_
-
-8 |-> { cur_v: Int | [|a-9=0; cur_v-10=0|] }
-
-9 |-> { cur_v: Bool | TRUE: bottom, FALSE: [|a-9=0; lab_7-9=0; lab_8-10=0|] }
-
-10 |-> { cur_v: Int | bottom }
-
-11 |->
-  z1: { cur_v: Int |
-       [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|] } ->
-    _|_
-
-13 |-> { cur_v: Int | [|a-9=0; cur_v-1=0; lab_7-9=0; lab_8-10=0|] }
-
-14 |->
-  { cur_v: Int |
-   [|a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|] }
-
-15 |-> _|_
-
-16 |-> { cur_v: Int | bottom }
-
-1 |-> z1: { cur_v: Int | [|cur_v-9=0|] } -> _|_
-
-2 |-> { cur_v: Int | [|cur_v-9=0|] }
-
-3 |-> _|_
-----
-
-<=== App ===>
-((lambda f^0. (f^1 9^2)^3)^4
-                 (mu f^5 a^6.
-                    ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
-
-<=== Func ===>
-
-(lambda f^0. (f^1 9^2)^3)^4
-
-<=== App ===>
-(f^1 9^2)^3
-
-<=== Var ===>
-f^1
-
-
- = operation 
-cur_v=lab_1 
-Before: [|
-cur_v-9=0|]
-result: [|cur_v-9=0; lab_1-9=0|]
-
-<=== Const ===>
-9^2
-
-<=== Func ===>
-
-(mu f^5 a^6. ((a^7 = 10^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17
-
-
-A rename
- z1 -> lab_6 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int; 5> z1:int|]
-Result: bottom
-
-A rename
- cur_v -> z1 
-[|
-cur_v-9>=0; -cur_v+10>=0|]
-Env: [|0> cur_v:int|]
-Result: [|z1-9>=0; -z1+10>=0|]
-
-A rename
- lab_6 -> z1 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_6:int; 3> lab_7:int; 4> lab_8:int;
-5> lab_9:int; 6> z1:int|]
-Result: bottom
-<=== Ite ===>
-((a^7 = 10^8)^9 ?
-                                                         10^10 :
-                                                         (f^11
-                                                           (a^12 + 1^13)^14)^15)^16
-
-<=== Binop ===>
-
-(a^7 = 10^8)^9
-
-<=== Var ===>
-a^7
-
-
- = operation 
-cur_v=lab_7 
-Before: [|
-cur_v-9>=0; -cur_v+10>=0|]
-result: [|cur_v-9>=0; -cur_v+10>=0; lab_7-9>=0;
-                                     -lab_7+10>=0|]
-
-
-A rename
- cur_v -> a 
-[|
-cur_v-9>=0; -cur_v+10>=0|]
-Env: [|0> cur_v:int|]
-Result: [|a-9>=0; -a+10>=0|]
-<=== Const ===>
-10^8
-
-
-A rename
- cur_v -> lab_7 
-[|
-a-9>=0; -a+10>=0; cur_v-9>=0; -cur_v+10>=0; lab_7-9>=0; -lab_7+10>=0|]
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int|]
-Result: [|a-9>=0; -a+10>=0;
-                                                 lab_7-9>=0; -lab_7+10>=0|]
-
-A rename
- cur_v -> lab_8 
-[|
-a-9=0; cur_v-10=0|]
-Env: [|0> a:int; 1> cur_v:int|]
-Result: [|a-9=0;
-                                                              lab_8-10=0|]
-Operator abs
-lab_7 != lab_8
-Env: [|
-0> cur_v:int; 1> lab_7:int; 2> lab_8:int|]
-Before: [|a-9=0; lab_7-9=0;
-                                                     lab_8-10=0|]
-result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
-
-Operator abs
-lab_7 = lab_8
-Env: [|0> cur_v:int;
-                                                                  1> lab_7:int;
-                                                                  2> lab_8:int|]
-Before: bottom
-result: bottom
-
-
-A rename
- cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
-
-A rename
- cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
-
-A rename
- cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
-
-A rename
- cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
-
-A rename
- cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
-
-A rename
- cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
-
-A rename
- cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
-
-A rename
- cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
-
-A rename
- cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
-
-A rename
- cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
-
-A rename
- cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
-
-A rename
- cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
-
-A rename
- cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
-
-A rename
- cur_v -> lab_9 
-bottom
-Env: [|
-0> a:int; 1> cur_v:int; 2> lab_7:int; 3> lab_8:int; 4> lab_9:int|]
-Result: bottom
-<=== Const ===>
-10^10
-
-
-A rename
- cur_v -> lab_9 
-[|
-a-9=0; lab_7-9=0; lab_8-10=0|]
-Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
-
-A rename
- cur_v -> lab_9 
-[|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
-Env: [|
-0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
-
-A rename
- cur_v -> lab_9 
-[|
-a-9=0; lab_7-9=0; lab_8-10=0|]
-Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
-
-A rename
- cur_v -> lab_9 
-[|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
-Env: [|
-0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
-
-A rename
- cur_v -> lab_9 
-[|
-a-9=0; lab_7-9=0; lab_8-10=0|]
-Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
-
-A rename
- cur_v -> lab_9 
-[|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
-Env: [|
-0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
-
-A rename
- cur_v -> lab_9 
-[|
-a-9=0; lab_7-9=0; lab_8-10=0|]
-Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
-
-A rename
- cur_v -> lab_9 
-[|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
-Env: [|
-0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
-
-A rename
- cur_v -> lab_9 
-[|
-a-9=0; lab_7-9=0; lab_8-10=0|]
-Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
-
-A rename
- cur_v -> lab_9 
-[|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
-Env: [|
-0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
-
-A rename
- cur_v -> lab_9 
-[|
-a-9=0; lab_7-9=0; lab_8-10=0|]
-Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
-
-A rename
- cur_v -> lab_9 
-[|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
-Env: [|
-0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
-
-A rename
- cur_v -> lab_9 
-[|
-a-9=0; lab_7-9=0; lab_8-10=0|]
-Env: [|0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
-
-A rename
- cur_v -> lab_9 
-[|a-9=0; lab_7-9=0;
-                                                            lab_8-10=0|]
-Env: [|
-0> a:int; 1> lab_7:int; 2> lab_8:int|]
-Result: [|a-9=0; lab_7-9=0; lab_8-10=0|]
-<=== App ===>
-
-(f^11 (a^12 + 1^13)^14)^15
-
-<=== Var ===>
-f^11
-
-
- = operation 
-cur_v=lab_11 
-Before: [|
-a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|]
-result: [|
-a-9=0; cur_v-10=0; lab_11-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|]
-
-
-A rename
- cur_v -> a 
-[|
-a-9=0; cur_v-9>=0; -cur_v+10>=0; lab_7-9=0; lab_8-10=0|]
-Env: [|0> a:int;
-                                                                1> cur_v:int;
-                                                                2> lab_7:int;
-                                                                3> lab_8:int|]
-Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
-<=== Binop ===>
-(a^12 + 1^13)^14
-
-<=== Var ===>
-a^12
-
-
- = operation 
-cur_v=lab_12 
-Before: [|
-a-9=0; cur_v-9>=0; -cur_v+10>=0; lab_7-9=0; lab_8-10=0|]
-result: [|a-9=0;
-                                                                   cur_v-9>=0;
-                                                                   -cur_v+10>=0;
-                                                                   lab_12-9>=0;
-                                                                   -lab_12+10>=0;
-                                                                   lab_7-9=0;
-                                                                   lab_8-10=0|]
-
-
-A rename
- cur_v -> a 
-[|
-a-9=0; cur_v-9>=0; -cur_v+10>=0; lab_7-9=0; lab_8-10=0|]
-Env: [|0> a:int;
-                                                                1> cur_v:int;
-                                                                2> lab_7:int;
-                                                                3> lab_8:int|]
-Result: [|
-a-9=0; lab_7-9=0; lab_8-10=0|]
-<=== Const ===>
-1^13
-
-
-A rename
- cur_v -> lab_12 
-[|
-a-9=0; cur_v-9>=0; -cur_v+10>=0; lab_12-9>=0; -lab_12+10>=0; lab_7-9=0;
-lab_8-10=0|]
-Env: [|0> a:int; 1> cur_v:int; 2> lab_12:int; 3> lab_7:int;
-                    4> lab_8:int|]
-Result: [|a-9=0; lab_12-9>=0;
-                                             -lab_12+10>=0; lab_7-9=0;
-                                             lab_8-10=0|]
-
-A rename
- cur_v -> lab_13 
-[|
-a-9=0; cur_v-1=0; lab_7-9=0; lab_8-10=0|]
-Env: [|0> a:int; 1> cur_v:int;
-                                                 2> lab_7:int; 3> lab_8:int|]
-Result: [|
-a-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|]
-Operator abs
-lab_12 + lab_13
-Env: [|
-0> cur_v:int; 1> lab_12:int; 2> lab_13:int|]
-Before: [|a-9=0; cur_v-10=0;
-                                                       lab_12-9=0;
-                                                       lab_13-1=0; lab_7-9=0;
-                                                       lab_8-10=0|]
-result: [|
-a-9=0; cur_v-10=0; lab_12-9=0; lab_13-1=0; lab_7-9=0; lab_8-10=0|]
-
