@@ -10,7 +10,6 @@ open Config
  *******************************
  *)
 type var = string
-type loc = int
 (* Define Abstract Domain Functor*)
 module type ManagerType =
   sig
@@ -52,6 +51,22 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
       let v1' = Abstract1.change_environment Man.man v1 env false in
       let v2' = Abstract1.change_environment Man.man v2 env false in
       (v1', v2')
+    let gc_env v1 v2 =
+      let env1 = Abstract1.env v1 in
+      let env2 = Abstract1.env v2 in
+      let intary1, realary1 = Environment.vars env1 in
+      let intary2, realary2 = Environment.vars env2 in
+      let intary = Array.fold_left (fun a b -> if Array.mem b intary1 then Array.append a [|b|]else a) [||] intary2 in
+      let realary = Array.fold_left (fun a b -> if Array.mem b realary1 then Array.append a [|b|]else a) [||] realary2 in
+      let env = Environment.make intary realary in
+      let v1' = Abstract1.change_environment Man.man v1 env false in
+      let v2' = Abstract1.change_environment Man.man v2 env false in
+      Format.printf "\ngc RES:\n";
+      Environment.print Format.std_formatter (Abstract1.env v1);
+      Environment.print Format.std_formatter (Abstract1.env v2);
+      Environment.print Format.std_formatter (Abstract1.env v1');
+      Format.printf "\n";
+      (v1', v2')
     let leq v1 v2 = 
       let v1',v2' = lc_env v1 v2 in
       Abstract1.is_leq Man.man v1' v2'
@@ -75,12 +90,12 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         end
         );
         let (int_vars, real_vars) = Environment.vars (Abstract1.env v) in
-        (* Check previous variable is exist or not *)
+        (* Check previous variable exists or not *)
         let pre_b = Array.fold_left (fun b x -> prevar = Var.to_string x || b) false int_vars in
         let v' = if pre_b = false then v (* ignore rename if prevar does not exist *)
           else
           begin
-            (* Check new variable is exist or not *)
+            (* Check new variable exists or not *)
             let v_b = Array.fold_left (fun b x -> var = Var.to_string x || b) false int_vars in
             if v_b = true then 
               begin

@@ -20,25 +20,25 @@ let test_1 = mk_lets [id, mk_lambda x (mk_var x)]
    (mk_int 1))
 
 let overview_test =
-let dec_def = mk_lambda y (mk_op Plus (mk_int (-1)) (mk_var y)) in
-let f_def =
-  mk_lambda x
-    (mk_lambda g
-        (mk_ite
-          (mk_op Ge (mk_int 0) (mk_var x))
-          (mk_app (mk_var g) (mk_var x))
-          (mk_var x)))
-in
-mk_lets
-  [dec, dec_def;
-    f, f_def]
-  (mk_app
-      (mk_app
-        (mk_var f)
+  let dec_def = mk_lambda y (mk_op Plus (mk_int (-1)) (mk_var y)) in
+  let f_def =
+    mk_lambda x
+      (mk_lambda g
+          (mk_ite
+            (mk_op Ge (mk_int 0) (mk_var x))
+            (mk_app (mk_var g) (mk_var x))
+            (mk_var x)))
+  in
+  mk_lets
+    [dec, dec_def;
+      f, f_def]
+    (mk_app
         (mk_app
-            (mk_app (mk_var f) (mk_int 1))
-            (mk_var dec)))
-      (mk_var dec))
+          (mk_var f)
+          (mk_app
+              (mk_app (mk_var f) (mk_int 1))
+              (mk_var dec)))
+        (mk_var dec))
 
 let id_test1 =
   mk_lets
@@ -74,7 +74,7 @@ let rec_test = parse_from_string "let rec f a = if a > 9 then 10 else f (a + 1) 
 (*
 ((lambda f^0. (f^1 9^2)^3)^4
   (mu f^5 a^6. ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
-  *)
+*)
 let tests = [rec_test]
 
 let _ = List.iter (fun e ->

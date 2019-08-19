@@ -6,9 +6,9 @@ open Util
 (** Variable names *)
 
 type var = string
-type pos = int
+type loc = int
 
-let fail pos msg = failwith (Printf.sprintf "Error:%d: %s" pos msg)
+let fail loc msg = failwith (Printf.sprintf "Error:%d: %s" loc msg)
 
 (** Binary infix operators *)
 type binop =
@@ -30,12 +30,12 @@ type value =
 
 (** Terms *)
 type term =
-  | Const of value * pos               (* i (int constant) *)
-  | Var of var * pos                   (* x (variable) *)
-  | App of term * term * pos           (* t1 t2 (function application) *)
-  | BinOp of binop * term * term * pos (* t1 bop t2 (binary infix operator) *)
-  | Ite of term * term * term * pos    (* if t1 then t2 else t3 (conditional) *)
-  | Rec of (var * pos) option * var * pos * term * pos (*lambda and recursive function*)
+  | Const of value * loc               (* i (int constant) *)
+  | Var of var * loc                   (* x (variable) *)
+  | App of term * term * loc           (* t1 t2 (function application) *)
+  | BinOp of binop * term * term * loc (* t1 bop t2 (binary infix operator) *)
+  | Ite of term * term * term * loc    (* if t1 then t2 else t3 (conditional) *)
+  | Rec of (var * loc) option * var * loc * term * loc (*lambda and recursive function*)
 
 let loc = function
   | Const (_, l)

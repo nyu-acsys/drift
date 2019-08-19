@@ -219,7 +219,6 @@ open Util
          | Relation r1, Relation r2 -> Relation (wid_R r1 r2)
          | Table t1, Table t2 -> Table (wid_T t1 t2)
          | _, _ -> join_V v1 v2
-       and scop_V var vi v = arrow_V var v vi
        and op_V sl sr op v = match v with
          | Bot | Top -> Top
          | Relation r -> Relation (op_R sl sr op r)
