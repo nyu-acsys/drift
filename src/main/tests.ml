@@ -59,22 +59,29 @@ let op_test_2 = let dec_def = mk_lambda x (mk_lambda y (mk_op Plus (mk_var x) (m
   (mk_app (mk_app dec_def (mk_int 3)) (mk_int 4))
 
 let op_test_3 = parse_from_string "let f a b = a + b in f (f 1 2) 3"
-(*
+(* op_test_3
 ((lambda f^0. ((f^1 ((f^2 1^3)^4 2^5)^6)^7 3^8)^9)^10
   (lambda a^11. (lambda b^12. (a^13 + b^14)^15)^16)^17)^18
 *)
 
 let if_test = let def_if = (mk_lambda x (mk_lambda y (mk_ite (mk_op Gt (mk_var x) (mk_var y)) (mk_var x) (mk_var y)))) in
   (mk_app (mk_app def_if (mk_int 1)) (mk_int 2))
+(* if_test
+(((lambda x^0. (lambda y^1. ((x^2 > y^3)^4 ? x^5 : y^6)^7)^8)^9 1^10)^11
+  2^12)^13
+*)
 
 let if_test_2 = parse_from_string "let f a = if a > 1 then a else 1 in f 2"
 
-let rec_test = parse_from_string "let rec f a = if a > 9 then 10 else f (a + 1) in f 9"
-
-(*
-((lambda f^0. (f^1 9^2)^3)^4
-  (mu f^5 a^6. ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
+let rec_test = parse_from_string "let rec f a = if a + 1 > 9 then 10 else f (a + 1) in f 8"
+(* rec_test
+((lambda f^0. (f^1 8^2)^3)^4
+  (mu f^5 a^6.
+     (((a^7 + 1^8)^9 > 9^10)^11 ? 
+        10^12 : 
+        (f^13 (a^14 + 1^15)^16)^17)^18)^19)^20
 *)
+
 let tests = [rec_test]
 
 let _ = List.iter (fun e ->

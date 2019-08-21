@@ -74,9 +74,9 @@ open Util
      and forget_R var a = match a with
          | Int v -> Int (AbstractValue.forget_var var v)
          | Bool (vt, vf) -> Bool (AbstractValue.forget_var var vt, AbstractValue.forget_var var vf)
-     and equal_R a var x = let eq_a = match a with
-        | Int v -> Int (AbstractValue.equal_var v var x)
-        | Bool (vt, vf) -> Bool ((AbstractValue.equal_var vt var x), (AbstractValue.equal_var vf var x))
+     and equal_R a var = let eq_a = match a with
+        | Int v -> Int (AbstractValue.equal_var v "cur_v" var)
+        | Bool (vt, vf) -> Bool ((AbstractValue.equal_var vt "cur_v" var), (AbstractValue.equal_var vf "cur_v" var))
         in
         meet_R a eq_a
      and wid_R a1 a2 = match a1, a2 with
@@ -135,11 +135,11 @@ open Util
          if z1 = z2 then (z1, wid_V v1i v2i, wid_V v1o v2o) else (*a renaming*)
           let v1o' = alpha_rename_V v1o z1 "z" and v2o' = alpha_rename_V v2o z2 "z"
           in ("z", wid_V v1i v2i, wid_V v1o' v2o') in t
-      and equal_T t var x = let (z, vi, vo) = t in
-         let vo' = if z = var || z = x then 
+      and equal_T t var = let (z, vi, vo) = t in
+         let vo' = if z = var then 
          alpha_rename_V vo z "z1"
          else vo in
-         (z, equal_V vi var x, equal_V vo' var x)
+         (z, equal_V vi var, equal_V vo' var)
       and replace_T t var x = let (z, vi, vo) = t in
         (z, replace_V vi var x, replace_V vo var x)
       (*
@@ -211,9 +211,9 @@ open Util
          | Bot | Top -> v
          | Table t -> Table (forget_T var t)
          | Relation r -> Relation (forget_R var r)
-       and equal_V v var x = match v with
-         | Relation r -> Relation (equal_R r var x)
-         | Table t -> Table (equal_T t var x)
+       and equal_V v var = match v with
+         | Relation r -> Relation (equal_R r var)
+         | Table t -> Table (equal_T t var)
          | _ -> v
        and wid_V v1 v2 = match v1, v2 with
          | Relation r1, Relation r2 -> Relation (wid_R r1 r2)

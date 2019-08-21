@@ -174,7 +174,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         end);
         Abstract1.minimize_environment Man.man res
     let widening v1 v2 = let v1',v2' = lc_env v1 v2 in
-      let res = Abstract1.join Man.man v1' v2' in
+      let res = Abstract1.widening Man.man v1' v2' in
       Abstract1.minimize_environment Man.man res
     let make_var var = 
       try let _ = int_of_string var in None

@@ -29,11 +29,6 @@ let rec prop v1 v2 = match v1, v2 with
     | Table t1, Table t2 -> let t1', t2' = alpha_rename t1 t2 in
         let (z1, v1i, v1o) = t1' and (z2, v2i, v2o) = t2' in
         let p1, p2 = let v2i', v1i' = prop v2i v1i and v1o', v2o' = prop (arrow_V z1 v1o v2i) (arrow_V z2 v2o v2i) in
-        Format.printf "\n<~~~~\n";
-        pr_value Format.std_formatter v1o;
-        Format.printf "\n";
-        pr_value Format.std_formatter (arrow_V z1 v1o v2i);
-        Format.printf "\n~~~~>\n";
         (v1i', join_V v1o v1o'), (v2i', join_V v2o v2o') in
         let t1'' = (z1, fst p1, snd p1) and t2'' = (z2, fst p2, snd p2) in
         
@@ -54,7 +49,7 @@ let iterEnv_v env m v = VarMap.fold (fun var n a ->
     let ai = NodeMap.find_opt n m |> Opt.get_or_else Top in
     arrow_V var a ai) env v
 
-let rec step term env m =
+let rec step term env m ae =
     let n = EN (env, loc term) in
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     match term with
@@ -67,8 +62,8 @@ let rec step term env m =
         end
         );
         let t = find n m in (* M[env*l] *)
-        let ct = iterEnv_c env m c in
-        let t' = join_V t ct in (* c[M] *)
+        let ct = meet_V (init_V_c c) ae in (* {v = c ^ aE}*)
+        let t' = join_V t ct in
         m |> NodeMap.add n t'
     | Var (x, l) ->
         (if !debug then
@@ -79,12 +74,11 @@ let rec step term env m =
         end
         );
         let nx = VarMap.find x env in
-        let node_x = l |> name_of_node in
-        let tx = equal_V (find nx m) "cur_v" node_x in (* M<E(x)>[v=E(x)] *)
+        let tx = equal_V (find nx m) x in (* M<E(x)>[v=E(x)] *)
         let t = find n m in (* M[env*l] *)
         let tx', t' = prop tx t in
         (*pr_env Format.std_formatter (VarMap.bindings env);*)
-        m |> NodeMap.add nx tx' |> NodeMap.add n (iterEnv_v env m t') (* t'[M] *)
+        m |> NodeMap.add nx tx' |> NodeMap.add n (meet_V t' ae) (* t'[M] *)
     | App (e1, e2, l) ->
         (if !debug then
         begin
@@ -93,7 +87,7 @@ let rec step term env m =
         Format.printf "\n";
         end
         );
-        let m1 = step e1 env m in
+        let m1 = step e1 env m ae in
         let n1 = EN (env, loc e1) in
         let t1 = find n1 m1 in
         if t1 = Bot then m1
@@ -102,7 +96,7 @@ let rec step term env m =
         (string_of_int (loc e1)) (string_of_value t1);
         m1 |> NodeMap.add n Top)
         else
-            let m2 = step e2 env m1 in
+            let m2 = step e2 env m1 ae in
             let n2 = EN (env, loc e2) in
             let t2 = find n2 m2 in (* M[env*l2] *)
             (match t2 with
@@ -122,8 +116,8 @@ let rec step term env m =
         Format.printf "\n";
         end
         );
-        let m1 = step e1 env m in
-        let m2 = step e2 env m in
+        let m1 = step e1 env m ae in
+        let m2 = step e2 env m1 ae in
         let n1 = EN (env, loc e1) in
         let t1 = find n1 m1 in
         let n2 = EN (env, loc e2) in
@@ -143,7 +137,7 @@ let rec step term env m =
             (string_of_int (loc e2)) (string_of_value t2))
         else (Format.printf "Error at location %s: expected value, but found %s.\n"
         (string_of_int (loc e1)) (string_of_value t1))) ;
-        join_M m1 m2 |> NodeMap.add n re_t
+        m2 |> NodeMap.add n re_t
     | Ite (e0, e1, e2, l) ->
         (if !debug then
         begin
@@ -152,7 +146,7 @@ let rec step term env m =
         Format.printf "\n";
         end
         );
-        let m0 = step e0 env m in
+        let m0 = step e0 env m ae in
         let n0 = EN (env, loc e0) in
         let t0 = find n0 m0 in
         if t0 = Bot then m0 else
@@ -161,15 +155,15 @@ let rec step term env m =
             let node_0 = e0 |> loc |> name_of_node in
             let t_true = extrac_bool_V t0 true in
             let t_false = extrac_bool_V t0 false in
-            let m1 = step e1 env (iterUpdate m0 t_true node_0) in
-            let m2 = step e2 env (iterUpdate m0 t_false node_0) in
+            let m1 = step e1 env m0 t_true in
+            let m2 = step e2 env m0 t_false in
             let n1 = EN (env, loc e1) in
             let t1 = find n1 m1 in
             let n2 = EN (env, loc e2) in
             let t2 = find n2 m2 in
             let t1', t' = prop t1 (find n m1) and t2', t'' = prop t2 (find n m2) in
-            let m1' = m1 |> NodeMap.add n1 t1' |> NodeMap.add n t' and
-            m2' = m2 |> NodeMap.add n2 t2' |> NodeMap.add n t'' in
+            let m1' = m1 |> NodeMap.add n1 t1' |> NodeMap.add n (meet_V t' ae) and
+            m2' = m2 |> NodeMap.add n2 t2' |> NodeMap.add n (meet_V t'' ae) in
             join_M (join_M m0 m1') m2'
         end
     | Rec (f_opt, x, lx, e1, l) -> 
@@ -210,23 +204,13 @@ let rec step term env m =
                 Opt.map (fun (_, nf) ->
                   let tf = find nf m in
                   let t2, tf' = prop t1 tf in
-                  (
-            Format.printf "<=====\n";
-            pr_value Format.std_formatter t1;
-            Format.printf "\nprop\n";
-            pr_value Format.std_formatter tf;
-            Format.printf "\n";
-            Format.printf "\nRes\n";
-            pr_value Format.std_formatter tf';
-            Format.printf "=====>\n";
-        );
                   nf, t2, tf') f_nf_opt
             in
             let tx', t1' = io_T px_t in
             let m1 = m |> NodeMap.add nx tx' |> NodeMap.add n1 (replace_V t1' node_x (dx_T t)) |>
             (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> NodeMap.add nf tf' |> NodeMap.add n (join_V t1 t2))
             nf_t2_tf'_opt |> Opt.get_or_else (NodeMap.add n t1)) in
-            step e1 env1 m1
+            step e1 env1 m1 ae
         end 
         
 
@@ -236,13 +220,13 @@ let widening m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot 
 
 (** Fixpoint loop *)
 let rec fix e k env m =
-  if k < 15 then
+  if true then
     begin
         Format.printf "step %d\n" k;
         print_exec_map m 
     end
   else exit 0;
-  let m' = step e env m in
+  let m' = step e env m Top in
   let m'' = widening m m' in
   if leq_M m'' m then m
   else fix e (k + 1) env m''
