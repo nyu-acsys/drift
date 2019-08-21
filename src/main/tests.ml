@@ -70,11 +70,11 @@ let if_test = let def_if = (mk_lambda x (mk_lambda y (mk_ite (mk_op Gt (mk_var x
 let if_test_2 = parse_from_string "let f a = if a > 1 then a else 1 in f 2"
 
 let rec_test = parse_from_string "let rec f a = if a > 9 then 10 else f (a + 1) in f 9"
-
 (*
 ((lambda f^0. (f^1 9^2)^3)^4
   (mu f^5 a^6. ((a^7 > 9^8)^9 ? 10^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
 *)
+
 let tests = [rec_test]
 
 let _ = List.iter (fun e ->

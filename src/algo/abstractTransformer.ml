@@ -29,11 +29,6 @@ let rec prop v1 v2 = match v1, v2 with
     | Table t1, Table t2 -> let t1', t2' = alpha_rename t1 t2 in
         let (z1, v1i, v1o) = t1' and (z2, v2i, v2o) = t2' in
         let p1, p2 = let v2i', v1i' = prop v2i v1i and v1o', v2o' = prop (arrow_V z1 v1o v2i) (arrow_V z2 v2o v2i) in
-        Format.printf "\n<~~~~\n";
-        pr_value Format.std_formatter v1o;
-        Format.printf "\n";
-        pr_value Format.std_formatter (arrow_V z1 v1o v2i);
-        Format.printf "\n~~~~>\n";
         (v1i', join_V v1o v1o'), (v2i', join_V v2o v2o') in
         let t1'' = (z1, fst p1, snd p1) and t2'' = (z2, fst p2, snd p2) in
         
@@ -79,8 +74,7 @@ let rec step term env m =
         end
         );
         let nx = VarMap.find x env in
-        let node_x = l |> name_of_node in
-        let tx = equal_V (find nx m) "cur_v" node_x in (* M<E(x)>[v=E(x)] *)
+        let tx = equal_V (find nx m) "cur_v" x in (* M<E(x)>[v=E(x)] *)
         let t = find n m in (* M[env*l] *)
         let tx', t' = prop tx t in
         (*pr_env Format.std_formatter (VarMap.bindings env);*)
@@ -123,9 +117,9 @@ let rec step term env m =
         end
         );
         let m1 = step e1 env m in
-        let m2 = step e2 env m in
+        let m2 = step e2 env m1 in
         let n1 = EN (env, loc e1) in
-        let t1 = find n1 m1 in
+        let t1 = find n1 m2 in
         let n2 = EN (env, loc e2) in
         let t2 = find n2 m2 in
         let t = find n m in
@@ -143,7 +137,7 @@ let rec step term env m =
             (string_of_int (loc e2)) (string_of_value t2))
         else (Format.printf "Error at location %s: expected value, but found %s.\n"
         (string_of_int (loc e1)) (string_of_value t1))) ;
-        join_M m1 m2 |> NodeMap.add n re_t
+        m2 |> NodeMap.add n re_t
     | Ite (e0, e1, e2, l) ->
         (if !debug then
         begin
@@ -209,17 +203,7 @@ let rec step term env m =
             let nf_t2_tf'_opt =
                 Opt.map (fun (_, nf) ->
                   let tf = find nf m in
-                  let t2, tf' = prop t1 tf in
-                  (
-            Format.printf "<=====\n";
-            pr_value Format.std_formatter t1;
-            Format.printf "\nprop\n";
-            pr_value Format.std_formatter tf;
-            Format.printf "\n";
-            Format.printf "\nRes\n";
-            pr_value Format.std_formatter tf';
-            Format.printf "=====>\n";
-        );
+                  let t2, tf' = prop t tf in
                   nf, t2, tf') f_nf_opt
             in
             let tx', t1' = io_T px_t in
@@ -236,7 +220,7 @@ let widening m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot 
 
 (** Fixpoint loop *)
 let rec fix e k env m =
-  if k < 15 then
+  if k < 9 then
     begin
         Format.printf "step %d\n" k;
         print_exec_map m 
