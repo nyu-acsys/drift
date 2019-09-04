@@ -14,6 +14,8 @@ open Util
  type baseType = Int | Bool
  type node_t = EN of env_t * loc (*N = E x loc*)
  and env_t = node_t VarMap.t (*E = Var -> N*)
+
+ let name_of_node lb = ("lab_" ^ (lb |> string_of_int))
  
  module NodeMap = Map.Make(struct
     type t = node_t
@@ -96,6 +98,16 @@ open Util
       | Bool (vt, _), true -> Int vt
       | Bool (_, vf), false -> Int vf
       | _,_ -> raise (Invalid_argument "Extract abstract value for condition, expect bool one")
+     and stren_R a ae = match a, ae with
+      | Int v, Int vae -> Int (AbstractValue.meet v vae)
+      | Bool (vt, vf), Int vae -> Bool (AbstractValue.meet vt vae, AbstractValue.meet vf vae)
+      | _, _ -> raise (Invalid_argument "ae should be {v:Int}")
+    and der_R exp a = match a with
+      | Bool (vt, vf) -> Bool (AbstractValue.derived exp vt, AbstractValue.derived exp vf)
+      | Int v -> Int (AbstractValue.derived exp v)
+    and proj_R a vars = match a with
+      | Int v -> Int (AbstractValue.project_other_vars v vars)
+      | Bool (vt, vf) -> Bool (AbstractValue.project_other_vars vt vars, AbstractValue.project_other_vars vf vars)
      (*
       *******************************
       ** Abstract domain for Table **
@@ -142,6 +154,10 @@ open Util
          (z, equal_V vi var, equal_V vo' var)
       and replace_T t var x = let (z, vi, vo) = t in
         (z, replace_V vi var x, replace_V vo var x)
+      and stren_T t ae = let (z, vi, vo) = t in
+        (z, stren_V vi ae, stren_V vo ae)
+      and proj_T t vars = let (z, vi, vo) = t in
+        (z, proj_V vi vars, proj_V vo vars)
       (*
        ***************************************
        ** Abstract domain for Execution Map **
@@ -239,6 +255,36 @@ open Util
       and extrac_bool_V v b = match v with
         | Relation r -> Relation (extrac_bool_R r b)
         | _ -> raise (Invalid_argument "Should be relation when split if statement")
+      and stren_V v ae = match v,ae with
+        | Bot, _ -> Bot
+        | Relation r, Relation rae -> Relation (stren_R r rae)
+        | Table t, Relation rae -> Table t
+        | Top, _ -> ae
+        | _, Bot -> Bot
+        | _, Top -> v
+        | _,_ -> raise (Invalid_argument "ae should not be a table")
+      and der_V term v = match term, v with
+        | _, Top | _, Bot -> v
+        | Const (c,l), Relation r -> 
+          let r' = (match c with
+            | Integer i -> der_R ((string_of_int i) ^ "=" ^ (name_of_node l)) r
+            | Boolean b -> r (*TODO:this case*))
+          in
+          Relation r'
+        | Var (x, l), Relation r -> Relation (der_R (x ^ "=" ^ (name_of_node l)) r)
+        | App (e1, e2, l), Relation r -> v |> der_V e1 |> der_V e2
+        | Rec (f_opt, x, lx, e1, l), Table t -> v (*TODO:this case*)
+        | Ite (e1, e2, e3, l), Relation r -> v |> der_V e1 |> der_V e2 |> der_V e3
+        | BinOp (bop, e1, e2, l), Relation r -> 
+          let expr = ((e1 |> loc |> name_of_node)^(string_of_op bop)^(e2 |> loc |> name_of_node) ^ "=" ^ (name_of_node l)) in
+          let v' = Relation (der_R expr r) in
+          v' |> der_V e1 |> der_V e2
+        | _, _ -> raise (Invalid_argument "derived values match incorrectly")
+      and proj_V v vars =
+        match v with
+        | Relation r -> Relation (proj_R r vars)
+        | Table t -> Table (proj_T t vars)
+        | _ -> v
    end
  
  (** Pretty printing *)
@@ -321,12 +367,10 @@ open Util
  
  let rec pr_exec_map ppf m =
  Format.fprintf ppf "----\n%a----\n" pr_exec_rows (NodeMap.bindings m)
- 
  and pr_exec_rows ppf = function
  | [] -> ()
  | [row] -> Format.fprintf ppf "%a\n" pr_exec_row row
  | row :: rows -> Format.fprintf ppf "%a@\n@\n%a" pr_exec_row row pr_exec_rows rows
- 
  and pr_exec_row ppf (n, v) =
  Format.fprintf ppf "@[<2>%a |->@ @[<2>%a@]@]" pr_node n pr_value v
  
