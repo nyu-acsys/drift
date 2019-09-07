@@ -40,10 +40,10 @@ let overview_test =
               (mk_var dec)))
         (mk_var dec))
 
-let id_test1 = parse_from_string "let id x = x in let y = id 1 in let z = id 2 in z"
+let id_test1 = parse_from_string "let id x = x in let y = id 1 in let q = id 2 in q"
 (* id_test1
 ((lambda id^0.
-    ((lambda y^1. ((lambda z^2. z^3)^4 (id^5 2^6)^7)^8)^9 (id^10 1^11)^12)^13)^14
+    ((lambda y^1. ((lambda q^2. q^3)^4 (id^5 2^6)^7)^8)^9 (id^10 1^11)^12)^13)^14
   (lambda x^15. x^16)^17)^18
 *)
 
@@ -91,7 +91,7 @@ let rec_test = parse_from_string "let rec f a = if a + 1 > 9 then 10 else f (a +
         (f^13 (a^14 + 1^15)^16)^17)^18)^19)^20
 *)
 
-let tests = [id_test1]
+let tests = [rec_test]
 
 let _ = List.iter (fun e ->
   Config.parse;

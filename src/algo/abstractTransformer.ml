@@ -76,7 +76,9 @@ let rec step term env m ae =
         );
         let nx = VarMap.find x env in
         let EN (env, lx) = nx in
-        let tx = equal_V (find nx m) x in (* M<E(x)>[v=E(x)] *)
+        let tx = let tx' = find nx m in
+            if is_table tx' then tx' else
+            equal_V tx' x in (* M<E(x)>[v=E(x)] *)
         let t = find n m in (* M[env*l] *)
         let tx', t' = prop tx t in
         (if !debug then
@@ -118,9 +120,24 @@ let rec step term env m ae =
                 | Bot -> m2
                 | Top -> m2 |> NodeMap.add n Top
                 | _ -> let t = find n m2 in
-                let t_temp = (dx_T t1), t2, t in
-                let t1', t0 = prop t1 (Table t_temp) in
-                let t2', t' = io_T t0 in
+                let t_temp = Table ((dx_T t1), t2, t) in
+                let t1', t0 = prop t1 t_temp in
+                (if !debug then
+                begin
+                    Format.printf "\n<=== Prop ===> %s\n" (string_of_int (loc e1));
+                    pr_value Format.std_formatter t1;
+                    Format.printf "\n<<~~~~>> %s\n" (string_of_int l);
+                    pr_value Format.std_formatter t_temp;
+                    Format.printf "\n";
+                    Format.printf "RES for prop:\n";
+                    pr_value Format.std_formatter t1';
+                    Format.printf "\n<<~~~~>>\n";
+                    pr_value Format.std_formatter t0;
+                    Format.printf "\n";
+                end
+                );
+                let t2', raw_t' = io_T t0 in
+                let t' = getVars env |> proj_V raw_t' in
                 m2 |> NodeMap.add n1 t1' |> NodeMap.add n2 t2' |> NodeMap.add n t'
             )
     | BinOp (bop, e1, e2, l) -> (*TODO: project all unrelated label, scope of label should only inside that node *)
@@ -255,7 +272,7 @@ let widening m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot 
 
 (** Fixpoint loop *)
 let rec fix e k env m =
-  if k < 15 then
+  if true then
     begin
         Format.printf "step %d\n" k;
         print_exec_map m 
