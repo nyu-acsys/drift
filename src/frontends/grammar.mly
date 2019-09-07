@@ -105,5 +105,5 @@ let_in_term:
 
 term:
 | let_in_term { $1 }
-| error { fail (0) "Syntax error" }
+| error { fail 1 1 "Syntax error" }
 ;

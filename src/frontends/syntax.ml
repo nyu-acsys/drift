@@ -8,7 +8,7 @@ open Util
 type var = string
 type loc = int
 
-let fail loc msg = failwith (Printf.sprintf "Error:%d: %s" loc msg)
+let fail lin col msg = failwith (Printf.sprintf "Error: %d %d: %s" lin col msg)
 
 (** Binary infix operators *)
 type binop =
