@@ -91,7 +91,7 @@ let rec_test = parse_from_string "let rec f a = if a + 1 > 9 then 10 else f (a +
         (f^13 (a^14 + 1^15)^16)^17)^18)^19)^20
 *)
 
-let tests = [rec_test]
+let tests = [op_test]
 
 let _ = List.iter (fun e ->
   Config.parse;

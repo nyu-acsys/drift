@@ -5,7 +5,7 @@ let debug = ref false
 
 let bt = ref false
 
-let domain = ref "Box"
+let domain = ref "Oct" (*Default: Octagon domain*)
 
 let usage = "usage: set [-domain domain] [-debug] [-bt]"
 

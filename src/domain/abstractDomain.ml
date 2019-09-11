@@ -197,12 +197,12 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         Format.printf "%s %s %s\n" vl (string_of_op op) vr
       end);
       let var_v = "cur_v" |> Var.of_string in
-      let env = match (make_var vl, make_var vr) with
-      | None, Some var_r -> Environment.make [|var_v;var_r|] [||]
-      | Some var_l, None -> Environment.make [|var_l;var_v|] [||]
-      | Some var_l, Some var_r -> Environment.make [|var_v;var_l; var_r|] [||]
-      | None, None -> Environment.make [|var_v|] [||]
-      in
+      let env = (match (make_var vl, make_var vr) with
+      | None, Some var_r -> Environment.make [|var_r|] [||]
+      | Some var_l, None -> Environment.make [|var_l;|] [||]
+      | Some var_l, Some var_r -> Environment.make [|var_l; var_r|] [||]
+      | None, None -> Environment.make [||] [||])
+      |> Environment.lce (Environment.make [|var_v|] [||])in
       (if !debug then 
       begin
         Format.printf "Env: ";

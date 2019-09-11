@@ -36,6 +36,7 @@ open Util
        | Top
        | Relation of relation_t
        | Table of table_t
+       | Ary of relation_t (* Future plan: * (relation_t array)*)
      and table_t = var * value_t * value_t
      and exec_map_t = value_t NodeMap.t
      let rec alpha_rename_R a prevar var = match a with
@@ -85,12 +86,18 @@ open Util
        | (Int v1), (Int v2) -> Int (AbstractValue.widening v1 v2)
        | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> Bool (AbstractValue.widening v1t v2t, AbstractValue.widening v1f v2f)
        | _, _ -> raise (Invalid_argument "Widening: Base Type not equal")
-     and op_R l r op a = 
+     and op_R l r op cons a = (*cons for flag of linear constraints*)
        match op with
        | Plus | Mult | Div | Mod | Minus -> (match a with
           | Int v -> Int (AbstractValue.operator l r op v)
           | Bool (vt, vf) -> raise (Invalid_argument "Conditional value given, expect arithmetic one"))
-       | Ge | Eq | Ne | Lt | Gt | Le -> (match a with
+       | Ge | Eq | Ne | Lt | Gt | Le -> if cons then
+          (match a with
+          | Int v -> Int (AbstractValue.operator l r op v)
+          | Bool (vt, vf) -> Bool (AbstractValue.operator l r op vt, AbstractValue.operator l r (rev_op op) vf)
+          )
+          else
+          (match a with
           | Int v -> Bool (AbstractValue.operator l r op v, AbstractValue.operator l r (rev_op op) v)
           | Bool (vt, vf) -> Bool (AbstractValue.operator l r op vt, AbstractValue.operator l r (rev_op op) vf))
      and replace_R a var x = alpha_rename_R a var x
@@ -172,6 +179,37 @@ open Util
          NodeMap.find_opt n m2 |> Opt.map (fun v2 -> leq_V v1 v2) |>
          Opt.get_or_else (v1 = Bot)) m1
        and top_M m = NodeMap.map (fun a -> Top) m
+       and array_M env m = 
+          let n_make = EN (env, -3) in
+          let t_make = 
+            (* zm: {v:int | v >= 0} -> ex: {v:int | top} -> {v: int array (l) | l = zm ^ zm >= 0} *)
+            let var_l = "zm" in
+            let rl = top_R Plus |> op_R "cur_v" "0" Ge true in
+            let var_e = "ex" in
+            let rm = top_R Plus in (*TODO: Make poly*)
+            let rlen = arrow_R var_l rm rl |> op_R "l" var_l Eq true in
+            Table (var_l, Relation rl, Table (var_e, Relation rm, Ary rlen))
+          in
+          let n_len = EN (env, -2) in
+          let t_len = (* zl: {v: int array (l) | l >= 0} -> {v: int | v = l} *)
+            let var_l = "zl" in
+            let var_len = "l" in
+            let rl = replace_R (top_R Plus |> op_R "cur_v" "0" Ge true) "cur_v" var_len in
+            let rlen = equal_R (top_R Plus) "l" in
+            Table (var_l, Ary rl, Relation rlen)
+          in
+          let n_get = EN (env, -1) in
+          let t_get = 
+            (* zg: {v: int array (l) | l >= 0 } -> i: {v: int | 0 <= v < l} -> {v: int | top} *)
+            let var_l = "zg" in
+            let var_len = "l" in
+            let rl = replace_R (top_R Plus |> op_R "cur_v" "0" Ge true) "cur_v" var_len in
+            let var_i = "i" in
+            let rm = top_R Plus |> op_R "cur_v" "0" Ge true |> op_R "cur_v" "l" Lt true in
+            let rr = top_R Plus in
+            Table (var_l, Ary rl, Table (var_i, Relation rm, Relation rr))
+          in
+          m |> NodeMap.add n_make t_make |> NodeMap.add n_len t_len |> NodeMap.add n_get t_get
        (*
         *******************************
         ** Abstract domain for Values **
@@ -181,6 +219,7 @@ open Util
          | Bot -> Bot
          | Relation r -> Relation (alpha_rename_R r prevar var)
          | Table t -> Table (alpha_rename_T t prevar var)
+         | Ary (l) -> Ary (alpha_rename_R l prevar var)
          | Top -> Top
        and init_V_c (c:value) = Relation (init_R_c c)
        and c_V v1 v2 label = match v2 with
@@ -195,17 +234,20 @@ open Util
          | Bot, v | v, Bot -> v
          | Relation r1, Relation r2 -> Relation (join_R r1 r2)
          | Table t1, Table t2 -> Table (join_T t1 t2)
+         | Ary (l1), Ary (l2) -> Ary (join_R l1 l2)
          | _, _ -> Top
        and meet_V (v1:value_t) (v2:value_t) :value_t = match v1, v2 with
          | Top, v | v, Top -> v
          | Relation r1, Relation r2 -> Relation (meet_R r1 r2)
          | Table t1, Table t2 -> Table (meet_T t1 t2)
+         | Ary (l1), Ary (l2) -> Ary (meet_R l1 l2)
          | _, _ -> Bot
        and leq_V (v1:value_t) (v2:value_t) :bool = match v1, v2 with
          | Bot, _ -> true
          | _, Top -> true
          | Relation r1, Relation r2 -> leq_R r1 r2
          | Table t1, Table t2 -> leq_T t1 t2
+         | Ary (l1), Ary (l2) -> leq_R l1 l2
          | _, _ -> false
        and is_table v = match v with
          | Table _ -> true
@@ -218,14 +260,15 @@ open Util
          | _ -> false
        and arrow_V var v v' = match v' with
          | Bot -> Bot
-         | Top | Table _ -> v
+         | Top | Table _ | Ary _-> v
          | Relation r2 -> (match v with
-             | Bot | Top -> v
              | Table t -> Table (arrow_T var t v')
-             | Relation r1 -> Relation (arrow_R var r1 r2))
+             | Relation r1 -> Relation (arrow_R var r1 r2)
+             | _ -> v)
        and forget_V var v = match v with
          | Bot | Top -> v
          | Table t -> Table (forget_T var t)
+         | Ary (l) -> Ary (forget_R var l)
          | Relation r -> Relation (forget_R var r)
        and equal_V v var = match v with
          | Relation r -> Relation (equal_R r var)
@@ -234,11 +277,12 @@ open Util
        and wid_V v1 v2 = match v1, v2 with
          | Relation r1, Relation r2 -> Relation (wid_R r1 r2)
          | Table t1, Table t2 -> Table (wid_T t1 t2)
+         | Ary (l1), Ary (l2) -> Ary (wid_R l1 l2)
          | _, _ -> join_V v1 v2
        and op_V sl sr op v = match v with
          | Bot | Top -> Top
-         | Relation r -> Relation (op_R sl sr op r)
-         | Table t -> raise (Invalid_argument "Should be a relation type when using op_V")
+         | Relation r -> Relation (op_R sl sr op false r)
+         | _ -> raise (Invalid_argument "Should be a relation type when using op_V")
        and dx_T v = match v with
          | Table t -> dx_Ta t
          | _ -> raise (Invalid_argument "Should be table when using dx_T")
@@ -252,6 +296,7 @@ open Util
         | Bot | Top -> v
         | Table t -> Table (replace_T t var x)
         | Relation r -> Relation (replace_R r var x)
+        | Ary (l) -> Ary (replace_R l var x)
       and extrac_bool_V v b = match v with
         | Relation r -> Relation (extrac_bool_R r b)
         | _ -> raise (Invalid_argument "Should be relation when split if statement")
@@ -284,7 +329,28 @@ open Util
         match v with
         | Relation r -> Relation (proj_R r vars)
         | Table t -> Table (proj_T t vars)
+        | Ary (l) -> Ary (proj_R l vars)
         | _ -> v
+      (*
+       *******************************
+       ** Abstract domain for Array **
+       *******************************
+       *)
+      and init_Ary l c = Array.make l (init_R_c c)
+      and empty_Ary l = Array.make l (top_R Plus)
+      and join_Ary ary1 ary2 = 
+        try Array.map2 join_R ary1 ary2 with 
+        Invalid_argument s -> raise (Invalid_argument ("Array join: " ^ s))
+      and meet_Ary ary1 ary2 = try Array.map2 meet_R ary1 ary2 with
+        Invalid_argument s -> raise (Invalid_argument ("Array meet: " ^ s))
+      and leq_Ary ary1 ary2 = try Array.map2 leq_R ary1 ary2 |> Array.for_all (fun a -> a) with
+        Invalid_argument s -> raise (Invalid_argument ("Array leq: " ^ s))
+      and wid_Ary ary1 ary2 = try Array.map2 wid_R ary1 ary2 with
+      Invalid_argument s -> raise (Invalid_argument ("Array wid: " ^ s))
+      and forget_Ary var ary = Array.map (fun r -> forget_R var r) ary
+      and proj_Ary ary vars = Array.map (fun r -> proj_R r vars) ary
+      and alpha_rename_Ary ary prevar var = Array.map (fun r -> alpha_rename_R r prevar var) ary
+      and replace_Ary ary var x = Array.map (fun r -> replace_R r var x) ary
    end
  
  (** Pretty printing *)
@@ -351,12 +417,19 @@ open Util
  | (x, n) :: env -> Format.fprintf ppf "%s: %a,@ %a" x pr_node_full n pr_env env
  
  let string_of_node n = pr_node Format.str_formatter n; Format.flush_str_formatter ()
+
+ let pr_ary_val ppf a = let open SemanticsDomain in match a with
+ | Bool (vt, vf) -> Format.fprintf ppf "@[<1>@ TRUE:@ %a,@ FALSE:@ %a@ @]"  AbstractValue.print_abs vt AbstractValue.print_abs vf
+ | (Int v) -> Format.fprintf ppf "@[<1>@ %a@ @]" AbstractValue.print_abs v
+
+ let pr_ary ppf l = Format.fprintf ppf "@[<1>{@ cur_v:@ Int Array (l)@ |@ %a@ }@]" pr_ary_val l
  
  let rec pr_value ppf v = let open SemanticsDomain in match v with
  | Bot -> Format.fprintf ppf "_|_"
  | Top -> Format.fprintf ppf "T"
  | Relation r -> pr_relation ppf r
  | Table t -> pr_table ppf t
+ | Ary (l) -> pr_ary ppf l
  
  and pr_table ppf t = let open SemanticsDomain in let (z, vi, vo) = t in
      Format.fprintf ppf "@[<2>%s: %a ->@ %a@]" z pr_value vi pr_value vo

@@ -154,6 +154,13 @@ let rec step term env m ae =
         let t1 = find n1 m2 in
         let n2 = EN (env, loc e2) in
         let t2 = find n2 m2 in
+        (if not @@ is_Relation t1 then 
+        (Format.printf "Error at location %s: expected value, but found %s.\n"
+            (string_of_int (loc e1)) (string_of_value t1))
+        else (if not @@ is_Relation t2 then
+        Format.printf "Error at location %s: expected value, but found %s.\n"
+            (string_of_int (loc e2)) (string_of_value t2))
+        );
         let t = find n m2 in
         let td = Relation (top_R bop) in
         (* {v:int | a(t) ^ v = n1 + n2 }[n1 <- t1, n2 <- t2] *)
@@ -169,13 +176,6 @@ let rec step term env m ae =
             else temp_t
         in
         let _, re_t = prop raw_t t in
-        (if is_table t1 then 
-        (Format.printf "Error at location %s: expected value, but found %s.\n"
-            (string_of_int (loc e1)) (string_of_value t1))
-        else (if is_table t2 then
-        Format.printf "Error at location %s: expected value, but found %s.\n"
-            (string_of_int (loc e2)) (string_of_value t2))
-        );
         m2 |> NodeMap.add n re_t
     | Ite (e0, e1, e2, l) ->
         (if !debug then
@@ -284,4 +284,7 @@ let rec fix e k env m =
   else fix e (k + 1) env m''
 
 (** Semantic function *)
-let s e = fix e 0 VarMap.empty NodeMap.empty
+let s e = 
+    let env = VarMap.empty in
+    let m = array_M env NodeMap.empty in
+    (fix e 0 env m)
