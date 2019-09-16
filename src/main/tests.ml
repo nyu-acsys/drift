@@ -91,10 +91,34 @@ let rec_test = parse_from_string "let rec f a = if a + 1 > 9 then 10 else f (a +
         (f^13 (a^14 + 1^15)^16)^17)^18)^19)^20
 *)
 
-let tests = [op_test]
+let ary_test_1 = parse_from_string "let ary = make 3 0 in len ary"
+(* ary_test_1
+((lambda ary^0. (len^1 ary^2)^3)^4 ((make^5 3^6)^7 0^8)^9)^10
+*)
 
-let _ = List.iter (fun e ->
+let ary_test_2 = parse_from_string "let ary = make 3 0 in get ary 6"
+(* ary_test_2
+((lambda ary^0. ((get^1 ary^2)^3 6^4)^5)^6 ((make^7 3^8)^9 0^10)^11)^12
+*)
+
+let ary_test_3 = parse_from_string "let ary = make 3 0 in set ary 2 1"
+(* ary_test_3
+((lambda ary^0. (((set^1 ary^2)^3 2^4)^5 1^6)^7)^8
+  ((make^9 3^10)^11 0^12)^13)^14
+*)
+
+let assert_test = parse_from_string "let a = assert(1 < 2) in a"
+(*
+((lambda a^0. a^1)^2 ((1^3 < 2^4)^5 ? true^6 : false^7)^8)^9
+*)
+
+let tests = [assert_test]
+
+let _ = 
   Config.parse;
+  let t = if !Config.parse_file then [parse_from_file !Config.file]
+  else tests in
+  List.iter (fun e -> 
   Printexc.record_backtrace !Config.bt;
   let el = label e in
   print_endline "Executing:";
@@ -103,4 +127,4 @@ let _ = List.iter (fun e ->
   print_endline ("Domain specification: " ^ !Config.domain);
   print_endline "\n";
   ignore (s el);
-  print_newline ()) tests
+  print_newline ()) t

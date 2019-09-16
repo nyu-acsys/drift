@@ -10,6 +10,7 @@ let _ =
   List.iter (fun (kwd, tok) -> Hashtbl.add keyword_table kwd tok)
     ([("else", ELSE);
       ("false", BOOLCONST false);
+      ("assert", ASSERT);
       ("fun", FUN);
       ("if", IF);
       ("in", IN);
@@ -30,16 +31,20 @@ let lexical_error lexbuf msg =
 let digitchar = ['0'-'9']
 let idchar = ['A'-'Z''a'-'z''_']
 let primechar = [''']
+let minus = ['-']
 let ident = (idchar | digitchar)* ('?' idchar | idchar) (idchar | digitchar | primechar)* 
-let digits = digitchar+
+let digits = minus? digitchar+
 
 rule token = parse
   [' ' '\t'] { token lexbuf }
 | '\n' { Lexing.new_line lexbuf; token lexbuf }
 | "(*" { comments 0 lexbuf }
+| ";"  { SEMICOLON }
 | "->" { ARROW } 
 | "<=" { LE }
 | ">=" { GE }
+| "&&" { AND }
+| "||" { OR }
 | '=' { EQ }
 | "<>" { NE }
 | "<" { LT }

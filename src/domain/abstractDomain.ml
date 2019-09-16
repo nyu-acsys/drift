@@ -4,6 +4,8 @@ open Syntax
 open Util
 open Config
 
+let pr_ary ppf ary = Array.fold_left (fun a e -> Format.printf "@%s " e) () ary
+
 (*
  *******************************
  ** Abstract domain for value **
@@ -24,6 +26,7 @@ module type AbstractDomainType =
     val leq: t -> t -> bool
     val init_c: int -> t
     val top: t
+    val bot: t
     val join: t -> t -> t
     val meet: t -> t -> t
     val alpha_rename: t -> var -> var -> t
@@ -60,10 +63,27 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
       let v1',v2' = lc_env v1 v2 in
       let res = Abstract1.join Man.man v1' v2' in
       Abstract1.minimize_environment Man.man res
-    let meet v1 v2 = 
+    let meet v1 v2 =
       let v1',v2' = lc_env v1 v2 in
-      let res = Abstract1.meet Man.man v1' v2' in
-      Abstract1.minimize_environment Man.man res
+      (if !debug then
+        begin
+        Format.printf "\n\nMeet\n";
+        Abstract1.print Format.std_formatter v1;
+        Format.printf "\n ^with \n";
+        Abstract1.print Format.std_formatter v2;
+        Format.printf "\nEnv: ";
+        Environment.print Format.std_formatter (Abstract1.env v1');
+        Format.printf "\n";
+        end
+      );
+      let res = Abstract1.meet Man.man v1' v2' |> Abstract1.minimize_environment Man.man in
+      (if !debug then
+        begin
+          Format.printf "result: " ;
+          Abstract1.print Format.std_formatter res;
+          Format.printf "\n";
+      end);
+      res
     let alpha_rename v prevar var =
         (if !debug then
         begin
@@ -105,6 +125,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         begin
           Format.printf ("Result: ");
           Abstract1.print Format.std_formatter v';
+          Format.printf "\n";
         end);
         Abstract1.minimize_environment Man.man v'
     let forget_var var v =
@@ -119,25 +140,27 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         );
         let (int_vars, real_vars) = Environment.vars (Abstract1.env v) in
         let var_b = Array.fold_left (fun b x -> var = Var.to_string x || b) false int_vars in
-        if var_b = false then v
+        let res = if var_b = false then v
         else
         begin
         let vari = var |> Var.of_string in
         let arr = [|vari|] in
         let v' = Abstract1.forget_array Man.man v arr false in
+        Abstract1.minimize_environment Man.man v'
+        end 
+        in
         (if !debug then
         begin
           Format.printf "result: " ;
-          Abstract1.print Format.std_formatter v';
+          Abstract1.print Format.std_formatter res;
           Format.printf "\n";
         end);
-        Abstract1.minimize_environment Man.man v'
-        end
+        res
     let project_other_vars v vars = 
         let env = Abstract1.env v in
         (if !debug then
           begin
-          Format.printf "\nForget at:\n";
+          Format.printf "\n\nForget @%a@ at:\n" pr_ary vars;
           Abstract1.print Format.std_formatter v;
           Format.printf "\nEnv: ";
           Environment.print Format.std_formatter env;
@@ -160,6 +183,8 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         res
     let top = let env = Environment.make [||] [||] in
         Abstract1.top Man.man env
+    let bot = let env = Environment.make [||] [||] in
+        Abstract1.bottom Man.man env
     let equal_var v vl vr = let var_l = vl |> Var.of_string and var_r = vr |> Var.of_string in
         let env = Environment.make [|var_l; var_r|] [||] in
         let expr = vl ^ "=" ^ vr in
@@ -193,7 +218,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
     let operator vl vr op v = 
       (if !debug then
       begin
-        Format.printf "\nOperator abs\n";
+        Format.printf "\n\nOperator abs\n";
         Format.printf "%s %s %s\n" vl (string_of_op op) vr
       end);
       let var_v = "cur_v" |> Var.of_string in
@@ -253,7 +278,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
     let derived expr v = 
       (if !debug then
       begin
-        Format.printf "\nStrengthen derived\n";
+        Format.printf "\n\nStrengthen derived\n";
         Format.printf "%s \n" expr;
         Format.printf "Before: " ;
         Abstract1.print Format.std_formatter v;
