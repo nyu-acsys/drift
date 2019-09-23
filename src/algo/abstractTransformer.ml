@@ -23,6 +23,8 @@ let z_index = ref 0 (* first definition *)
 let incr_z () =
     z_index := !z_index + 1
 
+let get_predefined_funcs m = m
+
 let rec prop v1 v2 = match v1, v2 with
     | Top, Bot | Table _, Top -> Top, Top
     | Unit _, Bot -> v1, v1
@@ -55,6 +57,10 @@ let rec step term env m ae =
     let n = EN (env, loc term) in
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     match term with
+    | Void l ->
+        let t = find n m in
+        let t' = join_V t (Unit ())in
+        m |> NodeMap.add n t'
     | Const (c, l) ->
         (if !debug then
         begin
@@ -90,7 +96,8 @@ let rec step term env m ae =
             Format.printf "\n";
         end
         );
-        let tx', t' = prop tx t in
+        let raw_tx', t' = prop tx t in
+        let tx' = forget_V x raw_tx' in
         (if !debug then
         begin
             Format.printf "\nRES for prop:\n";
@@ -149,7 +156,7 @@ let rec step term env m ae =
                 let t' = getVars env |> proj_V raw_t' in
                 m2 |> NodeMap.add n1 t1' |> NodeMap.add n2 t2' |> NodeMap.add n t'
             )
-    | BinOp (bop, e1, e2, l) -> (*TODO: project all unrelated label, scope of label should only inside that node *)
+    | BinOp (bop, e1, e2, l) ->
         (if !debug then
         begin
         Format.printf "\n<=== Binop ===>\n";
@@ -175,17 +182,23 @@ let rec step term env m ae =
             );
             let t = find n m2 in
             let td = Relation (top_R bop) in
-            (* {v:int | a(t) ^ v = n1 + n2 }[n1 <- t1, n2 <- t2] *)
-            let node_1 = e1 |> loc |> name_of_node in
-            let node_2 = e2 |> loc |> name_of_node in
-            let t' = arrow_V node_1 td t1 in
-            let t'' = arrow_V node_2 t' t2 in
-            let t''' = op_V node_1 node_2 bop t'' in
-            let temp_t = getVars env |> proj_V t''' in
-            let raw_t = 
+            let raw_t = if bool_op bop then
+            begin
+                bool_op_V bop t1 t2
+            end
+            else
+            begin
+                (* {v:int | a(t) ^ v = n1 op n2 }[n1 <- t1, n2 <- t2] *)
+                let node_1 = e1 |> loc |> name_of_node in
+                let node_2 = e2 |> loc |> name_of_node in
+                let t' = arrow_V node_1 td t1 in
+                let t'' = arrow_V node_2 t' t2 in
+                let t''' = op_V node_1 node_2 bop t'' in
+                let temp_t = getVars env |> proj_V t''' in
                 if !domain = "Box" then
                 temp_t |> der_V e1 |> der_V e2  (*Solve remain constriant only for box*)
                 else temp_t
+            end
             in
             let _, re_t = prop raw_t t in
             m2 |> NodeMap.add n re_t
@@ -247,8 +260,8 @@ let rec step term env m ae =
             in
             let n1 = EN (env1, loc e1) in 
             let tx = find nx m in
-            let ae' = if is_Relation tx then (arrow_V x ae tx) else ae in
-            let temp_t = replace_V (find n1 m) x (dx_T t) in
+            let ae' = if is_Relation tx && x <> "_" then (arrow_V x ae tx) else ae in
+            let temp_t = if x = "_" then find n1 m else replace_V (find n1 m) x (dx_T t) in
             let prop_t = Table ((dx_T t), tx, temp_t) in
             (if !debug then
             begin
@@ -272,11 +285,30 @@ let rec step term env m ae =
             let nf_t2_tf'_opt =
                 Opt.map (fun (_, nf) ->
                   let tf = find nf m in
+                  let EN (_,lf) = nf in
+                  (if !debug then
+                    begin
+                        Format.printf "\n<=== Prop ===> %s\n" l;
+                        pr_value Format.std_formatter t;
+                        Format.printf "\n<<~~~~>> %s\n" lf;
+                        pr_value Format.std_formatter tf;
+                        Format.printf "\n";
+                    end
+                  );
                   let t2, tf' = prop t tf in
+                  (if !debug then
+                    begin
+                        Format.printf "\nRES for prop:\n";
+                        pr_value Format.std_formatter t2;
+                        Format.printf "\n<<~~~~>>\n";
+                        pr_value Format.std_formatter tf';
+                        Format.printf "\n";
+                    end
+                  );
                   nf, t2, tf') f_nf_opt
             in
             let tx', t1' = io_T px_t in
-            let m1 = m |> NodeMap.add nx tx' |> NodeMap.add n1 (replace_V t1' (dx_T t) x) |>
+            let m1 = m |> NodeMap.add nx tx' |> NodeMap.add n1 (if x = "_" then t1' else replace_V t1' (dx_T t) x) |>
             (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> NodeMap.add nf tf' |> NodeMap.add n (join_V t1 t2))
             nf_t2_tf'_opt |> Opt.get_or_else (NodeMap.add n t1)) in
             step e1 env1 m1 ae'
@@ -286,6 +318,8 @@ let rec step term env m ae =
 (** Widening **)
 let widening m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     NodeMap.mapi (fun n a -> wid_V a (find n m1)) m2
+
+let env0, m0 = array_M VarMap.empty NodeMap.empty
 
 (** Fixpoint loop *)
 let rec fix e k env m =
@@ -298,11 +332,14 @@ let rec fix e k env m =
   let ae = Top in
   let m' = step e env m ae in
   let m'' = widening m m' in
-  if leq_M m'' m then m
-  else fix e (k + 1) env m''
+  if eq_PM m0 m'' then
+  begin
+    if leq_M m'' m then m
+    else fix e (k + 1) env m''
+  end
+  else exit 0
 
 (** Semantic function *)
 let s e =
-    let env, m = array_M VarMap.empty NodeMap.empty in
-    (fix e 0 env m)
+    (fix e 0 env0 m0)
 

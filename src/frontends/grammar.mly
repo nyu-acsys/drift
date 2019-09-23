@@ -29,6 +29,7 @@ open Lexing
 
 main:
 | term { $1 }
+| error { fail 1 1 "Syntax error" }
 ;
 
 ident_list:
@@ -41,6 +42,7 @@ basic_term: /*term@7 := int | bool | var | (term)*/
 | BOOLCONST { Const (Boolean $1, "") }
 | IDENT { Var ($1, "") }
 | LPAREN term RPAREN { $2 } /*Parentheses*/
+| LPAREN RPAREN { Void("") }
 ;
 
 app_term: /* term@6 := term@6 term@7 | term@7 */
@@ -100,24 +102,36 @@ assert_term:
 | ite_term { $1 }
 | ASSERT LPAREN term RPAREN { Ite ($3, Const (Boolean true, ""), Const (Boolean false, ""), "")}
 
-lambda_term: /* Not use yet */
-| ite_term { $1 }
+lambda_term:
+| assert_term { $1 }
 | FUN IDENT ARROW term { mk_lambda $2 $4 }
 ;
 
+seq_term:
+| lambda_term { $1 }
+| term SEMICOLON term { mk_let_in "_" $1 $3 }
+
 let_in_term:
-| assert_term { $1 }
+| seq_term { $1 }
 | LET REC ident_list EQ term IN term {
   let fn = mk_lambdas (List.tl $3) $5 in
-  mk_let_rec (List.hd $3) fn $7
+  mk_let_rec_in (List.hd $3) fn $7
 }
 | LET ident_list EQ term IN term {
   let fn = mk_lambdas (List.tl $2) $4 in
-  mk_let (List.hd $2) fn $6
+  mk_let_in (List.hd $2) fn $6
+}
+;
+
+let_val:
+| LET ident_list EQ term {
+
+}
+| LET REC ident_list EQ term {
+
 }
 ;
 
 term:
 | let_in_term { $1 }
-| error { fail 1 1 "Syntax error" }
 ;

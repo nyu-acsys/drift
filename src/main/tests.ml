@@ -65,14 +65,16 @@ let op_test_3 = parse_from_string "let f a b = a + b in f (f 1 2) 3"
   (lambda a^11. (lambda b^12. (a^13 + b^14)^15)^16)^17)^18
 *)
 
-let if_test = let def_if = (mk_lambda x (mk_lambda y (mk_ite (mk_op Gt (mk_var x) (mk_var y)) (mk_var x) (mk_var y)))) in
+let op_test_4 = parse_from_string "let f a b = a + b * b in f 3 2"
+
+let if_test_1 = let def_if = (mk_lambda x (mk_lambda y (mk_ite (mk_op Gt (mk_var x) (mk_var y)) (mk_var x) (mk_var y)))) in
   (mk_app (mk_app def_if (mk_int 1)) (mk_int 2))
-(* if_test
+(* if_test_1
 (((lambda x^0. (lambda y^1. ((x^2 > y^3)^4 ? x^5 : y^6)^7)^8)^9 1^10)^11
   2^12)^13
 *)
 
-let if_test_2 = parse_from_string "let f a = if a > 1 then a else 1 in f 2"
+let if_test_2 = parse_from_string "let f a = if a = 2 then a else 1 in f 2"
 
 let if_test_3 = parse_from_string "let f a b = if a > 5 then if b < 15 then 0 else 1 else 2 in f 6 10"
 (*
@@ -82,8 +84,8 @@ let if_test_3 = parse_from_string "let f a b = if a > 5 then if b < 15 then 0 el
         ((a^9 > 5^10)^11 ? ((b^12 < 15^13)^14 ? 0^15 : 1^16)^17 : 2^18)^19)^20)^21)^22
 *)
 
-let rec_test = parse_from_string "let rec f a = if a + 1 > 9 then 10 else f (a + 1) in f 8"
-(* rec_test
+let rec_test_1 = parse_from_string "let rec f a = if a + 1 > 9 then 10 else f (a + 1) in f 8"
+(* rec_test_1
 ((lambda f^0. (f^1 8^2)^3)^4
   (mu f^5 a^6.
      (((a^7 + 1^8)^9 > 9^10)^11 ? 
@@ -91,17 +93,23 @@ let rec_test = parse_from_string "let rec f a = if a + 1 > 9 then 10 else f (a +
         (f^13 (a^14 + 1^15)^16)^17)^18)^19)^20
 *)
 
+let rec_test_2 = parse_from_string "let rec f a = if a <= 9 then 0 else f (a + 1) in f 8"
+(* rec_test_2
+((lambda f^0. (f^1 8^2)^3)^4
+  (mu f^5 a^6. ((a^7 <= 9^8)^9 ? 0^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
+*)
+
 let ary_test_1 = parse_from_string "let ary = make 3 0 in len ary"
 (* ary_test_1
 ((lambda ary^0. (len^1 ary^2)^3)^4 ((make^5 3^6)^7 0^8)^9)^10
 *)
 
-let ary_test_2 = parse_from_string "let ary = make 3 0 in get ary 6"
+let ary_test_2 = parse_from_string "let ary = make 3 0 in get ary 2"
 (* ary_test_2
-((lambda ary^0. ((get^1 ary^2)^3 6^4)^5)^6 ((make^7 3^8)^9 0^10)^11)^12
+((lambda ary^0. ((get^1 ary^2)^3 2^4)^5)^6 ((make^7 3^8)^9 0^10)^11)^12
 *)
 
-let ary_test_3 = parse_from_string "let ary = make 3 0 in set ary 2 1"
+let ary_test_3 = parse_from_string "let ary = make 3 0 in set ary 0 1"
 (* ary_test_3
 ((lambda ary^0. (((set^1 ary^2)^3 2^4)^5 1^6)^7)^8
   ((make^9 3^10)^11 0^12)^13)^14
@@ -112,7 +120,38 @@ let assert_test = parse_from_string "let a = assert(1 < 2) in a"
 ((lambda a^0. a^1)^2 ((1^3 < 2^4)^5 ? true^6 : false^7)^8)^9
 *)
 
-let tests = [assert_test]
+let scoping_test = parse_from_string "let a = 1 in let b = a + 1 in let c = a + b + 1 in c"
+
+let bool_test_1 = parse_from_string "true && false || true"
+(* bool_test_1
+((true^0 && false^1)^2 || true^3)^4
+*)
+
+let bool_test_2 = parse_from_string "1 > 2 && 3 < 4 || 6 = 6"
+(* bool_test_2
+(((1^0 > 2^1)^2 && (3^3 < 4^4)^5)^6 || (6^7 = 6^8)^9)^10
+*)
+
+let bool_test_3 = parse_from_string "let rec f a = if a > 1 && a < 10 then f (a + 1) else a in f 4"
+(* bool_test_3
+((lambda f^0. (f^1 4^2)^3)^4
+  (mu f^5 a^6.
+     (((a^7 > 1^8)^9 && (a^10 < 10^11)^12)^13 ? (f^14 (a^15 + 1^16)^17)^18 :
+       a^19)^20)^21)^22
+*)
+
+let seq_test_1 = parse_from_string "1 + 2; 3"
+(* seq_test_1
+((lambda _^0. 3^1)^2 (1^3 + 2^4)^5)^6
+*)
+
+let seq_test_2 = parse_from_string "3 + 4; assert(3 + 4 < 10)"
+(* seq_test_2
+((lambda _^0. (((3^1 + 4^2)^3 < 10^4)^5 ? true^6 : false^7)^8)^9
+  (3^10 + 4^11)^12)^13
+*)
+
+let tests = [seq_test_2]
 
 let _ = 
   Config.parse;
@@ -127,4 +166,5 @@ let _ =
   print_endline ("Domain specification: " ^ !Config.domain);
   print_endline "\n";
   ignore (s el);
+  print_exp stdout el;
   print_newline ()) t

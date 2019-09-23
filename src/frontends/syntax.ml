@@ -35,6 +35,7 @@ type value =
 
 (** Terms *)
 type term =
+  | Void of loc                        (* unit (unit) *)
   | Const of value * loc               (* i (int constant) *)
   | Var of var * loc                   (* x (variable) *)
   | App of term * term * loc           (* t1 t2 (function application) *)
@@ -43,6 +44,7 @@ type term =
   | Rec of (var * loc) option * var * loc * term * loc (*lambda and recursive function*)
 
 let loc = function
+  | Void (l)
   | Const (_, l)
   | Var (_, l)
   | App (_, _, l)
@@ -88,6 +90,7 @@ let rev_op = function
 
 let label e =
     let rec l k = function
+      | Void (_) -> Void (string_of_int k), k + 1
       | Const (c, _) -> Const (c, string_of_int k), k + 1
       | Var (x, _) -> Var (x, string_of_int k), k + 1
       | App (e1, e2, _) ->
@@ -124,13 +127,13 @@ let mk_rec f x e = Rec (Some (f, ""), x, "", e, "")
 let mk_ite e0 e1 e2 = Ite (e0, e1, e2, "")
 let mk_op op e1 e2 = BinOp (op, e1, e2, "")
 
-let mk_let x def e = mk_app (mk_lambda x e) def
+let mk_let_in x def e = mk_app (mk_lambda x e) def
 let mk_lets defs e =
-  List.fold_right (fun (x, def) e -> mk_let x def e) defs e
+  List.fold_right (fun (x, def) e -> mk_let_in x def e) defs e
 
 let lam_to_mu f = function
   | Rec(_, x, lx, e, le) -> Rec (Some (f, ""), x, lx, e, le)
   | _ -> raise (Invalid_argument "Invalid function lambda")
 
-let mk_let_rec x def e = 
+let mk_let_rec_in x def e = 
   mk_app (mk_lambda x e) (lam_to_mu x def)

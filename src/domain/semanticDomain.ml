@@ -1,25 +1,42 @@
 open AbstractDomain
 open Syntax
 open Util
-  (*
-   ****************************************
-   ** Abstract domain for all semantics **
-   ****************************************
-   *)
+
+(*
+  ****************************************
+  ** Abstract domain for all semantics **
+  ****************************************
+*)
    module VarMap = Map.Make(struct
     type t = var
     let compare = compare
  end)
+
+ exception Pre_Def_Change of string
  
  type baseType = Int | Bool
  type node_t = EN of env_t * loc (*N = E x loc*)
  and env_t = node_t VarMap.t (*E = Var -> N*)
 
  let name_of_node lb = ("lab_" ^ lb)
+
+ let comp s1 s2 =
+    let l1 = try int_of_string s1 
+      with _ -> -1 in
+    let l2 = try int_of_string s2
+      with _ -> -1 in
+    if l1 = -1 then
+      if l2 = -1 then String.compare s1 s2
+      else -1
+    else if l2 = -1 then 1
+    else l1 - l2
  
  module NodeMap = Map.Make(struct
     type t = node_t
-    let compare = compare
+    let compare n1 n2 = 
+      let EN (env1, e1) = n1 in
+      let EN (env2, e2) = n2 in
+      comp e1 e2
  end)
  
  module SemanticsDomain =
@@ -56,7 +73,6 @@ open Util
          | Boolean true -> Bool (AbstractValue.init_c 1, AbstractValue.bot)
          | Boolean false -> Bool (AbstractValue.bot, AbstractValue.init_c 1)
          | Integer i -> Int (AbstractValue.init_c i)
-     and init_R_b b = init_R_c (Boolean b)
      and join_R a1 a2 =
          match a1, a2 with
            | (Int v1), (Int v2) -> Int (AbstractValue.join v1 v2)
@@ -72,6 +88,11 @@ open Util
            | (Int v1), (Int v2) -> AbstractValue.leq v1 v2
            | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> AbstractValue.leq v1t v2t && AbstractValue.leq v1f v2f
            | _, _ -> false
+     and eq_R a1 a2 =
+        match a1, a2 with
+          | (Int v1), (Int v2) -> AbstractValue.eq v1 v2
+          | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> AbstractValue.eq v1t v2t && AbstractValue.eq v1f v2f
+          | _, _ -> false
      and arrow_R var a1 a2 = let a2' = alpha_rename_R a2 "cur_v" var in
           match a1, a2' with
           | Int _, Int _ -> meet_R a1 a2'
@@ -93,25 +114,29 @@ open Util
      and op_R l r op cons a = (*cons for flag of linear constraints*)
        match op with
        | Plus | Mult | Div | Mod | Minus -> (match a with
-          | Int v -> Int (AbstractValue.operator l r op v)
+          | Int v -> Int (AbstractValue.operator l r op cons v)
           | Bool (vt, vf) -> raise (Invalid_argument "Conditional value given, expect arithmetic one"))
-       | Ge | Eq | Ne | Lt | Gt | Le -> if cons then
+       | Ge | Eq | Ne | Lt | Gt | Le -> (if cons then
           (match a with
-          | Int v -> Int (AbstractValue.operator l r op v)
-          | Bool (vt, vf) -> Bool (AbstractValue.operator l r op vt, AbstractValue.operator l r (rev_op op) vf)
+          | Int v -> Int (AbstractValue.operator l r op cons v)
+          | Bool (vt, vf) -> Bool (AbstractValue.operator l r op cons vt, AbstractValue.operator l r (rev_op op) cons vf)
           )
           else
           (match a with
-          | Int v -> Bool (AbstractValue.operator l r op v, AbstractValue.operator l r (rev_op op) v)
-          | Bool (vt, vf) -> Bool (AbstractValue.operator l r op vt, AbstractValue.operator l r (rev_op op) vf))
-       | And | Or -> (match a with
-          | Int v -> raise (Invalid_argument "Arithmetic value given, expect conditional one")
-          | Bool (vt, vf) -> (*TODO: Implement this*) raise (Invalid_argument "Bool op not implement yet")
+          | Int v -> Bool (AbstractValue.operator l r op cons v, AbstractValue.operator l r (rev_op op) cons v)
+          | Bool (vt, vf) -> Bool (AbstractValue.operator l r op cons vt, AbstractValue.operator l r (rev_op op) cons vf))
         )
+       | And | Or -> raise (Invalid_argument "Invalid method called, should use bool_op_R for conditional operators")
+     and bool_op_R op a1 a2 = match a1, a2 with
+      | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> if string_of_op op = "&&" then
+        Bool (AbstractValue.meet v1t v2t, AbstractValue.join v1f v2f)
+      else
+        Bool (AbstractValue.join v1t v2t, AbstractValue.meet v1f v2f)
+      | _, _ -> raise (Invalid_argument "&& or || operation: Base Type should be bool")
      and replace_R a var x = alpha_rename_R a var x
      and extrac_bool_R v b = match v,b with
-      | Bool (vt, _), true -> Int vt
-      | Bool (_, vf), false -> Int vf
+      | Bool (vt, _), true -> Int vt |> forget_R "cur_v"
+      | Bool (_, vf), false -> Int vf |> forget_R "cur_v"
       | _,_ -> raise (Invalid_argument "Extract abstract value for condition, expect bool one")
      and stren_R a ae = match a, ae with
       | Int v, Int vae -> Int (AbstractValue.meet v vae)
@@ -152,6 +177,8 @@ open Util
           in t
       and leq_T t1 t2 = match t1, t2 with
          | (z1, v1i, v1o), (z2, v2i, v2o) -> if z1 = z2 then (leq_V v1i v2i) && (leq_V v1o v2o) else false
+      and eq_T t1 t2 = match t1, t2 with
+         | (z1, v1i, v1o), (z2, v2i, v2o) -> if z1 = z2 then (eq_V v1i v2i) && (eq_V v1o v2o) else false
       and forget_T var t = let (z, vi, vo) = t in (z, forget_V var vi, forget_V var vo)
       and arrow_T var t v =
          let (z, vi, vo) = t in
@@ -189,7 +216,7 @@ open Util
        and top_M m = NodeMap.map (fun a -> Top) m
        and array_M env m = 
           let n_make = EN (env, "make") in
-          let t_make = 
+          let t_make = (* make *)
             (* zm: {v:int | v >= 0} -> ex: {v:int | top} -> {v: int array (l) | l = zm ^ zm >= 0} *)
             let var_l = "zm" in
             let rl = top_R Plus |> op_R "cur_v" "0" Ge true in
@@ -199,7 +226,8 @@ open Util
             Table (var_l, Relation rl, Table (var_e, Relation rm, Ary rlen))
           in
           let n_len = EN (env, "len") in
-          let t_len = (* zl: {v: int array (l) | l >= 0} -> {v: int | v = l} *)
+          let t_len = (* len *)
+            (* zl: {v: int array (l) | l >= 0} -> {v: int | v = l} *)
             let var_l = "zl" in
             let var_len = "l" in
             let rl = replace_R (top_R Plus |> op_R "cur_v" "0" Ge true) "cur_v" var_len in
@@ -207,7 +235,7 @@ open Util
             Table (var_l, Ary rl, Relation rlen)
           in
           let n_get = EN (env, "get") in
-          let t_get = 
+          let t_get = (* get *)
             (* zg: {v: int array (l) | l >= 0 } -> i: {v: int | 0 <= v < l} -> {v: int | top} *)
             let var_l = "zg" in
             let var_len = "l" in
@@ -218,7 +246,7 @@ open Util
             Table (var_l, Ary rl, Table (var_i, Relation rm, Relation rr))
           in
           let n_set = EN (env, "set") in
-          let t_set = 
+          let t_set = (* set *)
             (* zs: {v: int array (l) | l >= 0 } -> i: {v: int | 0 <= v < l} -> ex: {v: int | top} -> unit *)
             let var_l = "zs" in
             let var_len = "l" in
@@ -239,6 +267,13 @@ open Util
             |> VarMap.add "set" n_set
           in
           env', m'
+       and eq_PM m1 m2 =
+        NodeMap.for_all (fun n v1 (*untie to node -> value*) ->
+        NodeMap.find_opt n m2 |> Opt.map (
+          fun v2 -> let EN (env, l) = n in
+          if eq_V v1 v2 then true else raise (Pre_Def_Change ("Predefined node changed at " ^ l))
+          )
+        |> Opt.get_or_else (v1 = v1)) m1
        (*
         ********************************
         ** Abstract domain for Values **
@@ -257,7 +292,6 @@ open Util
            with Invalid_argument s -> Relation r')
            | _ -> v1)
          | _ -> v1
-       and init_V_b b = Relation (init_R_b b)
        and join_V (v1:value_t) (v2:value_t) :value_t = match v1, v2 with
          | Bot, v | v, Bot -> v
          | Relation r1, Relation r2 -> Relation (join_R r1 r2)
@@ -280,6 +314,14 @@ open Util
          | Ary (l1), Ary (l2) -> leq_R l1 l2
          | Unit u1, Unit u2 -> true
          | _, _ -> false
+        and eq_V (v1:value_t) (v2:value_t) :bool = match v1, v2 with
+        | Bot, _ -> true
+        | _, Top -> true
+        | Relation r1, Relation r2 -> eq_R r1 r2
+        | Table t1, Table t2 -> eq_T t1 t2
+        | Ary (l1), Ary (l2) -> eq_R l1 l2
+        | Unit u1, Unit u2 -> true
+        | _, _ -> false
        and is_table v = match v with
          | Table _ -> true
          | _ -> false
@@ -316,6 +358,13 @@ open Util
          | Bot | Top -> Top
          | Relation r -> Relation (op_R sl sr op false r)
          | _ -> raise (Invalid_argument "Should be a relation type when using op_V")
+       and bool_op_V op v1 v2 = match v1, v2 with
+         | Bot, Relation _ -> if string_of_op op = "&&" then Bot else v2
+         | Top, Relation _ -> if string_of_op op = "&&" then v2 else Top
+         | Relation r1, Relation r2 -> Relation (bool_op_R op r1 r2)
+         | Relation _, Bot -> if string_of_op op = "&&" then Bot else v1
+         | Relation _, Top -> if string_of_op op = "&&" then v1 else Top
+         | _, _ -> raise (Invalid_argument "Should be a relation type when using bool_op_V")
        and dx_T v = match v with
          | Table t -> dx_Ta t
          | _ -> raise (Invalid_argument "Should be table when using dx_T")
@@ -336,10 +385,12 @@ open Util
       and stren_V v ae = match v,ae with
         | Bot, _ -> Bot
         | Relation r, Relation rae -> Relation (stren_R r rae)
+        | Ary (l), Relation rae -> Ary (stren_R l rae)
         | Table t, Relation rae -> Table t
         | Top, _ -> ae
         | _, Bot -> Bot
         | _, Top -> v
+        | Unit _, _ -> v
         | _,_ -> raise (Invalid_argument "ae should not be a table")
       and der_V term v = match term, v with
         | _, Top | _, Bot -> v
@@ -401,6 +452,7 @@ open Util
  let pr_op ppf op = Format.fprintf ppf "%s" (string_of_op op)
  
  let rec pr_exp pl ppf = function
+ | Void (l) -> Format.fprintf ppf "()%a" (pr_label pl) l
  | Const (c, l) ->
      Format.fprintf ppf "%a%a" pr_const c (pr_label pl) l
  | Var (x, l) ->
@@ -468,7 +520,7 @@ open Util
  | Ary (l) -> pr_ary ppf l
  
  and pr_table ppf t = let open SemanticsDomain in let (z, vi, vo) = t in
-     Format.fprintf ppf "@[<2>%s: %a ->@ %a@]" z pr_value vi pr_value vo
+     Format.fprintf ppf "@[<2>%s: (%a ->@ %a)@]" z pr_value vi pr_value vo
  
  let print_value out_ch v = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" pr_value v
  

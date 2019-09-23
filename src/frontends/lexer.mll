@@ -40,12 +40,12 @@ rule token = parse
 | '\n' { Lexing.new_line lexbuf; token lexbuf }
 | "(*" { comments 0 lexbuf }
 | ";"  { SEMICOLON }
-| "->" { ARROW } 
+| "->" { ARROW }
 | "<=" { LE }
 | ">=" { GE }
 | "&&" { AND }
 | "||" { OR }
-| '=' { EQ }
+| "=" { EQ }
 | "<>" { NE }
 | "<" { LT }
 | ">" { GT }

@@ -4,7 +4,7 @@ open Syntax
 open Util
 open Config
 
-let pr_ary ppf ary = Array.fold_left (fun a e -> Format.printf "@%s " e) () ary
+let pr_ary ppf ary = Array.fold_left (fun a e -> Format.printf "%s " e) () ary
 
 (*
  *******************************
@@ -24,6 +24,7 @@ module type AbstractDomainType =
     type t
     val lc_env: t -> t -> t * t
     val leq: t -> t -> bool
+    val eq: t -> t -> bool
     val init_c: int -> t
     val top: t
     val bot: t
@@ -34,7 +35,7 @@ module type AbstractDomainType =
     val project_other_vars: t -> var array -> t
     val equal_var: t -> var -> var -> t
     val widening: t -> t -> t
-    val operator: var -> var -> binop -> t -> t
+    val operator: var -> var -> binop -> bool -> t -> t
     val print_abs: Format.formatter -> t -> unit
     val print_env: Format.formatter -> t -> unit
     val derived: string -> t -> t
@@ -59,6 +60,9 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
     let leq v1 v2 = 
       let v1',v2' = lc_env v1 v2 in
       Abstract1.is_leq Man.man v1' v2'
+    let eq v1 v2 = 
+      let v1',v2' = lc_env v1 v2 in
+      Abstract1.is_eq Man.man v1' v2'
     let join v1 v2 = 
       let v1',v2' = lc_env v1 v2 in
       let res = Abstract1.join Man.man v1' v2' in
@@ -160,7 +164,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         let env = Abstract1.env v in
         (if !debug then
           begin
-          Format.printf "\n\nForget @%a@ at:\n" pr_ary vars;
+          Format.printf "\n\nRemain [ %a] at:\n" pr_ary vars;
           Abstract1.print Format.std_formatter v;
           Format.printf "\nEnv: ";
           Environment.print Format.std_formatter env;
@@ -188,7 +192,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
     let equal_var v vl vr = let var_l = vl |> Var.of_string and var_r = vr |> Var.of_string in
         let env = Environment.make [|var_l; var_r|] [||] in
         let expr = vl ^ "=" ^ vr in
-        let tab = Parser.lincons1_of_lstring env [expr] in
+        let tab = Parser.tcons1_of_lstring env [expr] in
         (* Creation of abstract value vl = vr *)
         (if !debug then
         begin
@@ -201,7 +205,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         let env_v = Abstract1.env v in
         let env' = Environment.lce env env_v in
         let v' = Abstract1.change_environment Man.man v env' false in
-        let res = Abstract1.meet_lincons_array Man.man v' tab in
+        let res = Abstract1.meet_tcons_array Man.man v' tab in
         (if !debug then
         begin
           Format.printf "result: " ;
@@ -215,7 +219,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
     let make_var var = 
       try let _ = int_of_string var in None
       with e -> Some (var |> Var.of_string)
-    let operator vl vr op v = 
+    let operator vl vr op cons v = 
       (if !debug then
       begin
         Format.printf "\n\nOperator abs\n";
@@ -244,25 +248,33 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
       let res = 
         if cond_op op = true then
           (
-          if temp = "!=" then (* '!=' not support by parser, use make texpr *)
+          let vt = if temp = "!=" then (* '!=' not support by apron, use vl < vr join vl > vr *)
           begin
-            let expr = vl ^ "-" ^ vr in
-            let texp = Parser.texpr1_of_string env expr in
-            let test = Tcons1.make texp Tcons1.DISEQ in
-            let tab = Tcons1.array_make env 1 in
-            Tcons1.array_set tab 0 test;
-            Abstract1.meet_tcons_array Man.man v' tab
+            let expr1 = vl ^ "<" ^ vr in
+            let expr2 = vl ^ ">" ^ vr in
+            let tab = Parser.tcons1_of_lstring env [expr1] in
+            let vlt' = Abstract1.meet_tcons_array Man.man v' tab in
+            let tab = Parser.tcons1_of_lstring env [expr2] in
+            let vgt' = Abstract1.meet_tcons_array Man.man v' tab in
+            Abstract1.join Man.man vlt' vgt'
           end
           else
-          begin 
+          begin
             let expr = vl ^ temp ^ vr in
             let tab = Parser.tcons1_of_lstring env [expr] in
             Abstract1.meet_tcons_array Man.man v' tab
-          end)
+          end
+          in
+          if cons then vt
+          else
+          let exprv = "cur_v=1" in
+          let tab = Parser.tcons1_of_lstring env [exprv] in
+          Abstract1.meet_tcons_array Man.man vt tab
+          )
         else
           (let expr = "cur_v=" ^ vl ^ temp ^ vr in
-            let tab = Parser.lincons1_of_lstring env [expr] in
-          Abstract1.meet_lincons_array Man.man v' tab)
+            let tab = Parser.tcons1_of_lstring env [expr] in
+          Abstract1.meet_tcons_array Man.man v' tab)
       in
       (* Creation of abstract value vl op vr *)
       (if !debug then
