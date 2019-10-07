@@ -4,7 +4,7 @@ _opam/
 *.smt2
 *.dot
 model.html
-out
+out*
 out.spl
 *.pdf
 *.png
