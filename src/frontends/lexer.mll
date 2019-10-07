@@ -15,8 +15,9 @@ let _ =
       ("if", IF);
       ("in", IN);
       ("let", LET);
+      ("int", INT);
+      ("bool", BOOL);
       ("mod", MOD);
-      ("not", NOT);
       ("rec", REC);
       ("then", THEN);
       ("true", BOOLCONST true)])
@@ -25,7 +26,8 @@ let lexical_error lexbuf msg =
   let pos = lexeme_start_p lexbuf in 
   let pos_line = pos.pos_lnum in
   let pos_col = pos.pos_cnum - pos.pos_bol in
-  fail pos_line pos_col "Syntax error"
+  let pos' = { pl = pos_line; pc = pos_col } in
+  fail pos' "Syntax error"
 }
 
 let digitchar = ['0'-'9']
@@ -39,7 +41,8 @@ rule token = parse
   [' ' '\t'] { token lexbuf }
 | '\n' { Lexing.new_line lexbuf; token lexbuf }
 | "(*" { comments 0 lexbuf }
-| ";"  { SEMICOLON }
+| ";"  { SEMI }
+| ":"  { COLON }
 | "->" { ARROW }
 | "<=" { LE }
 | ">=" { GE }

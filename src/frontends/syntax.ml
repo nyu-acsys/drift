@@ -2,16 +2,14 @@
 open Util
 
 (** {1} Type definitions for representing syntax *)
-
+type pos = { pl: int; pc: int }
 (** Variable names *)
 
 type var = string
 type loc = string
 
-let fail lin col msg = let start_pos = Parsing.rhs_start_pos lin in
-  let pos_line = start_pos.pos_lnum 
-  and pos_col = start_pos.pos_cnum - start_pos.pos_bol in
-  failwith (Printf.sprintf "Error: line %d col %d: %s" pos_line pos_col msg)
+let fail pos msg =
+  failwith (Printf.sprintf "Error: line %d col %d: %s" pos.pl pos.pc msg)
 
 (** Binary infix operators *)
 type binop =
@@ -32,6 +30,17 @@ type binop =
 type value =
   | Integer of int
   | Boolean of bool
+
+type varmap = var * value
+
+module VarDefMap = Map.Make(struct
+  type t = var
+  let compare = compare
+end)
+
+let fun_name = "temp"
+
+let top_var: varmap list VarDefMap.t ref = ref VarDefMap.empty
 
 (** Terms *)
 type term =
@@ -78,6 +87,10 @@ let bool_op = function
 let str_of_val = function
   | Integer i -> string_of_int i
   | Boolean b -> string_of_bool b
+
+let str_of_type = function
+| Integer _ -> "int"
+| Boolean _ -> "bool"
 
 let rev_op = function
   | Ge -> Lt

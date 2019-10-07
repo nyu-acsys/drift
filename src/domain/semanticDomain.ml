@@ -7,7 +7,7 @@ open Util
   ** Abstract domain for all semantics **
   ****************************************
 *)
-   module VarMap = Map.Make(struct
+ module VarMap = Map.Make(struct
     type t = var
     let compare = compare
  end)
@@ -63,7 +63,10 @@ open Util
      and top_R = function
       | Plus | Mult | Div | Mod | Minus -> (Int AbstractValue.top)
       | Ge | Eq | Ne | Lt | Gt | Le | And | Or -> (Bool (AbstractValue.top, AbstractValue.top))
-     and bot_R = function
+     and init_R = function
+      | Integer _ -> top_R Plus
+      | Boolean _ -> top_R Ge
+      and bot_R = function
       | Plus | Mult | Div | Mod | Minus -> (Int AbstractValue.bot)
       | Ge | Eq | Ne | Lt | Gt | Le | And | Or -> (Bool (AbstractValue.bot, AbstractValue.bot))
      and is_bool_R a = match a with
@@ -96,7 +99,10 @@ open Util
      and arrow_R var a1 a2 = let a2' = alpha_rename_R a2 "cur_v" var in
           match a1, a2' with
           | Int _, Int _ -> meet_R a1 a2'
-          | Bool _, Bool _ -> meet_R a1 a2'
+          | Bool (vt1, vf1), Bool (vt2, vf2) -> 
+            let vt1' = AbstractValue.join (AbstractValue.meet vt1 vt2) (AbstractValue.meet vt1 vf2) in
+            let vf1' = AbstractValue.join (AbstractValue.meet vf1 vt2) (AbstractValue.meet vf1 vf2) in
+            Bool (vt1', vf1') (* {v:bool | at: [at^at' V at^af'], af: [af^at' V af^af']} *)
           | Int _, Bool (vt, vf) -> join_R (meet_R a1 (Int vt)) (meet_R a1 (Int vf)) (* {v:int| a^at V a^af} *)
           | Bool _ , Int v -> meet_R a1 (Bool (v, v))
      and forget_R var a = match a with
@@ -114,17 +120,17 @@ open Util
      and op_R l r op cons a = (*cons for flag of linear constraints*)
        match op with
        | Plus | Mult | Div | Mod | Minus -> (match a with
-          | Int v -> Int (AbstractValue.operator l r op cons v)
+          | Int v -> Int (AbstractValue.operator l r op (-1) v)
           | Bool (vt, vf) -> raise (Invalid_argument "Conditional value given, expect arithmetic one"))
        | Ge | Eq | Ne | Lt | Gt | Le -> (if cons then
           (match a with
-          | Int v -> Int (AbstractValue.operator l r op cons v)
-          | Bool (vt, vf) -> Bool (AbstractValue.operator l r op cons vt, AbstractValue.operator l r (rev_op op) cons vf)
+          | Int v -> Int (AbstractValue.operator l r op (-1) v)
+          | Bool (vt, vf) -> Bool (AbstractValue.operator l r op 1 vt, AbstractValue.operator l r (rev_op op) 0 vf)
           )
           else
           (match a with
-          | Int v -> Bool (AbstractValue.operator l r op cons v, AbstractValue.operator l r (rev_op op) cons v)
-          | Bool (vt, vf) -> Bool (AbstractValue.operator l r op cons vt, AbstractValue.operator l r (rev_op op) cons vf))
+          | Int v -> Bool (AbstractValue.operator l r op 1 v, AbstractValue.operator l r (rev_op op) 0 v)
+          | Bool (vt, vf) -> Bool (AbstractValue.operator l r op 1 vt, AbstractValue.operator l r (rev_op op) 0 vf))
         )
        | And | Or -> raise (Invalid_argument "Invalid method called, should use bool_op_R for conditional operators")
      and bool_op_R op a1 a2 = match a1, a2 with
@@ -267,13 +273,6 @@ open Util
             |> VarMap.add "set" n_set
           in
           env', m'
-       and eq_PM m1 m2 =
-        NodeMap.for_all (fun n v1 (*untie to node -> value*) ->
-        NodeMap.find_opt n m2 |> Opt.map (
-          fun v2 -> let EN (env, l) = n in
-          if eq_V v1 v2 then true else raise (Pre_Def_Change ("Predefined node changed at " ^ l))
-          )
-        |> Opt.get_or_else (v1 = v1)) m1
        (*
         ********************************
         ** Abstract domain for Values **
@@ -367,10 +366,10 @@ open Util
          | _, _ -> raise (Invalid_argument "Should be a relation type when using bool_op_V")
        and dx_T v = match v with
          | Table t -> dx_Ta t
-         | _ -> raise (Invalid_argument "Should be table when using dx_T")
+         | _ -> raise (Invalid_argument "Should be a table when using dx_T")
        and io_T v = match v with
          | Table t -> io_Ta t
-         | _ -> raise (Invalid_argument "Should be table when using io_T")
+         | _ -> raise (Invalid_argument "Should be a table when using io_T")
       and is_Bot_V = function
         | Bot -> true
         | _ -> false
@@ -540,3 +539,16 @@ open Util
  let rec print_exps out_ch = function
   | [] -> ()
   | e :: tl -> print_exp out_ch e; print_exps out_ch tl
+
+ let rec str_toplist str = function 
+ | [] -> str
+ | [(vr,ty)] -> str^"("^vr^", "^(str_of_type ty)^")"
+ | (vr,ty)::l -> let s' = str^"("^vr^", "^(str_of_type ty)^"); " in (str_toplist s' l)
+
+ let pr_top_vars ppf = 
+  let rec pr_ll = function
+  | [] -> ()
+  | (k, ls)::tl -> Format.fprintf ppf "@[<2><fun@ %s>@ :@ %s@]\n" k (str_toplist "" ls); pr_ll tl
+  in
+  let ls = VarDefMap.bindings !top_var in
+  pr_ll ls

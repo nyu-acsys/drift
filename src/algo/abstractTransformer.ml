@@ -23,7 +23,30 @@ let z_index = ref 0 (* first definition *)
 let incr_z () =
     z_index := !z_index + 1
 
-let get_predefined_funcs m = m
+ let func_name_q: Syntax.VarDefMap.key Stack.t = Stack.create ()
+
+let get_predefined_vars ky m vr = 
+    let rec reiew_list = function
+     | [] -> false
+     | (vr',ty)::ls -> if vr = vr' then true else reiew_list ls
+    in
+    let res = VarDefMap.find_opt ky m in
+    match res with
+    | None -> false
+    | Some ls -> reiew_list ls
+
+let eq_PM m1 m2 =
+    NodeMap.for_all (fun n v1 (*untie to node -> value*) ->
+    NodeMap.find_opt n m2 |> Opt.map (
+      fun v2 -> let EN (env, l) = n in
+      if eq_V v1 v2 then true else 
+      begin
+        Format.printf "\n%s:\n" l;
+        pr_value Format.std_formatter v2;
+        raise (Pre_Def_Change ("Predefined node changed at " ^ l))
+      end
+      )
+    |> Opt.get_or_else (v1 = v1)) m1
 
 let rec prop v1 v2 = match v1, v2 with
     | Top, Bot | Table _, Top -> Top, Top
@@ -89,7 +112,7 @@ let rec step term env m ae =
         let t = find n m in (* M[env*l] *)
         (if !debug then
         begin
-            Format.printf "\n<=== Prop ===> %s\n" lx;
+            Format.printf "\n<=== Prop Var ===> %s\n" lx;
             pr_value Format.std_formatter tx;
             Format.printf "\n<<~~~~>> %s\n" l;
             pr_value Format.std_formatter t;
@@ -116,7 +139,9 @@ let rec step term env m ae =
         Format.printf "\n";
         end
         );
+        let pre_len = Stack.length func_name_q in
         let m1 = step e1 env m ae in
+        let func_in = pre_len <> Stack.length func_name_q in
         let n1 = EN (env, loc e1) in
         let t1 = find n1 m1 in
         if t1 = Bot then m1
@@ -126,6 +151,7 @@ let rec step term env m ae =
         m1 |> NodeMap.add n Top)
         else
             let m2 = step e2 env m1 ae in
+            (if func_in then let _ = Stack.pop func_name_q in ());
             let n2 = EN (env, loc e2) in
             let t2 = find n2 m2 in (* M[env*l2] *)
             (match t2 with
@@ -135,7 +161,7 @@ let rec step term env m ae =
                 let t_temp = Table ((dx_T t1), t2, t) in
                 (if !debug then
                 begin
-                    Format.printf "\n<=== Prop ===> %s\n" (loc e1);
+                    Format.printf "\n<=== Prop APP ===> %s\n" (loc e1);
                     pr_value Format.std_formatter t1;
                     Format.printf "\n<<~~~~>> %s\n" l;
                     pr_value Format.std_formatter t_temp;
@@ -226,8 +252,8 @@ let rec step term env m ae =
             let n2 = EN (env, loc e2) in
             let t2 = find n2 m2 in
             let t1', t' = prop t1 (find n m1) and t2', t'' = prop t2 (find n m2) in
-            let m1' = m1 |> NodeMap.add n1 t1' |> NodeMap.add n (stren_V t' t_true) and
-            m2' = m2 |> NodeMap.add n2 t2' |> NodeMap.add n (stren_V t'' t_false) in
+            let m1' = m1 |> NodeMap.add n1 t1' |> NodeMap.add n t' and
+            m2' = m2 |> NodeMap.add n2 t2' |> NodeMap.add n t'' in
             join_M (join_M m0 m1') m2'
         end
     | Rec (f_opt, x, lx, e1, l) ->
@@ -251,6 +277,7 @@ let rec step term env m ae =
         else 
         if tr = Top then top_M m else
         begin
+            if VarDefMap.mem x !top_var then Stack.push x func_name_q;
             let nx = EN (env, lx) in
             let f_nf_opt = Opt.map (fun (f, lf) -> f, EN (env, lf)) f_opt in
             let env1 =
@@ -258,14 +285,14 @@ let rec step term env m ae =
                 (Opt.map (uncurry VarMap.add) f_nf_opt |>
                  Opt.get_or_else (fun env -> env))
             in
-            let n1 = EN (env1, loc e1) in 
-            let tx = find nx m in
+            let n1 = EN (env1, loc e1) in
+            let tx = if Stack.is_empty func_name_q = false && get_predefined_vars (Stack.top func_name_q) !top_var x then Relation (top_R Plus) else find nx m in
             let ae' = if is_Relation tx && x <> "_" then (arrow_V x ae tx) else ae in
             let temp_t = if x = "_" then find n1 m else replace_V (find n1 m) x (dx_T t) in
             let prop_t = Table ((dx_T t), tx, temp_t) in
             (if !debug then
             begin
-                Format.printf "\n<=== Prop ===> %s\n" lx;
+                Format.printf "\n<=== Prop lamb ===> %s\n" lx;
                 pr_value Format.std_formatter prop_t;
                 Format.printf "\n<<~~~~>> %s\n" l;
                 pr_value Format.std_formatter t;
@@ -288,14 +315,15 @@ let rec step term env m ae =
                   let EN (_,lf) = nf in
                   (if !debug then
                     begin
-                        Format.printf "\n<=== Prop ===> %s\n" l;
+                        Format.printf "\n<=== Prop um ===> %s\n" l;
                         pr_value Format.std_formatter t;
                         Format.printf "\n<<~~~~>> %s\n" lf;
                         pr_value Format.std_formatter tf;
                         Format.printf "\n";
                     end
                   );
-                  let t2, tf' = prop t tf in
+                  let raw_t = proj_V t [||] in 
+                  let t2, tf' = prop raw_t tf in
                   (if !debug then
                     begin
                         Format.printf "\nRES for prop:\n";
@@ -317,19 +345,23 @@ let rec step term env m ae =
 
 (** Widening **)
 let widening m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
-    NodeMap.mapi (fun n a -> wid_V a (find n m1)) m2
+    NodeMap.mapi (fun n t -> let EN (_,l) = n in 
+        wid_V (find n m1) t
+    ) m2
 
-let env0, m0 = array_M VarMap.empty NodeMap.empty
+let env0, m0 = 
+    array_M VarMap.empty NodeMap.empty
 
 (** Fixpoint loop *)
 let rec fix e k env m =
-  if true then
+  if k <2 then
     begin
         Format.printf "step %d\n" k;
         print_exec_map m 
     end
   else exit 0;
   let ae = Top in
+  Stack.clear func_name_q;
   let m' = step e env m ae in
   let m'' = widening m m' in
   if eq_PM m0 m'' then
@@ -341,5 +373,12 @@ let rec fix e k env m =
 
 (** Semantic function *)
 let s e =
+    (if !debug then
+    begin
+        Format.printf "%% Pre top val %%\n";
+        pr_top_vars Format.std_formatter;
+        Format.printf "\n\n";
+    end
+    );
     (fix e 0 env0 m0)
 

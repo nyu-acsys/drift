@@ -35,7 +35,7 @@ module type AbstractDomainType =
     val project_other_vars: t -> var array -> t
     val equal_var: t -> var -> var -> t
     val widening: t -> t -> t
-    val operator: var -> var -> binop -> bool -> t -> t
+    val operator: var -> var -> binop -> int -> t -> t
     val print_abs: Format.formatter -> t -> unit
     val print_env: Format.formatter -> t -> unit
     val derived: string -> t -> t
@@ -265,9 +265,9 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
             Abstract1.meet_tcons_array Man.man v' tab
           end
           in
-          if cons then vt
+          if cons = -1 then vt
           else
-          let exprv = "cur_v=1" in
+          let exprv = "cur_v="^(string_of_int cons) in
           let tab = Parser.tcons1_of_lstring env [exprv] in
           Abstract1.meet_tcons_array Man.man vt tab
           )

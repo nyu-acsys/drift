@@ -40,11 +40,9 @@ let overview_test =
               (mk_var dec)))
         (mk_var dec))
 
-let id_test1 = parse_from_string "let id x = x in let y = id 1 in let q = id 2 in q"
+let id_test1 = parse_from_string "let id x = x in id (id 2)"
 (* id_test1
-((lambda id^0.
-    ((lambda y^1. ((lambda q^2. q^3)^4 (id^5 2^6)^7)^8)^9 (id^10 1^11)^12)^13)^14
-  (lambda x^15. x^16)^17)^18
+((lambda id^0. (id^1 (id^2 2^3)^4)^5)^6 (lambda x^7. x^8)^9)^10
 *)
 
 let fun_test = 
@@ -74,7 +72,7 @@ let if_test_1 = let def_if = (mk_lambda x (mk_lambda y (mk_ite (mk_op Gt (mk_var
   2^12)^13
 *)
 
-let if_test_2 = parse_from_string "let f a = if a = 2 then a else 1 in f 2"
+let if_test_2 = parse_from_string "let f a = if a > 2 then a else 1 in f 2"
 
 let if_test_3 = parse_from_string "let f a b = if a > 5 then if b < 15 then 0 else 1 else 2 in f 6 10"
 (*
@@ -84,7 +82,7 @@ let if_test_3 = parse_from_string "let f a b = if a > 5 then if b < 15 then 0 el
         ((a^9 > 5^10)^11 ? ((b^12 < 15^13)^14 ? 0^15 : 1^16)^17 : 2^18)^19)^20)^21)^22
 *)
 
-let rec_test_1 = parse_from_string "let rec f a = if a + 1 > 9 then 10 else f (a + 1) in f 8"
+let rec_test_1 = parse_from_string "let rec f a = if a + 1 > 9 then 10 else f (a + 1) in f 1"
 (* rec_test_1
 ((lambda f^0. (f^1 8^2)^3)^4
   (mu f^5 a^6.
@@ -93,11 +91,13 @@ let rec_test_1 = parse_from_string "let rec f a = if a + 1 > 9 then 10 else f (a
         (f^13 (a^14 + 1^15)^16)^17)^18)^19)^20
 *)
 
-let rec_test_2 = parse_from_string "let rec f a = if a <= 9 then 0 else f (a + 1) in f 8"
+let rec_test_2 = parse_from_string "let rec f a = if a <= 1 then 0 else f (a - 1) in f 8"
 (* rec_test_2
 ((lambda f^0. (f^1 8^2)^3)^4
   (mu f^5 a^6. ((a^7 <= 9^8)^9 ? 0^10 : (f^11 (a^12 + 1^13)^14)^15)^16)^17)^18
 *)
+
+let rec_test_3 = parse_from_string "let rec f a b = if a <= b then 0 else f (a - 1) b in f 8 1"
 
 let ary_test_1 = parse_from_string "let ary = make 3 0 in len ary"
 (* ary_test_1
@@ -127,7 +127,7 @@ let bool_test_1 = parse_from_string "true && false || true"
 ((true^0 && false^1)^2 || true^3)^4
 *)
 
-let bool_test_2 = parse_from_string "1 > 2 && 3 < 4 || 6 = 6"
+let bool_test_2 = parse_from_string "1 < 2 || 3 > 4 && 6 <> 6"
 (* bool_test_2
 (((1^0 > 2^1)^2 && (3^3 < 4^4)^5)^6 || (6^7 = 6^8)^9)^10
 *)
@@ -140,25 +140,34 @@ let bool_test_3 = parse_from_string "let rec f a = if a > 1 && a < 10 then f (a 
        a^19)^20)^21)^22
 *)
 
-let seq_test_1 = parse_from_string "1 + 2; 3"
+let seq_test_1 = parse_from_string "let x = if true then 1 else 4 ; 3 in x"
 (* seq_test_1
 ((lambda _^0. 3^1)^2 (1^3 + 2^4)^5)^6
 *)
 
-let seq_test_2 = parse_from_string "3 + 4; assert(3 + 4 < 10)"
+let seq_test_2 = parse_from_string "assert(3 + 4 > 7); assert(3 + 4 < 10)"
 (* seq_test_2
 ((lambda _^0. (((3^1 + 4^2)^3 < 10^4)^5 ? true^6 : false^7)^8)^9
-  (3^10 + 4^11)^12)^13
+  (((3^10 + 4^11)^12 > 7^13)^14 ? true^15 : false^16)^17)^18
 *)
 
-let tests = [seq_test_2]
+let seq_test_3 = parse_from_string "let a = 1 in a; (fun x -> 6) 9;a"
+(* seq_test_3
+((lambda a^0. ((lambda _^1. 6^2)^3 3^4)^5)^6 1^7)^8
+*)
 
-let _ = 
+let seq_test_4 = parse_from_string "if false then 2 else let x = 4 in 3; x"
+
+let typedel_test_1 = parse_from_string "let id (x:int) (z:bool) = if z then x else 2 in let kj (k:int) = k in id 3"
+
+let tests = [typedel_test_1]
+
+let _ =
   Config.parse;
+  Printexc.record_backtrace !Config.bt;
   let t = if !Config.parse_file then [parse_from_file !Config.file]
   else tests in
   List.iter (fun e -> 
-  Printexc.record_backtrace !Config.bt;
   let el = label e in
   print_endline "Executing:";
   print_exp stdout el;
