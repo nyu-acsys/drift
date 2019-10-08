@@ -21,7 +21,7 @@ To run analysis, please do the following commands inside your terminal:
 
 ### Options
 ```bash
-usage: set [-domain domain_name] [-debug] [-bt]
+usage: ./tests.native [-domain domain_name] [-debug] [-bt]
   -debug:  Debug mode
   -bt:     Allow trace back
   -domain: Domain specification
