@@ -267,7 +267,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
           in
           if cons = -1 then vt
           else
-          let exprv = "cur_v="^(string_of_int cons) in
+          let exprv = "cur_v=1" in
           let tab = Parser.tcons1_of_lstring env [exprv] in
           Abstract1.meet_tcons_array Man.man vt tab
           )

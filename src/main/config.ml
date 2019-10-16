@@ -11,13 +11,13 @@ let file = ref ""
 
 let domain = ref "Oct" (*Default: Octagon domain*)
 
-let usage = "usage: set [-domain domain] [-debug] [-bt]"
+let usage = "usage: ./tests.native [-domain domain_name] [-debug] [-bt]"
 
 let cmd_options_spec =
-  [("-debug", Arg.Set debug, "Debug mode (output results)");
-  ("-bt", Arg.Set bt, "Trace back mode");
+  [("-debug", Arg.Set debug, ": Debug mode");
+  ("-bt", Arg.Set bt, ": Allow trace back");
   ("-domain", Arg.String (fun s -> domain := s), ": Domain specification");
-  ("-file", Arg.String (fun s -> parse_file := true; file := s), ": File specification")]
+  ("-file", Arg.String (fun s -> parse_file := true; file := s), ": Input file specification")]
 
 (* Parse auxiliary 'command line options' that are set during parsing of the input file *)
 let parse_options options =

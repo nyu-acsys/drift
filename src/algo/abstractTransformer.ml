@@ -20,6 +20,8 @@ c[M] = {v: int | v = c && n1 >= 2}
 
 let z_index = ref 0 (* first definition *)
 
+let process = ref "Wid"
+
 let incr_z () =
     z_index := !z_index + 1
 
@@ -226,7 +228,7 @@ let rec step term env m ae =
                 else temp_t
             end
             in
-            let _, re_t = prop raw_t t in
+            let _, re_t = if is_Relation raw_t then raw_t,raw_t else prop raw_t t in
             m2 |> NodeMap.add n re_t
         end
     | Ite (e0, e1, e2, l) ->
@@ -251,7 +253,44 @@ let rec step term env m ae =
             let t1 = find n1 m1 in
             let n2 = EN (env, loc e2) in
             let t2 = find n2 m2 in
-            let t1', t' = prop t1 (find n m1) and t2', t'' = prop t2 (find n m2) in
+            (if !debug then
+            begin
+                Format.printf "\n<=== Prop then ===> %s\n" (loc e1);
+                pr_value Format.std_formatter t1;
+                Format.printf "\n<<~~~~>> %s\n" l;
+                pr_value Format.std_formatter (find n m1);
+                Format.printf "\n";
+            end
+            );
+            let t1', t' = prop t1 (find n m1) in
+            (if !debug then
+            begin
+                Format.printf "\nRES for prop:\n";
+                pr_value Format.std_formatter t1';
+                Format.printf "\n<<~~~~>>\n";
+                pr_value Format.std_formatter t';
+                Format.printf "\n";
+            end
+            ); 
+            (if !debug then
+            begin
+                Format.printf "\n<=== Prop else ===> %s\n" (loc e2);
+                pr_value Format.std_formatter t2;
+                Format.printf "\n<<~~~~>> %s\n" l;
+                pr_value Format.std_formatter (find n m2);
+                Format.printf "\n";
+            end
+            );
+            let t2', t'' = prop t2 (find n m2) in
+            (if !debug then
+            begin
+                Format.printf "\nRES for prop:\n";
+                pr_value Format.std_formatter t2';
+                Format.printf "\n<<~~~~>>\n";
+                pr_value Format.std_formatter t'';
+                Format.printf "\n";
+            end
+            ); 
             let m1' = m1 |> NodeMap.add n1 t1' |> NodeMap.add n t' and
             m2' = m2 |> NodeMap.add n2 t2' |> NodeMap.add n t'' in
             join_M (join_M m0 m1') m2'
@@ -345,29 +384,40 @@ let rec step term env m ae =
 
 (** Widening **)
 let widening m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
-    NodeMap.mapi (fun n t -> let EN (_,l) = n in 
+    NodeMap.mapi (fun n t ->
         wid_V (find n m1) t
+    ) m2
+
+(** Narrowing **)
+let narrowing m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
+    NodeMap.mapi (fun n t ->
+        meet_V (find n m1) t
     ) m2
 
 let env0, m0 = 
     array_M VarMap.empty NodeMap.empty
 
+let k = ref 0
+
+let env = ref env0
+
 (** Fixpoint loop *)
-let rec fix e k env m =
-  if k <2 then
+let rec fix e k m =
+  if true then
     begin
-        Format.printf "step %d\n" k;
-        print_exec_map m 
+        Format.printf "%s step %d\n" !process k;
+        print_exec_map m;
     end
   else exit 0;
   let ae = Top in
   Stack.clear func_name_q;
-  let m' = step e env m ae in
-  let m'' = widening m m' in
+  let m' = step e !env m ae in
+  let m'' = if !process = "Wid" then widening m m' else narrowing m m' in
   if eq_PM m0 m'' then
   begin
-    if leq_M m'' m then m
-    else fix e (k + 1) env m''
+    let comp = if !process = "Wid" then leq_M m'' m else leq_M m m'' in
+    if comp then m
+    else fix e (k+1) m''
   end
   else exit 0
 
@@ -378,7 +428,9 @@ let s e =
         Format.printf "%% Pre top val %%\n";
         pr_top_vars Format.std_formatter;
         Format.printf "\n\n";
-    end
-    );
-    (fix e 0 env0 m0)
+    end);
+    let m1 = (fix e 0 m0 ) in
+    process := "Nar";
+    (fix e 0 m1)
+
 
