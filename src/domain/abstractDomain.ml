@@ -214,7 +214,16 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         end);
         Abstract1.minimize_environment Man.man res
     let widening v1 v2 = let v1',v2' = lc_env v1 v2 in
-      let res = Abstract1.widening Man.man v1' v2' in
+      (* let test1 = let var_x = "x" |> Var.of_string in
+      let env = Environment.make [|var_x|] [||] in
+      let expr1 = "x<=2" in
+      Parser.lincons1_of_lstring env [expr1] in
+      let (int_vars, real_vars) = Environment.vars (Abstract1.env v1') in
+        (* Check previous variable exists or not *)
+      let x_exists = Array.fold_left (fun b x -> "x" = Var.to_string x || b) false int_vars in *)
+      let res = (* if x_exists then Abstract1.widening_threshold Man.man v1' v2' test1 *)
+        Abstract1.widening Man.man v1' v2'
+      in
       Abstract1.minimize_environment Man.man res
     let make_var var = 
       try let _ = int_of_string var in None

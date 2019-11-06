@@ -8,6 +8,6 @@ let rec f x =
   else
     x
 in
-let main n =
+let main =
   assert (f 3 >= 0)
-in main 20
+in main

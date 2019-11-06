@@ -22,6 +22,8 @@ let z_index = ref 0 (* first definition *)
 
 let process = ref "Wid"
 
+let pre_def_func = [|"make"; "len"; "set"; "get"|]
+
 let incr_z () =
     z_index := !z_index + 1
 
@@ -64,6 +66,16 @@ let rec prop v1 v2 = match v1, v2 with
         Table t1'', Table t2''
     | _, _ -> v1, join_V v1 v2
 
+(* let rec nav v1 v2 = match v1, v2 with (*precise abs*)
+    | Relation r1, Relation r2 -> if leq_R r1 r2 then Relation r1 else Relation r2
+    | Table t1, Table t2 -> let t1', t2' = alpha_rename t1 t2 in
+        let (z1, v1i, v1o) = t1' and (z2, v2i, v2o) = t2' (*precise*) in
+        let v1i' = nav v1i v2i in
+        let v1o' = nav (arrow_V z1 v1o v2i) (arrow_V z1 v2o v2i) in
+        let t1'' = (z1, v1i', v1o') in
+        Table t1''
+    | _, _ -> v1 *)
+
 let iterUpdate m v l = NodeMap.map (fun x -> arrow_V l x v) m
 
 let getVars env = VarMap.fold (fun var n ary -> Array.append ary [|var|]) env [||]
@@ -95,9 +107,9 @@ let rec step term env m ae =
         end
         );
         let t = find n m in (* M[env*l] *)
-        let ct = stren_V (init_V_c c) ae in (* {v = c ^ aE}*)
+        let ct = init_V_c c in
         let t' = join_V t ct in
-        m |> NodeMap.add n t'
+        m |> NodeMap.add n (stren_V t' ae) (* {v = c ^ aE}*)
     | Var (x, l) ->
         (if !debug then
         begin
@@ -121,7 +133,15 @@ let rec step term env m ae =
             Format.printf "\n";
         end
         );
-        let raw_tx', t' = prop tx t in
+        let raw_tx', t' = if Array.mem lx pre_def_func then
+            tx, t
+            else if is_Relation t then prop tx t
+            else
+                let proj_t = proj_V t [||] in
+                let t1, t2 = prop tx proj_t in
+                let _, t3 = prop t2 t in
+                t1, t3
+        in
         let tx' = forget_V x raw_tx' in
         (if !debug then
         begin
@@ -170,7 +190,8 @@ let rec step term env m ae =
                     Format.printf "\n";
                 end
                 );
-                let t1', t0 = prop t1 t_temp in
+                let t1', t0 = prop t1 t_temp
+                in
                 (if !debug then
                 begin
                     Format.printf "\nRES for prop:\n";
@@ -262,7 +283,12 @@ let rec step term env m ae =
                 Format.printf "\n";
             end
             );
-            let t1', t' = prop t1 (find n m1) in
+            let t1', t' = 
+                let proj_t1 = proj_V t1 [||] in
+                let t1', t' = prop (proj_t1) (find n m1) in
+                let t1'', _ = prop t1 t1' in
+                t1'', t'
+            in
             (if !debug then
             begin
                 Format.printf "\nRES for prop:\n";
@@ -272,7 +298,7 @@ let rec step term env m ae =
                 Format.printf "\n";
             end
             ); 
-            (if !debug then
+            (if !debug then 
             begin
                 Format.printf "\n<=== Prop else ===> %s\n" (loc e2);
                 pr_value Format.std_formatter t2;
@@ -281,7 +307,12 @@ let rec step term env m ae =
                 Format.printf "\n";
             end
             );
-            let t2', t'' = prop t2 (find n m2) in
+            let t2', t'' =
+                let proj_t2 = proj_V t2 [||] in
+                let t2', t' = prop (proj_t2) (find n m2) in
+                let t2'', _ = prop t2 t2' in
+                t2'', t'
+            in
             (if !debug then
             begin
                 Format.printf "\nRES for prop:\n";
@@ -291,9 +322,12 @@ let rec step term env m ae =
                 Format.printf "\n";
             end
             ); 
-            let m1' = m1 |> NodeMap.add n1 t1' |> NodeMap.add n t' and
-            m2' = m2 |> NodeMap.add n2 t2' |> NodeMap.add n t'' in
-            join_M (join_M m0 m1') m2'
+            let m1' = m1 |> NodeMap.add n1 t1' |> NodeMap.add n (stren_V t' ae) and
+            m2' = m2 |> NodeMap.add n2 t2' |> NodeMap.add n (stren_V t'' ae) in
+            if !process = "Wid" then
+                join_M (join_M m0 m1') m2'
+            else
+                if leq_M m1' m2' then m1' else m2'
         end
     | Rec (f_opt, x, lx, e1, l) ->
         (if !debug then
@@ -338,7 +372,8 @@ let rec step term env m ae =
                 Format.printf "\n";
             end
             );
-            let px_t, t1 = prop prop_t t in
+            let px_t, t1 = prop prop_t t
+            in
             (if !debug then
             begin
                 Format.printf "\nRES for prop:\n";
@@ -361,8 +396,12 @@ let rec step term env m ae =
                         Format.printf "\n";
                     end
                   );
-                  let raw_t = proj_V t [||] in 
-                  let t2, tf' = prop raw_t tf in
+                  let t2, tf' = 
+                    let proj_t = proj_V t [||] in
+                    let t', tf' = prop (proj_t) tf in
+                    let t'', _ = prop t t' in
+                    t'', tf'
+                  in
                   (if !debug then
                     begin
                         Format.printf "\nRES for prop:\n";
@@ -381,11 +420,12 @@ let rec step term env m ae =
             step e1 env1 m1 ae'
         end 
         
+let st = ref 0
 
 (** Widening **)
 let widening m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
-    NodeMap.mapi (fun n t ->
-        wid_V (find n m1) t
+    NodeMap.mapi (fun n t -> (*Delay wid*)
+        if !st > 30 then wid_V (find n m1) t else wid_V t (find n m1)
     ) m2
 
 (** Narrowing **)
@@ -397,23 +437,23 @@ let narrowing m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot
 let env0, m0 = 
     array_M VarMap.empty NodeMap.empty
 
-let k = ref 0
-
 let env = ref env0
 
 (** Fixpoint loop *)
 let rec fix e k m =
+  st := k;
   if true then
     begin
         Format.printf "%s step %d\n" !process k;
         print_exec_map m;
     end
   else exit 0;
-  let ae = Top in
+  let ae = Relation (top_R Plus) in
   Stack.clear func_name_q;
   let m' = step e !env m ae in
   let m'' = if !process = "Wid" then widening m m' else narrowing m m' in
-  if eq_PM m0 m'' then
+  let pre_ch = eq_PM m0 m'' in
+  if pre_ch then
   begin
     let comp = if !process = "Wid" then leq_M m'' m else leq_M m m'' in
     if comp then m

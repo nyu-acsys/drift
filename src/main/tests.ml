@@ -160,7 +160,7 @@ let seq_test_4 = parse_from_string "if false then 2 else let x = 4 in 3; x"
 
 let typedel_test_1 = parse_from_string "let id (x:int) (z:bool) = if z then x else 2 in let kj (k:int) = k in id 3"
 
-let tests = [typedel_test_1]
+let tests = [ary_test_1]
 
 let _ =
   Config.parse;
