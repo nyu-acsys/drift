@@ -9,5 +9,5 @@ let rec loop x i =
     loop (3 - x) (i - 1)
 in 
 let main n =
-  assert (loop 0 n <= 0)
-in main 15
+  assert (loop 1 n >= 0)
+in main 4

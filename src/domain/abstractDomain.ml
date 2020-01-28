@@ -59,17 +59,51 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
       (v1', v2')
     let leq v1 v2 = 
       let v1',v2' = lc_env v1 v2 in
-      Abstract1.is_leq Man.man v1' v2'
+      (* (if !debug then
+        begin
+        Format.printf "\n\nLeq\n";
+        Abstract1.print Format.std_formatter v1;
+        Format.printf "\n ^with \n";
+        Abstract1.print Format.std_formatter v2;
+        Format.printf "\nEnv: ";
+        Environment.print Format.std_formatter (Abstract1.env v1');
+        Format.printf "\n";
+        end
+      ); *)
+      let res = Abstract1.is_leq Man.man v1' v2' in
+      (* (if !debug then
+        begin
+          Format.printf "result: %b" res;
+          Format.printf "\n";
+      end); *)
+      res
     let eq v1 v2 = 
       let v1',v2' = lc_env v1 v2 in
       Abstract1.is_eq Man.man v1' v2'
     let join v1 v2 = 
       let v1',v2' = lc_env v1 v2 in
+      (if !debug then
+        begin
+        Format.printf "\n\nJoin\n";
+        Abstract1.print Format.std_formatter v1;
+        Format.printf "\n ^with \n";
+        Abstract1.print Format.std_formatter v2;
+        Format.printf "\nEnv: ";
+        Environment.print Format.std_formatter (Abstract1.env v1');
+        Format.printf "\n";
+        end
+      );
       let res = Abstract1.join Man.man v1' v2' in
+      (if !debug then
+        begin
+          Format.printf "result: ";
+          Abstract1.print Format.std_formatter res;
+          Format.printf "\n";
+      end);
       Abstract1.minimize_environment Man.man res
     let meet v1 v2 =
       let v1',v2' = lc_env v1 v2 in
-      (if !debug then
+      (* (if !debug then
         begin
         Format.printf "\n\nMeet\n";
         Abstract1.print Format.std_formatter v1;
@@ -79,14 +113,14 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         Environment.print Format.std_formatter (Abstract1.env v1');
         Format.printf "\n";
         end
-      );
+      ); *)
       let res = Abstract1.meet Man.man v1' v2' |> Abstract1.minimize_environment Man.man in
-      (if !debug then
+      (* (if !debug then
         begin
           Format.printf "result: " ;
           Abstract1.print Format.std_formatter res;
           Format.printf "\n";
-      end);
+      end); *)
       res
     let alpha_rename v prevar var =
         (if !debug then
@@ -276,7 +310,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
           in
           if cons = -1 then vt
           else
-          let exprv = "cur_v=1" in
+          let exprv = "cur_v=" ^ (string_of_int cons) in
           let tab = Parser.tcons1_of_lstring env [exprv] in
           Abstract1.meet_tcons_array Man.man vt tab
           )
@@ -334,16 +368,62 @@ module OctManager: ManagerType =
     let man = Oct.manager_alloc ()
   end
 
-module PolkaManager: ManagerType =
-  struct
+module PolkaStManager: ManagerType =
+  struct 
+    (* 
+      Convex polyhedra are defined by the conjunction of a set of linear constraints of the form 
+      a_0*x_0 + ... + a_n*x_n + b >= 0 or a_0*x_0 + ... + a_n*x_n + b > 0 
+      where a_0, ..., a_n, b, c are constants and x_0, ..., x_n variables.
+    *)
     type t = Polka.strict
     let man = Polka.manager_alloc_strict() |> Polka.manager_of_polka_strict
+  end
+
+module PolkaEqManager: ManagerType =
+  struct
+    (* 
+      Linear equalities are conjunctions of linear equalities of the form a_0*x_0 + ... + a_n*x_n + b = 0.
+    *)
+    type t = Polka.equalities
+    let man = Polka.manager_alloc_equalities() |> Polka.manager_of_polka_equalities
+  end
+
+module PolkaLsManager: ManagerType =
+  struct
+    (* 
+      Loose polyhedra cannot have strict inequality constraints like x>0. 
+      They are algorithmically more efficient (less generators, simpler normalization). 
+    *)
+    type t = Polka.loose
+    let man = Polka.manager_alloc_loose() |> Polka.manager_of_polka_loose
+  end
+
+module PplGridManager: ManagerType =
+  struct
+    (* 
+      Linear congruences
+    *)
+    type t = Ppl.grid
+    let man = Ppl.manager_alloc_grid() |> Ppl.manager_of_ppl_grid
+  end
+
+module PplStrictManager: ManagerType =
+  struct
+    (* 
+      wrapper around the Parma Polyhedra
+    *)
+    type t = Ppl.strict
+    let man = Ppl.manager_alloc_strict() |> Ppl.manager_of_ppl_strict
   end
 
 let parse_domain = function
   | "Box" -> (module (MakeAbstractDomainValue(BoxManager)): AbstractDomainType)
   | "Oct" -> (module (MakeAbstractDomainValue(OctManager)): AbstractDomainType)
-  | "Polka_strict" -> (module (MakeAbstractDomainValue(PolkaManager)): AbstractDomainType)
+  | "Polka_st" -> (module (MakeAbstractDomainValue(PolkaStManager)): AbstractDomainType)
+  | "Polka_ls" -> (module (MakeAbstractDomainValue(PolkaLsManager)): AbstractDomainType)
+  | "Polka_eq" -> (module (MakeAbstractDomainValue(PolkaEqManager)): AbstractDomainType)
+  | "Ppl_st" -> (module (MakeAbstractDomainValue(PplStrictManager)): AbstractDomainType)
+  | "Ppl_gd" -> (module (MakeAbstractDomainValue(PplGridManager)): AbstractDomainType)
   | _ -> raise (Invalid_argument "Incorrect domain specification")
 
 module AbstractValue = (val (!domain |> parse_domain))

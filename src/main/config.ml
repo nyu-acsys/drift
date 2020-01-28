@@ -3,6 +3,8 @@ let version = "0.1 beta"
 
 let debug = ref false
 
+let integrat_test = ref false
+
 let bt = ref false
 
 let parse_file = ref false
@@ -11,12 +13,13 @@ let file = ref ""
 
 let domain = ref "Oct" (*Default: Octagon domain*)
 
-let usage = "usage: ./tests.native [-domain domain_name] [-debug] [-bt]"
+let usage = "usage: ./tests.native [-domain domain_name] [-debug] [-bt] [-int]"
 
 let cmd_options_spec =
   [("-debug", Arg.Set debug, ": Debug mode");
   ("-bt", Arg.Set bt, ": Allow trace back");
   ("-domain", Arg.String (fun s -> domain := s), ": Domain specification");
+  ("-int", Arg.Set integrat_test, ": Start integration testing");
   ("-file", Arg.String (fun s -> parse_file := true; file := s), ": Input file specification")]
 
 (* Parse auxiliary 'command line options' that are set during parsing of the input file *)

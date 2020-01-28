@@ -28,6 +28,11 @@ and env_t = node_t VarMap.t (*E = Var -> N*)
 
 let name_of_node lb = ("lab_" ^ lb)
 
+let l_index = ref 0
+
+let incr_l () =
+  l_index := !l_index + 1
+
 let comp s1 s2 =
   let l1 = try int_of_string s1 
     with _ -> -1 in
@@ -68,8 +73,9 @@ module SemanticsDomain =
       | Top
       | Relation of relation_t
       | Table of table_t
-      | Ary of relation_t (* Future plan: * (relation_t array)*)
+      | Ary of array_t
       | Unit of unit
+    and array_t = (var array) * relation_t (* disable element for now*)
     and table_t = var * value_t * value_t
     and exec_map_t = value_t NodeMap.t
     let rec alpha_rename_R a prevar var = match a with
@@ -89,7 +95,7 @@ module SemanticsDomain =
         | Bool _ -> true
     and init_R_c (c:value) = match c with
         | Boolean true -> Bool (AbstractValue.init_c 1, AbstractValue.bot)
-        | Boolean false -> Bool (AbstractValue.bot, AbstractValue.init_c 1)
+        | Boolean false -> Bool (AbstractValue.bot, AbstractValue.init_c 0)
         | Integer i -> Int (AbstractValue.init_c i)
     and join_R a1 a2 =
         match a1, a2 with
@@ -182,19 +188,19 @@ module SemanticsDomain =
     and alpha_rename t1 t2 = let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
         if z1 = z2 then t1, t2
         else (*a renaming*)
-        let v1o' = alpha_rename_V v1o z1 "z" and v2o' = alpha_rename_V v2o z2 "z"
-        in ("z", v1i, v1o'), ("z", v2i, v2o')
+        let v2o' = alpha_rename_V v2o z2 z1 in
+        (z1, v1i, v1o), (z1, v2i, v2o')
     and join_T t1 t2 = let t =
         let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
         if z1 = z2 then (z1, join_V v1i v2i, join_V v1o v2o) else (*a renaming*)
-            let v1o' = alpha_rename_V v1o z1 "z" and v2o' = alpha_rename_V v2o z2 "z"
-            in ("z", join_V v1i v2i, join_V v1o' v2o')
+            let v2o' = alpha_rename_V v2o z2 z1 in 
+            (z1, join_V v1i v2i, join_V v1o v2o')
         in t
     and meet_T t1 t2 = let t =
         let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
         if z1 = z2 then (z1, meet_V v1i v2i, meet_V v1o v2o) else (*a renaming*)
-            let v1o' = alpha_rename_V v1o z1 "z" and v2o' = alpha_rename_V v2o z2 "z"
-            in ("z", meet_V v1i v2i, meet_V v1o' v2o')
+            let v2o' = alpha_rename_V v2o z2 z1 in 
+            (z1, meet_V v1i v2i, meet_V v1o v2o')
         in t
     and leq_T t1 t2 = match t1, t2 with
         | (z1, v1i, v1o), (z2, v2i, v2o) -> if z1 = z2 then (leq_V v1i v2i) && (leq_V v1o v2o) else false
@@ -203,17 +209,17 @@ module SemanticsDomain =
     and forget_T var t = let (z, vi, vo) = t in (z, forget_V var vi, forget_V var vo)
     and arrow_T var t v =
         let (z, vi, vo) = t in
-        let vo' = forget_V z vo in
-        (z, arrow_V var vi v, arrow_V var vo' v)
+        let v' = forget_V z v in
+        (z, arrow_V var vi v, arrow_V var vo v')
     and wid_T t1 t2 = let t =
         let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
         if z1 = z2 then (z1, wid_V v1i v2i, wid_V v1o v2o) else (*a renaming*)
-        let v1o' = alpha_rename_V v1o z1 "z" and v2o' = alpha_rename_V v2o z2 "z"
-        in ("z", wid_V v1i v2i, wid_V v1o' v2o') in t
+        let v2o' = alpha_rename_V v2o z2 z1 in 
+        (z1, wid_V v1i v2i, wid_V v1o v2o') in t
     and equal_T t var = let (z, vi, vo) = t in
         let vo' = if z = var then 
-        alpha_rename_V vo z "z1"
-        else vo in
+          alpha_rename_V vo z "z1"
+          else vo in
         (z, equal_V vi var, equal_V vo' var)
     and replace_T t var x = let (z, vi, vo) = t in
       (z, replace_V vi var x, replace_V vo var x)
@@ -232,53 +238,61 @@ module SemanticsDomain =
       and join_M m1 m2 =
         NodeMap.union (fun n v1 v2 -> Some (join_V v1 v2)) m1 m2
       and leq_M m1 m2 =
-        NodeMap.for_all (fun n v1 (*untie to node -> value*) ->
+        NodeMap.for_all (fun n v1 (*untie to node -> value*) -> 
         NodeMap.find_opt n m2 |> Opt.map (fun v2 -> leq_V v1 v2) |>
         Opt.get_or_else (v1 = Bot)) m1
       and top_M m = NodeMap.map (fun a -> Top) m
       and array_M env m = 
         let n_make = EN (env, "make") in
         let t_make = (* make *)
-          (* zm: {v:int | v >= 0} -> ex: {v:int | top} -> {v: int array (l) | l = zm ^ zm >= 0} *)
+          (* make |-> zm: {v:int | v >= 0} -> ex: {v:int | top} -> {v: Int Array (l) | [| l=zm; zm>=0; |]} *)
           let var_l = "zm" in
           let rl = top_R Plus |> op_R "cur_v" "0" Ge true in
           let var_e = "ex" in
           let rm = top_R Plus in (*TODO: Make poly*)
-          let rlen = arrow_R var_l rm rl |> op_R "l" var_l Eq true in
-          Table (var_l, Relation rl, Table (var_e, Relation rm, Ary rlen))
+          let llen = arrow_R var_l rm rl |> op_R "l" var_l Eq true in
+          (* let ilen = op_R "i" "0" Ge true llen |> op_R "i" "l" Lt true in
+          let rlen = op_R "x" var_e Eq true ilen in  *)
+          Table (var_l, Relation rl, Table (var_e, Relation rm, Ary ([|"l";|],llen) ))
         in
         let n_len = EN (env, "len") in
         let t_len = (* len *)
-          (* zl: {v: int array (l) | l >= 0} -> {v: int | v = l} *)
+          (* len |-> zl: { v: Int Array (l) | [| l>=0; |]  } -> { v: Int | [| v=l |] } *)
           let var_l = "zl" in
           let var_len = "l" in
-          let rl = replace_R (top_R Plus |> op_R "cur_v" "0" Ge true) "cur_v" var_len in
+          (* let var_i = "i" in *)
+          let llen = top_R Plus |> op_R var_len "0" Ge true in
+          (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
           let rlen = equal_R (top_R Plus) "l" in
-          Table (var_l, Ary rl, Relation rlen)
+          Table (var_l, Ary ([|"l"|], llen), Relation rlen)
         in
         let n_get = EN (env, "get") in
         let t_get = (* get *)
-          (* zg: {v: int array (l) | l >= 0 } -> i: {v: int | 0 <= v < l} -> {v: int | top} *)
+          (* get |-> zg: { v: Int Array (l) | [| l>=0; |] } -> zi: {v: int | 0 <= v < l} -> {v: int | top }  *)
           let var_l = "zg" in
           let var_len = "l" in
-          let rl = replace_R (top_R Plus |> op_R "cur_v" "0" Ge true) "cur_v" var_len in
-          let var_i = "i" in
+          (* let var_i = "i" in *)
+          let llen = replace_R (top_R Plus |> op_R "cur_v" "0" Ge true) "cur_v" var_len in
+          (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
           let rm = top_R Plus |> op_R "cur_v" "0" Ge true |> op_R "cur_v" var_len Lt true in
-          let rr = top_R Plus in
-          Table (var_l, Ary rl, Table (var_i, Relation rm, Relation rr))
+          let rr = top_R Plus (*|> op_R "cur_v" "x" Eq true*) in 
+          let var_zi = "zi" in
+          Table (var_l, Ary ([|"l"|], llen), Table (var_zi, Relation rm, Relation rr))
         in
         let n_set = EN (env, "set") in
         let t_set = (* set *)
-          (* zs: {v: int array (l) | l >= 0 } -> i: {v: int | 0 <= v < l} -> ex: {v: int | top} -> unit *)
+          (* set |-> zs: { v: Int Array (l) | [| l>=0; |] } -> zi: {v: int | 0 <= v < l} -> ex: {v: int | top } -> unit *)
           let var_l = "zs" in
           let var_len = "l" in
-          let rl = replace_R (top_R Plus |> op_R "cur_v" "0" Ge true) "cur_v" var_len in
-          let var_i = "i" in
+          (* let var_i = "i" in *)
+          let llen = replace_R (top_R Plus |> op_R "cur_v" "0" Ge true) "cur_v" var_len in
+          (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
           let rm = top_R Plus |> op_R "cur_v" "0" Ge true |> op_R "cur_v" var_len Lt true in
           let var_e = "ex" in
+          let var_zi = "zi" in
           let rri = top_R Plus in
           let rrr = () in
-          Table (var_l, Ary rl, Table (var_i, Relation rm, Table (var_e, Relation rri, Unit rrr)))
+          Table (var_l, Ary ([|"l"|], llen), Table (var_zi, Relation rm, Table (var_e, Relation rri, Unit rrr)))
         in
         let m' = 
           m |> NodeMap.add n_make t_make |> NodeMap.add n_len t_len |> NodeMap.add n_get t_get
@@ -297,7 +311,7 @@ module SemanticsDomain =
       and alpha_rename_V v prevar var = match v with
         | Relation r -> Relation (alpha_rename_R r prevar var)
         | Table t -> Table (alpha_rename_T t prevar var)
-        | Ary (l) -> Ary (alpha_rename_R l prevar var)
+        | Ary ary -> Ary (alpha_rename_Ary ary prevar var)
         | _ -> v
       and init_V_c (c:value) = Relation (init_R_c c)
       and c_V v1 v2 label = match v2 with
@@ -311,14 +325,14 @@ module SemanticsDomain =
         | Bot, v | v, Bot -> v
         | Relation r1, Relation r2 -> Relation (join_R r1 r2)
         | Table t1, Table t2 -> Table (join_T t1 t2)
-        | Ary (l1), Ary (l2) -> Ary (join_R l1 l2)
+        | Ary ary1, Ary ary2 -> Ary (join_Ary ary1 ary2)
         | Unit u1, Unit u2 -> Unit u1
         | _, _ -> Top
       and meet_V (v1:value_t) (v2:value_t) :value_t = match v1, v2 with
         | Top, v | v, Top -> v
         | Relation r1, Relation r2 -> Relation (meet_R r1 r2)
         | Table t1, Table t2 -> Table (meet_T t1 t2)
-        | Ary (l1), Ary (l2) -> Ary (meet_R l1 l2)
+        | Ary ary1, Ary ary2 -> Ary (meet_Ary ary1 ary2)
         | Unit u1, Unit u2 -> Unit u1
         | _, _ -> Bot
       and leq_V (v1:value_t) (v2:value_t) :bool = match v1, v2 with
@@ -326,7 +340,7 @@ module SemanticsDomain =
         | _, Top -> true
         | Relation r1, Relation r2 -> leq_R r1 r2
         | Table t1, Table t2 -> leq_T t1 t2
-        | Ary (l1), Ary (l2) -> leq_R l1 l2
+        | Ary ary1, Ary ary2 -> leq_Ary ary1 ary2
         | Unit u1, Unit u2 -> true
         | _, _ -> false
       and eq_V (v1:value_t) (v2:value_t) :bool = match v1, v2 with
@@ -334,7 +348,7 @@ module SemanticsDomain =
       | _, Top -> true
       | Relation r1, Relation r2 -> eq_R r1 r2
       | Table t1, Table t2 -> eq_T t1 t2
-      | Ary (l1), Ary (l2) -> eq_R l1 l2
+      | Ary ary1, Ary ary2 -> eq_Ary ary1 ary2
       | Unit u1, Unit u2 -> true
       | _, _ -> false
       and is_table v = match v with
@@ -346,17 +360,26 @@ module SemanticsDomain =
       and is_Relation = function 
         | Relation _ -> true
         | _ -> false
+      and is_Array = function
+        | Ary _ -> true
+        | _ -> false
       and arrow_V var v v' = match v' with
         | Bot -> Bot
         | Top | Table _ | Unit _ -> v
-        | Relation r2 | Ary r2 -> (match v with
+        | Relation r2 -> (match v with
             | Table t -> Table (arrow_T var t v')
             | Relation r1 -> Relation (arrow_R var r1 r2)
-            | Ary l -> Ary (arrow_R var l r2)
+            | Ary ary -> Ary (arrow_Ary var ary r2)
             | _ -> v)
+        | Ary ary2 -> let (vars, r2) = ary2 in
+          (match v with
+          | Table t -> Table (arrow_T var t v')
+          | Relation r1 -> Relation (arrow_R var r1 r2)
+          | Ary ary -> Ary (arrow_Ary var ary r2)
+          | _ -> v)
       and forget_V var v = match v with
         | Table t -> Table (forget_T var t)
-        | Ary (l) -> Ary (forget_R var l)
+        | Ary ary -> Ary (forget_Ary var ary)
         | Relation r -> Relation (forget_R var r)
         | _ -> v
       and equal_V v var = match v with
@@ -366,7 +389,7 @@ module SemanticsDomain =
       and wid_V v1 v2 = match v1, v2 with
         | Relation r1, Relation r2 -> Relation (wid_R r1 r2)
         | Table t1, Table t2 -> Table (wid_T t1 t2)
-        | Ary (l1), Ary (l2) -> Ary (wid_R l1 l2)
+        | Ary ary1, Ary ary2 -> Ary (wid_Ary ary1 ary2)
         | Unit u1, Unit u2 -> Unit u1
         | _, _ -> join_V v1 v2
       and op_V sl sr op v = match v with
@@ -392,7 +415,7 @@ module SemanticsDomain =
     and replace_V v var x = match v with
       | Table t -> Table (replace_T t var x)
       | Relation r -> Relation (replace_R r var x)
-      | Ary (l) -> Ary (replace_R l var x)
+      | Ary ary -> Ary (replace_Ary ary var x)
       | _ -> v
     and extrac_bool_V v b = match v with
       | Relation r -> Relation (extrac_bool_R r b)
@@ -400,7 +423,7 @@ module SemanticsDomain =
     and stren_V v ae = match v,ae with
       | Bot, _ -> Bot
       | Relation r, Relation rae -> Relation (stren_R r rae)
-      | Ary (l), Relation rae -> Ary (stren_R l rae)
+      | Ary ary, Relation rae -> Ary (stren_Ary ary rae)
       | Table t, Relation rae -> Table t
       | Top, _ -> ae
       | _, Bot -> Bot
@@ -428,28 +451,72 @@ module SemanticsDomain =
       match v with
       | Relation r -> Relation (proj_R r vars)
       | Table t -> Table (proj_T t vars)
-      | Ary (l) -> Ary (proj_R l (vars |> Array.append [|"l"|]))
+      | Ary ary -> Ary (proj_Ary ary vars)
       | _ -> v
+    and get_len_var_V = function
+      | Ary ary -> get_len_var_Ary ary
+      | _ -> raise (Invalid_argument "get length dep variable unsucessful")
     (*
       *******************************
       ** Abstract domain for Array **
       *******************************
       *)
-    and init_Ary l c = Array.make l (init_R_c c)
+    and init_Ary vars = let var = Array.get vars 0 in
+      let var' = if var = "l" then 
+            let temp = var^(!l_index |> string_of_int) in
+            incr_l();
+            temp
+          else var in
+      let vars = [|var'|] in
+      let r = bot_R Plus in
+      vars, r
+    and get_len_var_Ary ary = let vars, _ = ary in Array.get vars 0
     and empty_Ary l = Array.make l (top_R Plus)
     and join_Ary ary1 ary2 = 
-      try Array.map2 join_R ary1 ary2 with 
-      Invalid_argument s -> raise (Invalid_argument ("Array join: " ^ s))
-    and meet_Ary ary1 ary2 = try Array.map2 meet_R ary1 ary2 with
-      Invalid_argument s -> raise (Invalid_argument ("Array meet: " ^ s))
-    and leq_Ary ary1 ary2 = try Array.map2 leq_R ary1 ary2 |> Array.for_all (fun a -> a) with
-      Invalid_argument s -> raise (Invalid_argument ("Array leq: " ^ s))
-    and wid_Ary ary1 ary2 = try Array.map2 wid_R ary1 ary2 with
-    Invalid_argument s -> raise (Invalid_argument ("Array wid: " ^ s))
-    and forget_Ary var ary = Array.map (fun r -> forget_R var r) ary
-    and proj_Ary ary vars = Array.map (fun r -> proj_R r vars) ary
-    and alpha_rename_Ary ary prevar var = Array.map (fun r -> alpha_rename_R r prevar var) ary
-    and replace_Ary ary var x = Array.map (fun r -> replace_R r var x) ary
+      let ary1', ary2' = alpha_rename_Arys ary1 ary2 in
+      let vars1, r1 = ary1' in let vars2, r2 = ary2' in
+      vars1, (join_R r1 r2)
+    and meet_Ary ary1 ary2 = 
+      let ary1', ary2' = alpha_rename_Arys ary1 ary2 in
+      let vars1, r1 = ary1' in let vars2, r2 = ary2' in
+      vars1, (meet_R r1 r2)
+    and leq_Ary ary1 ary2 = 
+      let vars1, r1 = ary1 in let vars2, r2 = ary2 in
+      let scop_check = Array.fold_left (fun b i -> if Array.mem i vars2 then b else false) true vars1 in
+      if scop_check then leq_R r1 r2 else false
+    and eq_Ary ary1 ary2 =
+      let vars1, r1 = ary1 in let vars2, r2 = ary2 in
+      let scop_check = Array.fold_left (fun b i -> if Array.mem i vars2 then b else false) true vars1 in
+      if scop_check then eq_R r1 r2 else false
+    and wid_Ary ary1 ary2 =
+      let ary1', ary2' = alpha_rename_Arys ary1 ary2 in
+      let vars1, r1 = ary1' in let vars2, r2 = ary2' in
+      vars1, (wid_R r1 r2)
+    and arrow_Ary var ary r2 = let (vars, r) = ary in
+      (vars, arrow_R var r r2)
+    and forget_Ary var ary = let (vars, r) = ary in
+      (vars, forget_R var r)
+    and stren_Ary ary ae = let (vars, r) = ary in
+      let r' = stren_R r ae in
+      (vars, r')
+    and proj_Ary ary vars = let (vs, r) = ary in
+      let vars' = Array.append vars vs in
+      (vs, proj_R r vars')
+    and alpha_rename_Arys ary1 ary2 = 
+      let vars1, r1 = ary1 in let vars2, r2 = ary2 in
+      let p_ary2 = ref ary2 in
+      let _ = Array.map2 (fun a b -> if a = b then b else 
+        (p_ary2 := alpha_rename_Ary !p_ary2 b a; a)) vars1 vars2 in
+      let ary2' = !p_ary2 in
+      ary1, ary2'
+    and alpha_rename_Ary ary prevar var = let (vars, r) = ary in
+      let vars' = Array.map (fun a -> if a = prevar then var else a) vars in
+      let r' = alpha_rename_R r prevar var in
+      (vars', r')
+    and replace_Ary ary var x = let (vars, r) = ary in
+      let vars' = Array.map (fun a -> if a = var then x else a) vars in
+      let r' = replace_R r var x in
+      (vars', r')
   end
 
 (** Pretty printing *)
@@ -520,9 +587,17 @@ let pr_ary_val ppf a = let open SemanticsDomain in match a with
   | Bool (vt, vf) -> Format.fprintf ppf "@[<1>@ TRUE:@ %a,@ FALSE:@ %a@ @]"  AbstractValue.print_abs vt AbstractValue.print_abs vf
   | (Int v) -> Format.fprintf ppf "@[<1>@ %a@ @]" AbstractValue.print_abs v
 
-let pr_ary ppf l = Format.fprintf ppf "@[<1>{@ cur_v:@ Int Array (l)@ |@ %a@ }@]" pr_ary_val l
+let pr_vars ppf vars = 
+  let rec prtt = function
+    | [] -> ()
+    | [hd] -> Format.fprintf ppf "%s" hd; ()
+    | hd :: tl -> Format.fprintf ppf "%s, " hd; prtt tl in
+  prtt (Array.to_list vars)
 
-let pr_unit ppf u = Format.fprintf ppf "@[<1>unit@]"
+let pr_ary ppf ary = let vars, l = ary in
+  Format.fprintf ppf "@[<1>{@ cur_v:@ Int Array (%a)@ |@ %a@ }@]" pr_vars vars pr_ary_val l
+
+let pr_unit ppf u = Format.fprintf ppf "@[<1>Unit@]"
 
 let rec pr_value ppf v = let open SemanticsDomain in match v with
   | Bot -> Format.fprintf ppf "_|_"
@@ -530,7 +605,7 @@ let rec pr_value ppf v = let open SemanticsDomain in match v with
   | Relation r -> pr_relation ppf r
   | Table t -> pr_table ppf t
   | Unit u -> pr_unit ppf u
-  | Ary (l) -> pr_ary ppf l
+  | Ary ary -> pr_ary ppf ary
 and pr_table ppf t = let open SemanticsDomain in let (z, vi, vo) = t in
     Format.fprintf ppf "@[<2>%s: (%a ->@ %a)@]" z pr_value vi pr_value vo
 
@@ -565,3 +640,19 @@ let pr_top_vars ppf =
   in
   let ls = VarDefMap.bindings !top_var in
   pr_ll ls
+
+let print_last_node m = 
+  let pr_map_lst_node ppf m = let lst = (NodeMap.bindings m) in 
+    let lst_n, v = List.nth lst (List.length lst - 1) in
+    Format.fprintf ppf "@[<2>%a |->@ @[<2>%a@]@]\n\n" pr_node lst_n pr_value v
+  in
+  Format.fprintf Format.std_formatter "%a@?" pr_map_lst_node m
+
+let print_node_by_label m l = 
+  let pr_map_nst_node ppf m = let lst = (NodeMap.bindings m) in
+  try
+    let nst_n, v = List.nth lst (l + 4) in
+    Format.fprintf ppf "@[<2>%a |->@ @[<2>%a@]@]\n\n" pr_node nst_n pr_value v
+  with Failure s -> ()
+  in
+  Format.fprintf Format.std_formatter "%a@?" pr_map_nst_node m

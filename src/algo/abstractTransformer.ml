@@ -14,8 +14,8 @@ c[M] = {v: int | v = c && n1 >= 2}
     x in scope and M^t[x] = {v: bool | v = true}
     the scope of t is the set of all nodes in the range (i.e. codomain) of the environment component of n.
     t'[M^t] = {v: int | v = 2 && x = true}
-** TODO: True False
-** Using v = 1 be true once inside vt and v = 1 be false inside vf
+** True False
+    Using v = 1 be true once inside vt and v = 1 be false inside vf
 *)
 
 let z_index = ref 0 (* first definition *)
@@ -27,7 +27,7 @@ let pre_def_func = [|"make"; "len"; "set"; "get"|]
 let incr_z () =
     z_index := !z_index + 1
 
- let func_name_q: Syntax.VarDefMap.key Stack.t = Stack.create ()
+let func_name_q: Syntax.VarDefMap.key Stack.t = Stack.create ()
 
 let get_predefined_vars ky m vr = 
     let rec reiew_list = function
@@ -45,26 +45,75 @@ let eq_PM m1 m2 =
       fun v2 -> let EN (env, l) = n in
       if eq_V v1 v2 then true else 
       begin
-        Format.printf "\n%s:\n" l;
+        Format.printf "\nPre Def %s:\n" l;
+        pr_value Format.std_formatter v1;
+        Format.printf "\nNew %s\n" l;
         pr_value Format.std_formatter v2;
+        Format.printf "\n";
         raise (Pre_Def_Change ("Predefined node changed at " ^ l))
       end
       )
     |> Opt.get_or_else (v1 = v1)) m1
 
+let prop_ary v1i v1o v2i v2o = 
+    if is_Array v1i &&  is_Array v2i then
+        let l1 = get_len_var_V v1i in
+        let l2 = get_len_var_V v2i in
+        replace_V v1o l1 l2
+    else v1o
+
 let rec prop v1 v2 = match v1, v2 with
     | Top, Bot | Table _, Top -> Top, Top
     | Unit _, Bot -> v1, v1
-    | Table t, Bot -> let t' = init_T (dx_Ta t)  in
+    | Table t, Bot -> let t' = init_T (dx_Ta t) in
         v1, Table (t')
+    | Ary ary, Bot -> let vars, r = ary in
+        let ary' = init_Ary vars in
+        v1, Ary ary'
     | Relation r1, Relation r2 -> Relation r1, Relation (join_R r1 r2)
+    | Ary ary1, Ary ary2 -> let ary1', ary2' = alpha_rename_Arys ary1 ary2 in
+      let _, ary2'' = alpha_rename_Arys ary2 (join_Ary ary1' ary2') in
+      Ary ary1, Ary ary2''
     | Table t1, Table t2 -> let t1', t2' = alpha_rename t1 t2 in
         let (z1, v1i, v1o) = t1' and (z2, v2i, v2o) = t2' in
-        let p1, p2 = let v2i', v1i' = prop v2i v1i and v1o', v2o' = prop (arrow_V z1 v1o v2i) (arrow_V z1 v2o v2i) in
+        let v1ot = 
+            if is_Array v1i && is_Array v2i then
+                let l1 = get_len_var_V v1i in
+                let l2 = get_len_var_V v2i in
+                replace_V v1o l1 l2
+            else v1o
+        in
+        let p1, p2 = let v2i', v1i' = prop v2i v1i and v1o', v2o' = prop (arrow_V z1 v1ot v2i) (arrow_V z1 v2o v2i) in
+        let v1o' =
+            if is_Array v1i' && is_Array v2i' then
+                let l1 = get_len_var_V v1i' in
+                let l2 = get_len_var_V v2i' in
+                replace_V v1o' l2 l1
+            else v1o'
+        in 
         (v1i', join_V v1o v1o'), (v2i', join_V v2o v2o') in
         let t1'' = (z1, fst p1, snd p1) and t2'' = (z2, fst p2, snd p2) in
         Table t1'', Table t2''
     | _, _ -> v1, join_V v1 v2
+
+let get_env_array env = 
+    let env_l = (VarMap.bindings env) in
+    let rec helper ls ary = match ls with
+        | [] -> ary
+        | (x, n) :: env -> helper env (Array.append ary [|x|])
+    in
+    helper env_l [||]
+
+(* let lc_env env1 env2 = 
+    Array.fold_left (fun a id -> if Array.mem id a then a else Array.append a [|id|] ) env2 env1 *)
+
+let prop_scope env1 env2 v1 v2 = 
+    let env1 = get_env_array env1 in
+    let env2 = get_env_array env2 in
+    let v1', v2' = prop v1 v2 in
+    let v1'' = proj_V v1' env1 in
+    let v2'' = proj_V v2' env2 in
+    v1'', v2''
 
 (* let rec nav v1 v2 = match v1, v2 with (*precise abs*)
     | Relation r1, Relation r2 -> if leq_R r1 r2 then Relation r1 else Relation r2
@@ -119,10 +168,11 @@ let rec step term env m ae =
         end
         );
         let nx = VarMap.find x env in
-        let EN (env, lx) = nx in
+        let EN (envx, lx) = nx in
         let tx = let tx' = find nx m in
-            if is_table tx' then tx' else
-            equal_V tx' x in (* M<E(x)>[v=E(x)] *)
+            if is_Relation tx' then equal_V tx' x (* M<E(x)>[v=E(x)] *) 
+            else tx'
+        in 
         let t = find n m in (* M[env*l] *)
         (if !debug then
         begin
@@ -133,14 +183,11 @@ let rec step term env m ae =
             Format.printf "\n";
         end
         );
-        let raw_tx', t' = if Array.mem lx pre_def_func then
-            tx, t
-            else if is_Relation t then prop tx t
+        let raw_tx', t' =
+            if Array.mem lx pre_def_func then
+                prop tx t
             else
-                let proj_t = proj_V t [||] in
-                let t1, t2 = prop tx proj_t in
-                let _, t3 = prop t2 t in
-                t1, t3
+                prop_scope envx env tx t
         in
         let tx' = forget_V x raw_tx' in
         (if !debug then
@@ -156,7 +203,7 @@ let rec step term env m ae =
     | App (e1, e2, l) ->
         (if !debug then
         begin
-        Format.printf "\n<=== App ===>\n";
+        Format.printf "\nStart <=== App ===>\n";
         pr_exp true Format.std_formatter term;
         Format.printf "\n";
         end
@@ -283,12 +330,7 @@ let rec step term env m ae =
                 Format.printf "\n";
             end
             );
-            let t1', t' = 
-                let proj_t1 = proj_V t1 [||] in
-                let t1', t' = prop (proj_t1) (find n m1) in
-                let t1'', _ = prop t1 t1' in
-                t1'', t'
-            in
+            let t1', t' = prop t1 (find n m1) in
             (if !debug then
             begin
                 Format.printf "\nRES for prop:\n";
@@ -307,12 +349,7 @@ let rec step term env m ae =
                 Format.printf "\n";
             end
             );
-            let t2', t'' =
-                let proj_t2 = proj_V t2 [||] in
-                let t2', t' = prop (proj_t2) (find n m2) in
-                let t2'', _ = prop t2 t2' in
-                t2'', t'
-            in
+            let t2', t'' = prop t2 (find n m2) in
             (if !debug then
             begin
                 Format.printf "\nRES for prop:\n";
@@ -365,14 +402,14 @@ let rec step term env m ae =
             let prop_t = Table ((dx_T t), tx, temp_t) in
             (if !debug then
             begin
-                Format.printf "\n<=== Prop lamb ===> %s\n" lx;
+                Format.printf "\n<=== Prop lamb ===> %s %s\n" lx (loc e1);
                 pr_value Format.std_formatter prop_t;
                 Format.printf "\n<<~~~~>> %s\n" l;
                 pr_value Format.std_formatter t;
                 Format.printf "\n";
             end
             );
-            let px_t, t1 = prop prop_t t
+            let px_t, t1 = prop_scope env1 env prop_t t
             in
             (if !debug then
             begin
@@ -386,7 +423,7 @@ let rec step term env m ae =
             let nf_t2_tf'_opt =
                 Opt.map (fun (_, nf) ->
                   let tf = find nf m in
-                  let EN (_,lf) = nf in
+                  let EN (envf,lf) = nf in
                   (if !debug then
                     begin
                         Format.printf "\n<=== Prop um ===> %s\n" l;
@@ -396,12 +433,7 @@ let rec step term env m ae =
                         Format.printf "\n";
                     end
                   );
-                  let t2, tf' = 
-                    let proj_t = proj_V t [||] in
-                    let t', tf' = prop (proj_t) tf in
-                    let t'', _ = prop t t' in
-                    t'', tf'
-                  in
+                  let t2, tf' = prop_scope env envf t tf in
                   (if !debug then
                     begin
                         Format.printf "\nRES for prop:\n";
@@ -424,8 +456,8 @@ let st = ref 0
 
 (** Widening **)
 let widening m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
-    NodeMap.mapi (fun n t -> (*Delay wid*)
-        if !st > 30 then wid_V (find n m1) t else wid_V t (find n m1)
+    NodeMap.mapi (fun n t -> (*Delay wid, still need to check*)
+        if !st > 600 then wid_V (find n m1) t else join_V t (find n m1)
     ) m2
 
 (** Narrowing **)
@@ -442,12 +474,11 @@ let env = ref env0
 (** Fixpoint loop *)
 let rec fix e k m =
   st := k;
-  if true then
+  (if not !integrat_test then
     begin
         Format.printf "%s step %d\n" !process k;
         print_exec_map m;
-    end
-  else exit 0;
+    end);
   let ae = Relation (top_R Plus) in
   Stack.clear func_name_q;
   let m' = step e !env m ae in
@@ -469,8 +500,12 @@ let s e =
         pr_top_vars Format.std_formatter;
         Format.printf "\n\n";
     end);
-    let m1 = (fix e 0 m0 ) in
+    let m1 = (fix e 0 m0) in
     process := "Nar";
-    (fix e 0 m1)
+    let m = (fix e 0 m1) in
+    (if !integrat_test then
+        print_last_node m);
+    m
+
 
 

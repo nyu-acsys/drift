@@ -5,5 +5,4 @@ let rec map x = (* x <= 3000 *)
 
 let main n =
   assert (map n = n) in
-
 main 3000 

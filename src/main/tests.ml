@@ -2,6 +2,7 @@ open AbstractDomain
 open SemanticDomain
 open AbstractTransformer
 open Syntax
+open Config
 open Util
 open Parser
 
@@ -40,9 +41,15 @@ let overview_test =
               (mk_var dec)))
         (mk_var dec))
 
-let id_test1 = parse_from_string "let id x = x in id (id 2)"
+let id_test_1 = parse_from_string "let id x = x in id (id 2)"
 (* id_test1
 ((lambda id^0. (id^1 (id^2 2^3)^4)^5)^6 (lambda x^7. x^8)^9)^10
+*)
+
+let id_test_2 = parse_from_string "let id x = x in let _ = id 1 in id 2"
+(* id_test_2
+((lambda id^0. ((lambda _^1. (id^2 2^3)^4)^5 (id^6 1^7)^8)^9)^10
+  (lambda x^11. x^12)^13)^14
 *)
 
 let fun_test = 
@@ -99,7 +106,7 @@ let rec_test_2 = parse_from_string "let rec f a = if a <= 1 then 0 else f (a - 1
 
 let rec_test_3 = parse_from_string "let rec f a b = if a <= b then 0 else f (a - 1) b in f 8 1"
 
-let ary_test_1 = parse_from_string "let ary = make 3 0 in len ary"
+let ary_test_1 = parse_from_string "let f a = len a in let ary = make 3 0 in f ary"
 (* ary_test_1
 ((lambda ary^0. (len^1 ary^2)^3)^4 ((make^5 3^6)^7 0^8)^9)^10
 *)
@@ -114,6 +121,8 @@ let ary_test_3 = parse_from_string "let ary = make 3 0 in set ary 0 1"
 ((lambda ary^0. (((set^1 ary^2)^3 2^4)^5 1^6)^7)^8
   ((make^9 3^10)^11 0^12)^13)^14
 *)
+
+let ary_test_4 = parse_from_string "let f a1 a2 = len a2 in let ary1 = make 3 0 in let ary2 = make 3 1 in f ary1 ary2"
 
 let assert_test = parse_from_string "let a = assert(1 < 2) in a"
 (*
@@ -160,7 +169,33 @@ let seq_test_4 = parse_from_string "if false then 2 else let x = 4 in 3; x"
 
 let typedel_test_1 = parse_from_string "let id (x:int) (z:bool) = if z then x else 2 in let kj (k:int) = k in id 3"
 
-let tests = [ary_test_1]
+let redef_test_1 = parse_from_string "let f a b = if a < 1 then let a = 2 in a else b in f 0 3"
+
+let scope_test = parse_from_string "let rec f x y = let a = x + 1 in let b = y - 1 in if a > 3 then b else f a b in 
+  let w = 1 in
+  f w 2"
+(*
+((lambda f^0. ((lambda w^1. ((f^2 w^3)^4 2^5)^6)^7 1^8)^9)^10
+  (mu f^11 x^12.
+     (lambda y^13.
+        ((lambda a^14.
+            ((lambda b^15.
+                ((a^16 > 3^17)^18 ? b^19 : ((f^20 a^21)^22 b^23)^24)^25)^26
+              (y^27 - 1^28)^29)^30)^31
+          (x^32 + 1^33)^34)^35)^36)^37)^38
+*)
+
+let normal_test = parse_from_string "let g x = 1 in let f y = 2 in let k x y = 3 in k (f 1) (g 2)"
+
+let high_mult_rec_test_1 = parse_from_string 
+  "let k kx = kx in let id ix iy = ix iy in
+  let fb xb yb = let zb = yb - 1 in xb zb in
+  fb (id k) 2"
+
+(* let high_mult_rec_test_2 = parse_from_string 
+"" *)
+
+let tests = [rec_test_1]
 
 let _ =
   Config.parse;
@@ -169,11 +204,13 @@ let _ =
   else tests in
   List.iter (fun e -> 
   let el = label e in
-  print_endline "Executing:";
-  print_exp stdout el;
+  if not !integrat_test then
+    (print_endline "Executing:";
+    print_exp stdout el);
   print_endline "\n";
   print_endline ("Domain specification: " ^ !Config.domain);
   print_endline "\n";
   ignore (s el);
-  print_exp stdout el;
+  if not !integrat_test then
+    print_exp stdout el;
   print_newline ()) t
