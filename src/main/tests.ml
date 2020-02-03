@@ -192,10 +192,10 @@ let high_mult_rec_test_1 = parse_from_string
   let fb xb yb = let zb = yb - 1 in xb zb in
   fb (id k) 2"
 
-(* let high_mult_rec_test_2 = parse_from_string 
-"" *)
+let high_mult_rec_test_2 = parse_from_string 
+  "let rec id x y = id x y in let f z = z in f id 10 20"
 
-let tests = [rec_test_1]
+let tests = [id_test_2]
 
 let _ =
   Config.parse;

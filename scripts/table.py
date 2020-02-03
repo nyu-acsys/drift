@@ -8,9 +8,27 @@ import re
 import csv
 
 testdir = '../outputs'
-table_file = '../outputs/res.csv'
+table_file = '../res.csv'
 pattern = re.compile(".*ml$")
 attrs = ['subdir', 'file name', 'timing (milseconds)', 'solved?', 'domain']
+
+def manipulate_input_data(data):
+    res_data = []
+    data = data[2:]
+    temp_data = ""
+    flag = False
+    for x in data:
+        if x == '\n' and flag:
+            flag = False
+            res_data.append(temp_data)
+            temp_data = ''
+        elif x == '\n' and not flag:
+            flag = True
+            continue
+        else:
+            temp_data += x
+    res_data.append(temp_data)
+    return res_data
 
 
 def read_info_from_file(file_name):
@@ -20,7 +38,7 @@ def read_info_from_file(file_name):
         sys.exit("index file does not exits. Exit!")
     data = file.readlines()
     res_data = []
-    plain_data = [x for x in data if x != '\n']
+    plain_data = manipulate_input_data(data)
     for i in range(0,3):
         plain_d = plain_data[i].replace(" ", "").replace("\t", "").replace("\n", "")
         if i == 0:
@@ -30,18 +48,27 @@ def read_info_from_file(file_name):
             unit_regexp = re.compile(r'Unit')
             int_regexp = re.compile(r'Int')
             bool_regexp = re.compile(r'Bool')
+            bot_regexp = re.compile(r'_|_')
             if unit_regexp.search(plain_d):
                 res_data.append('Y')
             elif int_regexp.search(plain_d):
-                # TODO: Set up int
-                res_data.append('INT')
-            elif bool_regexp.search(plain_d):
-                _, false_part = plain_d.split(',')
-                _, bot_test = false_part.split(':')
-                if re.match("^bottom", bot_test, re.IGNORECASE):
-                    res_data.append('Y')
-                else:
+                value = plain_d.split('|')[2]
+                if re.match("^bottom", value, re.IGNORECASE):
                     res_data.append('N')
+                else:
+                    res_data.append('INT')
+            elif bool_regexp.search(plain_d):
+                true_part, false_part = plain_d.split(',')
+                _, bot_test_f = false_part.split(':')
+                bot_test_t = true_part.split(':')[2]
+                if re.match("^bottom", bot_test_f, re.IGNORECASE):
+                    res_data.append('Y')
+                elif re.match("^bottom", bot_test_t, re.IGNORECASE):
+                    res_data.append('N')
+                else:
+                    res_data.append('IM')
+            elif bot_regexp.search(plain_d):
+                res_data.append('UR') # Unreachable
             else:
                 res_data.append('UN')
         elif i == 2:

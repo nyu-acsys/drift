@@ -175,6 +175,10 @@ module SemanticsDomain =
   and proj_R a vars = match a with
     | Int v -> Int (AbstractValue.project_other_vars v vars)
     | Bool (vt, vf) -> Bool (AbstractValue.project_other_vars vt vars, AbstractValue.project_other_vars vf vars)
+  and is_bot_R a = match a with
+    | Int v -> AbstractValue.is_bot v
+    | Bool (vt, vf) -> AbstractValue.is_bot vt && AbstractValue.is_bot vf
+  and opt_eq_R a1 a2 = is_bot_R a1 = false && is_bot_R a2 = false && eq_R a1 a2
     (*
     *******************************
     ** Abstract domain for Table **
@@ -344,8 +348,8 @@ module SemanticsDomain =
         | Unit u1, Unit u2 -> true
         | _, _ -> false
       and eq_V (v1:value_t) (v2:value_t) :bool = match v1, v2 with
-      | Bot, _ -> true
-      | _, Top -> true
+      | Bot, Bot -> true
+      | Top, Top -> true
       | Relation r1, Relation r2 -> eq_R r1 r2
       | Table t1, Table t2 -> eq_T t1 t2
       | Ary ary1, Ary ary2 -> eq_Ary ary1 ary2
@@ -456,6 +460,15 @@ module SemanticsDomain =
     and get_len_var_V = function
       | Ary ary -> get_len_var_Ary ary
       | _ -> raise (Invalid_argument "get length dep variable unsucessful")
+    and opt_eq_V v1 v2 = match v1, v2 with
+      | Bot, _ | _, Bot -> false
+      | _, Top -> true
+      | Relation r1, Relation r2 -> false
+      | Table (z1, v1i, v1o), Table (z2, v2i, v2o) ->
+          z1 = z2 && opt_eq_V v1i v2i && opt_eq_V v1o v2o
+      | Ary ary1, Ary ary2 -> eq_Ary ary1 ary2
+      | Unit u1, Unit u2 -> true
+      | _, _ -> false 
     (*
       *******************************
       ** Abstract domain for Array **

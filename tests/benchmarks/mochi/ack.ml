@@ -12,4 +12,4 @@ let main m n =
   if (m >= 0 && n >= 0)
   then assert (ack m n >= n)
   else false
-in ack 3 2
+in main 3 2

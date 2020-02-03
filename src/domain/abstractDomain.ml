@@ -28,6 +28,7 @@ module type AbstractDomainType =
     val init_c: int -> t
     val top: t
     val bot: t
+    val is_bot: t -> bool
     val join: t -> t -> t
     val meet: t -> t -> t
     val alpha_rename: t -> var -> var -> t
@@ -223,6 +224,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         Abstract1.top Man.man env
     let bot = let env = Environment.make [||] [||] in
         Abstract1.bottom Man.man env
+    let is_bot v = Abstract1.is_bottom Man.man v
     let equal_var v vl vr = let var_l = vl |> Var.of_string and var_r = vr |> Var.of_string in
         let env = Environment.make [|var_l; var_r|] [||] in
         let expr = vl ^ "=" ^ vr in

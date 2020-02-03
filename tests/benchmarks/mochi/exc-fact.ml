@@ -11,5 +11,5 @@ let rec fact fn exnx =
     fn * fact (fn - 1) exn1
 in
 let exn en = -1 in
-let main n = if n > 0 then fact n exn else -1 
+let main n = if n > 0 then assert(fact n exn >= (-1)) else false 
 in main 342

@@ -84,17 +84,16 @@ type_del:
 
 param_list:
 | IDENT param_list { $1 :: $2 }
-| LPAREN IDENT COLON type_del RPAREN param_list { top_var := VarDefMap.update fun_name (fun a -> update_fun a ($2, $4)) !top_var; $2 :: $6 }
+| LPAREN IDENT COLON type_del RPAREN param_list {  $2 :: $6 } /*top_var := VarDefMap.update fun_name (fun a -> update_fun a ($2, $4)) !top_var;*/
 | IDENT { [$1] }
-| LPAREN IDENT COLON type_del RPAREN { top_var := VarDefMap.update fun_name (fun a -> update_fun a ($2, $4)) !top_var; [$2] }
+| LPAREN IDENT COLON type_del RPAREN { [$2] } /*top_var := VarDefMap.update fun_name (fun a -> update_fun a ($2, $4)) !top_var;*/
 ;
 
 ident_list:
 | IDENT { [$1] }
 | IDENT param_list { 
-  top_var := change_key fun_name $1 !top_var; 
   $1 :: $2 
-}
+}/*top_var := change_key fun_name $1 !top_var; */
 ;
 
 basic_term: /*term@7 := int | bool | var | (term)*/

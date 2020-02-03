@@ -22,12 +22,17 @@ let z_index = ref 0 (* first definition *)
 
 let process = ref "Wid"
 
+let env0, m0 = 
+    array_M VarMap.empty NodeMap.empty
+
+let pre_m = ref m0
+
 let pre_def_func = [|"make"; "len"; "set"; "get"|]
 
 let incr_z () =
     z_index := !z_index + 1
 
-let func_name_q: Syntax.VarDefMap.key Stack.t = Stack.create ()
+(* let func_name_q: Syntax.VarDefMap.key Stack.t = Stack.create () *)
 
 let get_predefined_vars ky m vr = 
     let rec reiew_list = function
@@ -74,7 +79,8 @@ let rec prop v1 v2 = match v1, v2 with
     | Ary ary1, Ary ary2 -> let ary1', ary2' = alpha_rename_Arys ary1 ary2 in
       let _, ary2'' = alpha_rename_Arys ary2 (join_Ary ary1' ary2') in
       Ary ary1, Ary ary2''
-    | Table t1, Table t2 -> let t1', t2' = alpha_rename t1 t2 in
+    | Table t1, Table t2 -> 
+        let t1', t2' = alpha_rename t1 t2 in
         let (z1, v1i, v1o) = t1' and (z2, v2i, v2o) = t2' in
         let v1ot = 
             if is_Array v1i && is_Array v2i then
@@ -83,15 +89,24 @@ let rec prop v1 v2 = match v1, v2 with
                 replace_V v1o l1 l2
             else v1o
         in
-        let p1, p2 = let v2i', v1i' = prop v2i v1i and v1o', v2o' = prop (arrow_V z1 v1ot v2i) (arrow_V z1 v2o v2i) in
-        let v1o' =
-            if is_Array v1i' && is_Array v2i' then
-                let l1 = get_len_var_V v1i' in
-                let l2 = get_len_var_V v2i' in
-                replace_V v1o' l2 l1
-            else v1o'
-        in 
-        (v1i', join_V v1o v1o'), (v2i', join_V v2o v2o') in
+        let p1, p2 = 
+            let v2i', v1i' = 
+                (*Optimization 1: If those two are the same, ignore the prop step*)
+                if is_Bot_V v1i = false && eq_V v2i v1i then v2i, v1i else 
+                prop v2i v1i 
+            and v1o', v2o' = 
+                if is_Bot_V v2o = false && eq_V v1ot v2o then v1ot, v2o else 
+                prop (arrow_V z1 v1ot v2i) (arrow_V z1 v2o v2i) 
+            in
+            let v1o' =
+                if is_Array v1i' && is_Array v2i' then
+                    let l1 = get_len_var_V v1i' in
+                    let l2 = get_len_var_V v2i' in
+                    replace_V v1o' l2 l1
+                else v1o'
+            in 
+            (v1i', join_V v1o v1o'), (v2i', join_V v2o v2o') 
+        in
         let t1'' = (z1, fst p1, snd p1) and t2'' = (z2, fst p2, snd p2) in
         Table t1'', Table t2''
     | _, _ -> v1, join_V v1 v2
@@ -139,13 +154,17 @@ let iterEnv_v env m v = VarMap.fold (fun var n a ->
     let ai = NodeMap.find_opt n m |> Opt.get_or_else Top in
     arrow_V var a ai) env v
 
+let optmization m n find = 
+    let t = find n m in
+    let pre_t = find n !pre_m in
+    opt_eq_V pre_t t
+
 let rec step term env m ae =
     let n = EN (env, loc term) in
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     match term with
     | Void l ->
-        let t = find n m in
-        let t' = join_V t (Unit ())in
+        let t' = Unit () in
         m |> NodeMap.add n t'
     | Const (c, l) ->
         (if !debug then
@@ -155,6 +174,7 @@ let rec step term env m ae =
         Format.printf "\n";
         end
         );
+        if optmization m n find then m else
         let t = find n m in (* M[env*l] *)
         let ct = init_V_c c in
         let t' = join_V t ct in
@@ -168,6 +188,7 @@ let rec step term env m ae =
         end
         );
         let nx = VarMap.find x env in
+        if optmization m n find && optmization m nx find then m else
         let EN (envx, lx) = nx in
         let tx = let tx' = find nx m in
             if is_Relation tx' then equal_V tx' x (* M<E(x)>[v=E(x)] *) 
@@ -208,9 +229,9 @@ let rec step term env m ae =
         Format.printf "\n";
         end
         );
-        let pre_len = Stack.length func_name_q in
+        (* Deprecated: vlet pre_len = Stack.length func_name_q in *)
         let m1 = step e1 env m ae in
-        let func_in = pre_len <> Stack.length func_name_q in
+        (* Deprecated: let func_in = pre_len <> Stack.length func_name_q in *)
         let n1 = EN (env, loc e1) in
         let t1 = find n1 m1 in
         if t1 = Bot then m1
@@ -220,13 +241,14 @@ let rec step term env m ae =
         m1 |> NodeMap.add n Top)
         else
             let m2 = step e2 env m1 ae in
-            (if func_in then let _ = Stack.pop func_name_q in ());
+            (* Deprecated: (if func_in then let _ = Stack.pop func_name_q in ()); *)
             let n2 = EN (env, loc e2) in
             let t2 = find n2 m2 in (* M[env*l2] *)
             (match t2 with
                 | Bot -> m2
                 | Top -> m2 |> NodeMap.add n Top
                 | _ -> let t = find n m2 in
+                if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then m else
                 let t_temp = Table ((dx_T t1), t2, t) in
                 (if !debug then
                 begin
@@ -277,6 +299,7 @@ let rec step term env m ae =
                 (loc e2) (string_of_value t2))
             );
             let t = find n m2 in
+            if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then m else
             let td = Relation (top_R bop) in
             let raw_t = if bool_op bop then
             begin
@@ -321,7 +344,8 @@ let rec step term env m ae =
             let t1 = find n1 m1 in
             let n2 = EN (env, loc e2) in
             let t2 = find n2 m2 in
-            (if !debug then
+            if optmization m2 n0 find && optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then m else
+            ((if !debug then
             begin
                 Format.printf "\n<=== Prop then ===> %s\n" (loc e1);
                 pr_value Format.std_formatter t1;
@@ -361,10 +385,7 @@ let rec step term env m ae =
             ); 
             let m1' = m1 |> NodeMap.add n1 t1' |> NodeMap.add n (stren_V t' ae) and
             m2' = m2 |> NodeMap.add n2 t2' |> NodeMap.add n (stren_V t'' ae) in
-            if !process = "Wid" then
-                join_M (join_M m0 m1') m2'
-            else
-                if leq_M m1' m2' then m1' else m2'
+            join_M (join_M m0 m1') m2')
         end
     | Rec (f_opt, x, lx, e1, l) ->
         (if !debug then
@@ -387,7 +408,7 @@ let rec step term env m ae =
         else 
         if tr = Top then top_M m else
         begin
-            if VarDefMap.mem x !top_var then Stack.push x func_name_q;
+            (* Deprecated: if VarDefMap.mem x !top_var then Stack.push x func_name_q; *)
             let nx = EN (env, lx) in
             let f_nf_opt = Opt.map (fun (f, lf) -> f, EN (env, lf)) f_opt in
             let env1 =
@@ -396,7 +417,11 @@ let rec step term env m ae =
                  Opt.get_or_else (fun env -> env))
             in
             let n1 = EN (env1, loc e1) in
-            let tx = if Stack.is_empty func_name_q = false && get_predefined_vars (Stack.top func_name_q) !top_var x then Relation (top_R Plus) else find nx m in
+            if optmization m n find && optmization m nx find && optmization m n1 find then m else
+            let tx = 
+                (* Deprecated: if Stack.is_empty func_name_q = false && get_predefined_vars (Stack.top func_name_q) !top_var x 
+                then Relation (top_R Plus) else *)
+                find nx m in
             let ae' = if is_Relation tx && x <> "_" then (arrow_V x ae tx) else ae in
             let temp_t = if x = "_" then find n1 m else replace_V (find n1 m) x (dx_T t) in
             let prop_t = Table ((dx_T t), tx, temp_t) in
@@ -457,7 +482,8 @@ let st = ref 0
 (** Widening **)
 let widening m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     NodeMap.mapi (fun n t -> (*Delay wid, still need to check*)
-        if !st > 600 then wid_V (find n m1) t else join_V t (find n m1)
+        if !st > 300 then wid_V (find n m1) t else join_V t (find n m1) 
+        (* !st > 600 *)
     ) m2
 
 (** Narrowing **)
@@ -465,9 +491,6 @@ let narrowing m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot
     NodeMap.mapi (fun n t ->
         meet_V (find n m1) t
     ) m2
-
-let env0, m0 = 
-    array_M VarMap.empty NodeMap.empty
 
 let env = ref env0
 
@@ -480,8 +503,9 @@ let rec fix e k m =
         print_exec_map m;
     end);
   let ae = Relation (top_R Plus) in
-  Stack.clear func_name_q;
+  (* Stack.clear func_name_q; *)
   let m' = step e !env m ae in
+  pre_m := m;
   let m'' = if !process = "Wid" then widening m m' else narrowing m m' in
   let pre_ch = eq_PM m0 m'' in
   if pre_ch then

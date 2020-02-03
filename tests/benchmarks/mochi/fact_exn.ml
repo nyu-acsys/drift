@@ -22,6 +22,6 @@ let exn xn = assert(false); 1 in
 
 let main n =
   if n > 0
-  then fact n exn
-  else -1
+  then assert(fact n exn >= (-1))
+  else false
 in main 300
