@@ -14,3 +14,4 @@ out.spl
 .vagrant/
 .vscode/
 *.log
+*.out

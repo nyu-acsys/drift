@@ -59,6 +59,12 @@ module NodeMap = struct
     with Not_found -> raise (Key_not_found (e1^" is not Found in NodeMap"))
 end
 
+module TableMap = struct
+  include TempVarMap
+  let find key m = try TempVarMap.find key m 
+    with Not_found -> raise (Key_not_found (key^" is not Found in TableMap"))
+end
+
 module SemanticsDomain =
   struct
     (*
@@ -72,11 +78,11 @@ module SemanticsDomain =
       | Bot
       | Top
       | Relation of relation_t
-      | Table of table_t
+      | Table of table_t TableMap.t (* [<call_site>: table_t ...]*)
       | Ary of array_t
       | Unit of unit
     and array_t = (var array) * relation_t (* disable element for now*)
-    and table_t = var * value_t * value_t
+    and table_t = value_t * value_t
     and exec_map_t = value_t NodeMap.t
     let rec alpha_rename_R a prevar var = match a with
         | Int v -> Int (AbstractValue.alpha_rename v prevar var)
@@ -169,69 +175,54 @@ module SemanticsDomain =
     | Int v, Int vae -> Int (AbstractValue.meet v vae)
     | Bool (vt, vf), Int vae -> Bool (AbstractValue.meet vt vae, AbstractValue.meet vf vae)
     | _, _ -> raise (Invalid_argument "ae should be {v:Int}")
-  and der_R exp a = match a with
-    | Bool (vt, vf) -> Bool (AbstractValue.derived exp vt, AbstractValue.derived exp vf)
-    | Int v -> Int (AbstractValue.derived exp v)
-  and proj_R a vars = match a with
-    | Int v -> Int (AbstractValue.project_other_vars v vars)
-    | Bool (vt, vf) -> Bool (AbstractValue.project_other_vars vt vars, AbstractValue.project_other_vars vf vars)
-  and is_bot_R a = match a with
-    | Int v -> AbstractValue.is_bot v
-    | Bool (vt, vf) -> AbstractValue.is_bot vt && AbstractValue.is_bot vf
-  and opt_eq_R a1 a2 = is_bot_R a1 = false && is_bot_R a2 = false && eq_R a1 a2
+    and der_R exp a = match a with
+      | Bool (vt, vf) -> Bool (AbstractValue.derived exp vt, AbstractValue.derived exp vf)
+      | Int v -> Int (AbstractValue.derived exp v)
+    and proj_R a vars = match a with
+      | Int v -> Int (AbstractValue.project_other_vars v vars)
+      | Bool (vt, vf) -> Bool (AbstractValue.project_other_vars vt vars, AbstractValue.project_other_vars vf vars)
+    and is_bot_R a = match a with
+      | Int v -> AbstractValue.is_bot v
+      | Bool (vt, vf) -> AbstractValue.is_bot vt && AbstractValue.is_bot vf
+    and opt_eq_R a1 a2 = is_bot_R a1 = false && is_bot_R a2 = false && eq_R a1 a2
     (*
-    *******************************
-    ** Abstract domain for Table **
-    *******************************
+      ***********************************
+      ** Abstract domain for Table Map **
+      ***********************************
     *)
-    and init_T var = (var, Bot, Bot)
-    and dx_Ta t = let (z, vi, vo) = t in z
-    and io_Ta t = let (z, vi, vo) = t in vi, vo
-    and alpha_rename_T t prevar var = let (z, vi, vo) = t in
-        (z, alpha_rename_V vi prevar var, alpha_rename_V vo prevar var)
-    and alpha_rename t1 t2 = let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
-        if z1 = z2 then t1, t2
-        else (*a renaming*)
-        let v2o' = alpha_rename_V v2o z2 z1 in
-        (z1, v1i, v1o), (z1, v2i, v2o')
-    and join_T t1 t2 = let t =
-        let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
-        if z1 = z2 then (z1, join_V v1i v2i, join_V v1o v2o) else (*a renaming*)
-            let v2o' = alpha_rename_V v2o z2 z1 in 
-            (z1, join_V v1i v2i, join_V v1o v2o')
-        in t
-    and meet_T t1 t2 = let t =
-        let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
-        if z1 = z2 then (z1, meet_V v1i v2i, meet_V v1o v2o) else (*a renaming*)
-            let v2o' = alpha_rename_V v2o z2 z1 in 
-            (z1, meet_V v1i v2i, meet_V v1o v2o')
-        in t
-    and leq_T t1 t2 = match t1, t2 with
-        | (z1, v1i, v1o), (z2, v2i, v2o) -> if z1 = z2 then (leq_V v1i v2i) && (leq_V v1o v2o) else false
-    and eq_T t1 t2 = match t1, t2 with
-        | (z1, v1i, v1o), (z2, v2i, v2o) -> if z1 = z2 then (eq_V v1i v2i) && (eq_V v1o v2o) else false
-    and forget_T var t = let (z, vi, vo) = t in (z, forget_V var vi, forget_V var vo)
-    and arrow_T var t v =
-        let (z, vi, vo) = t in
-        let v' = forget_V z v in
-        (z, arrow_V var vi v, arrow_V var vo v')
-    and wid_T t1 t2 = let t =
-        let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
-        if z1 = z2 then (z1, wid_V v1i v2i, wid_V v1o v2o) else (*a renaming*)
-        let v2o' = alpha_rename_V v2o z2 z1 in 
-        (z1, wid_V v1i v2i, wid_V v1o v2o') in t
-    and equal_T t var = let (z, vi, vo) = t in
-        let vo' = if z = var then 
-          alpha_rename_V vo z "z1"
-          else vo in
-        (z, equal_V vi var, equal_V vo' var)
-    and replace_T t var x = let (z, vi, vo) = t in
-      (z, replace_V vi var x, replace_V vo var x)
-    and stren_T t ae = let (z, vi, vo) = t in
-      (z, stren_V vi ae, stren_V vo ae)
-    and proj_T t vars = let (z, vi, vo) = t in
-      let vars_o = Array.append vars [|z|] in
-      (z, proj_V vi vars, proj_V vo vars_o)
+    and init_MT_by_MT (mt:table_t TableMap.t) :table_t TableMap.t = 
+      TableMap.mapi (fun var t -> (Bot, Bot)) mt
+    and init_MT_by_var var :table_t TableMap.t =
+      TableMap.singleton var (Bot, Bot)
+    and alpha_rename_MT mt prevar var = TableMap.map (fun (vi, vo) -> 
+      alpha_rename_V vi prevar var, alpha_rename_V vo prevar var) mt
+    and join_MT mt1 mt2 =
+        TableMap.union (fun var (v1i, v1o) (v2i, v2o) -> Some (join_V v1i v2i, join_V v1o v2o)) mt1 mt2
+    and meet_MT mt1 mt2 =
+        TableMap.merge (fun var vio1 vio2 -> 
+          match vio1, vio2 with
+          | None, _ | _, None -> None
+          | Some (v1i, v1o), Some (v2i, v2o) -> Some ((meet_V v1i v2i), (meet_V v1o v2o))
+          ) mt1 mt2
+    and leq_MT mt1 mt2 = 
+      if TableMap.is_empty mt1 then false else TableMap.for_all (fun var (v1i, v1o) -> 
+        TableMap.find_opt var mt2 |> Opt.map (fun (v2i, v2o) -> leq_V v1i v2i && leq_V v1o v2o) |>
+        Opt.get_or_else (v1i = Bot && v1o = Bot)) mt1
+    and eq_MT mt1 mt2 =
+        TableMap.equal (fun (v1i, v1o) (v2i, v2o) -> eq_V v1i v2i && eq_V v1o v2o) mt1 mt2
+    and forget_MT var mt = TableMap.map (fun (vi, vo) -> 
+      forget_V var vi, forget_V var vo) mt
+    and arrow_MT var mt v = TableMap.mapi (fun z (vi, vo) -> 
+      let v' = forget_V z v in
+      arrow_V var vi v, arrow_V var vo v') mt
+    and wid_MT mt1 mt2 =
+      TableMap.union (fun var (v1i, v1o) (v2i, v2o) -> Some (wid_V v1i v2i, wid_V v1o v2o)) mt1 mt2
+    and equal_MT mt var = TableMap.map (fun (vi, vo) -> equal_V vi var, equal_V vo var) mt
+    and replace_MT mt var x = TableMap.map (fun (vi, vo) -> replace_V vi var x, replace_V vo var x) mt
+    and stren_MT mt ae = TableMap.map (fun (vi, vo) -> stren_V vi ae, stren_V vo ae) mt
+    and proj_MT mt vars = TableMap.mapi (fun var (vi, vo) -> 
+      let vars_o = Array.append vars [|var|] in
+      proj_V vi vars, proj_V vo vars_o) mt
     (*
       ***************************************
       ** Abstract domain for Execution Map **
@@ -247,7 +238,7 @@ module SemanticsDomain =
         Opt.get_or_else (v1 = Bot)) m1
       and top_M m = NodeMap.map (fun a -> Top) m
       and array_M env m = 
-        let n_make = EN (env, "make") in
+        (* let n_make = EN (env, "make") in
         let t_make = (* make *)
           (* make |-> zm: {v:int | v >= 0} -> ex: {v:int | top} -> {v: Int Array (l) | [| l=zm; zm>=0; |]} *)
           let var_l = "zm" in
@@ -305,16 +296,29 @@ module SemanticsDomain =
         let env' = 
           env |> VarMap.add "make" n_make |> VarMap.add "len" n_len |> VarMap.add "get" n_get
           |> VarMap.add "set" n_set
-        in
-        env', m'
+        in *)
+        env, m
+      and eq_PM m1 m2 =
+        NodeMap.for_all (fun n v1 (*untie to node -> value*) ->
+        NodeMap.find_opt n m2 |> Opt.map (
+          fun v2 -> let EN (env, l) = n in
+          if eq_V v1 v2 then true else 
+          begin
+            raise (Pre_Def_Change ("Predefined node changed at " ^ l))
+          end
+          )
+        |> Opt.get_or_else (v1 = v1)) m1
       (*
       ********************************
       ** Abstract domain for Values **
       ********************************
       *)
+      and io_T v = match v with
+        | Table mt -> mt
+        | _ -> raise (Invalid_argument "Should be a table when using io_T")
       and alpha_rename_V v prevar var = match v with
         | Relation r -> Relation (alpha_rename_R r prevar var)
-        | Table t -> Table (alpha_rename_T t prevar var)
+        | Table mt -> Table (alpha_rename_MT mt prevar var)
         | Ary ary -> Ary (alpha_rename_Ary ary prevar var)
         | _ -> v
       and init_V_c (c:value) = Relation (init_R_c c)
@@ -328,14 +332,14 @@ module SemanticsDomain =
       and join_V (v1:value_t) (v2:value_t) :value_t = match v1, v2 with
         | Bot, v | v, Bot -> v
         | Relation r1, Relation r2 -> Relation (join_R r1 r2)
-        | Table t1, Table t2 -> Table (join_T t1 t2)
+        | Table mt1, Table mt2 -> Table (join_MT mt1 mt2)
         | Ary ary1, Ary ary2 -> Ary (join_Ary ary1 ary2)
         | Unit u1, Unit u2 -> Unit u1
         | _, _ -> Top
       and meet_V (v1:value_t) (v2:value_t) :value_t = match v1, v2 with
         | Top, v | v, Top -> v
         | Relation r1, Relation r2 -> Relation (meet_R r1 r2)
-        | Table t1, Table t2 -> Table (meet_T t1 t2)
+        | Table mt1, Table mt2 -> Table (meet_MT mt1 mt2)
         | Ary ary1, Ary ary2 -> Ary (meet_Ary ary1 ary2)
         | Unit u1, Unit u2 -> Unit u1
         | _, _ -> Bot
@@ -343,7 +347,7 @@ module SemanticsDomain =
         | Bot, _ -> true
         | _, Top -> true
         | Relation r1, Relation r2 -> leq_R r1 r2
-        | Table t1, Table t2 -> leq_T t1 t2
+        | Table mt1, Table mt2 -> leq_MT mt1 mt2
         | Ary ary1, Ary ary2 -> leq_Ary ary1 ary2
         | Unit u1, Unit u2 -> true
         | _, _ -> false
@@ -351,7 +355,7 @@ module SemanticsDomain =
       | Bot, Bot -> true
       | Top, Top -> true
       | Relation r1, Relation r2 -> eq_R r1 r2
-      | Table t1, Table t2 -> eq_T t1 t2
+      | Table mt1, Table mt2 -> eq_MT mt1 mt2
       | Ary ary1, Ary ary2 -> eq_Ary ary1 ary2
       | Unit u1, Unit u2 -> true
       | _, _ -> false
@@ -371,28 +375,28 @@ module SemanticsDomain =
         | Bot -> Bot
         | Top | Table _ | Unit _ -> v
         | Relation r2 -> (match v with
-            | Table t -> Table (arrow_T var t v')
+            | Table mt -> Table (arrow_MT var mt v')
             | Relation r1 -> Relation (arrow_R var r1 r2)
             | Ary ary -> Ary (arrow_Ary var ary r2)
             | _ -> v)
         | Ary ary2 -> let (vars, r2) = ary2 in
           (match v with
-          | Table t -> Table (arrow_T var t v')
+          | Table mt -> Table (arrow_MT var mt v')
           | Relation r1 -> Relation (arrow_R var r1 r2)
           | Ary ary -> Ary (arrow_Ary var ary r2)
           | _ -> v)
       and forget_V var v = match v with
-        | Table t -> Table (forget_T var t)
+        | Table mt -> Table (forget_MT var mt)
         | Ary ary -> Ary (forget_Ary var ary)
         | Relation r -> Relation (forget_R var r)
         | _ -> v
       and equal_V v var = match v with
         | Relation r -> Relation (equal_R r var)
-        | Table t -> Table (equal_T t var)
+        | Table mt -> Table (equal_MT mt var)
         | _ -> v
       and wid_V v1 v2 = match v1, v2 with
         | Relation r1, Relation r2 -> Relation (wid_R r1 r2)
-        | Table t1, Table t2 -> Table (wid_T t1 t2)
+        | Table mt1, Table mt2 -> Table (wid_MT mt1 mt2)
         | Ary ary1, Ary ary2 -> Ary (wid_Ary ary1 ary2)
         | Unit u1, Unit u2 -> Unit u1
         | _, _ -> join_V v1 v2
@@ -407,17 +411,11 @@ module SemanticsDomain =
         | Relation _, Bot -> if string_of_op op = "&&" then Bot else v1
         | Relation _, Top -> if string_of_op op = "&&" then v1 else Top
         | _, _ -> raise (Invalid_argument "Should be a relation type when using bool_op_V")
-      and dx_T v = match v with
-        | Table t -> dx_Ta t
-        | _ -> raise (Invalid_argument "Should be a table when using dx_T")
-      and io_T v = match v with
-        | Table t -> io_Ta t
-        | _ -> raise (Invalid_argument "Should be a table when using io_T")
     and is_Bot_V = function
       | Bot -> true
       | _ -> false
     and replace_V v var x = match v with
-      | Table t -> Table (replace_T t var x)
+      | Table mt -> Table (replace_MT mt var x)
       | Relation r -> Relation (replace_R r var x)
       | Ary ary -> Ary (replace_Ary ary var x)
       | _ -> v
@@ -428,7 +426,7 @@ module SemanticsDomain =
       | Bot, _ -> Bot
       | Relation r, Relation rae -> Relation (stren_R r rae)
       | Ary ary, Relation rae -> Ary (stren_Ary ary rae)
-      | Table t, Relation rae -> Table t
+      | Table mt, Relation rae -> Table mt
       | Top, _ -> ae
       | _, Bot -> Bot
       | _, Top -> v
@@ -454,7 +452,7 @@ module SemanticsDomain =
     and proj_V v vars =
       match v with
       | Relation r -> Relation (proj_R r vars)
-      | Table t -> Table (proj_T t vars)
+      | Table mt -> Table (proj_MT mt vars)
       | Ary ary -> Ary (proj_Ary ary vars)
       | _ -> v
     and get_len_var_V = function
@@ -464,8 +462,9 @@ module SemanticsDomain =
       | Bot, _ | _, Bot -> false
       | _, Top -> true
       | Relation r1, Relation r2 -> false
-      | Table (z1, v1i, v1o), Table (z2, v2i, v2o) ->
-          z1 = z2 && opt_eq_V v1i v2i && opt_eq_V v1o v2o
+      | Table mt1, Table mt2 ->
+          (* z1 = z2 && opt_eq_V v1i v2i && opt_eq_V v1o v2o *)
+          false
       | Ary ary1, Ary ary2 -> eq_Ary ary1 ary2
       | Unit u1, Unit u2 -> true
       | _, _ -> false 
@@ -616,11 +615,20 @@ let rec pr_value ppf v = let open SemanticsDomain in match v with
   | Bot -> Format.fprintf ppf "_|_"
   | Top -> Format.fprintf ppf "T"
   | Relation r -> pr_relation ppf r
-  | Table t -> pr_table ppf t
+  | Table t -> print_table_map ppf t
   | Unit u -> pr_unit ppf u
   | Ary ary -> pr_ary ppf ary
-and pr_table ppf t = let open SemanticsDomain in let (z, vi, vo) = t in
-    Format.fprintf ppf "@[<2>%s: (%a ->@ %a)@]" z pr_value vi pr_value vo
+and pr_table ppf t = let open SemanticsDomain in let (vi, vo) = t in
+    Format.fprintf ppf "@[(%a ->@ %a)@]" pr_value vi pr_value vo
+and print_table_map ppf mt = 
+Format.fprintf ppf "[ %a ]" pr_table_map (TableMap.bindings mt)
+and pr_table_map ppf = function
+| [] -> ()
+| [row] -> Format.fprintf ppf "%a" pr_table_row row
+| row :: rows -> Format.fprintf ppf "%a;@ %a" pr_table_row row pr_table_map rows
+and pr_table_row ppf (var, t) = 
+  Format.fprintf ppf "@[<2>%s:@ @[<2>%a@]@]" var pr_table t
+
 
 let print_value out_ch v = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" pr_value v
 

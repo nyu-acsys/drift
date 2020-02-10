@@ -195,7 +195,10 @@ let high_mult_rec_test_1 = parse_from_string
 let high_mult_rec_test_2 = parse_from_string 
   "let rec id x y = id x y in let f z = z in f id 10 20"
 
-let tests = [id_test_2]
+let high_mult_call_test_1 = parse_from_string
+  "let h g = g 5 in let g1 x = 1 in let g2 x = x in (h g1) / (h g2)"
+
+let tests = [rec_test_1]
 
 let _ =
   Config.parse;

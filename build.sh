@@ -35,4 +35,4 @@ esac;
 # ./build.sh
 # profiling: ./build.sh prof
 # run analysis: ./tests.p.native <-file> > out_idc
-# check calls: gprof tests.p.native gmon.out > out_count
+# check calls: gprof -Q tests.p.native gmon.out > out_count
