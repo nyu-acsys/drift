@@ -83,7 +83,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
       Abstract1.is_eq Man.man v1' v2'
     let join v1 v2 = 
       let v1',v2' = lc_env v1 v2 in
-      (if !debug then
+      (* (if !debug then
         begin
         Format.printf "\n\nJoin\n";
         Abstract1.print Format.std_formatter v1;
@@ -93,14 +93,14 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         Environment.print Format.std_formatter (Abstract1.env v1');
         Format.printf "\n";
         end
-      );
+      ); *)
       let res = Abstract1.join Man.man v1' v2' in
-      (if !debug then
+      (* (if !debug then
         begin
           Format.printf "result: ";
           Abstract1.print Format.std_formatter res;
           Format.printf "\n";
-      end);
+      end); *)
       Abstract1.minimize_environment Man.man res
     let meet v1 v2 =
       let v1',v2' = lc_env v1 v2 in

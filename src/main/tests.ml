@@ -41,9 +41,9 @@ let overview_test =
               (mk_var dec)))
         (mk_var dec))
 
-let id_test_1 = parse_from_string "let id x = x in id (id 2)"
+let id_test_1 = parse_from_string "let id x = x in (id id) 2"
 (* id_test1
-((lambda id^0. (id^1 (id^2 2^3)^4)^5)^6 (lambda x^7. x^8)^9)^10
+((lambda id^0. ((id^1 id^2)^3 2^4)^5)^6 (lambda x^7. x^8)^9)^10
 *)
 
 let id_test_2 = parse_from_string "let id x = x in let _ = id 1 in id 2"
@@ -198,7 +198,7 @@ let high_mult_rec_test_2 = parse_from_string
 let high_mult_call_test_1 = parse_from_string
   "let h g = g 5 in let g1 x = 1 in let g2 x = x in (h g1) / (h g2)"
 
-let tests = [rec_test_1]
+let tests = [id_test_1]
 
 let _ =
   Config.parse;

@@ -8,7 +8,7 @@ PROG=${*:-../tests.native}
 echo "outdir=<$OUTDIR> prog=<$PROG>"
 
 TESTDIR=${1:-../tests/benchmarks/}
-INS="array fpice mochi termination" # 
+INS="fpice" # array mochi termination
 DOMAIN="Oct"
 
 OUTPRE="out"
@@ -28,5 +28,5 @@ for dir in ${INS}; do
     done
 done
 
-echo "Gnerate table results..."
+echo "Generate table results..."
 python3 table.py  

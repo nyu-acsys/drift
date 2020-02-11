@@ -24,9 +24,10 @@ end
 
 type baseType = Int | Bool
 type node_t = EN of env_t * loc (*N = E x loc*)
+  | VN of env_t * var * loc
 and env_t = node_t VarMap.t (*E = Var -> N*)
 
-let name_of_node lb = ("lab_" ^ lb)
+let name_of_node lb = ("z" ^ lb)
 
 let l_index = ref 0
 
@@ -47,14 +48,18 @@ let comp s1 s2 =
 module TempNodeMap = Map.Make(struct
   type t = node_t
   let compare n1 n2 = 
-    let EN (env1, e1) = n1 in
-    let EN (env2, e2) = n2 in
-    comp e1 e2
+    match n1, n2 with
+    | EN (env1, e1), EN (env2, e2) -> comp e1 e2
+    | EN (env1, e1), VN (env2, _, e2) -> comp e1 e2
+    | VN (env1, _, e1), EN (env2, e2) -> comp e1 e2
+    | VN (env1, _, e1), VN (env2, _, e2) -> comp e1 e2
 end)
 
 module NodeMap = struct
   include TempNodeMap
-  let find key m = let EN (env1, e1) = key in
+  let find key m = let e1 = match key with 
+    | EN (env1, e1) -> e1
+    | VN (env1, _, e1) -> e1 in
     try TempNodeMap.find key m 
     with Not_found -> raise (Key_not_found (e1^" is not Found in NodeMap"))
 end
@@ -301,7 +306,10 @@ module SemanticsDomain =
       and eq_PM m1 m2 =
         NodeMap.for_all (fun n v1 (*untie to node -> value*) ->
         NodeMap.find_opt n m2 |> Opt.map (
-          fun v2 -> let EN (env, l) = n in
+          fun v2 ->
+          let l = match n with 
+            | EN (env1, l) -> l
+            | VN (env1, _, l) -> l in
           if eq_V v1 v2 then true else 
           begin
             raise (Pre_Def_Change ("Predefined node changed at " ^ l))
@@ -583,11 +591,15 @@ let print_exp out_ch e = Format.fprintf (Format.formatter_of_out_channel out_ch)
 
 let loc_of_node = function
   | EN (_, l) -> l
+  | VN (_, _, l) -> l
 
-let pr_node ppf n = Format.fprintf ppf "%s" (loc_of_node n)
+let pr_node ppf = function 
+  | EN (env, l) -> Format.fprintf ppf "%s" l
+  | VN (env, var, l) -> Format.fprintf ppf "%s_%s" l var
 
 let rec pr_node_full ppf = function
   | EN (env, l) -> Format.fprintf ppf "@[<1><[%a], %s>@]" pr_env (VarMap.bindings env) l
+  | VN (env, var, l) -> Format.fprintf ppf "@[<1><[%a], %s>@]" pr_env (VarMap.bindings env) l
 and pr_env ppf = function
   | [] -> ()
   | [x, n] -> Format.fprintf ppf "%s: %a" x pr_node_full n
