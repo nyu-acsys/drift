@@ -8,7 +8,7 @@ PROG=${*:-../tests.native}
 echo "outdir=<$OUTDIR> prog=<$PROG>"
 
 TESTDIR=${1:-../tests/benchmarks/}
-INS="array fpice mochi termination" # 
+INS=" fpice " # mochi termination array
 DOMAIN="Oct"
 
 OUTPRE="out"
