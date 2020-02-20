@@ -167,8 +167,6 @@ let seq_test_3 = parse_from_string "let a = 1 in a; (fun x -> 6) 9;a"
 
 let seq_test_4 = parse_from_string "if false then 2 else let x = 4 in 3; x"
 
-let typedel_test_1 = parse_from_string "let id (x:int) (z:bool) = if z then x else 2 in let kj (k:int) = k in id 3"
-
 let redef_test_1 = parse_from_string "let f a b = if a < 1 then let a = 2 in a else b in f 0 3"
 
 let scope_test = parse_from_string "let rec f x y = let a = x + 1 in let b = y - 1 in if a > 3 then b else f a b in 

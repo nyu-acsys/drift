@@ -1,3 +1,7 @@
+(*
+ * Input data error
+ *)
+
 let rec repeat f n s =
   if n = 0 then
     s

@@ -46,10 +46,7 @@ let comp s1 s2 =
 
 module TempNodeMap = Map.Make(struct
   type t = node_t
-  let compare n1 n2 = 
-    let EN (env1, e1) = n1 in
-    let EN (env2, e2) = n2 in
-    comp e1 e2
+  let compare = compare
 end)
 
 module NodeMap = struct
@@ -84,9 +81,6 @@ module SemanticsDomain =
     and top_R = function
     | Plus | Mult | Div | Mod | Minus -> (Int AbstractValue.top)
     | Ge | Eq | Ne | Lt | Gt | Le | And | Or -> (Bool (AbstractValue.top, AbstractValue.top))
-    and init_R = function
-    | Integer _ -> top_R Plus
-    | Boolean _ -> top_R Ge
     and bot_R = function
     | Plus | Mult | Div | Mod | Minus -> (Int AbstractValue.bot)
     | Ge | Eq | Ne | Lt | Gt | Le | And | Or -> (Bool (AbstractValue.bot, AbstractValue.bot))
@@ -622,12 +616,19 @@ let rec pr_value ppf v = let open SemanticsDomain in match v with
 and pr_table ppf t = let open SemanticsDomain in let (z, vi, vo) = t in
     Format.fprintf ppf "@[<2>%s: (%a ->@ %a)@]" z pr_value vi pr_value vo
 
+let sort_list m =
+  let lst = (NodeMap.bindings m) in
+  List.sort (fun (n1,_) (n2,_) -> 
+  let EN (env1, e1) = n1 in
+    let EN (env2, e2) = n2 in
+    comp e1 e2) lst 
+
 let print_value out_ch v = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" pr_value v
 
 let string_of_value v = pr_value Format.str_formatter v; Format.flush_str_formatter ()
 
 let rec pr_exec_map ppf m =
-  Format.fprintf ppf "----\n%a----\n" pr_exec_rows (NodeMap.bindings m)
+  Format.fprintf ppf "----\n%a----\n" pr_exec_rows (sort_list m)
 and pr_exec_rows ppf = function
   | [] -> ()
   | [row] -> Format.fprintf ppf "%a\n" pr_exec_row row
@@ -655,14 +656,14 @@ let pr_top_vars ppf =
   pr_ll ls
 
 let print_last_node m = 
-  let pr_map_lst_node ppf m = let lst = (NodeMap.bindings m) in 
+  let pr_map_lst_node ppf m = let lst = (sort_list m) in 
     let lst_n, v = List.nth lst (List.length lst - 1) in
     Format.fprintf ppf "@[<2>%a |->@ @[<2>%a@]@]\n\n" pr_node lst_n pr_value v
   in
   Format.fprintf Format.std_formatter "%a@?" pr_map_lst_node m
 
 let print_node_by_label m l = 
-  let pr_map_nst_node ppf m = let lst = (NodeMap.bindings m) in
+  let pr_map_nst_node ppf m = let lst = (sort_list m) in
   try
     let nst_n, v = List.nth lst (l + 4) in
     Format.fprintf ppf "@[<2>%a |->@ @[<2>%a@]@]\n\n" pr_node nst_n pr_value v

@@ -1,6 +1,6 @@
   
 (*
- * IC3 motivating example
+ * Input data error
  *)
 
 let rec loop lx ly = 

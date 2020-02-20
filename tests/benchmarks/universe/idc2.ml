@@ -1,8 +1,6 @@
-(*
- * Assertion error
- *)
 
-let rec loop x i =
+
+let rec loop (x:int) i =
   if i < 0 then
     x
   else if x < 1 then (* x <= 0*)
@@ -12,6 +10,6 @@ let rec loop x i =
   else (* 1 2 *)
     loop (3 - x) (i - 1)
 in 
-let main n =
-  assert (loop (-3) n >= 3)
-in main 15
+let main (mx:int) n =
+  loop mx n
+in main 3 10
