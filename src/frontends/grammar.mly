@@ -161,7 +161,7 @@ bool_term: /* term@2 := term@2 bop term@3 */
 ;
 
 lambda_term:
-| FUN IDENT ARROW seq_term { mk_lambda $2 $4 }
+| FUN ident_list ARROW seq_term { mk_lambdas $2 $4 }
 ;
 
 let_in_term:

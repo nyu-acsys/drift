@@ -22,9 +22,12 @@ module VarMap = struct
     with Not_found -> raise (Key_not_found (key^" is not Found in VarMap"))
 end
 
+
 type baseType = Int | Bool
-type node_t = EN of env_t * loc (*N = E x loc*)
-  | VN of env_t * var * loc
+type call_site = enode_t
+and enode_t = env_t * loc (*N = E x loc*)
+and vnode_t = env_t * call_site * loc
+and node_t = EN of enode_t | VN of vnode_t
 and env_t = node_t VarMap.t (*E = Var -> N*)
 
 let name_of_node lb = ("z" ^ lb)
@@ -33,6 +36,14 @@ let l_index = ref 0
 
 let incr_l () =
   l_index := !l_index + 1
+
+let get_var_env_node = function
+  | VN(env, var, l) -> env, var, l
+  | EN(env, l) -> raise (Invalid_argument ("Expected variable node at "^l))
+
+let get_en_env_node = function
+| VN(env, var, l) -> raise (Invalid_argument ("Expected normal node at "^l))
+| EN(env, l) -> env, l
 
 let comp s1 s2 =
   let l1 = try int_of_string s1 
@@ -47,12 +58,12 @@ let comp s1 s2 =
 
 module TempNodeMap = Map.Make(struct
   type t = node_t
-  let compare n1 n2 = 
-    match n1, n2 with
-    | EN (env1, e1), EN (env2, e2) -> comp e1 e2
-    | EN (env1, e1), VN (env2, _, e2) -> comp e1 e2
-    | VN (env1, _, e1), EN (env2, e2) -> comp e1 e2
-    | VN (env1, _, e1), VN (env2, _, e2) -> comp e1 e2
+  let compare = compare
+end)
+
+module TempENodeMap = Map.Make(struct
+  type t = call_site
+  let compare = compare
 end)
 
 module NodeMap = struct
@@ -65,9 +76,11 @@ module NodeMap = struct
 end
 
 module TableMap = struct
-  include TempVarMap
-  let find key m = try TempVarMap.find key m 
+  include TempENodeMap
+  let find cs m = let _, key = cs in
+    try TempENodeMap.find cs m 
     with Not_found -> raise (Key_not_found (key^" is not Found in TableMap"))
+  let compare = compare
 end
 
 module SemanticsDomain =
@@ -196,38 +209,43 @@ module SemanticsDomain =
       ***********************************
     *)
     and init_MT_by_MT (mt:table_t TableMap.t) :table_t TableMap.t = 
-      TableMap.mapi (fun var t -> (Bot, Bot)) mt
-    and init_MT_by_var var :table_t TableMap.t =
-      TableMap.singleton var (Bot, Bot)
+      TableMap.mapi (fun cs t -> (Bot, Bot)) mt
+    and init_MT_by_cs cs :table_t TableMap.t =
+      TableMap.singleton cs (Bot, Bot)
     and alpha_rename_MT mt prevar var = TableMap.map (fun (vi, vo) -> 
       alpha_rename_V vi prevar var, alpha_rename_V vo prevar var) mt
     and join_MT mt1 mt2 =
-        TableMap.union (fun var (v1i, v1o) (v2i, v2o) -> Some (join_V v1i v2i, join_V v1o v2o)) mt1 mt2
+        TableMap.union (fun cs (v1i, v1o) (v2i, v2o) -> Some (join_V v1i v2i, join_V v1o v2o)) mt1 mt2
     and meet_MT mt1 mt2 =
-        TableMap.merge (fun var vio1 vio2 -> 
+        TableMap.merge (fun cs vio1 vio2 -> 
           match vio1, vio2 with
           | None, _ | _, None -> None
           | Some (v1i, v1o), Some (v2i, v2o) -> Some ((meet_V v1i v2i), (meet_V v1o v2o))
           ) mt1 mt2
     and leq_MT mt1 mt2 = 
-      if TableMap.is_empty mt1 then false else TableMap.for_all (fun var (v1i, v1o) -> 
-        TableMap.find_opt var mt2 |> Opt.map (fun (v2i, v2o) -> leq_V v1i v2i && leq_V v1o v2o) |>
+      TableMap.for_all (fun cs (v1i, v1o) -> 
+        TableMap.find_opt cs mt2 |> Opt.map (fun (v2i, v2o) -> leq_V v1i v2i && leq_V v1o v2o) |>
         Opt.get_or_else (v1i = Bot && v1o = Bot)) mt1
     and eq_MT mt1 mt2 =
         TableMap.equal (fun (v1i, v1o) (v2i, v2o) -> eq_V v1i v2i && eq_V v1o v2o) mt1 mt2
     and forget_MT var mt = TableMap.map (fun (vi, vo) -> 
       forget_V var vi, forget_V var vo) mt
-    and arrow_MT var mt v = TableMap.mapi (fun z (vi, vo) -> 
+    and arrow_MT var mt v = TableMap.mapi (fun cs (vi, vo) -> 
+      let _, z = cs in
       let v' = forget_V z v in
       arrow_V var vi v, arrow_V var vo v') mt
     and wid_MT mt1 mt2 =
-      TableMap.union (fun var (v1i, v1o) (v2i, v2o) -> Some (wid_V v1i v2i, wid_V v1o v2o)) mt1 mt2
+      TableMap.union (fun cs (v1i, v1o) (v2i, v2o) -> Some (wid_V v1i v2i, wid_V v1o v2o)) mt1 mt2
     and equal_MT mt var = TableMap.map (fun (vi, vo) -> equal_V vi var, equal_V vo var) mt
     and replace_MT mt var x = TableMap.map (fun (vi, vo) -> replace_V vi var x, replace_V vo var x) mt
     and stren_MT mt ae = TableMap.map (fun (vi, vo) -> stren_V vi ae, stren_V vo ae) mt
-    and proj_MT mt vars = TableMap.mapi (fun var (vi, vo) -> 
+    and proj_MT mt vars = TableMap.mapi (fun cs (vi, vo) -> 
+      let _, var = cs in
       let vars_o = Array.append vars [|var|] in
       proj_V vi vars, proj_V vo vars_o) mt
+    and change_table_MT var mt = match TableMap.min_binding_opt mt with
+      | Some (_, vio) -> TableMap.singleton var vio
+      | None -> mt
     (*
       ***************************************
       ** Abstract domain for Execution Map **
@@ -243,19 +261,20 @@ module SemanticsDomain =
         Opt.get_or_else (v1 = Bot)) m1
       and top_M m = NodeMap.map (fun a -> Top) m
       and array_M env m = 
-        (* let n_make = EN (env, "make") in
+        (* let n_make = VN (env, "make", "make") in
         let t_make = (* make *)
           (* make |-> zm: {v:int | v >= 0} -> ex: {v:int | top} -> {v: Int Array (l) | [| l=zm; zm>=0; |]} *)
           let var_l = "zm" in
           let rl = top_R Plus |> op_R "cur_v" "0" Ge true in
           let var_e = "ex" in
-          let rm = top_R Plus in (*TODO: Make poly*)
+          let rm = top_R Plus in
           let llen = arrow_R var_l rm rl |> op_R "l" var_l Eq true in
           (* let ilen = op_R "i" "0" Ge true llen |> op_R "i" "l" Lt true in
           let rlen = op_R "x" var_e Eq true ilen in  *)
-          Table (var_l, Relation rl, Table (var_e, Relation rm, Ary ([|"l";|],llen) ))
+          let t' = Table (TableMap.singleton var_e (Relation rm, Ary ([|"l";|],llen))) in
+          Table (TableMap.singleton var_l (Relation rl, t'))
         in
-        let n_len = EN (env, "len") in
+        let n_len = VN (env, "len", "len") in
         let t_len = (* len *)
           (* len |-> zl: { v: Int Array (l) | [| l>=0; |]  } -> { v: Int | [| v=l |] } *)
           let var_l = "zl" in
@@ -264,9 +283,9 @@ module SemanticsDomain =
           let llen = top_R Plus |> op_R var_len "0" Ge true in
           (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
           let rlen = equal_R (top_R Plus) "l" in
-          Table (var_l, Ary ([|"l"|], llen), Relation rlen)
+          Table (TableMap.singleton var_l (Ary ([|"l"|], llen), Relation rlen))
         in
-        let n_get = EN (env, "get") in
+        let n_get = VN (env, "get", "get") in
         let t_get = (* get *)
           (* get |-> zg: { v: Int Array (l) | [| l>=0; |] } -> zi: {v: int | 0 <= v < l} -> {v: int | top }  *)
           let var_l = "zg" in
@@ -277,9 +296,10 @@ module SemanticsDomain =
           let rm = top_R Plus |> op_R "cur_v" "0" Ge true |> op_R "cur_v" var_len Lt true in
           let rr = top_R Plus (*|> op_R "cur_v" "x" Eq true*) in 
           let var_zi = "zi" in
-          Table (var_l, Ary ([|"l"|], llen), Table (var_zi, Relation rm, Relation rr))
+          let t' = Table (TableMap.singleton var_zi (Relation rm, Relation rr)) in
+          Table (TableMap.singleton var_l (Ary ([|"l"|], llen), t'))
         in
-        let n_set = EN (env, "set") in
+        let n_set = VN (env, "set", "set") in
         let t_set = (* set *)
           (* set |-> zs: { v: Int Array (l) | [| l>=0; |] } -> zi: {v: int | 0 <= v < l} -> ex: {v: int | top } -> unit *)
           let var_l = "zs" in
@@ -292,7 +312,9 @@ module SemanticsDomain =
           let var_zi = "zi" in
           let rri = top_R Plus in
           let rrr = () in
-          Table (var_l, Ary ([|"l"|], llen), Table (var_zi, Relation rm, Table (var_e, Relation rri, Unit rrr)))
+          let t'' = Table (TableMap.singleton var_e (Relation rri, Unit rrr)) in
+          let t' = Table (TableMap.singleton var_zi (Relation rm, t'')) in
+          Table (TableMap.singleton var_l (Ary ([|"l"|], llen), t'))
         in
         let m' = 
           m |> NodeMap.add n_make t_make |> NodeMap.add n_len t_len |> NodeMap.add n_get t_get
@@ -440,17 +462,17 @@ module SemanticsDomain =
       | _, Top -> v
       | Unit _, _ -> v
       | _,_ -> raise (Invalid_argument "ae should not be a table")
-    and der_V term v = match term, v with
+    and der_V term v = match term, v with (*Depracated*)
       | _, Top | _, Bot -> v
       | Const (c,l), Relation r -> 
         let r' = (match c with
           | Integer i -> der_R ((string_of_int i) ^ "=" ^ (name_of_node l)) r
-          | Boolean b -> r (*TODO:this case*))
+          | Boolean b -> r)
         in
         Relation r'
       | Var (x, l), Relation r -> Relation (der_R (x ^ "=" ^ (name_of_node l)) r)
       | App (e1, e2, l), Relation r -> v |> der_V e1 |> der_V e2
-      | Rec (f_opt, x, lx, e1, l), Table t -> v (*TODO:this case*)
+      | Rec (f_opt, x, lx, e1, l), Table t -> v
       | Ite (e1, e2, e3, l), Relation r -> v |> der_V e1 |> der_V e2 |> der_V e3
       | BinOp (bop, e1, e2, l), Relation r -> 
         let expr = ((e1 |> loc |> name_of_node)^(string_of_op bop)^(e2 |> loc |> name_of_node) ^ "=" ^ (name_of_node l)) in
@@ -466,6 +488,9 @@ module SemanticsDomain =
     and get_len_var_V = function
       | Ary ary -> get_len_var_Ary ary
       | _ -> raise (Invalid_argument "get length dep variable unsucessful")
+    and change_table_V key = function
+      | Table t -> Table (change_table_MT key t)
+      | v -> v
     and opt_eq_V v1 v2 = match v1, v2 with
       | Bot, _ | _, Bot -> false
       | _, Top -> true
@@ -593,13 +618,15 @@ let loc_of_node = function
   | EN (_, l) -> l
   | VN (_, _, l) -> l
 
-let pr_node ppf = function 
+let rec pr_node ppf = function 
   | EN (env, l) -> Format.fprintf ppf "%s" l
-  | VN (env, var, l) -> Format.fprintf ppf "%s_%s" l var
+  | VN (env, cs, l) -> let _, var = cs in
+  Format.fprintf ppf "%s_%s" l var
 
 let rec pr_node_full ppf = function
   | EN (env, l) -> Format.fprintf ppf "@[<1><[%a], %s>@]" pr_env (VarMap.bindings env) l
-  | VN (env, var, l) -> Format.fprintf ppf "@[<1><[%a], %s>@]" pr_env (VarMap.bindings env) l
+  | VN (env, cs, l) ->  let _, var = cs in Format.fprintf ppf "@[<1><@[<1>[%a]@],@ %s,@ %s>@]"
+    pr_env (VarMap.bindings env) var l
 and pr_env ppf = function
   | [] -> ()
   | [x, n] -> Format.fprintf ppf "%s: %a" x pr_node_full n
@@ -638,16 +665,28 @@ and pr_table_map ppf = function
 | [] -> ()
 | [row] -> Format.fprintf ppf "%a" pr_table_row row
 | row :: rows -> Format.fprintf ppf "%a;@ %a" pr_table_row row pr_table_map rows
-and pr_table_row ppf (var, t) = 
+and pr_table_row ppf (cs, t) = 
+  let l, var = cs in
   Format.fprintf ppf "@[<2>%s:@ @[<2>%a@]@]" var pr_table t
 
-
+let sort_list m =
+  let lst = (NodeMap.bindings m) in
+  List.sort (fun (n1,_) (n2,_) -> match n1, n2 with
+  | EN (env1, e1), EN (env2, e2) -> comp e1 e2
+  | EN (env1, e1), VN (env2, _, e2) -> comp e1 e2
+  | VN (env1, _, e1), EN (env2, e2) -> comp e1 e2
+  | VN (env1, cs1, e1), VN (env2, cs2, e2) -> 
+    if comp e1 e2 = 0 then
+      let _, var1 = cs1 in
+      let _, var2 = cs2 in
+      String.compare var1 var2 else comp e1 e2) lst 
+     
 let print_value out_ch v = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" pr_value v
 
 let string_of_value v = pr_value Format.str_formatter v; Format.flush_str_formatter ()
 
 let rec pr_exec_map ppf m =
-  Format.fprintf ppf "----\n%a----\n" pr_exec_rows (NodeMap.bindings m)
+  Format.fprintf ppf "----\n%a----\n" pr_exec_rows (sort_list m)
 and pr_exec_rows ppf = function
   | [] -> ()
   | [row] -> Format.fprintf ppf "%a\n" pr_exec_row row
@@ -675,14 +714,14 @@ let pr_top_vars ppf =
   pr_ll ls
 
 let print_last_node m = 
-  let pr_map_lst_node ppf m = let lst = (NodeMap.bindings m) in 
+  let pr_map_lst_node ppf m = let lst = sort_list m in 
     let lst_n, v = List.nth lst (List.length lst - 1) in
     Format.fprintf ppf "@[<2>%a |->@ @[<2>%a@]@]\n\n" pr_node lst_n pr_value v
   in
   Format.fprintf Format.std_formatter "%a@?" pr_map_lst_node m
 
 let print_node_by_label m l = 
-  let pr_map_nst_node ppf m = let lst = (NodeMap.bindings m) in
+  let pr_map_nst_node ppf m = let lst = sort_list m in
   try
     let nst_n, v = List.nth lst (l + 4) in
     Format.fprintf ppf "@[<2>%a |->@ @[<2>%a@]@]\n\n" pr_node nst_n pr_value v

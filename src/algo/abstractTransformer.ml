@@ -63,7 +63,8 @@ let rec prop v1 v2 = match v1, v2 with
       let _, ary2'' = alpha_rename_Arys ary2 (join_Ary ary1' ary2') in
       Ary ary1, Ary ary2''
     | Table mt1, Table mt2 ->
-        let t = TableMap.merge (fun var vio1 vio2 -> 
+        let t = TableMap.merge (fun cs vio1 vio2 -> 
+        let _, var = cs in
         match vio1, vio2 with
          | None, Some (v2i, v2o) -> Some ((v2i, Bot), (v2i, v2o))
          | Some (v1i, v1o), None -> Some ((v1i, v1o), (Bot, Bot))
@@ -100,7 +101,7 @@ let rec prop v1 v2 = match v1, v2 with
         let mt1' = TableMap.map (fun (vio1, _) -> vio1) t in
         let mt2' = 
             let temp_mt2 = TableMap.map (fun (_, vio2) -> vio2) t in
-            TableMap.filter (fun var (v2i, v2o) -> is_Bot_V v2i = false || is_Bot_V v2o = false) temp_mt2
+            TableMap.filter (fun cs (v2i, v2o) -> is_Bot_V v2i = false || is_Bot_V v2o = false) temp_mt2
             (*Q: How to detect node scoping?*)
         in
         Table mt1', Table mt2'
@@ -184,7 +185,7 @@ let rec step term env m ae =
         );
         let nx = VarMap.find x env in
         if optmization m n find && optmization m nx find then m else
-        let VN (envx, _, lx) = nx in
+        let envx, (_,cs), lx = get_var_env_node nx in
         let tx = let tx' = find nx m in
             if is_Relation tx' then equal_V tx' x (* M<E(x)>[v=E(x)] *) 
             else tx'
@@ -244,8 +245,8 @@ let rec step term env m ae =
                 | Top -> m2 |> NodeMap.add n Top
                 | _ -> let t = find n m2 in
                 if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then m else
-                let var = e1 |> loc |> name_of_node in
-                let t_temp = Table (TableMap.singleton var (t2, t)) in
+                let cs = (env, loc e1 |> name_of_node) in
+                let t_temp = Table (TableMap.singleton cs (t2, t)) in
                 (if !debug then
                 begin
                     Format.printf "\n<=== Prop APP ===> %s\n" (loc e1);
@@ -266,7 +267,7 @@ let rec step term env m ae =
                     Format.printf "\n";
                 end
                 );
-                let t2', raw_t' = TableMap.find var (io_T t0) in
+                let t2', raw_t' = TableMap.find cs (io_T t0) in
                 let t' = getVars env |> proj_V raw_t' in
                 m2 |> NodeMap.add n1 t1' |> NodeMap.add n2 t2' |> NodeMap.add n t'
             )
@@ -392,21 +393,16 @@ let rec step term env m ae =
         end
         );
         let t0 = find n m in
-        let t = if t0 = Bot then 
-            begin
-                (* let var = l |> name_of_node in
-                let t = TableMap.singleton var (Bot, Bot) in *)
-                Table (TableMap.empty)
-            end
-            else t0 in
-        TableMap.fold (fun var (tl, tr) m' ->
-            if tl = Bot then m |> NodeMap.add n t
+        let t = if t0 = Bot then Table (TableMap.empty) else t0 in
+        TableMap.fold (fun cs (tl, tr) m' ->
+            if tl = Bot then m' |> NodeMap.add n t
             else 
-            if tr = Top then top_M m else
+            if tr = Top then top_M m' else
             begin
                 (* Deprecated: if VarDefMap.mem x !top_var then Stack.push x func_name_q; *)
-                let nx = VN (env, var, lx) in
-                let f_nf_opt = Opt.map (fun (f, lf) -> f, VN (env, var, lf)) f_opt in
+                let _, var = cs in
+                let nx = VN (env, cs, lx) in
+                let f_nf_opt = Opt.map (fun (f, lf) -> f, VN (env, cs, lf)) f_opt in
                 let env1 =
                     env |> VarMap.add x nx |>
                     (Opt.map (uncurry VarMap.add) f_nf_opt |>
@@ -419,8 +415,8 @@ let rec step term env m ae =
                     then Relation (top_R Plus) else *)
                     find nx m in
                 let ae' = if is_Relation tx && x <> "_" then (arrow_V x ae tx) else ae in
-                let temp_t = if x = "_" then find n1 m else replace_V (find n1 m) x var in
-                let prop_t = Table (TableMap.singleton var (tx, temp_t)) in
+                let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x var in
+                let prop_t = Table (TableMap.singleton cs (tx, t1)) in
                 (if !debug then
                 begin
                     Format.printf "\n<=== Prop lamb ===> %s %s\n" lx (loc e1);
@@ -443,8 +439,8 @@ let rec step term env m ae =
                 );
                 let nf_t2_tf'_opt =
                     Opt.map (fun (_, nf) ->
+                    let envf, fcs, lf = get_var_env_node nf in
                     let tf = find nf m in
-                    let VN (envf, var, lf) = nf in
                     (if !debug then
                         begin
                             Format.printf "\n<=== Prop um ===> %s\n" l;
@@ -466,7 +462,7 @@ let rec step term env m ae =
                     );
                     nf, t2, tf') f_nf_opt
                 in
-                let tx', t1' = TableMap.find var (io_T px_t) in
+                let tx', t1' = TableMap.find cs (io_T px_t) in
                 let m1 = m |> NodeMap.add nx tx' |> NodeMap.add n1 (if x = "_" then t1' else replace_V t1' var x) |>
                 (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> NodeMap.add nf tf' |> NodeMap.add n (join_V t1 t2))
                 nf_t2_tf'_opt |> Opt.get_or_else (NodeMap.add n t1)) in
@@ -496,7 +492,7 @@ let env = ref env0
 (** Fixpoint loop *)
 let rec fix e k m =
   st := k;
-  if false then exit 0;
+  if !st > 50 then exit 0;
   (if not !integrat_test then
     begin
         Format.printf "%s step %d\n" !process k;
@@ -507,7 +503,7 @@ let rec fix e k m =
   let m' = step e !env m ae in
   pre_m := m;
   let m'' = if !process = "Wid" then widening m m' else narrowing m m' in
-  let pre_ch = eq_PM m0 m'' in
+  let pre_ch = true in (*eq_PM m0 m''*)
   if pre_ch then
   begin
     let comp = if !process = "Wid" then leq_M m'' m else leq_M m m'' in

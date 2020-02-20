@@ -52,6 +52,12 @@ let id_test_2 = parse_from_string "let id x = x in let _ = id 1 in id 2"
   (lambda x^11. x^12)^13)^14
 *)
 
+let id_test_3 = parse_from_string "let id x = x in let _ = id 1 in id true"
+(* id_test_2
+((lambda id^0. ((lambda _^1. (id^2 2^3)^4)^5 (id^6 1^7)^8)^9)^10
+  (lambda x^11. x^12)^13)^14
+*)
+
 let fun_test = 
   (mk_app (mk_lambda x (mk_app (mk_var x) (mk_int 1))) (mk_lambda y (mk_var y)))
 
@@ -105,6 +111,17 @@ let rec_test_2 = parse_from_string "let rec f a = if a <= 1 then 0 else f (a - 1
 *)
 
 let rec_test_3 = parse_from_string "let rec f a b = if a <= b then 0 else f (a - 1) b in f 8 1"
+
+let rec_test_4 = parse_from_string 
+  "let rec f a b = if a >= 10 then b else f (a + 1) b in 
+    let _ = f 8 1 in f 8 true"
+(*
+((lambda f^0.
+    ((lambda _^1. ((f^2 8^3)^4 true^5)^6)^7 ((f^8 8^9)^10 1^11)^12)^13)^14
+  (mu f^15 a^16.
+     (lambda b^17.
+        ((a^18 >= 10^19)^20 ? b^21 : ((f^22 (a^23 + 1^24)^25)^26 b^27)^28)^29)^30)^31)^32
+*)
 
 let ary_test_1 = parse_from_string "let f a = len a in let ary = make 3 0 in f ary"
 (* ary_test_1
@@ -198,7 +215,7 @@ let high_mult_rec_test_2 = parse_from_string
 let high_mult_call_test_1 = parse_from_string
   "let h g = g 5 in let g1 x = 1 in let g2 x = x in (h g1) / (h g2)"
 
-let tests = [id_test_1]
+let tests = [rec_test_4]
 
 let _ =
   Config.parse;

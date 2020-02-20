@@ -5,10 +5,10 @@ let rec append x y =
     1 + append (x - 1) y
 in
 
-let rec rev n =
-  if n = 0
+let rec rev rn =
+  if rn = 0
   then 0
-  else append (rev (n - 1)) 1
+  else append (rev (rn - 1)) 1
 in
 
 let main n m =

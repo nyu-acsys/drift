@@ -1,7 +1,7 @@
 
 (*
 Res: OCaml -> 6
-imprecision: Oct: -6 <= v <= 6
+Our output: -6 <= v <= 6 (imprecision)
 Liquid Haskell: TODO: need to TEST!
 *)
 
@@ -17,5 +17,8 @@ let main n =
 in main 3
 
 (*
-Reason: strenthen in here is table not relation, so the call-site could not be specified for f
+Reason why we failed: function twice contains a function parameter f.
+when we strengthen the output by the input parameters, the result could not be precised.
+Becasue the type of f is a table not relation, so the output will not be specified.
+TODO: Will check the result for new implementation.
 *)
