@@ -105,10 +105,10 @@ let rec prop v1 v2 = match v1, v2 with
         let p1, p2 = 
             let v2i', v1i' = 
                 (*Optimization 1: If those two are the same, ignore the prop step*)
-                if is_Bot_V v1i = false && eq_V v2i v1i then v2i, v1i else 
+                (* if is_Bot_V v1i = false && eq_V v2i v1i then v2i, v1i else  *)
                 prop v2i v1i 
             and v1o', v2o' = 
-                if is_Bot_V v2o = false && eq_V v1ot v2o then v1ot, v2o else 
+                (* if is_Bot_V v2o = false && eq_V v1ot v2o then v1ot, v2o else  *)
                 prop (arrow_V z1 v1ot v2i) (arrow_V z1 v2o v2i) 
             in
             let v1o' =
@@ -495,7 +495,7 @@ let st = ref 0
 (** Widening **)
 let widening m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     NodeMap.mapi (fun n t -> (*Delay wid, still need to check*)
-        if !st > 300 then wid_V (find n m1) t else join_V t (find n m1) 
+        if !st > 30 then wid_V (find n m1) t else join_V t (find n m1) 
         (* !st > 600 *)
     ) m2
 
