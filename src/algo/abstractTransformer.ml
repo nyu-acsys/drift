@@ -22,8 +22,10 @@ let z_index = ref 0 (* first definition *)
 
 let process = ref "Wid"
 
-let env0, m0 = 
-    array_M VarMap.empty NodeMap.empty
+let env0, m0' = 
+    array_M VarMap.empty (NodeMap.create 1234)
+
+let m0 = Hashtbl.copy m0'
 
 let pre_m = ref m0
 
@@ -57,7 +59,7 @@ let get_predefined_var_type ky m vr =
     let res = VarDefMap.find ky m in
     reiew_list res
 
-let eq_PM m1 m2 =
+let eq_PM (m1:exec_map_t) (m2:exec_map_t) =
     NodeMap.for_all (fun n v1 (*untie to node -> value*) ->
     NodeMap.find_opt n m2 |> Opt.map (
       fun v2 -> let EN (env, l) = n in
@@ -80,7 +82,7 @@ let prop_ary v1i v1o v2i v2o =
         replace_V v1o l1 l2
     else v1o
 
-let rec prop v1 v2 = match v1, v2 with
+let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 with
     | Top, Bot | Table _, Top -> Top, Top
     | Unit _, Bot -> v1, v1
     | Table t, Bot -> let t' = init_T (dx_Ta t) in
@@ -105,10 +107,10 @@ let rec prop v1 v2 = match v1, v2 with
         let p1, p2 = 
             let v2i', v1i' = 
                 (*Optimization 1: If those two are the same, ignore the prop step*)
-                (* if is_Bot_V v1i = false && eq_V v2i v1i then v2i, v1i else  *)
+                if is_Bot_V v1i = false && eq_V v2i v1i then v2i, v1i else 
                 prop v2i v1i 
             and v1o', v2o' = 
-                (* if is_Bot_V v2o = false && eq_V v1ot v2o then v1ot, v2o else  *)
+                if is_Bot_V v2o = false && eq_V v1ot v2o then v1ot, v2o else 
                 prop (arrow_V z1 v1ot v2i) (arrow_V z1 v2o v2i) 
             in
             let v1o' =
@@ -124,7 +126,7 @@ let rec prop v1 v2 = match v1, v2 with
         Table t1'', Table t2''
     | _, _ -> v1, join_V v1 v2
 
-let get_env_array env = 
+let get_env_array (env: env_t) = 
     let env_l = (VarMap.bindings env) in
     let rec helper ls ary = match ls with
         | [] -> ary
@@ -135,7 +137,7 @@ let get_env_array env =
 (* let lc_env env1 env2 = 
     Array.fold_left (fun a id -> if Array.mem id a then a else Array.append a [|id|] ) env2 env1 *)
 
-let prop_scope env1 env2 v1 v2 = 
+let prop_scope (env1: env_t) (env2: env_t) (v1: value_t) (v2: value_t): (value_t * value_t) = 
     let env1 = get_env_array env1 in
     let env2 = get_env_array env2 in
     let v1', v2' = prop v1 v2 in
@@ -153,11 +155,11 @@ let prop_scope env1 env2 v1 v2 =
         Table t1''
     | _, _ -> v1 *)
 
-let iterUpdate m v l = NodeMap.map (fun x -> arrow_V l x v) m
+(* let iterUpdate m v l = NodeMap.map (fun x -> arrow_V l x v) m *)
 
 let getVars env = VarMap.fold (fun var n ary -> Array.append ary [|var|]) env [||]
 
-let iterEnv_c env m c = VarMap.fold (fun var n a ->
+(* let iterEnv_c env m c = VarMap.fold (fun var n a ->
     let v = NodeMap.find_opt n m |> Opt.get_or_else Top in
     let EN (env', l) = n in
     let lb = name_of_node l in
@@ -165,14 +167,14 @@ let iterEnv_c env m c = VarMap.fold (fun var n a ->
 
 let iterEnv_v env m v = VarMap.fold (fun var n a -> 
     let ai = NodeMap.find_opt n m |> Opt.get_or_else Top in
-    arrow_V var a ai) env v
+    arrow_V var a ai) env v *)
 
 let optmization m n find = 
     let t = find n m in
     let pre_t = find n !pre_m in
     opt_eq_V pre_t t
 
-let rec step term env m ae =
+let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
     let n = EN (env, loc term) in
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     match term with
@@ -351,8 +353,9 @@ let rec step term env m ae =
         begin
             let t_true = stren_V (extrac_bool_V t0 true) ae in (* Meet with ae*)
             let t_false = stren_V (extrac_bool_V t0 false) ae in
+            let m0' = Hashtbl.copy m0 in
             let m1 = step e1 env m0 t_true in
-            let m2 = step e2 env m0 t_false in
+            let m2 = step e2 env m0' t_false in
             let n1 = EN (env, loc e1) in
             let t1 = find n1 m1 in
             let n2 = EN (env, loc e2) in
@@ -493,14 +496,14 @@ let rec step term env m ae =
 let st = ref 0
 
 (** Widening **)
-let widening m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
-    NodeMap.mapi (fun n t -> (*Delay wid, still need to check*)
+let widening (m1:exec_map_t) (m2:exec_map_t): exec_map_t = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
+    NodeMap.mapi (fun n t -> (*Delay wid*)
         if !st > 30 then wid_V (find n m1) t else join_V t (find n m1) 
         (* !st > 600 *)
     ) m2
 
 (** Narrowing **)
-let narrowing m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
+let narrowing (m1:exec_map_t) (m2:exec_map_t): exec_map_t = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     NodeMap.mapi (fun n t ->
         meet_V (find n m1) t
     ) m2
@@ -508,7 +511,7 @@ let narrowing m1 m2 = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot
 let env = ref env0
 
 (** Fixpoint loop *)
-let rec fix e k m =
+let rec fix e (k: int) (m:exec_map_t): exec_map_t =
   st := k;
   (if not !integrat_test then
     begin
@@ -516,8 +519,9 @@ let rec fix e k m =
         print_exec_map m;
     end);
   let ae = Relation (top_R Plus) in
-  (* Stack.clear func_name_q; *)
-  let m' = step e !env m ae in
+  Stack.clear func_name_q;
+  let m_t = Hashtbl.copy m in
+  let m' = step e !env m_t ae in
   pre_m := m;
   let m'' = if !process = "Wid" then widening m m' else narrowing m m' in
   let pre_ch = eq_PM m0 m'' in
@@ -537,7 +541,7 @@ let s e =
         pr_top_vars Format.std_formatter;
         Format.printf "\n\n";
     end);
-    let m1 = (fix e 0 m0) in
+    let m1 = (fix e 0 m0') in
     process := "Nar";
     let m = (fix e 0 m1) in
     (if !integrat_test then

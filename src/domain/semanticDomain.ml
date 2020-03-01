@@ -50,10 +50,41 @@ module TempNodeMap = Map.Make(struct
 end)
 
 module NodeMap = struct
-  include TempNodeMap
-  let find key m = let EN (env1, e1) = key in
-    try TempNodeMap.find key m 
+  type 'a t = (node_t, 'a) Hashtbl.t
+  (* let empty : 'a t = Hashtbl.create 1234 *)
+  let create (num: int) : 'a t = Hashtbl.create num
+  let add key v (m: 'a t) : 'a t = (match Hashtbl.find_opt m key with
+    | None -> Hashtbl.add m key v
+    | Some v2 -> Hashtbl.replace m key v); m
+  let merge f m1 m2 : 'a t = 
+    Hashtbl.filter_map_inplace (
+    fun key v1 -> match Hashtbl.find_opt m2 key with
+      | None -> None
+      | Some v2 -> (f key v1 v2)
+  ) m1; m1
+  let union f (m1: 'a t) (m2: 'a t) : 'a t = Hashtbl.fold (
+    fun key v1 m -> (match Hashtbl.find_opt m key with
+      | None -> Hashtbl.add m key v1
+      | Some v2 -> Hashtbl.replace m key (f key v1 v2)); 
+    m
+  ) m1 m2
+  let for_all f (m: 'a t) : bool = Hashtbl.fold (
+    fun key v b -> if b = false then b else
+      f key v
+  ) m true
+  let find_opt key (m: 'a t) = Hashtbl.find_opt m key
+  let map f (m: 'a t) : 'a t = Hashtbl.filter_map_inplace (
+    fun key v -> Some (f v)
+  ) m; m
+  let mapi f (m: 'a t) : 'a t = Hashtbl.filter_map_inplace (
+    fun key v -> Some (f key v)
+  ) m; m
+  let find key (m: 'a t): 'a = let EN (env1, e1) = key in
+    try Hashtbl.find m key 
     with Not_found -> raise (Key_not_found (e1^" is not Found in NodeMap"))
+  let bindings (m: 'a t) = Hashtbl.fold (
+    fun key v lst -> (key, v) :: lst
+  ) m []
 end
 
 module SemanticsDomain =
@@ -231,11 +262,11 @@ module SemanticsDomain =
       ** Abstract domain for Execution Map **
       ***************************************
       *)
-      and meet_M m1 m2 =
-        NodeMap.union (fun n v1 v2 -> Some (meet_V v1 v2)) m1 m2
-      and join_M m1 m2 =
-        NodeMap.union (fun n v1 v2 -> Some (join_V v1 v2)) m1 m2
-      and leq_M m1 m2 =
+      and meet_M (m1: exec_map_t) (m2: exec_map_t) : exec_map_t =
+        NodeMap.merge (fun n v1 v2 -> Some (meet_V v1 v2)) m1 m2
+      and join_M (m1: exec_map_t) (m2: exec_map_t) : exec_map_t =
+        NodeMap.union (fun n v1 v2 -> join_V v1 v2) m1 m2
+      and leq_M (m1: exec_map_t) (m2: exec_map_t) : bool =
         NodeMap.for_all (fun n v1 (*untie to node -> value*) -> 
         NodeMap.find_opt n m2 |> Opt.map (fun v2 -> leq_V v1 v2) |>
         Opt.get_or_else (v1 = Bot)) m1
@@ -349,10 +380,10 @@ module SemanticsDomain =
       | Ary ary1, Ary ary2 -> eq_Ary ary1 ary2
       | Unit u1, Unit u2 -> true
       | _, _ -> false
-      and is_table v = match v with
+      and is_table (v:value_t) = match v with
         | Table _ -> true
         | _ -> false
-      and is_bool_V v = match v with
+      and is_bool_V (v:value_t) = match v with
         | Relation r -> is_bool_R r
         | _ -> false
       and is_Relation = function 
@@ -361,7 +392,7 @@ module SemanticsDomain =
       and is_Array = function
         | Ary _ -> true
         | _ -> false
-      and arrow_V var v v' = match v' with
+      and arrow_V var (v:value_t) (v':value_t) = match v' with
         | Bot -> Bot
         | Top | Table _ | Unit _ -> v
         | Relation r2 -> (match v with
@@ -616,7 +647,7 @@ let rec pr_value ppf v = let open SemanticsDomain in match v with
 and pr_table ppf t = let open SemanticsDomain in let (z, vi, vo) = t in
     Format.fprintf ppf "@[<2>%s: (%a ->@ %a)@]" z pr_value vi pr_value vo
 
-let sort_list m =
+let sort_list (m: SemanticsDomain.exec_map_t) =
   let lst = (NodeMap.bindings m) in
   List.sort (fun (n1,_) (n2,_) -> 
   let EN (env1, e1) = n1 in
