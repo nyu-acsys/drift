@@ -52,8 +52,9 @@ end
 exception Pre_Def_Change of string
 exception Key_not_found of string
 
-module TempVarMap =  MakeHash(struct
+module TempVarMap =  Map.Make(struct
   type t = var
+  let compare = compare
   end)
 
 module VarMap = struct

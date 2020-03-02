@@ -23,7 +23,7 @@ let z_index = ref 0 (* first definition *)
 let process = ref "Wid"
 
 let env0, m0' = 
-    array_M (VarMap.create 1234) (NodeMap.create 123456)
+    array_M VarMap.empty (NodeMap.create 123456)
 
 let m0 = Hashtbl.copy m0'
 
@@ -238,9 +238,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         end
         );
         let pre_len = Stack.length func_name_q in
-        let env' = Hashtbl.copy env in
-        let env'' = Hashtbl.copy env in
-        let m1 = step e1 env' m ae in
+        let m1 = step e1 env m ae in
         let func_in = pre_len <> Stack.length func_name_q in
         let n1 = EN (env, loc e1) in
         let t1 = find n1 m1 in
@@ -250,7 +248,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         (loc e1) (string_of_value t1);
         m1 |> NodeMap.add n Top)
         else
-            let m2 = step e2 env'' m1 ae in
+            let m2 = step e2 env m1 ae in
             (if func_in then let _ = Stack.pop func_name_q in ());
             let n2 = EN (env, loc e2) in
             let t2 = find n2 m2 in (* M[env*l2] *)
@@ -292,10 +290,8 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         Format.printf "\n";
         end
         );
-        let env' = Hashtbl.copy env in
-        let env'' = Hashtbl.copy env in
-        let m1 = step e1 env' m ae in
-        let m2 = step e2 env'' m1 ae in
+        let m1 = step e1 env m ae in
+        let m2 = step e2 env m1 ae in
         let n1 = EN (env, loc e1) in
         let t1 = find n1 m2 in
         let n2 = EN (env, loc e2) in
@@ -351,10 +347,8 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             let t_true = stren_V (extrac_bool_V t0 true) ae in (* Meet with ae*)
             let t_false = stren_V (extrac_bool_V t0 false) ae in
             let m0' = Hashtbl.copy m0 in
-            let env' = Hashtbl.copy env in
-            let env'' = Hashtbl.copy env in
-            let m1 = step e1 env' m0 t_true in
-            let m2 = step e2 env'' m0' t_false in
+            let m1 = step e1 env m0 t_true in
+            let m2 = step e2 env m0' t_false in
             let n1 = EN (env, loc e1) in
             let t1 = find n1 m1 in
             let n2 = EN (env, loc e2) in
@@ -426,9 +420,8 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             if VarDefMap.mem x !top_var then Stack.push x func_name_q;
             let nx = EN (env, lx) in
             let f_nf_opt = Opt.map (fun (f, lf) -> f, EN (env, lf)) f_opt in
-            let env' = Hashtbl.copy env in
             let env1 =
-                env' |> VarMap.add x nx |>
+                env |> VarMap.add x nx |>
                 (Opt.map (uncurry VarMap.add) f_nf_opt |>
                  Opt.get_or_else (fun env -> env))
             in
@@ -513,7 +506,6 @@ let env = ref env0
 (** Fixpoint loop *)
 let rec fix e (k: int) (m:exec_map_t): exec_map_t =
   st := k;
-  if !st >= 1000 then exit 0;
   (if not !integrat_test then
     begin
         Format.printf "%s step %d\n" !process k;
