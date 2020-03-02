@@ -100,10 +100,10 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
         let p1, p2 = 
             let v2i', v1i' = 
                 (*Optimization 1: If those two are the same, ignore the prop step*)
-                if is_Bot_V v1i = false && eq_V v2i v1i then v2i, v1i else 
+                (* if is_Bot_V v1i = false && eq_V v2i v1i then v2i, v1i else  *)
                 prop v2i v1i 
             and v1o', v2o' = 
-                if is_Bot_V v2o = false && eq_V v1ot v2o then v1ot, v2o else 
+                (* if is_Bot_V v2o = false && eq_V v1ot v2o then v1ot, v2o else  *)
                 prop (arrow_V z1 v1ot v2i) (arrow_V z1 v2o v2i) 
             in
             let v1o' =
@@ -182,7 +182,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         Format.printf "\n";
         end
         );
-        if optmization m n find then m else
+        (* if optmization m n find then m else *)
         let t = find n m in (* M[env*l] *)
         let ct = init_V_c c in
         let t' = join_V t ct in
@@ -196,7 +196,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         end
         );
         let nx = VarMap.find x env in
-        if optmization m n find && optmization m nx find then m else
+        (* if optmization m n find && optmization m nx find then m else *)
         let EN (envx, lx) = nx in
         let tx = let tx' = find nx m in
             if is_Relation tx' then equal_V tx' x (* M<E(x)>[v=E(x)] *) 
@@ -256,7 +256,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                 | Bot -> m2
                 | Top -> m2 |> NodeMap.add n Top
                 | _ -> let t = find n m2 in
-                if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then m else
+                (* if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then m else *)
                 let t_temp = Table ((dx_T t1), t2, t) in
                 (if !debug then
                 begin
@@ -307,7 +307,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                 (loc e2) (string_of_value t2))
             );
             let t = find n m2 in
-            if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then m else
+            (* if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then m else *)
             let td = Relation (top_R bop) in
             let raw_t = if bool_op bop then
             begin
@@ -353,7 +353,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             let t1 = find n1 m1 in
             let n2 = EN (env, loc e2) in
             let t2 = find n2 m2 in
-            if optmization m2 n0 find && optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then m else
+            (* if optmization m2 n0 find && optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then m else *)
             ((if !debug then
             begin
                 Format.printf "\n<=== Prop then ===> %s\n" (loc e1);
@@ -426,7 +426,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                  Opt.get_or_else (fun env -> env))
             in
             let n1 = EN (env1, loc e1) in
-            if optmization m n find && optmization m nx find && optmization m n1 find then m else
+            (* if optmization m n find && optmization m nx find && optmization m n1 find then m else *)
             let tx = 
                 if Stack.is_empty func_name_q = false && get_predefined_vars (Stack.top func_name_q) !top_var x 
                 then Relation (get_predefined_var_type (Stack.top func_name_q) !top_var x) else
