@@ -23,7 +23,7 @@ let z_index = ref 0 (* first definition *)
 let process = ref "Wid"
 
 let env0, m0' = 
-    array_M VarMap.empty (NodeMap.create 1234)
+    array_M VarMap.empty (NodeMap.create 123456)
 
 let m0 = Hashtbl.copy m0'
 
@@ -74,13 +74,6 @@ let eq_PM (m1:exec_map_t) (m2:exec_map_t) =
       end
       )
     |> Opt.get_or_else (v1 = v1)) m1
-
-let prop_ary v1i v1o v2i v2o = 
-    if is_Array v1i &&  is_Array v2i then
-        let l1 = get_len_var_V v1i in
-        let l2 = get_len_var_V v2i in
-        replace_V v1o l1 l2
-    else v1o
 
 let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 with
     | Top, Bot | Table _, Top -> Top, Top
@@ -223,7 +216,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             if Array.mem lx pre_def_func then
                 prop tx t
             else
-                prop_scope envx env tx t
+                prop tx t
         in
         let tx' = forget_V x raw_tx' in
         (if !debug then
@@ -450,7 +443,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                 Format.printf "\n";
             end
             );
-            let px_t, t1 = prop_scope env1 env prop_t t
+            let px_t, t1 = prop prop_t t
             in
             (if !debug then
             begin
@@ -474,7 +467,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                         Format.printf "\n";
                     end
                   );
-                  let t2, tf' = prop_scope env envf t tf in
+                  let t2, tf' = prop t tf in
                   (if !debug then
                     begin
                         Format.printf "\nRES for prop:\n";

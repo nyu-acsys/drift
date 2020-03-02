@@ -8,54 +8,17 @@ open Util
 **********************************
 *)
 
-module TempVarMap = Map.Make(struct
-type t = var
-let compare = compare
-end)
+module type HashType =
+  sig
+    type t
+  end
 
-exception Pre_Def_Change of string
-exception Key_not_found of string
-
-module VarMap = struct
-  include TempVarMap
-  let find key m = try TempVarMap.find key m 
-    with Not_found -> raise (Key_not_found (key^" is not Found in VarMap"))
-end
-
-type baseType = Int | Bool
-type node_t = EN of env_t * loc (*N = E x loc*)
-and env_t = node_t VarMap.t (*E = Var -> N*)
-
-let name_of_node lb = ("lab_" ^ lb)
-
-let l_index = ref 0
-
-let incr_l () =
-  l_index := !l_index + 1
-
-let comp s1 s2 =
-  let l1 = try int_of_string s1 
-    with _ -> -1 in
-  let l2 = try int_of_string s2
-    with _ -> -1 in
-  if l1 = -1 then
-    if l2 = -1 then String.compare s1 s2
-    else -1
-  else if l2 = -1 then 1
-  else l1 - l2
-
-module TempNodeMap = Map.Make(struct
-  type t = node_t
-  let compare = compare
-end)
-
-module NodeMap = struct
-  type 'a t = (node_t, 'a) Hashtbl.t
+module MakeHash(Hash: HashType) = struct
+  type key = Hash.t
+  type 'a t = (key, 'a) Hashtbl.t
   (* let empty : 'a t = Hashtbl.create 1234 *)
   let create (num: int) : 'a t = Hashtbl.create num
-  let add key v (m: 'a t) : 'a t = (match Hashtbl.find_opt m key with
-    | None -> Hashtbl.add m key v
-    | Some v2 -> Hashtbl.replace m key v); m
+  let add key v (m: 'a t) : 'a t = Hashtbl.replace m key v; m
   let merge f m1 m2 : 'a t = 
     Hashtbl.filter_map_inplace (
     fun key v1 -> match Hashtbl.find_opt m2 key with
@@ -79,13 +42,59 @@ module NodeMap = struct
   let mapi f (m: 'a t) : 'a t = Hashtbl.filter_map_inplace (
     fun key v -> Some (f key v)
   ) m; m
-  let find key (m: 'a t): 'a = let EN (env1, e1) = key in
-    try Hashtbl.find m key 
-    with Not_found -> raise (Key_not_found (e1^" is not Found in NodeMap"))
+  let find key (m: 'a t): 'a = Hashtbl.find m key
   let bindings (m: 'a t) = Hashtbl.fold (
     fun key v lst -> (key, v) :: lst
   ) m []
+  let fold = Hashtbl.fold
 end
+
+exception Pre_Def_Change of string
+exception Key_not_found of string
+
+module TempVarMap =  Map.Make(struct
+  type t = var
+  let compare = compare
+  end)
+
+module VarMap = struct
+  include TempVarMap
+  let find key m = try TempVarMap.find key m 
+    with Not_found -> raise (Key_not_found (key^" is not Found in VarMap"))
+end
+
+type baseType = Int | Bool
+type node_t = EN of env_t * loc (*N = E x loc*)
+and env_t = node_t VarMap.t (*E = Var -> N*)
+
+module TempNodeMap = MakeHash(struct
+  type t = node_t
+  end)
+
+module NodeMap = struct
+  include TempNodeMap
+  let find key (m: 'a t): 'a = let EN (env1, e1) = key in
+    try TempNodeMap.find key m
+    with Not_found -> raise (Key_not_found (e1^" is not Found in NodeMap"))
+end
+
+let name_of_node lb = ("lab_" ^ lb)
+
+let l_index = ref 0
+
+let incr_l () =
+  l_index := !l_index + 1
+
+let comp s1 s2 =
+  let l1 = try int_of_string s1 
+    with _ -> -1 in
+  let l2 = try int_of_string s2
+    with _ -> -1 in
+  if l1 = -1 then
+    if l2 = -1 then String.compare s1 s2
+    else -1
+  else if l2 = -1 then 1
+  else l1 - l2
 
 module SemanticsDomain =
   struct
