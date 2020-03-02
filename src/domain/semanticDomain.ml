@@ -67,13 +67,15 @@ type baseType = Int | Bool
 type node_t = EN of env_t * loc (*N = E x loc*)
 and env_t = node_t VarMap.t (*E = Var -> N*)
 
+type node_s_t = SN of bool * loc (*N = E x loc*)
+
 module TempNodeMap = MakeHash(struct
-  type t = node_t
+  type t = node_s_t
   end)
 
 module NodeMap = struct
   include TempNodeMap
-  let find key (m: 'a t): 'a = let EN (env1, e1) = key in
+  let find key (m: 'a t): 'a = let SN (_, e1) = key in
     try TempNodeMap.find key m
     with Not_found -> raise (Key_not_found (e1^" is not Found in NodeMap"))
 end
@@ -282,6 +284,7 @@ module SemanticsDomain =
       and top_M m = NodeMap.map (fun a -> Top) m
       and array_M env m = 
         let n_make = EN (env, "make") in
+        let s_make = SN (true,  "make") in
         let t_make = (* make *)
           (* make |-> zm: {v:int | v >= 0} -> ex: {v:int | top} -> {v: Int Array (l) | [| l=zm; zm>=0; |]} *)
           let var_l = "zm" in
@@ -294,6 +297,7 @@ module SemanticsDomain =
           Table (var_l, Relation rl, Table (var_e, Relation rm, Ary ([|"l";|],llen) ))
         in
         let n_len = EN (env, "len") in
+        let s_len = SN (true,  "len") in
         let t_len = (* len *)
           (* len |-> zl: { v: Int Array (l) | [| l>=0; |]  } -> { v: Int | [| v=l |] } *)
           let var_l = "zl" in
@@ -305,6 +309,7 @@ module SemanticsDomain =
           Table (var_l, Ary ([|"l"|], llen), Relation rlen)
         in
         let n_get = EN (env, "get") in
+        let s_get = SN (true, "get") in
         let t_get = (* get *)
           (* get |-> zg: { v: Int Array (l) | [| l>=0; |] } -> zi: {v: int | 0 <= v < l} -> {v: int | top }  *)
           let var_l = "zg" in
@@ -318,6 +323,7 @@ module SemanticsDomain =
           Table (var_l, Ary ([|"l"|], llen), Table (var_zi, Relation rm, Relation rr))
         in
         let n_set = EN (env, "set") in
+        let s_set = SN (true, "set") in
         let t_set = (* set *)
           (* set |-> zs: { v: Int Array (l) | [| l>=0; |] } -> zi: {v: int | 0 <= v < l} -> ex: {v: int | top } -> unit *)
           let var_l = "zs" in
@@ -333,8 +339,8 @@ module SemanticsDomain =
           Table (var_l, Ary ([|"l"|], llen), Table (var_zi, Relation rm, Table (var_e, Relation rri, Unit rrr)))
         in
         let m' = 
-          m |> NodeMap.add n_make t_make |> NodeMap.add n_len t_len |> NodeMap.add n_get t_get
-          |> NodeMap.add n_set t_set
+          m |> NodeMap.add s_make t_make |> NodeMap.add s_len t_len |> NodeMap.add s_get t_get
+          |> NodeMap.add s_set t_set
         in
         let env' = 
           env |> VarMap.add "make" n_make |> VarMap.add "len" n_len |> VarMap.add "get" n_get
@@ -617,7 +623,7 @@ let rec pr_exp pl ppf = function
 let print_exp out_ch e = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" (pr_exp true) e
 
 let loc_of_node = function
-  | EN (_, l) -> l
+  | SN (_, l) -> l
 
 let pr_node ppf n = Format.fprintf ppf "%s" (loc_of_node n)
 
@@ -659,8 +665,8 @@ and pr_table ppf t = let open SemanticsDomain in let (z, vi, vo) = t in
 let sort_list (m: SemanticsDomain.exec_map_t) =
   let lst = (NodeMap.bindings m) in
   List.sort (fun (n1,_) (n2,_) -> 
-  let EN (env1, e1) = n1 in
-    let EN (env2, e2) = n2 in
+  let SN (_, e1) = n1 in
+    let SN (_, e2) = n2 in
     comp e1 e2) lst 
 
 let print_value out_ch v = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" pr_value v
