@@ -31,16 +31,27 @@ type value =
   | Integer of int
   | Boolean of bool
 
-type varmap = var * value
+type baseType = Int | Bool
 
 module VarDefMap = Map.Make(struct
   type t = var
   let compare = compare
 end)
 
-let fun_name = "temp"
+type pre_exp = {name: var; dtype: baseType; left: var; right: var}
 
-let top_var: varmap list VarDefMap.t ref = ref VarDefMap.empty
+let init_ref n d l r = {name = n; dtype = d; left = l; right = r}
+
+let pre_vars: pre_exp VarDefMap.t ref = ref VarDefMap.empty
+
+let string_to_type = function
+  | "Bool" -> Bool
+  | "Int" -> Int
+  | _ -> raise (Invalid_argument "Predefined type should contain either Int or Bool")
+
+let type_to_string = function
+  | Bool -> "Bool"
+  | Int -> "Int"
 
 (** Terms *)
 type term =
@@ -150,3 +161,12 @@ let lam_to_mu f = function
 
 let mk_let_rec_in x def e = 
   mk_app (mk_lambda x e) (lam_to_mu x def)
+
+let pr_ary ppf ary = Array.fold_left (fun a e -> Format.printf "%s " e) () ary
+
+let mk_pre_apps xs e = List.fold_right (fun x e -> mk_app e (mk_var ("pref"^x))) xs e
+let mk_let x def params = 
+  let e = let lst = List.rev params in
+    mk_pre_apps lst (mk_var x)
+  in
+  mk_app (mk_lambda x e) def

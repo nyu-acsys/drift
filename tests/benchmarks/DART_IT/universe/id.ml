@@ -1,9 +1,9 @@
 
-let f x (z:bool) = 
+let f x z = 
 	if z then x else 2 in
 
-let id (k:int) = k in 
+let id k = k in 
 
-let main n = f (id n) true in
-let res = main 3 in
-assert(res >= 2 && res <= 3)
+let main (n(*-:{v:Int | top}*)) (m(*-:{v:Bool | top}*)) = 
+	let res = f (id n) m in
+	res

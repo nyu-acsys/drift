@@ -1,6 +1,6 @@
 
 
-let rec loop (x:int) i =
+let rec loop x i =
   if i < 0 then
     x
   else if x < 1 then (* x <= 0*)
@@ -9,7 +9,7 @@ let rec loop (x:int) i =
     loop x (i - 1)
   else (* 1 2 *)
     loop (3 - x) (i - 1)
-in 
-let main (mx:int) n =
-  loop mx n
-in main 3 10
+in
+
+let main (m(*-:{v:Int | v=2}*)) (n(*-:{v:Int | top}*)) =
+  loop m n

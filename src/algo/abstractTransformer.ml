@@ -22,42 +22,15 @@ let z_index = ref 0 (* first definition *)
 
 let process = ref "Wid"
 
-let env0, m0' = 
+let env0, m0 = 
     array_M VarMap.empty (NodeMap.create 123456)
 
-let m0 = Hashtbl.copy m0'
-
-let pre_m = ref m0
+let pre_m = ref (Hashtbl.copy m0)
 
 let pre_def_func = [|"make"; "len"; "set"; "get"|]
 
 let incr_z () =
     z_index := !z_index + 1
-
-let func_name_q: Syntax.VarDefMap.key Stack.t = Stack.create ()
-
-let get_predefined_vars ky m vr = 
-    let rec reiew_list = function
-     | [] -> false
-     | (vr',ty)::ls -> if vr = vr' then true else reiew_list ls
-    in
-    let res = VarDefMap.find_opt ky m in
-    match res with
-    | None -> false
-    | Some ls -> reiew_list ls
-
-let get_predefined_var_type ky m vr = 
-    let rec reiew_list = function
-     | [] -> raise (Key_not_found (vr^" is not Found in function "^ky))
-     | (vr',ty)::ls -> if vr = vr' then 
-        (match ty with 
-            | Integer _ -> top_R Plus
-            | Boolean _ -> top_R Ge
-        )
-        else reiew_list ls
-    in
-    let res = VarDefMap.find ky m in
-    reiew_list res
 
 let eq_PM (m1:exec_map_t) (m2:exec_map_t) =
     NodeMap.for_all (fun n v1 (*untie to node -> value*) ->
@@ -238,9 +211,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         Format.printf "\n";
         end
         );
-        let pre_len = Stack.length func_name_q in
         let m1 = step e1 env m ae in
-        let func_in = pre_len <> Stack.length func_name_q in
         let n1 = SN (true, loc e1) in
         let t1 = find n1 m1 in
         if t1 = Bot then m1
@@ -250,7 +221,6 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         m1 |> NodeMap.add n Top)
         else
             let m2 = step e2 env m1 ae in
-            (if func_in then let _ = Stack.pop func_name_q in ());
             let n2 = SN (true, loc e2) in
             let t2 = find n2 m2 in (* M[env*l2] *)
             (match t2 with
@@ -418,7 +388,6 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         else 
         if tr = Top then top_M m else
         begin
-            if VarDefMap.mem x !top_var then Stack.push x func_name_q;
             let nx = EN (env, lx) in
             let f_nf_opt = Opt.map (fun (f, lf) -> f, EN (env, lf)) f_opt in
             let env1 =
@@ -429,10 +398,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             let n1 = SN (true, loc e1) in
             let nx = SN (true, lx) in
             if optmization m n find && optmization m nx find && optmization m n1 find then m else
-            let tx = 
-                if Stack.is_empty func_name_q = false && get_predefined_vars (Stack.top func_name_q) !top_var x 
-                then Relation (get_predefined_var_type (Stack.top func_name_q) !top_var x) else
-                find nx m in
+            let tx = find nx m in
             let ae' = if is_Relation tx && x <> "_" then (arrow_V x ae tx) else ae in
             let temp_t = if x = "_" then find n1 m else replace_V (find n1 m) x (dx_T t) in
             let prop_t = Table ((dx_T t), tx, temp_t) in
@@ -494,7 +460,7 @@ let st = ref 0
 (** Widening **)
 let widening (m1:exec_map_t) (m2:exec_map_t): exec_map_t = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     NodeMap.mapi (fun n t -> (*Delay wid*)
-        if !st > 300 then wid_V (find n m1) t else join_V t (find n m1) 
+        if !st > 600 then wid_V (find n m1) t else join_V t (find n m1) 
         (* !st > 600 *)
     ) m2
 
@@ -515,7 +481,6 @@ let rec fix e (k: int) (m:exec_map_t): exec_map_t =
         print_exec_map m;
     end);
   let ae = Relation (top_R Plus) in
-  Stack.clear func_name_q;
   let m_t = Hashtbl.copy m in
   let m' = step e !env m_t ae in
   pre_m := m;
@@ -533,10 +498,13 @@ let rec fix e (k: int) (m:exec_map_t): exec_map_t =
 let s e =
     (if !debug then
     begin
-        Format.printf "%% Pre top val %%\n";
-        pr_top_vars Format.std_formatter;
+        Format.printf "%% Pre vals: %%\n";
+        pr_pre_def_vars Format.std_formatter;
         Format.printf "\n\n";
     end);
+    (* exit 0; *)
+    let envt, m0' = pref_M !env (Hashtbl.copy m0) in
+    env := envt;
     let m1 = (fix e 0 m0') in
     process := "Nar";
     let m = (fix e 0 m1) in

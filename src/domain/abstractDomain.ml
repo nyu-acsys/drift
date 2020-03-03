@@ -4,8 +4,6 @@ open Syntax
 open Util
 open Config
 
-let pr_ary ppf ary = Array.fold_left (fun a e -> Format.printf "%s " e) () ary
-
 (*
  *******************************
  ** Abstract domain for value **

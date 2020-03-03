@@ -15,8 +15,6 @@ let _ =
       ("if", IF);
       ("in", IN);
       ("let", LET);
-      ("int", INT);
-      ("bool", BOOL);
       ("mod", MOD);
       ("rec", REC);
       ("then", THEN);
@@ -30,6 +28,7 @@ let lexical_error lexbuf msg =
   fail pos' "Syntax error"
 }
 
+let white_space = [' ']*
 let digitchar = ['0'-'9']
 let idchar = ['A'-'Z''a'-'z''_']
 let primechar = [''']
@@ -41,8 +40,19 @@ rule token = parse
   [' ' '\t'] { token lexbuf }
 | '\n' { Lexing.new_line lexbuf; token lexbuf }
 | "(*" { comments 0 lexbuf }
+| "(*-:{"("v"as v)":"white_space(("Bool"|"Int")as d)white_space"|"white_space("top" as t)white_space"}*)"  
+{ 
+  let vk = init_ref ("cur_"^ Char.escaped v) (string_to_type d) t t in 
+  PRE (vk) 
+}
+| "(*-:{"("v"as v)":"white_space(("Bool"|"Int")as d)white_space"|"white_space("v" as l)white_space"="white_space((ident|digits) as r)white_space"}*)"  
+{ 
+  let r' = try string_of_int (int_of_string r)
+    with _ -> "pref"^r in
+  let vk = init_ref ("cur_"^ Char.escaped v) (string_to_type d) ("cur_"^Char.escaped l) r' in 
+  PRE (vk) 
+}
 | ";"  { SEMI }
-| ":"  { COLON }
 | "->" { ARROW }
 | "<=" { LE }
 | ">=" { GE }

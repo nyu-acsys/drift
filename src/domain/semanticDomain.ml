@@ -63,7 +63,6 @@ module VarMap = struct
     with Not_found -> raise (Key_not_found (key^" is not Found in VarMap"))
 end
 
-type baseType = Int | Bool
 type node_t = EN of env_t * loc (*N = E x loc*)
 and env_t = node_t VarMap.t (*E = Var -> N*)
 
@@ -347,6 +346,32 @@ module SemanticsDomain =
           |> VarMap.add "set" n_set
         in
         env', m'
+      and pref_M env m = 
+        let m', env' =
+          if VarDefMap.is_empty !pre_vars then
+            m, env
+          else 
+            VarDefMap.fold (fun var domain (m, env) -> 
+              let n_var = EN (env, var) in
+              let s_var = SN (true, var) in
+              let t_var = match domain with
+                | {name = n; dtype = d; left = "top"; right = r} -> 
+                  if d = Int then 
+                    Relation (top_R Plus)
+                  else Relation (top_R Ge)
+                | {name = n; dtype = d; left = l; right = r} ->
+                  let rm = if d = Int then 
+                    top_R Plus |> op_R l r Eq true
+                  else 
+                    top_R Ge (*TODO: Add Implementation for bool pref*)
+                  in
+                  Relation (rm)
+              in
+              let env' = env |> VarMap.add var n_var in
+              let m' = m |> NodeMap.add s_var t_var in
+              m', env'
+            ) !pre_vars (m, env)
+        in env', m'
       (*
       ********************************
       ** Abstract domain for Values **
@@ -693,12 +718,17 @@ let rec str_toplist str = function
 | [(vr,ty)] -> str^"("^vr^", "^(str_of_type ty)^")"
 | (vr,ty)::l -> let s' = str^"("^vr^", "^(str_of_type ty)^"); " in (str_toplist s' l)
 
-let pr_top_vars ppf = 
+let pr_pre_exp ppf = function
+  | {name = n; dtype = d; left = l; right = r} -> 
+    if l = "top" then Format.fprintf ppf "{%s:%s | %s}" n (type_to_string d) l
+    else Format.fprintf ppf "{%s:%s | %s = %s}" n (type_to_string d) l r
+
+let pr_pre_def_vars ppf = 
   let rec pr_ll = function
   | [] -> ()
-  | (k, ls)::tl -> Format.fprintf ppf "@[<2><fun@ %s>@ :@ %s@]\n" k (str_toplist "" ls); pr_ll tl
+  | (k, ls)::tl -> Format.fprintf ppf "@[<2>%s@ ->@ %a@]\n" k pr_pre_exp ls; pr_ll tl
   in
-  let ls = VarDefMap.bindings !top_var in
+  let ls = VarDefMap.bindings !pre_vars in
   pr_ll ls
 
 let print_last_node m = 

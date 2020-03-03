@@ -10,6 +10,5 @@ let rec loop x i =
   else (* 1 2 *)
     loop (3 - x) (i - 1)
 in 
-let main (n:int) =
+let main (n(*-:{v:Int | top}*)) =
   assert (loop 3 n = 3)
-in main 15

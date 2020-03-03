@@ -11,16 +11,6 @@ let mklocation s e = {
   pc = s.pos_cnum - s.pos_bol;
 }
 
-let update_fun p q = match p with
-| None -> Some [q]
-| Some ls -> Some (q::ls)
-
-let change_key prek k m = 
-  let v = VarDefMap.find_opt prek m in
-  match v with
-  | None -> m
-  | Some vl -> m |> VarDefMap.add k vl |> VarDefMap.remove prek
-
 %}
 /* declarations */
 
@@ -32,10 +22,10 @@ let change_key prek k m =
 %token EQ NE LE GE LT GT
 %token EOF
 %token AND OR
-%token INT BOOL
 %token ARROW
-%token SEMI COLON
+%token SEMI
 %token IF ELSE THEN FUN LET REC IN ASSERT
+%token <Syntax.pre_exp> PRE
 
 /* 
 This block comment is Copyright (©) 1996-present, Institut National de Recherche en Informatique et en Automatique. 
@@ -76,24 +66,19 @@ main:
   fail loc "Syntax error" }
 ;
 
-type_del:
-| INT { Integer 0 }
-| BOOL { Boolean true }
-;
-
 param_list:
 | IDENT param_list { $1 :: $2 }
-| LPAREN IDENT COLON type_del RPAREN param_list { top_var := VarDefMap.update fun_name (fun a -> update_fun a ($2, $4)) !top_var; $2 :: $6 }
 | IDENT { [$1] }
-| LPAREN IDENT COLON type_del RPAREN { top_var := VarDefMap.update fun_name (fun a -> update_fun a ($2, $4)) !top_var; [$2] }
+;
+
+param_ref_list:
+| LPAREN IDENT PRE RPAREN param_ref_list { pre_vars := VarDefMap.add ("pref"^$2) $3 !pre_vars; $2 :: $5 }
+| LPAREN IDENT PRE RPAREN { pre_vars := VarDefMap.add ("pref"^$2) $3 !pre_vars; [$2] }
 ;
 
 ident_list:
 | IDENT { [$1] }
-| IDENT param_list {
-  top_var := change_key fun_name $1 !top_var;
-  $1 :: $2 
-}
+| IDENT param_list { $1 :: $2 }
 ;
 
 basic_term: /*term@7 := int | bool | var | (term)*/
@@ -165,14 +150,6 @@ lambda_term:
 ;
 
 let_in_term:
-| LET REC LPAREN IDENT COLON type_del RPAREN EQ seq_term IN seq_term {
-  let fn = mk_lambdas [] $9 in
-  mk_let_rec_in $4 fn $11
-}
-| LET LPAREN IDENT COLON type_del RPAREN EQ seq_term IN seq_term {
-  let fn = mk_lambdas [] $8 in
-  mk_let_in $3 fn $10
-}
 | LET REC ident_list EQ seq_term IN seq_term {
   let fn = mk_lambdas (List.tl $3) $5 in
   mk_let_rec_in (List.hd $3) fn $7
@@ -180,6 +157,20 @@ let_in_term:
 | LET ident_list EQ seq_term IN seq_term {
   let fn = mk_lambdas (List.tl $2) $4 in
   mk_let_in (List.hd $2) fn $6
+}
+;
+
+/*
+let f x (*-: {v: int | top}*) = x
+<=> let f x = x in f top
+*/
+let_val:
+| LET REC IDENT param_ref_list EQ term {
+  exit 0
+}
+| LET IDENT param_ref_list EQ term {
+  let fn = mk_lambdas $3 $5 in
+  mk_let $2 fn $3
 }
 ;
 
@@ -193,15 +184,7 @@ seq_term:
 | term %prec below_SEMI { $1 }
 | term SEMI { $1 }
 | term SEMI seq_term { mk_let_in "_" $1 $3 }
+| let_val { $1 }
 ;
 
-/*
-let_val:
-| LET ident_list EQ term {
 
-}
-| LET REC ident_list EQ term {
-
-}
-;
-*/
