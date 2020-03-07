@@ -161,8 +161,8 @@ let_in_term:
 ;
 
 /*
-let f x (*-: {v: int | top}*) = x
-<=> let f x = x in f top
+let f x (*-: {v: int | true}*) = x
+<=> let f x = x in f top_x
 */
 let_val:
 | LET REC IDENT param_ref_list EQ term {

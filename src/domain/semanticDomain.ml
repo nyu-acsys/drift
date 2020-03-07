@@ -355,7 +355,7 @@ module SemanticsDomain =
               let n_var = EN (env, var) in
               let s_var = SN (true, var) in
               let t_var = match domain with
-                | {name = n; dtype = d; left = "top"; right = r} -> 
+                | {name = n; dtype = d; left = "true"; right = r} -> 
                   if d = Int then 
                     Relation (top_R Plus)
                   else Relation (top_R Ge)
