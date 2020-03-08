@@ -23,11 +23,15 @@ let z_index = ref 0 (* first definition *)
 let process = ref "Wid"
 
 let env0, m0 = 
-    array_M VarMap.empty (NodeMap.create 123456)
+    array_M VarMap.empty (NodeMap.create 1234)
 
-let pre_m = ref (Hashtbl.copy m0)
+let pre_m = ref m0
 
 let pre_def_func = [|"make"; "len"; "set"; "get"|]
+
+let st = ref 0
+
+let delay_threshold = 600
 
 let incr_z () =
     z_index := !z_index + 1
@@ -106,6 +110,8 @@ let get_env_array (env: env_t) =
 let prop_scope (env1: env_t) (env2: env_t) (v1: value_t) (v2: value_t): (value_t * value_t) = 
     let env1 = get_env_array env1 in
     let env2 = get_env_array env2 in
+    (* let v1'',_  = prop v1 (proj_V v2 env1)in
+    let _, v2'' = prop (proj_V v1 env2) v2 in *)
     let v1', v2' = prop v1 v2 in
     let v1'' = proj_V v1' env1 in
     let v2'' = proj_V v2' env2 in
@@ -135,7 +141,8 @@ let iterEnv_v env m v = VarMap.fold (fun var n a ->
     let ai = NodeMap.find_opt n m |> Opt.get_or_else Top in
     arrow_V var a ai) env v *)
 
-let optmization m n find = 
+let optmization m n find =
+    if !st <= delay_threshold then false else
     let t = find n m in
     let pre_t = find n !pre_m in
     opt_eq_V pre_t t
@@ -171,7 +178,6 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         let nx = VarMap.find x env in
         let EN (envx, lx) = nx in
         let nx = SN (true, lx) in
-        if optmization m n find && optmization m nx find then m else
         let tx = let tx' = find nx m in
             if is_Relation tx' then equal_V tx' x (* M<E(x)>[v=E(x)] *) 
             else tx'
@@ -187,7 +193,8 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         end
         );
         let raw_tx', t' =
-            if Array.mem lx pre_def_func then
+            if optmization m n find && optmization m nx find then tx, t
+            else if Array.mem lx pre_def_func then
                 prop tx t
             else
                 prop_scope envx env tx t
@@ -227,7 +234,6 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                 | Bot -> m2
                 | Top -> m2 |> NodeMap.add n Top
                 | _ -> let t = find n m2 in
-                if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then m else
                 let t_temp = Table ((dx_T t1), t2, t) in
                 (if !debug then
                 begin
@@ -238,7 +244,9 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                     Format.printf "\n";
                 end
                 );
-                let t1', t0 = prop t1 t_temp
+                let t1', t0 = 
+                    if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then t1, t_temp else
+                    prop t1 t_temp
                 in
                 (if !debug then
                 begin
@@ -278,7 +286,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                 (loc e2) (string_of_value t2))
             );
             let t = find n m2 in
-            if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then m else
+            (* if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then m else *)
             let td = Relation (top_R bop) in
             let raw_t = if bool_op bop then
             begin
@@ -309,8 +317,10 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         Format.printf "\n";
         end
         );
-        let m0 = step e0 env m ae in
         let n0 = SN (true, loc e0) in
+        let m0 = 
+            if optmization m0 n0 find then m0 else 
+            step e0 env m ae in
         let t0 = find n0 m0 in
         if t0 = Bot then m0 else
         if not @@ SemanticsDomain.is_bool_V t0 then m0 |> NodeMap.add n Top else
@@ -324,7 +334,6 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             let t1 = find n1 m1 in
             let n2 = SN (true, loc e2) in
             let t2 = find n2 m2 in
-            if optmization m2 n0 find && optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then m else
             ((if !debug then
             begin
                 Format.printf "\n<=== Prop then ===> %s\n" (loc e1);
@@ -334,7 +343,9 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                 Format.printf "\n";
             end
             );
-            let t1', t' = prop t1 (find n m1) in
+            let t1', t' = 
+                if optmization m1 n1 find && optmization m1 n find then t1, (find n m1) else 
+                prop t1 (find n m1) in
             (if !debug then
             begin
                 Format.printf "\nRES for prop:\n";
@@ -353,7 +364,9 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                 Format.printf "\n";
             end
             );
-            let t2', t'' = prop t2 (find n m2) in
+            let t2', t'' = 
+                if optmization m2 n2 find && optmization m2 n find then t1, (find n m2) else
+                prop t2 (find n m2) in
             (if !debug then
             begin
                 Format.printf "\nRES for prop:\n";
@@ -397,7 +410,6 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             in
             let n1 = SN (true, loc e1) in
             let nx = SN (true, lx) in
-            if optmization m n find && optmization m nx find && optmization m n1 find then m else
             let tx = find nx m in
             let ae' = if is_Relation tx && x <> "_" then (arrow_V x ae tx) else ae in
             let temp_t = if x = "_" then find n1 m else replace_V (find n1 m) x (dx_T t) in
@@ -411,7 +423,9 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                 Format.printf "\n";
             end
             );
-            let px_t, t1 = prop_scope env1 env prop_t t
+            let px_t, t1 = 
+                if optmization m n find && optmization m nx find && optmization m n1 find then prop_t, t else
+                prop_scope env1 env prop_t t
             in
             (if !debug then
             begin
@@ -427,26 +441,30 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                   let EN (envf,lf) = nf in
                   let nf = SN (true,lf) in
                   let tf = find nf m in
-                  (if !debug then
+                  if optmization m n find && optmization m nf find then nf, t, tf else
                     begin
-                        Format.printf "\n<=== Prop um ===> %s\n" l;
-                        pr_value Format.std_formatter t;
-                        Format.printf "\n<<~~~~>> %s\n" lf;
-                        pr_value Format.std_formatter tf;
-                        Format.printf "\n";
+                    (if !debug then
+                        begin
+                            Format.printf "\n<=== Prop um ===> %s\n" l;
+                            pr_value Format.std_formatter t;
+                            Format.printf "\n<<~~~~>> %s\n" lf;
+                            pr_value Format.std_formatter tf;
+                            Format.printf "\n";
+                        end
+                    );
+                    let t2, tf' = prop_scope env envf t tf in
+                    (if !debug then
+                        begin
+                            Format.printf "\nRES for prop:\n";
+                            pr_value Format.std_formatter t2;
+                            Format.printf "\n<<~~~~>>\n";
+                            pr_value Format.std_formatter tf';
+                            Format.printf "\n";
+                        end
+                    );
+                    nf, t2, tf'
                     end
-                  );
-                  let t2, tf' = prop_scope env envf t tf in
-                  (if !debug then
-                    begin
-                        Format.printf "\nRES for prop:\n";
-                        pr_value Format.std_formatter t2;
-                        Format.printf "\n<<~~~~>>\n";
-                        pr_value Format.std_formatter tf';
-                        Format.printf "\n";
-                    end
-                  );
-                  nf, t2, tf') f_nf_opt
+                ) f_nf_opt
             in
             let tx', t1' = io_T px_t in
             let m1 = m |> NodeMap.add nx tx' |> NodeMap.add n1 (if x = "_" then t1' else replace_V t1' (dx_T t) x) |>
@@ -454,14 +472,11 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             nf_t2_tf'_opt |> Opt.get_or_else (NodeMap.add n t1)) in
             step e1 env1 m1 ae'
         end 
-        
-let st = ref 0
 
 (** Widening **)
 let widening (m1:exec_map_t) (m2:exec_map_t): exec_map_t = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     NodeMap.mapi (fun n t -> (*Delay wid*)
-        if !st > 600 then wid_V (find n m1) t else join_V t (find n m1) 
-        (* !st > 600 *)
+        if !st > delay_threshold then wid_V (find n m1) t else join_V t (find n m1)
     ) m2
 
 (** Narrowing **)
@@ -483,7 +498,6 @@ let rec fix e (k: int) (m:exec_map_t): exec_map_t =
   let ae = Relation (top_R Plus) in
   let m_t = Hashtbl.copy m in
   let m' = step e !env m_t ae in
-  pre_m := m;
   let m'' = if !process = "Wid" then widening m m' else narrowing m m' in
   let pre_ch = eq_PM m0 m'' in
   if pre_ch then
@@ -505,6 +519,7 @@ let s e =
     (* exit 0; *)
     let envt, m0' = pref_M !env (Hashtbl.copy m0) in
     env := envt;
+    pre_m := m0';
     let m1 = (fix e 0 m0') in
     process := "Nar";
     let m = (fix e 0 m1) in

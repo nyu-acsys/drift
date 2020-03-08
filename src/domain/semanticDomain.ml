@@ -528,7 +528,7 @@ module SemanticsDomain =
     and opt_eq_V v1 v2 = match v1, v2 with
       | Bot, _ | _, Bot -> false
       | _, Top -> true
-      | Relation r1, Relation r2 -> false
+      | Relation r1, Relation r2 -> is_bot_R r1 = false && is_bot_R r2 = false && eq_R r1 r2
       | Table (z1, v1i, v1o), Table (z2, v2i, v2o) ->
           z1 = z2 && opt_eq_V v1i v2i && opt_eq_V v1o v2o
       | Ary ary1, Ary ary2 -> eq_Ary ary1 ary2
