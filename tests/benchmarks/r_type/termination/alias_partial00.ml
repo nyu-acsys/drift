@@ -1,4 +1,4 @@
-
+let main =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
@@ -33,6 +33,6 @@ let main_1035 set_flag_lambda_1063m s_lambda_x_1060m u_1036 =
  g_1034 set_flag_lambda_1063m s_lambda_x_1060m 2
 in
 
-let main =
+
  main_1035 false 0 () in
 assert (main = 3)

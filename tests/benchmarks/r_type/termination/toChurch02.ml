@@ -1,4 +1,5 @@
 
+let main x_1043 =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
@@ -58,7 +59,6 @@ let rec toChurch_1038 x_DO_NOT_CARE_1437 x_DO_NOT_CARE_1438 n_1039 x_DO_NOT_CARE
        set_flag_succ_1296 s_succ_x_1293 f_1040)
 in
 
-let main x_1043 =
  let set_flag_succ_1296m = false in
  let s_succ_x_1293m = 0 in
    if x_1043 >= 0 then

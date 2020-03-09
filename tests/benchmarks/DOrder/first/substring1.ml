@@ -2,7 +2,7 @@
 let rec loop lk li lj = 
     if (li < lk) then
         loop lk (li+1) (lj+1)
-    else assert (lj < 101)
+    else lj < 101
 in
 
 let main k from =   

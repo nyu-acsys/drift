@@ -1,4 +1,4 @@
-
+let main =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
@@ -43,6 +43,6 @@ let main_1034 set_flag_append_1059 s_append_xs_1054 s_append_ys_1055 u_1035  l1_
      s_append_ys_1055 l2_1037
 in
 
-let main =
+
      main_1034 false 0 0 ()
 in assert(main 1 8 = 9)

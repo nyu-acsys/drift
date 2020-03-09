@@ -10,7 +10,7 @@
 
 
 (* Compute the greatest common denominator using Euclid's algorithm *)
-let main m n =
+let main (m(*-:{v:Int | true}*)) (n(*-:{v:Int | true}*)) =
     let rec gcd y1 y2 =
         if (y1 <= 0 || y2 <= 0) then 0
         else if (y1 = y2) then y1
@@ -19,8 +19,8 @@ let main m n =
         else gcd y1 (y2 - y1)
     in
 
-    if m > 0 && n > 0 then 
-        let res = gcd m n in
-        res <= m && res <= n
-    else false
-in assert(main 12 24 = true)
+    let ans = if m > 0 && n > 0 then 
+        let k = gcd m n in
+        k <= m && k <= n
+        else true
+    in assert (ans = true)

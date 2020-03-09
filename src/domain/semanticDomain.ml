@@ -355,15 +355,17 @@ module SemanticsDomain =
               let n_var = EN (env, var) in
               let s_var = SN (true, var) in
               let t_var = match domain with
-                | {name = n; dtype = d; left = "true"; right = r} -> 
-                  if d = Int then 
-                    Relation (top_R Plus)
-                  else Relation (top_R Ge)
-                | {name = n; dtype = d; left = l; right = r} ->
-                  let rm = if d = Int then 
-                    top_R Plus |> op_R l r Eq true
-                  else 
-                    top_R Ge (*TODO: Add Implementation for bool pref*)
+                | {name = n; dtype = Int; left = l; right = r} -> 
+                  let rm = if l = "true" then 
+                     (top_R Plus)
+                  else top_R Plus |> op_R l r Eq true
+                  in Relation rm
+                | {name = n; dtype = Bool; left = l; right = r} -> 
+                  let rm = if l = "true" then init_R_c (Boolean true)
+                    else if l = "false" then
+                      init_R_c (Boolean false)
+                    else
+                      top_R Plus |> op_R l r Eq true
                   in
                   Relation (rm)
               in

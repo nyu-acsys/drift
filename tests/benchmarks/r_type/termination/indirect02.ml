@@ -1,4 +1,4 @@
-
+let main r =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
@@ -34,7 +34,7 @@ let rec f_1036 prev_set_flag_f_1190 s_prev_f_x_1189 x_10376 =
         f_without_checking_1199 prev_set_flag_f_1190 s_prev_f_x_1189 x_10376
 in
 
-let main r =
+
  let set_flag_f_1191m = false in
  let s_f_x_1188m = 0 in
  f_1036 set_flag_f_1191m s_f_x_1188m r set_flag_f_1191m s_f_x_1188m

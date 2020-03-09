@@ -1,4 +1,5 @@
 
+let main x_1043 =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
@@ -78,7 +79,6 @@ let rec toChurch_without_checking_1376 x_DO_NOT_CARE_1450 x_DO_NOT_CARE_1451 x_D
          f_1040)
 in
 
-let main x_1043 =
  let set_flag_toChurch_1362m = false in
  let s_toChurch_n_1355m = 0 in
  let s_toChurch_f_EXPARAM_1356m = 0 in

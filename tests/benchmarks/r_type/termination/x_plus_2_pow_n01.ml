@@ -1,4 +1,5 @@
 
+let main n_1038 x_1039 =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
@@ -48,7 +49,6 @@ let rec f_1035 set_flag_g_1134 s_g_r_EXPARAM_1127 s_g_a_1129 n_1036 =
        (f_1035 set_flag_g_1134 s_g_r_EXPARAM_1127 s_g_a_1129 (n_1036 - 1))
 in
 
-let main n_1038 x_1039 =
  let x_DO_NOT_CARE_1202 = false in
  let x_DO_NOT_CARE_1203 = 0 in
  let x_DO_NOT_CARE_1204 = 0 in

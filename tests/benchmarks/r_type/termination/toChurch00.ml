@@ -1,4 +1,5 @@
 
+let main x_1043 =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
@@ -72,7 +73,6 @@ let rec toChurch_1038 x_DO_NOT_CARE_1403 x_DO_NOT_CARE_1404 x_DO_NOT_CARE_1405 x
      (id_1034)
 in
 
-let main x_1043 =
   let set_flag_compose_1148m = false in
   let s_compose_f_EXPARAM_1137m = 0 in
   let s_compose_g_EXPARAM_1139m = 0 in

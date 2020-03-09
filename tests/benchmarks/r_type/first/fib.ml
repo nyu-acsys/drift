@@ -1,9 +1,9 @@
 
-let rec fib n =
-  if n<2 then 1 else
-    fib (n - 1) + fib (n - 2) in
+let main mn =
+    let rec fib n =
+      if n<2 then 1 else
+        fib (n - 1) + fib (n - 2) in
 
-let main n =
-  assert (fib n >= n)
+    assert (fib mn >= mn)
 in
-main 1000
+main 34

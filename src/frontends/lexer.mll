@@ -35,12 +35,13 @@ let primechar = [''']
 let minus = ['-']
 let ident = (idchar | digitchar)* ('?' idchar | idchar) (idchar | digitchar | primechar)* 
 let digits = minus? digitchar+
+let bool_str = "true" | "false" | "either"
 
 rule token = parse
   [' ' '\t'] { token lexbuf }
 | '\n' { Lexing.new_line lexbuf; token lexbuf }
 | "(*" { comments 0 lexbuf }
-| "(*-:{"("v"as v)":"white_space(("Bool"|"Int")as d)white_space"|"white_space("true" as t)white_space"}*)"  
+| "(*-:{"("v"as v)":"white_space(("Bool"|"Int")as d)white_space"|"white_space(bool_str as t)white_space"}*)"  
 { 
   let vk = init_ref ("cur_"^ Char.escaped v) (string_to_type d) t t in 
   PRE (vk) 

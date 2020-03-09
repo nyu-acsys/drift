@@ -31,7 +31,7 @@ let pre_def_func = [|"make"; "len"; "set"; "get"|]
 
 let st = ref 0
 
-let delay_threshold = 600
+let delay_threshold = 300
 
 let incr_z () =
     z_index := !z_index + 1
@@ -142,7 +142,7 @@ let iterEnv_v env m v = VarMap.fold (fun var n a ->
     arrow_V var a ai) env v *)
 
 let optmization m n find =
-    if !st <= delay_threshold then false else
+    if !st <= 400 then false else
     let t = find n m in
     let pre_t = find n !pre_m in
     opt_eq_V pre_t t
@@ -498,6 +498,7 @@ let rec fix e (k: int) (m:exec_map_t): exec_map_t =
   let ae = Relation (top_R Plus) in
   let m_t = Hashtbl.copy m in
   let m' = step e !env m_t ae in
+  pre_m := m;
   let m'' = if !process = "Wid" then widening m m' else narrowing m m' in
   let pre_ch = eq_PM m0 m'' in
   if pre_ch then

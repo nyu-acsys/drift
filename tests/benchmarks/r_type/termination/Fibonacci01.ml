@@ -1,4 +1,4 @@
-
+let main r =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
@@ -27,7 +27,7 @@ let rec fib_1030 prev_set_flag_fib_1051 s_prev_fib_n_1050 n_1031 =
           n_1031
 in
 
-let main r =
+
    let set_flag_fib_1052 = false in
    let s_fib_n_1049 = 0 in
    let res = fib_1030 set_flag_fib_1052 s_fib_n_1049 r in

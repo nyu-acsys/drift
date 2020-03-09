@@ -1,4 +1,5 @@
 
+let main t1_1039 t2_1040 =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
@@ -47,7 +48,6 @@ let rec up_1032 set_flag_app_1179u s_app_f_EXPARAM_1172u s_app_x_1174u x_1036 =
    up_1032 set_flag_app_1179u s_app_f_EXPARAM_1172u s_app_x_1174u (x_1036 + 1)
 in
 
-let main t1_1039 t2_1040 =
  let set_flag_app_1179 = false in
  let s_app_f_EXPARAM_1172 = 0 in
  let s_app_x_1174 = 0 in

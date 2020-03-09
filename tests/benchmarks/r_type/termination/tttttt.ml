@@ -1,4 +1,5 @@
 
+let main x_1043 =
 (* set_flag_f_11910 s_f_x_EXPARAM_11800 s_f_y_EXPARAM_11820 s_f_z_11840 *)
 let id_1030 x_1031 =
  x_1031 in
@@ -34,7 +35,7 @@ in *)
 
 f_without_checking_1206 44 5 6 7
    5 77 8 9 10
-   11 121 12 13 14 id_1030 144 15 16 17 100
-
+   11 121 12 13 14 id_1030 144 15 16 17 x_1043
+in main 100
 (* (f_1034 false 0 0 0 0 false 0 0 0 id_1030 false 0 0 0
      0 false 0 0 0 omega_1032) *)

@@ -1,4 +1,5 @@
 
+let main =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
@@ -49,6 +50,6 @@ let main_1033 set_flag_ack_1075 s_ack_m_1070 s_ack_n_1071 u_1034 m_1035 n_1036 =
      0
 in
 
-let main =
+
  main_1033 false 0 0 ()
 in assert(main 3 4 >= 0)

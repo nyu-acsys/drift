@@ -1,12 +1,13 @@
 
-let f x z = 
-	if z then x else 2 in
 
-let id k = k in 
+let main (n(*-:{v:Int | v = 3}*)) (m(*-:{v:Bool | false}*)) = 
+	let f x z = 
+		if z then x else 2 in
 
-let main (n(*-:{v:Int | true}*)) (m(*-:{v:Bool | true}*)) = 
+	let id k = k in 
+
 	let res = f (id n) m in
-	res
+	assert(res = 3)
 
 
 (*

@@ -1,4 +1,5 @@
 
+let main t1_1039 t2_1040 =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
@@ -44,7 +45,6 @@ let rec up_without_checking_1115 set_flag_up_10895 s_up_x_10865 x_10365 =
      up_without_checking_1115 set_flag_up_1089_r s_up_x_1086_r (x_10365 + 1)
 in
 
-let main t1_1039 t2_1040 =
   let set_flag_up_1089 = false in
   let s_up_x_1086 = 0 in
    if t1_1039 > 0 then

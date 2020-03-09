@@ -1,4 +1,4 @@
-
+let main =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
@@ -31,7 +31,7 @@ let f_1034 x_DO_NOT_CARE_1245 x_DO_NOT_CARE_1246 x_EXPARAM_1092 x_DO_NOT_CARE_12
  y_1036 set_flag_omega_1141 s_omega_x_1138 z_1037
 in
 
-let main =
+
  f_1034 false 0 c2_COEFFICIENT_1088 false 0
    (f_1034 false 0 c0_COEFFICIENT_1084 false 0 id_1030 false 0
      c1_COEFFICIENT_1085 false 0 omega_1032) false 0 c3_COEFFICIENT_1089

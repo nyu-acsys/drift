@@ -1,4 +1,5 @@
 
+let main =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
@@ -46,7 +47,6 @@ let rec app_1038 x_DO_NOT_CARE_1360 x_DO_NOT_CARE_1361 x_DO_NOT_CARE_1362 h_EXPA
           s_prev_app_x_1342 x_1040
 in
 
-let main =
  f_1034 false 0 0 c5_COEFFICIENT_1125 false 0 0
    (app_1038 false 0 0 c4_COEFFICIENT_1123 false 0 0
      (f_1034 false 0 0 c1_COEFFICIENT_1117 false 0 0

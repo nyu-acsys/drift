@@ -1,4 +1,4 @@
-
+let main =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
@@ -33,7 +33,6 @@ in
 
 (*Timing: 23.14s*)
 
-let main =
  f_1034 false 0 c2_COEFFICIENT_1088 false 0
    (f_1034 false 0 c0_COEFFICIENT_1084 false 0 id_1030 false 0
      c1_COEFFICIENT_1085 false 0 omega_without_checking_1162) false 0

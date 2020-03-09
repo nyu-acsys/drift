@@ -1,4 +1,5 @@
 
+let main r =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
@@ -35,7 +36,6 @@ let rec f_1035 x_DO_NOT_CARE_1199 x_DO_NOT_CARE_1200 n_1036 prev_set_flag_f_1186
           n_1036 prev_set_flag_f_1186 s_prev_f_n_1184 u_1037
 in
 
-let main r =
  let set_flag_f_1187m = false in
  let s_f_n_1182m = 0 in
  f_1035 set_flag_f_1187m s_f_n_1182m r set_flag_f_1187m s_f_n_1182m

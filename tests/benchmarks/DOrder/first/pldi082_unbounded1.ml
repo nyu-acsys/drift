@@ -1,6 +1,12 @@
 
+(*
+Delay widen = 300
+opt = 300
+*)
 
-let rec loop lx ly ln = 
+let main n =
+
+    let rec loop lx ly ln = 
         let ny = 
             if (lx <= ln) then ly + 1 
             else if (lx >= ln+1) then ly - 1 
@@ -11,9 +17,8 @@ let rec loop lx ly ln =
                 else false
             else false
         else loop (lx+1) ny ln 
-in
+    in
 
-let main n =
     let x = 0 in
     let y = 0 in
     if(n < 0) then false

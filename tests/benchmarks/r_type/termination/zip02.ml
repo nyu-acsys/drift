@@ -1,4 +1,5 @@
 
+let main l1_1037 l2_1038 =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
@@ -38,7 +39,6 @@ let rec zip_without_checking_1077 x_DO_NOT_CARE_1083 x_DO_NOT_CARE_1084 x_DO_NOT
             s_zip_ys_1059_r ysp_1034
 in
 
-let main l1_1037 l2_1038 =
   let set_flag_zip_1063m = false in
   let s_zip_xs_1058m = 0 in
   let s_zip_ys_1059m = 0 in
