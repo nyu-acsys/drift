@@ -31,7 +31,7 @@ let pre_def_func = [|"make"; "len"; "set"; "get"|]
 
 let st = ref 0
 
-let delay_threshold = 300
+let delay_threshold = 400
 
 let incr_z () =
     z_index := !z_index + 1
@@ -75,22 +75,33 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
             else v1o
         in
         let p1, p2 = 
-            let v2i', v1i' = 
-                (*Optimization 1: If those two are the same, ignore the prop step*)
-                if is_Bot_V v1i = false && eq_V v2i v1i then v2i, v1i else 
-                prop v2i v1i 
-            and v1o', v2o' = 
-                if is_Bot_V v2o = false && eq_V v1ot v2o then v1ot, v2o else 
-                prop (arrow_V z1 v1ot v2i) (arrow_V z1 v2o v2i) 
+            let v1i', v2i', v1o', v2o' = 
+                let v2i', v1i' = 
+                    (*Optimization 1: If those two are the same, ignore the prop step*)
+                    if is_Bot_V v1i = false && eq_V v2i v1i then v2i, v1i else 
+                    prop v2i v1i 
+                in
+                let opt_o = false
+                    (*Optimization 1: If those two are the same, ignore the prop step*)
+                    || (is_Bot_V v2o = false && eq_V v1ot v2o)
+                in
+                let v1o', v2o' = 
+                if opt_o then v1ot, v2o else 
+                prop (arrow_V z1 v1ot v2i) (arrow_V z1 v2o v2i)
+                in
+                let v1o' =
+                    if is_Array v1i' && is_Array v2i' then
+                        let l1 = get_len_var_V v1i' in
+                        let l2 = get_len_var_V v2i' in
+                        replace_V v1o' l2 l1
+                    else v1o'
+                in
+                let v1o', v2o' = 
+                    if opt_o then v1o', v2o' else (join_V v1o v1o', join_V v2o v2o')
+                in
+                v1i', v2i', v1o', v2o'
             in
-            let v1o' =
-                if is_Array v1i' && is_Array v2i' then
-                    let l1 = get_len_var_V v1i' in
-                    let l2 = get_len_var_V v2i' in
-                    replace_V v1o' l2 l1
-                else v1o'
-            in 
-            (v1i', join_V v1o v1o'), (v2i', join_V v2o v2o') 
+            (v1i', v1o'), (v2i', v2o') 
         in
         let t1'' = (z1, fst p1, snd p1) and t2'' = (z2, fst p2, snd p2) in
         Table t1'', Table t2''
@@ -142,7 +153,7 @@ let iterEnv_v env m v = VarMap.fold (fun var n a ->
     arrow_V var a ai) env v *)
 
 let optmization m n find =
-    if !st <= 400 then false else
+    if !st <= 600 then false else
     let t = find n m in
     let pre_t = find n !pre_m in
     opt_eq_V pre_t t

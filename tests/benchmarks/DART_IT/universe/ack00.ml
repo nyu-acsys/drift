@@ -41,7 +41,7 @@ let main (m_1035(*-:{v:Int | true}*)) (n_1036(*-:{v:Int | true}*)) =
   let ans = 
     if n_1036 > 0 && m_1035 > 0 then
       ack_1030 set_flag_ack_1075m s_ack_m_1070m s_ack_n_1071m m_1035
-      set_flag_ack_1075m s_ack_m_1070m s_ack_n_1071m n_1036
+      set_flag_ack_1075m s_ack_m_1070m s_ack_n_1071m n_1036 >= 0
     else
-      0
-  in assert(ans >= 0)
+      false
+  in assert(ans = true)

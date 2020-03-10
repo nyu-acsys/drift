@@ -9,7 +9,7 @@ echo "outdir=<$OUTDIR> prog=<$PROG>"
 
 TESTDIR=${1:-../tests/benchmarks/}
 DIRS=" DART_IT DOrder r_type"
-INS=" first high negative array" # termination  
+INS=" first high negative array universe" # termination  
 DOMAIN="Oct"
 
 OUTPRE="out"

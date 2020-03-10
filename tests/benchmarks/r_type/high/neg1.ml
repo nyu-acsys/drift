@@ -13,10 +13,10 @@ let main n =
     let neg nx ny = 0 - (nx ()) in
 
     let ans = if n > 0 then
-        twice neg (g n) ()
-        else 0
+        twice neg (g n) () > 0
+        else false
     in
-    assert (ans >= 0)
+    assert (ans = true)
 in main 34
 
 (*

@@ -58,23 +58,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
       (v1', v2')
     let leq v1 v2 = 
       let v1',v2' = lc_env v1 v2 in
-      (* (if !debug then
-        begin
-        Format.printf "\n\nLeq\n";
-        Abstract1.print Format.std_formatter v1;
-        Format.printf "\n ^with \n";
-        Abstract1.print Format.std_formatter v2;
-        Format.printf "\nEnv: ";
-        Environment.print Format.std_formatter (Abstract1.env v1');
-        Format.printf "\n";
-        end
-      ); *)
       let res = Abstract1.is_leq Man.man v1' v2' in
-      (* (if !debug then
-        begin
-          Format.printf "result: %b" res;
-          Format.printf "\n";
-      end); *)
       res
     let eq v1 v2 = 
       let v1',v2' = lc_env v1 v2 in
@@ -99,27 +83,11 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
           Abstract1.print Format.std_formatter res;
           Format.printf "\n";
       end);
-      Abstract1.minimize_environment Man.man res
+      (* Abstract1.minimize_environment Man.man res *)
+      res
     let meet v1 v2 =
       let v1',v2' = lc_env v1 v2 in
-      (* (if !debug then
-        begin
-        Format.printf "\n\nMeet\n";
-        Abstract1.print Format.std_formatter v1;
-        Format.printf "\n ^with \n";
-        Abstract1.print Format.std_formatter v2;
-        Format.printf "\nEnv: ";
-        Environment.print Format.std_formatter (Abstract1.env v1');
-        Format.printf "\n";
-        end
-      ); *)
       let res = Abstract1.meet Man.man v1' v2' |> Abstract1.minimize_environment Man.man in
-      (* (if !debug then
-        begin
-          Format.printf "result: " ;
-          Abstract1.print Format.std_formatter res;
-          Format.printf "\n";
-      end); *)
       res
     let alpha_rename v prevar var =
         (if !debug then
@@ -164,7 +132,8 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
           Abstract1.print Format.std_formatter v';
           Format.printf "\n";
         end);
-        Abstract1.minimize_environment Man.man v'
+        (* Abstract1.minimize_environment Man.man v' *)
+        v'
     let forget_var var v =
         (if !debug then
           begin
@@ -183,7 +152,8 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         let vari = var |> Var.of_string in
         let arr = [|vari|] in
         let v' = Abstract1.forget_array Man.man v arr false in
-        Abstract1.minimize_environment Man.man v'
+        (* Abstract1.minimize_environment Man.man v' *)
+        v'
         end 
         in
         (if !debug then
@@ -246,19 +216,14 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
           Abstract1.print Format.std_formatter res;
           Format.printf "\n";
         end);
-        Abstract1.minimize_environment Man.man res
+        (* Abstract1.minimize_environment Man.man res *)
+        res
     let widening v1 v2 = let v1',v2' = lc_env v1 v2 in
-      (* let test1 = let var_x = "x" |> Var.of_string in
-      let env = Environment.make [|var_x|] [||] in
-      let expr1 = "x<=2" in
-      Parser.lincons1_of_lstring env [expr1] in
-      let (int_vars, real_vars) = Environment.vars (Abstract1.env v1') in
-        (* Check previous variable exists or not *)
-      let x_exists = Array.fold_left (fun b x -> "x" = Var.to_string x || b) false int_vars in *)
-      let res = (* if x_exists then Abstract1.widening_threshold Man.man v1' v2' test1 *)
+      let res =
         Abstract1.widening Man.man v1' v2'
       in
-      Abstract1.minimize_environment Man.man res
+      (* Abstract1.minimize_environment Man.man res *)
+      res
     let make_var var = 
       try let _ = int_of_string var in None
       with e -> Some (var |> Var.of_string)
@@ -326,7 +291,8 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
           Abstract1.print Format.std_formatter res;
           Format.printf "\n";
         end);
-      Abstract1.minimize_environment Man.man res
+      (* Abstract1.minimize_environment Man.man res *)
+      res
     let print_abs ppf v = Abstract1.print ppf v
     let print_env ppf v = let env = Abstract1.env v in
         Environment.print ppf env
