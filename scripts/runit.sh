@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-OUTDIR=${1:-../outputs}
+OUTDIR=${1:-../outputs/DART_IT}
 shift
 PROG=${*:-../tests.native}
 

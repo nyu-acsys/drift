@@ -38,9 +38,40 @@ module VarDefMap = Map.Make(struct
   let compare = compare
 end)
 
-type pre_exp = {name: var; dtype: baseType; left: var; right: var}
+type pre_exp = {name: var; dtype: baseType; left: var; op: binop; right: var}
 
-let init_ref n d l r = {name = n; dtype = d; left = l; right = r}
+let string_of_op = function
+  | Plus  (* + *) -> "+"
+  | Ge    (* >= *) -> ">="
+  | Mult  (* * *) -> "*"
+  | Div   (* / *) -> "/"
+  | Mod   (* mod *) -> "mod"
+  | Minus (* - *) -> "-"
+  | Eq    (* = *) -> "="
+  | Ne    (* <> *) -> "!="
+  | Lt    (* < *) -> "<"
+  | Gt    (* > *) -> ">"
+  | Le    (* <= *) -> "<="
+  | And   (* && *) -> "&&"
+  | Or    (* || *) -> "||"
+
+let op_of_string = function
+  |  "+" -> Plus  (* + *) 
+  | ">=" -> Ge    (* >= *) 
+  | "*"  -> Mult  (* * *)
+  |   "/" -> Div   (* / *)
+  |  "mod"-> Mod   (* mod *)
+  |  "-" -> Minus (* - *)
+  |  "=" -> Eq    (* = *)
+  |  "<>" -> Ne    (* <> *)
+  |  "<" -> Lt    (* < *)
+  |  ">" -> Gt    (* > *)
+  | "<=" -> Le    (* <= *)
+  |  "&&" -> And   (* && *)
+  |  "||" -> Or    (* || *)
+  | s -> raise (Invalid_argument (s^": Invalid operator inside pre-defined var"))
+
+let init_ref n d l o r = {name = n; dtype = d; left = l; op=op_of_string o; right = r}
 
 let pre_vars: pre_exp VarDefMap.t ref = ref VarDefMap.empty
 
@@ -71,21 +102,6 @@ let loc = function
   | BinOp (_, _, _, l)
   | Ite (_, _, _, l)
   | Rec (_, _, _, _, l) -> l
-
-let string_of_op = function
-  | Plus  (* + *) -> "+"
-  | Ge    (* >= *) -> ">="
-  | Mult  (* * *) -> "*"
-  | Div   (* / *) -> "/"
-  | Mod   (* mod *) -> "%"
-  | Minus (* - *) -> "-"
-  | Eq    (* = *) -> "="
-  | Ne    (* <> *) -> "!="
-  | Lt    (* < *) -> "<"
-  | Gt    (* > *) -> ">"
-  | Le    (* <= *) -> "<="
-  | And   (* && *) -> "&&"
-  | Or    (* || *) -> "||"
 
 let cond_op = function
   | Plus | Mult | Div | Mod | Minus | And | Or -> false
@@ -170,3 +186,9 @@ let mk_let x def params =
     mk_pre_apps lst (mk_var x)
   in
   mk_app (mk_lambda x e) def
+
+let mk_let_rec x def params =
+  let e = let lst = List.rev params in
+    mk_pre_apps lst (mk_var x)
+  in
+  mk_app (mk_lambda x e) (lam_to_mu x def)

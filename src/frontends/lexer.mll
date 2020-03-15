@@ -36,6 +36,8 @@ let minus = ['-']
 let ident = (idchar | digitchar)* ('?' idchar | idchar) (idchar | digitchar | primechar)* 
 let digits = minus? digitchar+
 let bool_str = "true" | "false" | "either"
+let bin_op_str =  ['>''<''='] | "<=" | ">=" | "<>" 
+let arth_op_str = ['+''-''*''/'] | "mod" | "&&" | "||" 
 
 rule token = parse
   [' ' '\t'] { token lexbuf }
@@ -43,14 +45,14 @@ rule token = parse
 | "(*" { comments 0 lexbuf }
 | "(*-:{"("v"as v)":"white_space(("Bool"|"Int")as d)white_space"|"white_space(bool_str as t)white_space"}*)"  
 { 
-  let vk = init_ref ("cur_"^ Char.escaped v) (string_to_type d) t t in 
+  let vk = init_ref ("cur_"^ Char.escaped v) (string_to_type d) t "=" t in 
   PRE (vk) 
 }
-| "(*-:{"("v"as v)":"white_space(("Bool"|"Int")as d)white_space"|"white_space("v" as l)white_space"="white_space((ident|digits) as r)white_space"}*)"  
+| "(*-:{"("v"as v)":"white_space(("Bool"|"Int")as d)white_space"|"white_space("v" as l)white_space(bin_op_str as bop)white_space((ident|digits) as r)white_space"}*)"  
 { 
   let r' = try string_of_int (int_of_string r)
     with _ -> "pref"^r in
-  let vk = init_ref ("cur_"^ Char.escaped v) (string_to_type d) ("cur_"^Char.escaped l) r' in 
+  let vk = init_ref ("cur_"^ Char.escaped v) (string_to_type d) ("cur_"^Char.escaped l) bop r' in 
   PRE (vk) 
 }
 | ";"  { SEMI }

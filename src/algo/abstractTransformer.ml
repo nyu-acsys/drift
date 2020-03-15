@@ -31,7 +31,7 @@ let pre_def_func = [|"make"; "len"; "set"; "get"|]
 
 let st = ref 0
 
-let delay_threshold = 400
+let delay_threshold = !delay_wid
 
 let incr_z () =
     z_index := !z_index + 1
@@ -532,9 +532,11 @@ let s e =
     let envt, m0' = pref_M !env (Hashtbl.copy m0) in
     env := envt;
     pre_m := m0';
-    let m1 = (fix e 0 m0') in
-    process := "Nar";
-    let m = (fix e 0 m1) in
+    let m =
+        let m1 = (fix e 0 m0') in
+        process := "Nar";
+        if !narrow then (fix e 0 m1) else m1
+    in
     (if !integrat_test then
         print_last_node m);
     m

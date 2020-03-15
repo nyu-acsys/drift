@@ -351,21 +351,21 @@ module SemanticsDomain =
           if VarDefMap.is_empty !pre_vars then
             m, env
           else 
-            VarDefMap.fold (fun var domain (m, env) -> 
+            VarDefMap.fold (fun var (domain: pre_exp) (m, env) -> 
               let n_var = EN (env, var) in
               let s_var = SN (true, var) in
               let t_var = match domain with
-                | {name = n; dtype = Int; left = l; right = r} -> 
+                | {name = n; dtype = Int; left = l; op = bop; right = r} -> 
                   let rm = if l = "true" then 
                      (top_R Plus)
-                  else top_R Plus |> op_R l r Eq true
+                  else top_R Plus |> op_R l r bop true
                   in Relation rm
-                | {name = n; dtype = Bool; left = l; right = r} -> 
+                | {name = n; dtype = Bool; left = l; op = bop; right = r} -> 
                   let rm = if l = "true" then init_R_c (Boolean true)
                     else if l = "false" then
                       init_R_c (Boolean false)
                     else
-                      top_R Plus |> op_R l r Eq true
+                      top_R Plus |> op_R l r bop true
                   in
                   Relation (rm)
               in

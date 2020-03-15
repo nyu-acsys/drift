@@ -166,7 +166,8 @@ let f x (*-: {v: int | true}*) = x
 */
 let_val:
 | LET REC IDENT param_ref_list EQ term {
-  exit 0
+  let fn = mk_lambdas $4 $6 in
+  mk_let_rec $3 fn $4
 }
 | LET IDENT param_ref_list EQ term {
   let fn = mk_lambdas $3 $5 in
