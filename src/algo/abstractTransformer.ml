@@ -46,7 +46,7 @@ let eq_PM (m1:exec_map_t) (m2:exec_map_t) =
         pr_value Format.std_formatter v1;
         Format.printf "\nNew %s\n" l;
         pr_value Format.std_formatter v2;
-        Format.printf "\n";
+        Format.printf "\n\n";
         raise (Pre_Def_Change ("Predefined node changed at " ^ l))
       end
       )

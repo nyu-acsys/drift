@@ -12,5 +12,5 @@ let main z =
 
     let x = 0 in
     let y = 0 in
-    loopa x y z
-in assert (main 10 = true)
+    assert (loopa x y z = true)
+in main 10

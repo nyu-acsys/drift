@@ -25,7 +25,7 @@ let cmd_options_spec =
   ("-domain", Arg.String (fun s -> domain := s), ": Domain specification");
   ("-delay-wid", Arg.Int (fun s -> delay_wid := s), ": Set delay widening steps");
   ("-int", Arg.Set integrat_test, ": Start integration testing");
-  ("-nar", Arg.Set narrow, "Use narrowing procedure");
+  ("-nar", Arg.String (fun s -> if s = "true" then narrow:=true else narrow:=false), "Use narrowing procedure");
   ("-file", Arg.String (fun s -> parse_file := true; file := s), ": Input file specification")]
 
 (* Parse auxiliary 'command line options' that are set during parsing of the input file *)

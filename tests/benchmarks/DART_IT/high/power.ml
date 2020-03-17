@@ -16,10 +16,7 @@ let main m n =
 	let succ sx = sx + 1
 	in
 
-    let ans = 
-    	if m > 0 then
-        power succ m n >= n
-    	else false
-    in
-    assert(ans = true)
+    if m > 0 then
+    	assert(power succ m n >= n)
+	else assert(true)
 in main 4 2

@@ -47,7 +47,7 @@ in
 
  let set_flag_app_1138m = false in
  let s_app_h_EXPARAM_1131m = 0 in
- f_1035 set_flag_app_1138m s_app_h_EXPARAM_1131m 0
+ assert (f_1035 set_flag_app_1138m s_app_h_EXPARAM_1131m 0
    set_flag_app_1138m s_app_h_EXPARAM_1131m () set_flag_app_1138m
-   s_app_h_EXPARAM_1131m r
-in assert (main 20200202 = 20200202)
+   s_app_h_EXPARAM_1131m r = r)
+in main 20200202

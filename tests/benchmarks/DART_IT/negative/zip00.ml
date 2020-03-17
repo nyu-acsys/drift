@@ -38,7 +38,7 @@ in
   let set_flag_zip_1063m = false in
   let s_zip_xs_1058m = 0 in
   let s_zip_ys_1059m = 0 in
-    zip_1030 set_flag_zip_1063m s_zip_xs_1058m s_zip_ys_1059m l1_1037
-      set_flag_zip_1063m s_zip_xs_1058m s_zip_ys_1059m l2_1038
-in assert(main 103 1034 >= 1000)
+  assert( zip_1030 set_flag_zip_1063m s_zip_xs_1058m s_zip_ys_1059m l1_1037
+      set_flag_zip_1063m s_zip_xs_1058m s_zip_ys_1059m l2_1038 >= l2_1038)
+in main 103 1034 
 

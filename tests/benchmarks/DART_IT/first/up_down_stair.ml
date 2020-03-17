@@ -19,10 +19,8 @@ let main k n =
             loop (lk - 1) ln down
     in
 
-    let ans = 
-        if k > 0 && n > 0 then
-            loop k n 0
-        else false
-    in
-    assert(ans = true)
+    if k > 0 && n > 0 then
+        assert(loop k n 0 = true)
+    else assert(true)
+    
 in main 4 100

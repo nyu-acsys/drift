@@ -49,7 +49,10 @@ def read_info_from_file(file_name):
             int_regexp = re.compile(r'Int')
             bool_regexp = re.compile(r'Bool')
             bot_regexp = re.compile(r'_|_')
-            if unit_regexp.search(plain_d):
+            pref_regexp = re.compile(r'PreDef')
+            if pref_regexp.search(plain_d):
+                res_data.append('ER')
+            elif unit_regexp.search(plain_d):
                 res_data.append('T')
             elif int_regexp.search(plain_d):
                 value = plain_d.split('|')[2]
@@ -107,11 +110,11 @@ def read_false_info_from_file(file_name):
                 _, bot_test_f = false_part.split(':')
                 bot_test_t = true_part.split(':')[2]
                 if re.match("^bottom", bot_test_f, re.IGNORECASE) and re.match("^bottom", bot_test_t, re.IGNORECASE):
-                    res_data.append('F')
-                elif re.match("^bottom", bot_test_t, re.IGNORECASE):
-                    res_data.append('F')
-                else:
                     res_data.append('T')
+                elif re.match("^bottom", bot_test_t, re.IGNORECASE):
+                    res_data.append('T')
+                else:
+                    res_data.append('F')
             elif bot_regexp.search(plain_d):
                 res_data.append('F') # Unreachable
             else:
@@ -125,7 +128,7 @@ def dispatch(subdir, dict):
     for root, dirs, files in os.walk(testdir+'/'+subdir):
         dict[subdir] = [(os.path.join(root, file), file, root) for file in files if pattern.match(file)]
     for file_path in dict[subdir]:
-        _, dir = file_path[2].split('../outputs/DART_IT')
+        _, dir = file_path[2].split('../outputs/DART_IT/')
         if dir == "negative":
             res_data = read_false_info_from_file(file_path[0])
             res_data.append("Neg")

@@ -27,6 +27,6 @@ let main mm =
 
     let rsz = loopa x y z in
     let rsx = (0 - rsz) / 2 in
-    loopb rsx rsx rsz
+    assert (loopb rsx rsx rsz = false)
 in
-assert (main () = false)
+main ()

@@ -24,6 +24,6 @@ let main mm =
  
     let rsz = loopa x y z in
     let rsx = 10 in
-    loopb rsx rsx rsz
+    assert (loopb rsx rsx rsz = true)
 in
-assert (main () = true)
+main ()

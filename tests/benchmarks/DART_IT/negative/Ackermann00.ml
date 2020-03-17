@@ -40,6 +40,6 @@ let main m_1035 n_1036 =
   let set_flag_ack_1075m = false in
   let s_ack_m_1070m = 0 in
   let s_ack_n_1071m = 0 in
-  ack_1030 set_flag_ack_1075m s_ack_m_1070m s_ack_n_1071m m_1035
-      set_flag_ack_1075m s_ack_m_1070m s_ack_n_1071m n_1036
-in assert(main 3 (-4) >= 0)
+  assert(ack_1030 set_flag_ack_1075m s_ack_m_1070m s_ack_n_1071m m_1035
+      set_flag_ack_1075m s_ack_m_1070m s_ack_n_1071m n_1036 >= 0)
+in main 3 (-4)

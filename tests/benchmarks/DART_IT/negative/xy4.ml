@@ -19,6 +19,6 @@ let main mm =
     let y = 0 in
 
     let rx = loopa x y in
-    loopb rx (-1)
+    assert (loopb rx (-1) = true)
 in
-assert (main () = true)
+main () 
