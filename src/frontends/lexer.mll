@@ -15,8 +15,6 @@ let _ =
       ("if", IF);
       ("in", IN);
       ("let", LET);
-      ("int", INT);
-      ("bool", BOOL);
       ("mod", MOD);
       ("rec", REC);
       ("then", THEN);
@@ -30,19 +28,34 @@ let lexical_error lexbuf msg =
   fail pos' "Syntax error"
 }
 
+let white_space = [' ']*
 let digitchar = ['0'-'9']
 let idchar = ['A'-'Z''a'-'z''_']
 let primechar = [''']
 let minus = ['-']
 let ident = (idchar | digitchar)* ('?' idchar | idchar) (idchar | digitchar | primechar)* 
 let digits = minus? digitchar+
+let bool_str = "true" | "false" | "either"
+let bin_op_str =  ['>''<''='] | "<=" | ">=" | "<>" 
+let arth_op_str = ['+''-''*''/'] | "mod" | "&&" | "||" 
 
 rule token = parse
   [' ' '\t'] { token lexbuf }
 | '\n' { Lexing.new_line lexbuf; token lexbuf }
+| "(*-:{"("v"as v)":"white_space(("Bool"|"Int")as d)white_space"|"white_space(bool_str as t)white_space"}*)"  
+{ 
+  let vk = init_ref ("cur_"^ Char.escaped v) (string_to_type d) t "=" t in 
+  PRE (vk) 
+}
+| "(*-:{"("v"as v)":"white_space(("Bool"|"Int")as d)white_space"|"white_space("v" as l)white_space(bin_op_str as bop)white_space((ident|digits) as r)white_space"}*)"  
+{ 
+  let r' = try string_of_int (int_of_string r)
+    with _ -> "pref"^r in
+  let vk = init_ref ("cur_"^ Char.escaped v) (string_to_type d) ("cur_"^Char.escaped l) bop r' in 
+  PRE (vk) 
+}
 | "(*" { comments 0 lexbuf }
 | ";"  { SEMI }
-| ":"  { COLON }
 | "->" { ARROW }
 | "<=" { LE }
 | ">=" { GE }

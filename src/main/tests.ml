@@ -184,8 +184,6 @@ let seq_test_3 = parse_from_string "let a = 1 in a; (fun x -> 6) 9;a"
 
 let seq_test_4 = parse_from_string "if false then 2 else let x = 4 in 3; x"
 
-let typedel_test_1 = parse_from_string "let id (x:int) (z:bool) = if z then x else 2 in let kj (k:int) = k in id 3"
-
 let redef_test_1 = parse_from_string "let f a b = if a < 1 then let a = 2 in a else b in f 0 3"
 
 let scope_test = parse_from_string "let rec f x y = let a = x + 1 in let b = y - 1 in if a > 3 then b else f a b in 
@@ -215,7 +213,7 @@ let high_mult_rec_test_2 = parse_from_string
 let high_mult_call_test_1 = parse_from_string
   "let h g = g 5 in let g1 x = 1 in let g2 x = x in (h g1) / (h g2)"
 
-let tests = [rec_test_4]
+let tests = [id_test_1]
 
 let _ =
   Config.parse;

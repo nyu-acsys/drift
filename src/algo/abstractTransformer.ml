@@ -79,10 +79,10 @@ let rec prop v1 v2 = match v1, v2 with
             let p1, p2 = 
                 let v2i', v1i' = 
                     (*Optimization 1: If those two are the same, ignore the prop step*)
-                    if is_Bot_V v1i = false && eq_V v2i v1i then v2i, v1i else 
+                    (* if is_Bot_V v1i = false && eq_V v2i v1i then v2i, v1i else  *)
                     prop v2i v1i 
                 and v1o', v2o' = 
-                    if is_Bot_V v2o = false && eq_V v1ot v2o then v1ot, v2o else 
+                    (* if is_Bot_V v2o = false && eq_V v1ot v2o then v1ot, v2o else  *)
                     prop (arrow_V var v1ot v2i) (arrow_V var v2o v2i) 
                 in
                 let v1o' =
@@ -225,9 +225,7 @@ let rec step term env m ae =
         Format.printf "\n";
         end
         );
-        (* Deprecated: vlet pre_len = Stack.length func_name_q in *)
         let m1 = step e1 env m ae in
-        (* Deprecated: let func_in = pre_len <> Stack.length func_name_q in *)
         let n1 = EN (env, loc e1) in
         let t1 = find n1 m1 in
         if t1 = Bot then m1
@@ -237,7 +235,6 @@ let rec step term env m ae =
         m1 |> NodeMap.add n Top)
         else
             let m2 = step e2 env m1 ae in
-            (* Deprecated: (if func_in then let _ = Stack.pop func_name_q in ()); *)
             let n2 = EN (env, loc e2) in
             let t2 = find n2 m2 in (* M[env*l2] *)
             (match t2 with
@@ -399,7 +396,6 @@ let rec step term env m ae =
             else 
             if tr = Top then top_M m' else
             begin
-                (* Deprecated: if VarDefMap.mem x !top_var then Stack.push x func_name_q; *)
                 let _, var = cs in
                 let nx = VN (env, cs, lx) in
                 let f_nf_opt = Opt.map (fun (f, lf) -> f, VN (env, cs, lf)) f_opt in
@@ -410,10 +406,7 @@ let rec step term env m ae =
                 in
                 let n1 = EN (env1, loc e1) in
                 if optmization m n find && optmization m nx find && optmization m n1 find then m else
-                let tx = 
-                    (* Deprecated: if Stack.is_empty func_name_q = false && get_predefined_vars (Stack.top func_name_q) !top_var x 
-                    then Relation (top_R Plus) else *)
-                    find nx m in
+                let tx = find nx m in
                 let ae' = if is_Relation tx && x <> "_" then (arrow_V x ae tx) else ae in
                 let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x var in
                 let prop_t = Table (TableMap.singleton cs (tx, t1)) in
@@ -492,7 +485,6 @@ let env = ref env0
 (** Fixpoint loop *)
 let rec fix e k m =
   st := k;
-  if !st > 50 then exit 0;
   (if not !integrat_test then
     begin
         Format.printf "%s step %d\n" !process k;
@@ -517,10 +509,13 @@ let s e =
     (if !debug then
     begin
         Format.printf "%% Pre top val %%\n";
-        pr_top_vars Format.std_formatter;
+        pr_pre_def_vars Format.std_formatter;
         Format.printf "\n\n";
     end);
-    let m1 = (fix e 0 m0) in
+    let envt, m0' = pref_M !env m0 in
+    env := envt;
+    pre_m := m0';
+    let m1 = (fix e 0 m0') in
     process := "Nar";
     let m = (fix e 0 m1) in
     (if !integrat_test then

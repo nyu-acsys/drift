@@ -338,6 +338,33 @@ module SemanticsDomain =
           end
           )
         |> Opt.get_or_else (v1 = v1)) m1
+      and pref_M env m = 
+      let m', env' =
+        if VarDefMap.is_empty !pre_vars then
+          m, env
+        else 
+          VarDefMap.fold (fun var (domain: pre_exp) (m, env) -> 
+            let vn_var = VN (env, (env,var), var) in
+            let t_var = match domain with
+              | {name = n; dtype = Int; left = l; op = bop; right = r} -> 
+                let rm = if l = "true" then 
+                    (top_R Plus)
+                else top_R Plus |> op_R l r bop true
+                in Relation rm
+              | {name = n; dtype = Bool; left = l; op = bop; right = r} -> 
+                let rm = if l = "true" then init_R_c (Boolean true)
+                  else if l = "false" then
+                    init_R_c (Boolean false)
+                  else
+                    top_R Plus |> op_R l r bop true
+                in
+                Relation (rm)
+            in
+            let env' = env |> VarMap.add var vn_var in
+            let m' = m |> NodeMap.add vn_var t_var in
+            m', env'
+          ) !pre_vars (m, env)
+      in env', m'
       (*
       ********************************
       ** Abstract domain for Values **
@@ -705,12 +732,17 @@ let rec str_toplist str = function
 | [(vr,ty)] -> str^"("^vr^", "^(str_of_type ty)^")"
 | (vr,ty)::l -> let s' = str^"("^vr^", "^(str_of_type ty)^"); " in (str_toplist s' l)
 
-let pr_top_vars ppf = 
+let pr_pre_exp ppf = function
+  | {name = n; dtype = d; left = l; right = r} -> 
+    if l = "top" then Format.fprintf ppf "{%s:%s | %s}" n (type_to_string d) l
+    else Format.fprintf ppf "{%s:%s | %s = %s}" n (type_to_string d) l r
+
+let pr_pre_def_vars ppf = 
   let rec pr_ll = function
   | [] -> ()
-  | (k, ls)::tl -> Format.fprintf ppf "@[<2><fun@ %s>@ :@ %s@]\n" k (str_toplist "" ls); pr_ll tl
+  | (k, ls)::tl -> Format.fprintf ppf "@[<2>%s@ ->@ %a@]\n" k pr_pre_exp ls; pr_ll tl
   in
-  let ls = VarDefMap.bindings !top_var in
+  let ls = VarDefMap.bindings !pre_vars in
   pr_ll ls
 
 let print_last_node m = 
