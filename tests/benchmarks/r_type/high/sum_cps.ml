@@ -1,5 +1,5 @@
 
-let main n =
+let main (n(*-:{v:Int | true}*)) =
     let rec cps_sum cn ck =
       if cn <= 0 then
         ck 0
@@ -10,5 +10,5 @@ let main n =
 
     let u ux = assert (ux >= n) in
     cps_sum n u
-in
-main 100
+(* in
+main 100 *)

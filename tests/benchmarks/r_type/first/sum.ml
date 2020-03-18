@@ -2,7 +2,7 @@
 USED: PLDI2011 as sum
 USED: PEPM2013 as sum
 *)
-let main mn =
+let main (mn(*-:{v:Int | true}*)) =
     let rec sum n =
       if n <= 0
       then 0
@@ -10,4 +10,4 @@ let main mn =
     in
 
     assert (mn <= sum mn)
-in main 2047
+(* in main 2047 *)

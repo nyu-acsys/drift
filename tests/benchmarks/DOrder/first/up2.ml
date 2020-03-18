@@ -1,5 +1,5 @@
 
-let main n =
+let main (n(*-:{v:Int | v > 0}*)) =
   let rec loopa ai ak an = 
       if ai < an then
           loopa (ai + 1) (ak + 1) an
@@ -19,4 +19,4 @@ let main n =
   let ans = loopa i k n in
   let j = 0 in
   assert(loopb j ans n <= n)
-in main 20
+(* in main 20 *)

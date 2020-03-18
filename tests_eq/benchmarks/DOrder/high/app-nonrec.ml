@@ -1,11 +1,10 @@
 
+
+let apply ab af ax = af ax
+
+let check cx cy = assert (cx = cy)
+
 let main n =
-    let apply ab af ax = af ax
-    in
+apply n (check n) n
 
-    let check cx cy = assert (cx = cy)
-    in
-
-    apply n (check n) n
-in
-main 75
+let _ = main 75

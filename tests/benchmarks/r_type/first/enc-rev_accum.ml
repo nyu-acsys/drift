@@ -1,10 +1,10 @@
 
-let main mn =
+let main (mn(*-:{v:Int | v >= 0}*)) =
     let rec rev n m =
       if n = 0
       then m
       else rev (n - 1) (m + 1) in
 
     assert (rev mn 0 >= mn)
-in
-main 300
+(* in
+main 300 *)

@@ -1,5 +1,5 @@
 
-let main n =
+let main (n(*-:{v:Int | true}*)) =
     let rec loop x i =
       if i < 0 then
         x
@@ -12,4 +12,4 @@ let main n =
     in
      
     assert (loop 3 n >= 3)
-in main 15
+(* in main 15 *)

@@ -1,5 +1,5 @@
 
-let main k n = 
+let main (k(*-:{v:Int | true}*)) (n(*-:{v:Int | true}*)) = 
 
     let rec up_stair ui un = 
         if ui = un then ui
@@ -23,4 +23,4 @@ let main k n =
         assert(loop k n 0 = true)
     else assert(true)
     
-in main 4 100
+(* in main 4 100 *)

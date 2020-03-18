@@ -9,4 +9,5 @@ let main n =
     let z = twice (g n) neg in
     if (n > 0) then assert (z >= 0)
     else assert (z <= 0)
-in main 3
+
+let _ = main 3

@@ -1,15 +1,11 @@
-(*
-	False positive
-*)
+let mk_array n i = if 0<=i && i<n then 0 else -1
+let update i a x j = if j=i then x else a(j)
+let rec init i n a =
+  if i>=n then a
+  else init (i+1) n (update i a 1)
 
 let main n i =
-	let rec init idx tn ta =
-	  if idx >= tn then ta
-	  else (set ta idx 1; init (idx + 1) tn ta)
-	in
-
-	let x = init 0 3 (make 3 0) in
-	if 0<=i && i < n then
-    	get x i >= 1 (* check that the array has been initialized *)
-    else false
-in assert(main 3 2 = true)
+  let x = init 0 n (mk_array n) in
+   if 0<=i && i<n then
+    assert (x i >=1) (* check that the array has been initialized *)
+  else ()

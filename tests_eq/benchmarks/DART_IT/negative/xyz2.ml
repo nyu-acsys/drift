@@ -11,13 +11,11 @@ let rec loopa ax ay az =
 
 let rec loopb bx by bz = 
     if (bx >= 1) then 
-        let rz = bz + 2 in
+        (let rz = bz + 2 in
         let rx = bx - 1 in
         let ry = by - 1 in
-        loopb rx ry rz
-    else if (bx <= 0) then
-        bz < 1
-    else false
+        loopb rx ry rz)
+    else bz < 1
 
 let main mm =
     let x = 0 in
@@ -25,7 +23,7 @@ let main mm =
     let z = 0 in
 
     let rsz = loopa x y z in
-    let rsx = (0 - rsz) / 2 in
+    let rsx = 10 in
     assert (loopb rsx rsx rsz = false)
 
 let _ = main ()

@@ -1,5 +1,5 @@
 
-let main n =
+let main (n(*-:{v:Int | true}*)) =
   let rec zip x y =
     if x = 0
     then
@@ -13,5 +13,5 @@ let main n =
   in
   
   assert (zip n n = n)
-in
-main 100
+(* in
+main 100 *)

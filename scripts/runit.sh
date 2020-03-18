@@ -1,31 +1,42 @@
 #!/bin/bash
 
+# ./runit.sh -domain Oct -nar -dwid 0
+# Domain for benchmarks: Polka_st, Oct, Ppl_st
 
 OUTDIR="../outputs/DART_IT"
 PROG="../tests.native"
+DOMAIN=$2
+if [ $# -gt 1 ]; then
+    DOMAIN=$2
+else
+    echo "ERROR!!! The command should be:"
+    echo "./runit.sh -domain <domain_name> [-dwid <delay_steps> | -nar]"
+    exit 0
+fi
+shift
+shift
 
 wid=0
 nar=false
 
-if [ $# -eq 1 ] && [ $1 = "nar" ]; then
+if [ $# -eq 1 ] && [ $1 = "-nar" ]; then
     echo "Wid + Nar..."
     wid=0;
     nar=true;
 else 
-    if [ $# -eq 2 ] && [ $1 = "wid" ]; then
-        echo "Delay widening. Widen steps occur after $2"
+    if [ $# -eq 2 ] && [ $1 = "-dwid" ]; then
+        echo "Delay widening + Nar. Widen steps occur after $2"
+        nar=true;
         wid=$2;
     else 
         echo "Default. Standard widening..."
     fi
 fi
-
 echo "outdir=<$OUTDIR> prog=<$PROG>"
 
 TESTDIR="../tests/benchmarks/"
 DIRS=" DART_IT DOrder r_type"
 INS=" first high negative array universe" # termination  
-DOMAIN="Oct"
 
 OUTPRE="out"
 

@@ -1,7 +1,7 @@
 (*
 Input data error
 *)
-let main m_1035 n_1036 =
+let main (m_1035(*-:{v:Int | v < 0}*)) (n_1036(*-:{v:Int | v < 0}*)) =
   let rec bot bx = bot () in
   let fail fx = assert (false) in
 
@@ -42,4 +42,4 @@ let main m_1035 n_1036 =
   let s_ack_n_1071m = 0 in
   assert(ack_1030 set_flag_ack_1075m s_ack_m_1070m s_ack_n_1071m m_1035
       set_flag_ack_1075m s_ack_m_1070m s_ack_n_1071m n_1036 >= 0)
-in main 3 (-4)
+(* in main 3 (-4) *)

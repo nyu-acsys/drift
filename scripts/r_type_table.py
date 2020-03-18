@@ -22,9 +22,10 @@ def read_info_from_file(file_name):
     res_data = []
     safe_regexp = re.compile(r'safe')
     unsafe_regexp = re.compile(r'unsafe')
+    timeout_regexp = re.compile(r'Error')
     if safe_regexp.search(data[0]): # safe
         res_data.append('T')
-    elif unsafe_regexp.search(data[1]): # unsafe
+    elif unsafe_regexp.search(data[1]) or timeout_regexp.search(data[0]): # state unsafe, but safe
         res_data.append('F')
     else:
         print("File data error: \n")
@@ -43,9 +44,10 @@ def read_false_info_from_file(file_name):
     res_data = []
     safe_regexp = re.compile(r'safe')
     unsafe_regexp = re.compile(r'unsafe')
+    timeout_regexp = re.compile(r'Error')
     if safe_regexp.search(data[0]): # state safe, but unsafe
         res_data.append('F')
-    elif unsafe_regexp.search(data[1]): # unsafe
+    elif unsafe_regexp.search(data[1]) or timeout_regexp.search(data[0]): # state unsafe
         res_data.append('T')
     else:
         print("File data error: \n")

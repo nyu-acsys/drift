@@ -1,6 +1,6 @@
 
 
-let main n =
+let main (n(*-:{v:Int | true}*)) =
 	let rec ar ari = 0 in
 	let update ua ui ux uj = if uj = ui then ux else ua uj in
 	let rec g ge ga gj =
@@ -11,5 +11,5 @@ let main n =
 	in
 	
 	g n ar 0
-in main 30
+(* in main 30 *)
 (* unit *)

@@ -4,7 +4,7 @@
  *)
 
 
-let main mm = 
+let main (mm(*-:{v:Int | true}*)) = 
 	let rec loop lx ly = 
 	    if (lx > 20) then
 	        let t1 = lx in
@@ -16,5 +16,5 @@ let main mm =
     let x = 30 in
     let y = -1000 in
     assert (loop x y = true) (* Should be false *)
-in
-main ()
+(* in
+main () *)

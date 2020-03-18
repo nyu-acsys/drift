@@ -1,5 +1,9 @@
+(*
+Need to test for delay widening
+*)
 
-let main n0 n1 n2 =
+
+let main (n0(*-:{v:Int | v >= 0}*)) (n1(*-:{v:Int | v >= 0}*)) (n2(*-:{v:Int | v >= 0}*)) =
     let rec loopa ai ak an = 
         if ai < an then loopa (ai+1) (ak+1) an
         else ak 
@@ -15,14 +19,13 @@ let main n0 n1 n2 =
         else true
     in
 
-    if (n0 >= 0 && n1 >= 0 && n2 >= 0) then
-        let i = 0 in
-        let k = 0 in
-        let a1 = loopa i k n0 in
-        let a2 = loopa i a1 n1 in
-        let a3 = loopa i a2 n2 in
-        let b1 = loopb i a3 n2 in
-        let b2 = loopb i b1 n1 in 
-        loopc i b2 n0 
-    else false
-in assert(main 2 3 4 = true)
+    let i = 0 in
+    let k = 0 in
+    let a1 = loopa i k n0 in
+    let a2 = loopa i a1 n1 in
+    let a3 = loopa i a2 n2 in
+    let b1 = loopb i a3 n2 in
+    let b2 = loopb i b1 n1 in 
+    assert(loopc i b2 n0 = true)
+
+(* in assert(main 2 3 4 = true) *)

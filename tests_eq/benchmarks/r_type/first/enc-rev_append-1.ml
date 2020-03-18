@@ -1,18 +1,17 @@
 
+
+let rec append x y =
+  if x = 0 then
+    y
+  else
+    1 + append (x - 1) y
+
+let rec rev n =
+  if n = 0
+  then 0
+  else append (rev (n - 1)) 1
+
 let main mn mm =
-    let rec append x y =
-      if x = 0 then
-        y
-      else
-        1 + append (x - 1) y
-    in
+  if mn >= 0 then assert (rev mn = mn)
 
-    let rec rev n =
-      if n = 0
-      then 0
-      else append (rev (n - 1)) 1
-    in
-
-    assert (rev mn = mn)
-in
-main 3 5
+let _ = main 3 5

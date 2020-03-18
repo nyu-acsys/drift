@@ -15,6 +15,8 @@ let rec zip zx zy =
 
 
 let main n = 
-	assert(unzip n zip = n)
+	if n < 0 then
+		assert(unzip n zip = n)
+	else assert(true)
 
 let _ = main (-10)

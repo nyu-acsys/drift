@@ -106,6 +106,19 @@ let rec_test_2 = parse_from_string "let rec f a = if a <= 1 then 0 else f (a - 1
 
 let rec_test_3 = parse_from_string "let rec f a b = if a <= b then 0 else f (a - 1) b in f 8 1"
 
+let rec_test_4 = parse_from_string "let rec loop a b = 
+if (a < 3) then 
+  loop (a + 1) (b + 2)
+else b
+in loop 0 0"
+(*
+((lambda f^0. ((f^1 0^2)^3 0^4)^5)^6
+  (mu f^7 a^8.
+     (lambda b^9.
+        ((a^10 < 3^11)^12 ? ((f^13 (a^14 + 1^15)^16)^17 (b^18 + 2^19)^20)^21
+          : b^22)^23)^24)^25)^26
+*)
+
 let ary_test_1 = parse_from_string "let f a = len a in let ary = make 3 0 in f ary"
 (* ary_test_1
 ((lambda ary^0. (len^1 ary^2)^3)^4 ((make^5 3^6)^7 0^8)^9)^10
@@ -193,7 +206,7 @@ let high_mult_rec_test_1 = parse_from_string
 let high_mult_rec_test_2 = parse_from_string 
   "let rec id x y = id x y in let f z = z in f id 10 20"
 
-let tests = [id_test_2]
+let tests = [rec_test_4]
 
 let _ =
   Config.parse;

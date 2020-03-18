@@ -1,14 +1,18 @@
+(*
+TODO: Should revise the predicate to allow:
+k(*-:{v:Int | v >= 0 && k <= 100}*)
+*)
 
-let rec loop lk li lj = 
-    if (li < lk) then
-        loop lk (li+1) (lj+1)
-    else lj < 101
-in
+let main (k(*-:{v:Int | v >= 0}*)) (toi(*-:{v:Int | v >= 0}*)) =   
+	let rec loop lk li lj = 
+	    if (lj < li) then
+	        loop lk (li) (lj+1)
+	    else lj < 31
+	in
 
-let main k from =   
-    if (k >= 0 && k <= 100 && from >= 0 && from <= k) then
-        (let i = from in
+    if (k <= 30 && toi <= k) then
+        (let i = toi in
         let j = 0 in
         loop k i j)
-    else false
-in assert (main 20 5 = true)
+    else true
+(* in assert (main 20 5 = true) *)

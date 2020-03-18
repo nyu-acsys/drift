@@ -299,23 +299,20 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             let t = find n m2 in
             (* if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then m else *)
             let td = Relation (top_R bop) in
-            let raw_t = if bool_op bop then
-            begin
-                bool_op_V bop t1 t2
-            end
-            else
-            begin
-                (* {v:int | a(t) ^ v = n1 op n2 }[n1 <- t1, n2 <- t2] *)
-                let node_1 = e1 |> loc |> name_of_node in
-                let node_2 = e2 |> loc |> name_of_node in
-                let t' = arrow_V node_1 td t1 in
-                let t'' = arrow_V node_2 t' t2 in
-                let t''' = op_V node_1 node_2 bop t'' in
-                let temp_t = getVars env |> proj_V t''' in
-                if !domain = "Box" then
-                temp_t |> der_V e1 |> der_V e2  (*Solve remain constriant only for box*)
-                else temp_t
-            end
+            let raw_t = if bool_op bop then bool_op_V bop t1 t2
+                else
+                begin
+                    (* {v:int | a(t) ^ v = n1 op n2 }[n1 <- t1, n2 <- t2] *)
+                    let node_1 = e1 |> loc |> name_of_node in
+                    let node_2 = e2 |> loc |> name_of_node in
+                    let t' = arrow_V node_1 td t1 in
+                    let t'' = arrow_V node_2 t' t2 in
+                    let t''' = op_V node_1 node_2 bop t'' in
+                    let temp_t = getVars env |> proj_V t''' in
+                    if !domain = "Box" then
+                    temp_t |> der_V e1 |> der_V e2  (*Solve remain constriant only for box*)
+                    else temp_t
+                end
             in
             let _, re_t = if is_Relation raw_t then raw_t,raw_t else prop raw_t t in
             m2 |> NodeMap.add n re_t
@@ -336,8 +333,8 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         if t0 = Bot then m0 else
         if not @@ SemanticsDomain.is_bool_V t0 then m0 |> NodeMap.add n Top else
         begin
-            let t_true = stren_V (extrac_bool_V t0 true) ae in (* Meet with ae*)
-            let t_false = stren_V (extrac_bool_V t0 false) ae in
+            let t_true = meet_V (extrac_bool_V t0 true) ae in (* Meet with ae*)
+            let t_false = meet_V (extrac_bool_V t0 false) ae in
             let m0' = Hashtbl.copy m0 in
             let m1 = step e1 env m0 t_true in
             let m2 = step e2 env m0' t_false in
@@ -422,7 +419,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             let n1 = SN (true, loc e1) in
             let nx = SN (true, lx) in
             let tx = find nx m in
-            let ae' = if is_Relation tx && x <> "_" then (arrow_V x ae tx) else ae in
+            let ae' = if is_Relation tx && x <> "_" then (arrow_V x ae ([||] |> proj_V tx)) else ae in
             let temp_t = if x = "_" then find n1 m else replace_V (find n1 m) x (dx_T t) in
             let prop_t = Table ((dx_T t), tx, temp_t) in
             (if !debug then
@@ -501,6 +498,7 @@ let env = ref env0
 (** Fixpoint loop *)
 let rec fix e (k: int) (m:exec_map_t): exec_map_t =
   st := k;
+  (* if k > 27 then exit 0; *)
   (if not !integrat_test then
     begin
         Format.printf "%s step %d\n" !process k;

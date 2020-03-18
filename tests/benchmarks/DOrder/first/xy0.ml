@@ -1,5 +1,5 @@
 
-let main mm =
+let main (mm(*-:{v:Int | true}*)) =
   let rec loopa lx ly = 
       if (ly < 10) then
           loopa (lx + 1) (ly + 1)
@@ -15,6 +15,7 @@ let main mm =
   let y = 0 in
 
   let ansa = loopa x y in
-  loopb ansa ansa
-in
-assert (main () = true)
+  assert (loopb ansa ansa = true)
+
+(* in
+main () *)

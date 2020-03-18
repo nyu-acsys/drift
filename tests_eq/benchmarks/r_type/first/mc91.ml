@@ -6,14 +6,15 @@ Res: OCaml -> 91
 imprecision: Oct: 91 <= v <= 101
 Liquid Haskell: false by property {-@ mc91 :: x:Int -> {b:Int | (b == 91)} @-}
 *)
-let main n =
-    let rec mc91 x =
-      if x > 100
-      then x - 10
-      else mc91 (mc91 (x + 11))
-    in
 
+let rec mc91 x =
+  if x > 100
+  then x - 10
+  else mc91 (mc91 (x + 11))
+
+
+let main n =
     if n <= 101
-    then mc91 n = 91
-    else false
-in assert (main 1 = true)
+    then assert (mc91 n = 91)
+
+let _ = main 1 

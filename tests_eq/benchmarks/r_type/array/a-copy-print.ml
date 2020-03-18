@@ -3,33 +3,29 @@ USED: PLDI2011 as a-cppr
 USED: PEPM2013 as a-cppr
 *)
 
-let main mn =
-
-  let print_int pn = () in
-
-  let rec bcopy bm srcb desb bi =
-    if bi >= bm then
-      desb
+let make_array n i = assert (0 <= i && i < n); 0
+let update (i:int) (n:int) des x : int -> int =
+  des i;
+  let a j = if i=j then x else des j in a
+let print_int (n:int) = ()
+let f (m:int) src des =
+  let rec bcopy (m:int) src des i =
+    if i >= m then
+      des
     else
-      (set desb bi (get srcb bi);
-      bcopy bm srcb desb (bi + 1))
+      let des = update i m des (src i) in
+      bcopy m src des (i+1)
   in
-
-  let rec print_array pm ary pi =
-    if pi >= pm then
+  let rec print_array m (array:int->int) i =
+    if i >= m then
       ()
     else
-      (print_int (get ary pi);
-       print_array pm ary (pi + 1))
+      (print_int (array i);
+       print_array m array (i + 1))
   in
-
-  let f m src des =
-    let res = bcopy m src des 0 in
-    print_array m res 0
-  in
-
-  let array1 = make mn 0 in
-  let array2 = make mn 1 in
-    if mn > 0 then f mn array1 array2 else ()
-in 
-main 10
+  let array : int -> int = bcopy m src des 0 in
+    print_array m array 0
+let main n =
+  let array1 = make_array n in
+  let array2 = make_array n in
+    if n > 0 then f n array1 array2 else ()

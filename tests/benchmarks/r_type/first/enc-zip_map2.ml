@@ -1,5 +1,5 @@
 
-let main n =
+let main (n(*-:{v:Int | v >= 0}*)) =
 	let rec loop x = loop x in
 
 	let rec zip x y =
@@ -15,4 +15,4 @@ let main n =
 	in
 	
 	assert(map (zip n n) = n)
-in main 30
+(* in main 30 *)

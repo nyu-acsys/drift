@@ -1,4 +1,6 @@
-let main mm =
+
+
+let main (mm(*-:{v:Int | true}*)) =
 
     let rec loopa ax ay az = 
         if (ax < 10) then 
@@ -8,13 +10,12 @@ let main mm =
 
     let rec loopb bx by bz = 
         if (bx >= 1) then 
-            let rz = bz + 2 in
+            (let rz = bz + 2 in
             let rx = bx - 1 in
             let ry = by - 1 in
-            loopb rx ry rz
-        else if (bx <= 0) then
+            loopb rx ry rz)
+        else
             bz < 1
-        else false
     in
 
     let x = 0 in
@@ -22,7 +23,7 @@ let main mm =
     let z = 0 in
 
     let rsz = loopa x y z in
-    let rsx = (0 - rsz) / 2 in
+    let rsx = 10 in
     assert (loopb rsx rsx rsz = true)
-in
-main ()
+(* in
+main () *)

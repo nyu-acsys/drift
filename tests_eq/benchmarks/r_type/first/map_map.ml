@@ -1,8 +1,9 @@
 
+
+let rec map x =
+ if x = 0 then x else 1 + map (x - 1)
+
 let main n =
-    let rec map x =
-     if x = 0 then x else 1 + map (x - 1) in
+    if n >= 0 then assert(map (map n) = n)
 
-
-    assert(map (map n) = n) in
-main 12329
+let _ = main 12329

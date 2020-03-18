@@ -1,5 +1,5 @@
 
-let main n =
+let main (n(*-:{v:Int | true}*)) =
     let rec f g x =
       if x < (-3) then (* x<=-4 *)
         f g (-4)
@@ -12,4 +12,4 @@ let main n =
     in
 
     assert(f incr n >= -3)
-in main 12
+(* in main 12 *)

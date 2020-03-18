@@ -2,7 +2,7 @@
 Implementation error
 *)
 
-let main mm =
+let main (mm(*-:{v:Int | true}*)) =
     let rec loopa ax ay az = 
         if (ax < 10) then 
             loopa (ax + 1) (ay + 1) (az - 7)
@@ -25,5 +25,5 @@ let main mm =
     let rsz = loopa x y z in
     let rsx = 10 in
     assert (loopb rsx rsx rsz = true)
-in
-main ()
+(* in
+main () *)

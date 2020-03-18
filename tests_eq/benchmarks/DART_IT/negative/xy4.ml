@@ -22,4 +22,4 @@ let main mm =
     let rx = loopa x y in
     assert (loopb rx (-1) = true)
 
-let _ =main () 
+let _ = main () 

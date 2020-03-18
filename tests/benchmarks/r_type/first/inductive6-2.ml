@@ -1,5 +1,5 @@
 
-let main (n(*-:{v:Int | true}*)) =
+let main (n(*-:{v:Int | v >= 3}*)) =
 	let f g x =
 	  if x > 0 then
 	    g x
@@ -8,6 +8,6 @@ let main (n(*-:{v:Int | true}*)) =
 	in
 	let decr x = x - 1 in
 
-	assert(f decr 3 > 0)
+	assert(f decr n > 0)
 (* in
 main 79 *)

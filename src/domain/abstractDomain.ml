@@ -87,7 +87,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
       res
     let meet v1 v2 =
       let v1',v2' = lc_env v1 v2 in
-      let res = Abstract1.meet Man.man v1' v2' |> Abstract1.minimize_environment Man.man in
+      let res = Abstract1.meet Man.man v1' v2' in
       res
     let alpha_rename v prevar var =
         (if !debug then
@@ -257,29 +257,29 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         if cond_op op = true then
           (
           let vt = if temp = "!=" then (* '!=' not support by apron, use vl < vr join vl > vr *)
-          begin
-            let expr1 = vl ^ "<" ^ vr in
-            let expr2 = vl ^ ">" ^ vr in
-            let tab = Parser.tcons1_of_lstring env [expr1] in
-            let vlt' = Abstract1.meet_tcons_array Man.man v' tab in
-            let tab = Parser.tcons1_of_lstring env [expr2] in
-            let vgt' = Abstract1.meet_tcons_array Man.man v' tab in
-            Abstract1.join Man.man vlt' vgt'
-          end
+            begin
+              let expr1 = vl ^ "<" ^ vr in
+              let expr2 = vl ^ ">" ^ vr in
+              let tab = Parser.tcons1_of_lstring env [expr1] in
+              let vlt' = Abstract1.meet_tcons_array Man.man v' tab in
+              let tab = Parser.tcons1_of_lstring env [expr2] in
+              let vgt' = Abstract1.meet_tcons_array Man.man v' tab in
+              Abstract1.join Man.man vlt' vgt'
+            end
           else
-          begin
-            let expr = vl ^ temp ^ vr in
-            let tab = Parser.tcons1_of_lstring env [expr] in
-            Abstract1.meet_tcons_array Man.man v' tab
-          end
+            begin
+              let expr = vl ^ temp ^ vr in
+              let tab = Parser.tcons1_of_lstring env [expr] in
+              Abstract1.meet_tcons_array Man.man v' tab
+            end
           in
           if cons = -1 then vt
-          else
-          let exprv = "cur_v=" ^ (string_of_int cons) in
-          let tab = Parser.tcons1_of_lstring env [exprv] in
-          Abstract1.meet_tcons_array Man.man vt tab
+          else (* Bool value *)
+            let exprv = "cur_v=" ^ (string_of_int cons) in
+            let tab = Parser.tcons1_of_lstring env [exprv] in
+            Abstract1.meet_tcons_array Man.man vt tab
           )
-        else
+        else (* Int value *)
           (let expr = "cur_v=" ^ vl ^ temp ^ vr in
             let tab = Parser.tcons1_of_lstring env [expr] in
           Abstract1.meet_tcons_array Man.man v' tab)

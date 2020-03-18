@@ -1,5 +1,5 @@
 
-let main mx my = (*(*-:{v:Int | v > mx}*)*)
+let main (mx(*-:{v:Int | true}*)) (my(*-:{v:Int | true}*)) = (*(*-:{v:Int | v > mx}*)*)
 
 	let twice tf tx ty = tf (tf tx ty) ty
 	in
@@ -16,4 +16,5 @@ let main mx my = (*(*-:{v:Int | v > mx}*)*)
     	else if mx < my then assert(flip (twice square_diff) mx my >= mx + my)
     	else assert(true)
     else assert(true)
-in main 16 32
+
+(*in main 16 32*)

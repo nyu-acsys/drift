@@ -19,7 +19,6 @@ let rec loop lk ln res =
         loop (lk - 1) ln down
 
 let main k n = 
-
     if k > 0 && n > 0 then
         assert(loop k n 0 = true)
     else assert(true)

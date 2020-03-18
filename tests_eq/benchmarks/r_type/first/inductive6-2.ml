@@ -9,6 +9,6 @@ let f g x =
 let decr x = x - 1
 	
 let main n =
-	assert(f decr 3 > 0)
+	if n >= 3 then assert(f decr n > 0)
 
 let _ = main ()

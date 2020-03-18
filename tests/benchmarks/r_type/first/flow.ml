@@ -1,6 +1,5 @@
 
-
-let main i = 
+let main (i(*-:{v:Int | true}*))= 
 	let lamp x = x in
 
 	let f =
@@ -10,7 +9,7 @@ let main i =
 	in
 
 	f ()
-in main 10
+(* in main 10 *)
 (*
 unit
 *)

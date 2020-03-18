@@ -1,5 +1,5 @@
 
-let main mn mm =
+let main (mn(*-:{v:Int | v >= 0}*)) (mm(*-:{v:Int | v >= 0}*)) =
     let rec append x y =
       if x = 0 then
         y
@@ -14,5 +14,5 @@ let main mn mm =
     in
 
     assert (append mn mm = mn + mm)
-in
-main 3 5
+(* in
+main 3 5 *)

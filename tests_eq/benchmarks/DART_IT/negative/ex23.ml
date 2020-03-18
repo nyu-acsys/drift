@@ -12,6 +12,6 @@ let main y =
     let c = 0 in
     let z = y * 36 in
     let ans = loop y z c in
-    assert(ans >= 0 && ans <= 4608)
+    if y < 0 then assert(ans >= 0 && ans <= 4608)
 
 let _ = main 128

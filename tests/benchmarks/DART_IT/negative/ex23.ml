@@ -1,5 +1,5 @@
 
-let main y = 
+let main (y(*-:{v:Int | v < 0}*)) = 
 
 	let rec loop ly lz lc = 
 	    if lc < 36 then
@@ -13,4 +13,4 @@ let main y =
     let z = y * 36 in
     let ans = loop y z c in
     assert(ans >= 0 && ans <= 4608)
-in main 128
+(* in main 128 *)

@@ -5,7 +5,7 @@ imprecision: Oct: 91 <= v
 Liquid Haskell: TODO: need to TEST!
 *)
 
-let main n =
+let main (n(*-:{v:Int | true}*)) =
     let rec m mx mk =
       if mx > 100
       then mk (mx - 10)
@@ -14,7 +14,7 @@ let main n =
         m (mx + 11) f
     in
 
-    let k kr = if n <= 101 then kr = 91 else false in
-    m n k
-in
-assert (main 22 = true)
+    let k kr = kr = 91 in
+    assert (m n k = true)
+(* in
+assert (main 22 = true) *)

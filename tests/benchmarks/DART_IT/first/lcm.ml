@@ -3,7 +3,7 @@
 Imprecision:
 *)
 
-let main m n =
+let main (m(*-:{v:Int | true}*)) (n(*-:{v:Int | true}*)) =
     let rec gcd y1 y2 =
         if (y1 <= 0 || y2 <= 0) then 0
         else if (y1 = y2) then y1
@@ -20,4 +20,4 @@ let main m n =
     in
  
     lcm m n
-in main 55 13
+(* in main 55 13 *)

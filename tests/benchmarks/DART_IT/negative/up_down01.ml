@@ -1,7 +1,7 @@
 (*
 Implementation error
 *)
-let main t1_1039 t2_1040 =
+let main (t1_1039(*-:{v:Int | true}*)) (t2_1040(*-:{v:Int | true}*)) =
   let rec bot bx = bot () in
   let fail fx = assert (false) in
 
@@ -14,24 +14,24 @@ let main t1_1039 t2_1040 =
 
   let rec app_1030 x_DO_NOT_CARE_1212 x_DO_NOT_CARE_1213 f_EXPARAM_1084 x_DO_NOT_CARE_1210 x_DO_NOT_CARE_1211 f_1033 set_flag_up_10890 s_up_x_10860 x_1034 =
    f_1033 set_flag_up_10890 s_up_x_10860 x_1034
-  in
+    in
 
   let rec down_1031 set_flag_up_10891 s_up_x_10861 x_1035 =
-   if x_1035 = 0 then
-     ()
+   if x_1035 = -1 then
+     x_1035
    else
-     down_1031 set_flag_up_10891 s_up_x_10861 (x_1035 - 73843)
-  in
+     down_1031 set_flag_up_10891 s_up_x_10861 (x_1035 - 1)
+    in
 
   let rec up_without_checking_1115 set_flag_up_10895 s_up_x_10865 x_10365 =
-   let set_flag_up_1089_r = false in
+   let set_flag_up_1089_r = true in
    let s_up_x_1086_r = x_10365
    in
-     if x_10365 = 0 then
-       ()
+     if x_10365 = 1 then
+       x_10365
      else
-       up_without_checking_1115 set_flag_up_10895 x_10365 (x_10365 + 20000000)
-  in
+       up_without_checking_1115 set_flag_up_1089_r s_up_x_1086_r (x_10365 + 1)
+    in
 
   let rec up_1032 prev_set_flag_up_1088 s_prev_up_x_1087 x_1036 =
    let u = if prev_set_flag_up_1088 then
@@ -43,25 +43,15 @@ let main t1_1039 t2_1040 =
               in
                 bot()
            else () in
-    up_without_checking_1115 prev_set_flag_up_1088 s_prev_up_x_1087
+          up_without_checking_1115 prev_set_flag_up_1088 s_prev_up_x_1087
             x_1036
-  in
+    in
 
-  let set_flag_up_1089 = false in
-  let s_up_x_1086 = 0 in
-   if t1_1039 > 0 then
-     app_1030 set_flag_up_1089 s_up_x_1086
-       ((c3_COEFFICIENT_1080 * t2_1040) +
-        ((c4_COEFFICIENT_1081 * t1_1039) + c5_COEFFICIENT_1082))
-       set_flag_up_1089 s_up_x_1086 down_1031 set_flag_up_1089 s_up_x_1086
-       t1_1039
-   else
-     if t2_1040 < 0 then
-       app_1030 set_flag_up_1089 s_up_x_1086
-         ((c0_COEFFICIENT_1076 * t2_1040) +
-          ((c1_COEFFICIENT_1077 * t1_1039) + c2_COEFFICIENT_1078))
-         set_flag_up_1089 s_up_x_1086 up_1032 set_flag_up_1089 s_up_x_1086
-         t2_1040
-     else
-       ()
-in main 109123 (-62823)
+    let set_flag_up_1089 = false in
+    let s_up_x_1086 = 0 in
+    assert(app_1030 set_flag_up_1089 s_up_x_1086
+         ((c3_COEFFICIENT_1080 * t2_1040) +
+          ((c4_COEFFICIENT_1081 * t1_1039) + c5_COEFFICIENT_1082))
+         set_flag_up_1089 s_up_x_1086 down_1031 set_flag_up_1089 s_up_x_1086
+         t1_1039 = 0)
+(* in main 109123 (-62823) *)

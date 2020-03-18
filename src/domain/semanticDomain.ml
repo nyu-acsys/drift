@@ -152,7 +152,8 @@ module SemanticsDomain =
         | (Int v1), (Int v2) -> AbstractValue.eq v1 v2
         | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> AbstractValue.eq v1t v2t && AbstractValue.eq v1f v2f
         | _, _ -> false
-    and arrow_R var a1 a2 = let a2' = alpha_rename_R a2 "cur_v" var in
+    and arrow_R var a1 a2 = 
+        let a2' = alpha_rename_R a2 "cur_v" var in
         match a1, a2' with
         | Int _, Int _ -> meet_R a1 a2'
         | Bool (vt1, vf1), Bool (vt2, vf2) -> 
@@ -200,7 +201,8 @@ module SemanticsDomain =
     | Bool (vt, _), true -> Int vt |> forget_R "cur_v"
     | Bool (_, vf), false -> Int vf |> forget_R "cur_v"
     | _,_ -> raise (Invalid_argument "Extract abstract value for condition, expect bool one")
-    and stren_R a ae = match a, ae with
+    and stren_R a ae = 
+      match a, ae with
     | Int v, Int vae -> Int (AbstractValue.meet v vae)
     | Bool (vt, vf), Int vae -> Bool (AbstractValue.meet vt vae, AbstractValue.meet vf vae)
     | _, _ -> raise (Invalid_argument "ae should be {v:Int}")
