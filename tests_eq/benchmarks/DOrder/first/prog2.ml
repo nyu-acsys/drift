@@ -6,7 +6,7 @@ let rec loop lx ly =
     else 
         assert (ly >= 0)
 
-let main m = 
+let main (m:unit) = 
     let x = 0 in
     let y = 0 in
     loop x y

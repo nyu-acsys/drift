@@ -11,7 +11,7 @@ let rec loop lx ly =
         loop (t1 + t2) (t1 + t2)
     else assert (ly >= 1)
 
-let main mm = 
+let main (mm:unit) = 
     let x = 1 in
     let y = 1 in
     loop x y

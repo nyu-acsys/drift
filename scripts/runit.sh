@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# ./runit.sh -domain Oct -nar -dwid 0
+# ./runit.sh -domain Oct [-nar | -dwid 0]
 # Domain for benchmarks: Polka_st, Oct, Ppl_st
 
 OUTDIR="../outputs/DART_IT"
@@ -34,26 +34,35 @@ else
 fi
 echo "outdir=<$OUTDIR> prog=<$PROG>"
 
-TESTDIR="../tests/benchmarks/"
+TESTDIR="../tests/benchmarks"
 DIRS=" DART_IT DOrder r_type"
-INS=" first high negative array universe" # termination  
-
+INS=" first high negative array" # termination  
 OUTPRE="out"
+DATE="gdate"
+if [[ "$OSTYPE" != "darwin"* ]]; then
+    DATE="date"
+fi
 
 echo "Build program before testing..."
-cd ../ && ./build.sh
+cd ../ && ./build.sh clean && ./build.sh
 cd scripts
+
+for dir in ${INS}; do
+    rm -f ${OUTDIR}/${dir}/* # Remove all outputs from last tests
+done
 
 echo "Starting benchmarks testing..."
 for hdir in ${DIRS}; do
     for dir in ${INS}; do
-        if [ -d "${TESTDIR}${hdir}/${dir}" ]; then
-            for f in `find ${TESTDIR}${hdir}/${dir} -iname "*.ml" -type f -execdir echo '{}' ';'`; do
-                rm -rf ${OUTDIR}/${dir}/${f}
-                echo "${PROG} -file ${TESTDIR}${hdir}/${dir}/${f} -int -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar}"
-                ts=$(gdate +%s%N)
-                ${PROG} -file ${TESTDIR}${hdir}/${dir}/${f} -int -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} > ${OUTDIR}/${dir}/${OUTPRE}_${f}
-                tt=$((($(gdate +%s%N) - $ts)/1000000))
+        if [ -d "${TESTDIR}/${hdir}/${dir}" ]; then
+            for f in `find ${TESTDIR}/${hdir}/${dir} -iname "*.ml" -type f -execdir echo '{}' ';'`; do
+                if [[ "$OSTYPE" != "darwin"* ]]; then
+                    f=${f#*./}
+                fi
+                echo "${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -int -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar}"
+                ts=$(${DATE} +%s%N)
+                ${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -int -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} > ${OUTDIR}/${dir}/${OUTPRE}_${f}
+                tt=$((($(${DATE} +%s%N) - $ts)/1000000))
                 echo "Time: $tt" >> ${OUTDIR}/${dir}/${OUTPRE}_${f}
             done
         fi

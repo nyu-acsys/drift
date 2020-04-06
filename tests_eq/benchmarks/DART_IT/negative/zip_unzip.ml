@@ -14,9 +14,12 @@ let rec zip zx zy =
   else (assert (zy <> 0); 1 + zip (zx - 1) (zy - 1))
 
 
-let main n = 
+let main (n:int) = 
 	if n < 0 then
 		assert(unzip n zip = n)
-	else assert(true)
+	else ()
 
 let _ = main (-10)
+let _ = main (-20)
+let _ = main 0
+let _ = main 100

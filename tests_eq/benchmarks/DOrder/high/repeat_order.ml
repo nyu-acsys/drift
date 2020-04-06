@@ -8,6 +8,9 @@ let rec repeat f n s =
 
 let succ x = x + 1
 
-let main mn =
+let main (mn:int) =
     assert(repeat succ mn 0 >= mn) 
 let _ = main 10
+let _ = main 0
+let _ = main (-53)
+let _ = main 20

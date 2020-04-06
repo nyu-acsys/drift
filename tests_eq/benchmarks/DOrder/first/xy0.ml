@@ -10,7 +10,7 @@ let rec loopb bx by =
         loopb (bx - 1) (bx - 1)
     else by > (-1)
 
-let main mm =
+let main (mm:unit) =
   let x = 0 in
   let y = 0 in
 

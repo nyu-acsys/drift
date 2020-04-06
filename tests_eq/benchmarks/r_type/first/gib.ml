@@ -14,8 +14,13 @@ let rec gib ga gb gn =
   else if gn = 1 then gb
   else gib ga gb (gn - 1) + gib ga gb (gn - 2)
 
-let main n a b = 
+let main (n:int) (a:int) (b:int) = 
 	if a >= 0 && b >= 0 && n >= 0 then
   		assert(gib a b n >= 0)
+  	else assert(true)
 
 let _ = main 10 1 2
+let _ = main 0 2 4
+let _ = main 3 0 5
+let _ = main 54 23 0
+let _ = main (-34) 75 (-94)

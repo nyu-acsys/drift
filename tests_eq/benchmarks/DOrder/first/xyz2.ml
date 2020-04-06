@@ -14,7 +14,7 @@ let rec loopb bx by bz =
     else
         bz < 1
 
-let main mm =
+let main (mm:unit) =
     let x = 0 in
     let y = 0 in
     let z = 0 in

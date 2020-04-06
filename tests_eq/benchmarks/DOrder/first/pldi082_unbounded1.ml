@@ -16,9 +16,15 @@ let rec loop lx ly ln =
             else true
         else loop (lx+1) ny ln 
 
-let main n =
+let main (n:int) =
     let x = 0 in
     let y = 0 in
-    if(n >= 0) then loop x y n
+    if (n >= 0) then assert(loop x y n = true)
+    else assert(true)
 
 let _ = main 10
+let _ = main 200
+let _ = main 55
+let _ = main 0
+let _ = main (-103)
+let _ = main (-77)

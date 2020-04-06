@@ -70,7 +70,7 @@ let op_test_3 = parse_from_string "let f a b = a + b in f (f 1 2) 3"
   (lambda a^11. (lambda b^12. (a^13 + b^14)^15)^16)^17)^18
 *)
 
-let op_test_4 = parse_from_string "let f a b = a + b * b in f 3 2"
+let op_test_4 = parse_from_string "let f a b = a mod b in f 30 23"
 
 let if_test_1 = let def_if = (mk_lambda x (mk_lambda y (mk_ite (mk_op Gt (mk_var x) (mk_var y)) (mk_var x) (mk_var y)))) in
   (mk_app (mk_app def_if (mk_int 1)) (mk_int 2))
@@ -89,13 +89,16 @@ let if_test_3 = parse_from_string "let f a b = if a > 5 then if b < 15 then 0 el
         ((a^9 > 5^10)^11 ? ((b^12 < 15^13)^14 ? 0^15 : 1^16)^17 : 2^18)^19)^20)^21)^22
 *)
 
-let rec_test_1 = parse_from_string "let rec f a = if a + 1 > 9 then 10 else f (a + 1) in f 1"
+let rec_test_1 = parse_from_string "
+let main (n(*-:{v:Int | v >= 0}*)) =
+  let rec foldr rf rn ru = (* foldr *)
+	    if rn = 0 then ru
+	    else rf rn (foldr rf (rn - 1) ru)
+	in
+  let gt_100 gk gt = if gk > 5 then 5 else gt
+	in
+  foldr gt_100 n 0"
 (* rec_test_1
-((lambda f^0. (f^1 8^2)^3)^4
-  (mu f^5 a^6.
-     (((a^7 + 1^8)^9 > 9^10)^11 ? 
-        10^12 : 
-        (f^13 (a^14 + 1^15)^16)^17)^18)^19)^20
 *)
 
 let rec_test_2 = parse_from_string "let rec f a = if a <= 1 then 0 else f (a - 1) in f 8"
@@ -106,10 +109,11 @@ let rec_test_2 = parse_from_string "let rec f a = if a <= 1 then 0 else f (a - 1
 
 let rec_test_3 = parse_from_string "let rec f a b = if a <= b then 0 else f (a - 1) b in f 8 1"
 
-let rec_test_4 = parse_from_string "let rec loop a b = 
-if (a < 3) then 
-  loop (a + 1) (b + 2)
-else b
+let rec_test_4 = parse_from_string "
+let rec loop a b = 
+  if (a < 3) then 
+    loop (a + 1) (b + 2)
+  else b
 in loop 0 0"
 (*
 ((lambda f^0. ((f^1 0^2)^3 0^4)^5)^6
@@ -118,6 +122,26 @@ in loop 0 0"
         ((a^10 < 3^11)^12 ? ((f^13 (a^14 + 1^15)^16)^17 (b^18 + 2^19)^20)^21
           : b^22)^23)^24)^25)^26
 *)
+
+let rec_test_5 = parse_from_string 
+  "let rec loop (a(*-:{v:Int | v > 0}*)) (b(*-:{v:Int | v > 0}*)) = 
+    if (a <= 0 || b <= 0) then 
+      0
+    else if (a = b) then a
+    else if (a > b) then
+      loop (a - b) b
+    else loop a (b - a)"
+
+let rec_test_6 = parse_from_string "
+let main (n(*-:{v:Int | v >= 0}*)) =
+  let rec reduce rf rn ru = (* foldr *)
+	    if rn <= 0 then ru
+	    else rf rn (reduce rf (rn - 1) ru)
+	in
+  let gt_5 gk gt = if gk > 5 then 5 else gt
+	in
+  reduce gt_5 n 5
+  "
 
 let ary_test_1 = parse_from_string "let f a = len a in let ary = make 3 0 in f ary"
 (* ary_test_1
@@ -206,7 +230,7 @@ let high_mult_rec_test_1 = parse_from_string
 let high_mult_rec_test_2 = parse_from_string 
   "let rec id x y = id x y in let f z = z in f id 10 20"
 
-let tests = [rec_test_4]
+let tests = [rec_test_6]
 
 let _ =
   Config.parse;

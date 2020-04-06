@@ -11,8 +11,13 @@ let rec g ge ga gj =
     g ge (update ga gj (ga(gj) + 1)) (gj + 1))
  else ()
 
-let main n =
+let main (n:int) =
 	g n ar 0
 
 let _ = main 30
+let _ = main 15
+let _ = main 30
+let _ = main (-43)
+let _ = main 0
+let _ = main (-3434)
 (* unit *)

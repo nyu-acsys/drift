@@ -10,8 +10,14 @@ let rec m x =
   then x - 10
   else m (m (x + 11))
 
-let main n =
+let main (n:int) =
     if n <= 95
     then assert (m n = 91)
+    else assert(true)
 
 let _ = main 83
+let _ = main 15
+let _ = main 30
+let _ = main (-43)
+let _ = main 0
+let _ = main (-3434)

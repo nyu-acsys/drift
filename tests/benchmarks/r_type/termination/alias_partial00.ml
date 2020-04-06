@@ -34,5 +34,5 @@ let main_1035 set_flag_lambda_1063m s_lambda_x_1060m u_1036 =
 in
 
 
- main_1035 false 0 () in
-assert (main = 3)
+ assert (main_1035 false 0 () = 3) 
+in main 

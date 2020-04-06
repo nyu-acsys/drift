@@ -12,12 +12,16 @@ let rec loopb bj bk bn =
         else -1
     else bk
 
-let main n =
+let main (n:int) =
   if n > 0 then
     let i = 0 in
     let k = 0 in
     let ans = loopa i k n in
     let j = 0 in
     assert(loopb j ans n <= n)
+  else assert(true)
 
 let _ = main 20
+let _ = main 300
+let _ = main 0
+let _ = main (-35)

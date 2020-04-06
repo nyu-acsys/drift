@@ -1,5 +1,5 @@
 
-let main n_1038 x_1039 =
+let main (n_1038(*-:{v:Int | true}*)) (x_1039(*-:{v:Int | true}*)) =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
@@ -41,9 +41,9 @@ in
  let x_DO_NOT_CARE_1197 = 0 in
  let set_flag_succ_1093m = false in
  let s_succ_n_1090m = 0 in
- if n_1038 >= 0 && x_1039 >= 0 then
+ let res = if n_1038 >= 0 && x_1039 >= 0 then
    f_1035 set_flag_succ_1093m s_succ_n_1090m n_1038 set_flag_succ_1093m
      s_succ_n_1090m x_1039
  else
    0
-in assert (main 3 0 > 0)
+ in assert (res >= 0)

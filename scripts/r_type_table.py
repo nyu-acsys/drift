@@ -31,7 +31,11 @@ def read_info_from_file(file_name):
         print("File data error: \n")
         sys.exit(data)
     _, timing = data[-1].split(":")
-    res_data.append(timing)
+    try:
+        time = float(timing) / 1000
+        res_data.append(round(time,2))
+    except:
+        res_data.append(timing)
     return res_data
 
 def read_false_info_from_file(file_name):
@@ -45,15 +49,19 @@ def read_false_info_from_file(file_name):
     safe_regexp = re.compile(r'safe')
     unsafe_regexp = re.compile(r'unsafe')
     timeout_regexp = re.compile(r'Error')
-    if safe_regexp.search(data[0]): # state safe, but unsafe
+    if safe_regexp.search(data[0]) or timeout_regexp.search(data[0]): # state safe, but unsafe
         res_data.append('F')
-    elif unsafe_regexp.search(data[1]) or timeout_regexp.search(data[0]): # state unsafe
+    elif unsafe_regexp.search(data[1]): # state unsafe
         res_data.append('T')
     else:
         print("File data error: \n")
         sys.exit(data)
     _, timing = data[-1].split(":")
-    res_data.append(timing)
+    try:
+        time = float(timing) / 1000
+        res_data.append(round(time,2))
+    except:
+        res_data.append(timing)
     return res_data
 
 def dispatch(subdir, dict):

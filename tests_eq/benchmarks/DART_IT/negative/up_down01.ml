@@ -2,9 +2,6 @@
 Implementation error
 *)
 
-let rec bot bx = bot ()
-let fail fx = assert (false)
-
 let c5_COEFFICIENT_1082 = 0
 let c4_COEFFICIENT_1081 = 0
 let c3_COEFFICIENT_1080 = 0
@@ -31,19 +28,10 @@ let rec up_without_checking_1115 set_flag_up_10895 s_up_x_10865 x_10365 =
      up_without_checking_1115 set_flag_up_1089_r s_up_x_1086_r (x_10365 + 1)
 
 let rec up_1032 prev_set_flag_up_1088 s_prev_up_x_1087 x_1036 =
- let u = if prev_set_flag_up_1088 then
-          if (0 * 1) + (0-s_prev_up_x_1087) > (0 * 1) + (0-x_1036) &&
-             (0 * 1) + (0-x_1036) >= 0 then
-            ()
-          else
-            let u_3056 = fail ()
-            in
-              bot()
-         else () in
         up_without_checking_1115 prev_set_flag_up_1088 s_prev_up_x_1087
           x_1036
 
-let main t1_1039 t2_1040 =
+let main (t1_1039:int) (t2_1040:int) =
   let set_flag_up_1089 = false in
   let s_up_x_1086 = 0 in
   assert(app_1030 set_flag_up_1089 s_up_x_1086
@@ -53,3 +41,4 @@ let main t1_1039 t2_1040 =
          t1_1039 = 0)
 
 let _ = main 109123 (-62823)
+let _ = main 202 (-202)

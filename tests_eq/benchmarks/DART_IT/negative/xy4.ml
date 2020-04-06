@@ -15,11 +15,11 @@ let rec loopb bx by =
     else by > (-1)
 
 
-let main mm =
+let main (mm:unit) =
     let x = 0 in
     let y = 0 in
 
     let rx = loopa x y in
     assert (loopb rx (-1) = true)
 
-let _ = main () 
+let _ = main ()

@@ -18,7 +18,7 @@ let rec hanoi n =
     else 2 * (hanoi (n - 1)) + 1
 
 
-let main k =
+let main (k:unit) =
     let n = 13 in
     let result = hanoi n in
     assert (result >= n)

@@ -25,12 +25,12 @@ module MakeHash(Hash: HashType) = struct
       | None -> None
       | Some v2 -> (f key v1 v2)
   ) m1; m1
-  let union f (m1: 'a t) (m2: 'a t) : 'a t = Hashtbl.fold (
-    fun key v1 m -> (match Hashtbl.find_opt m key with
-      | None -> Hashtbl.add m key v1
-      | Some v2 -> Hashtbl.replace m key (f key v1 v2)); 
-    m
-  ) m1 m2
+  let union f (m1: 'a t) (m2: 'a t) : 'a t = 
+    Hashtbl.iter (
+    fun key v1 -> (match Hashtbl.find_opt m2 key with
+      | None -> Hashtbl.add m2 key v1
+      | Some v2 -> Hashtbl.replace m2 key (f key v1 v2))
+  ) m1; m2
   let for_all f (m: 'a t) : bool = Hashtbl.fold (
     fun key v b -> if b = false then b else
       f key v
@@ -156,11 +156,12 @@ module SemanticsDomain =
         let a2' = alpha_rename_R a2 "cur_v" var in
         match a1, a2' with
         | Int _, Int _ -> meet_R a1 a2'
-        | Bool (vt1, vf1), Bool (vt2, vf2) -> 
+        | Bool (vt1, vf1), Bool (vt2, vf2) -> (* {v:bool | at: [at^at' V at^af'], af: [af^at' V af^af']} *)
           let vt1' = AbstractValue.join (AbstractValue.meet vt1 vt2) (AbstractValue.meet vt1 vf2) in
           let vf1' = AbstractValue.join (AbstractValue.meet vf1 vt2) (AbstractValue.meet vf1 vf2) in
-          Bool (vt1', vf1') (* {v:bool | at: [at^at' V at^af'], af: [af^at' V af^af']} *)
-        | Int _, Bool (vt, vf) -> join_R (meet_R a1 (Int vt)) (meet_R a1 (Int vf)) (* {v:int| a^at V a^af} *)
+          Bool (vt1', vf1')
+        | Int v, Bool (vt, vf) -> (* {v:int| a^at V a^af} *)
+          Int (AbstractValue.join (AbstractValue.meet v vt) (AbstractValue.meet v vf))
         | Bool _ , Int v -> meet_R a1 (Bool (v, v))
     and forget_R var a = match a with
         | Int v -> Int (AbstractValue.forget_var var v)

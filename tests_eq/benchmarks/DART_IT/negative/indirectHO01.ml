@@ -2,9 +2,6 @@
 Implementation error
 *)
 
-let rec bot bx = bot ()
-let fail fx = assert (false)
-
 let c1_COEFFICIENT_1088 = 0 
 let c0_COEFFICIENT_1087 = 0 
 
@@ -18,22 +15,10 @@ let app_without_checking_1158 x_DO_NOT_CARE_1213 x_DO_NOT_CARE_1214 h_EXPARAM_10
    h_10330 set_flag_app_1138_r s_app_h_EXPARAM_1131_r () set_flag_app_1138_r
      s_app_h_EXPARAM_1131_r v_10340
 
-
 let rec app_1032 x_DO_NOT_CARE_1162 x_DO_NOT_CARE_1163 h_EXPARAM_1090 x_DO_NOT_CARE_1160 x_DO_NOT_CARE_1161 h_1033 prev_set_flag_app_1137 s_prev_app_h_EXPARAM_1134 v_1034 =
- let u = if prev_set_flag_app_1137 then
-          if (7 * 1) + (1 * s_prev_app_h_EXPARAM_1134) >
-             (7 * 1) + (1 * h_EXPARAM_1090) &&
-             (7 * 1) + (1 * h_EXPARAM_1090) >= 0 then
-            ()
-          else
-            let u_4585 = fail ()
-            in
-              bot()
-         else () in
         app_without_checking_1158 x_DO_NOT_CARE_1162 x_DO_NOT_CARE_1163
           h_EXPARAM_1090 x_DO_NOT_CARE_1160 x_DO_NOT_CARE_1161 h_1033
           prev_set_flag_app_1137 s_prev_app_h_EXPARAM_1134 v_1034
-
 
 let rec f_1035 x_DO_NOT_CARE_1209 x_DO_NOT_CARE_1210 n_1036 set_flag_app_1138 s_app_h_EXPARAM_1131 u_1037 =
  if n_1036 > 0 then
@@ -44,12 +29,15 @@ let rec f_1035 x_DO_NOT_CARE_1209 x_DO_NOT_CARE_1210 n_1036 set_flag_app_1138 s_
  else
    id_1030
 
-
-let main r =
+let main (r:int) =
  let set_flag_app_1138m = false in
  let s_app_h_EXPARAM_1131m = 0 in
  if r > 0 then assert (f_1035 set_flag_app_1138m s_app_h_EXPARAM_1131m 0
    set_flag_app_1138m s_app_h_EXPARAM_1131m () set_flag_app_1138m
    s_app_h_EXPARAM_1131m r = r)
+ else ()
 
-let _ = main 20200202
+let _ = main 1234
+let _ = main 3
+let _ = main 0
+let _ = main (-232)

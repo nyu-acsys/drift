@@ -4,6 +4,6 @@ let main (mn(*-:{v:Int | true}*)) =
       if n <= 1 then 1 else
         fib (n - 1) + fib (n - 2) in
 
-    assert (fib mn >= mn)
+    fib mn >= mn
 (* in
 main 34 *)

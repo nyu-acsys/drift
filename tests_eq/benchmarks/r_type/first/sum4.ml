@@ -10,9 +10,14 @@ let rec sum n =
   else
     n + sum (n - 1)
 
-let main mn = 
+let main (mn:int) = 
     assert (4 * mn - 6 <= sum mn)
 
-let _ = main 754
+let _ = main 754 
+let _ = main 15
+let _ = main 30
+let _ = main (-43)
+let _ = main 0
+let _ = main (-3434)
 
 (* Reason: wid overapproximate *)

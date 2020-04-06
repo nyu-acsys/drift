@@ -8,17 +8,21 @@ let rec zip x y =
     if y = 0 then
       x
     else
-      (assert(false); y)
+      (y)
   else
     if y = 0 then
-      (assert(false); x)
+      (x)
     else
       1 + zip (x - 1) (y - 1)
 
 let rec map x =
   if x <= 0 then x else 1 + map (x - 1)
 
-let main n =
+let main (n:int) =
   assert (map (zip n n) = n)
 
 let _ = main 31
+let _ = main 10
+let _ = main 300
+let _ = main 0
+let _ = main (-34)

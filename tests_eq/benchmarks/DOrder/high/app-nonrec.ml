@@ -1,10 +1,14 @@
 
 
-let apply ab af ax = af ax
+let apply (ab:int) (af: int->unit) ax = af ax
 
-let check cx cy = assert (cx = cy)
+let check (cx:int) (cy:int) = assert (cx = cy)
 
-let main n =
-apply n (check n) n
+let main (n:int) =
+	apply n (check n) n
 
 let _ = main 75
+let _ = main 0
+let _ = main 100
+let _ = main (-53)
+let _ = main (-573)

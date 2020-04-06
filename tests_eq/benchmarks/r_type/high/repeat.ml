@@ -11,7 +11,13 @@ let rec repeat rf rn rs =
   else
     rf (repeat rf (rn - 1) rs)
 
-let main n =
+let main (n:int) =
 	assert (repeat succ n 0 = n)
 
 let _ = main 103
+let _ = main 0
+let _ = main 15
+let _ = main 30
+let _ = main (-43)
+let _ = main 0
+let _ = main (-3434)

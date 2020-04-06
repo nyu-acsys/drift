@@ -9,7 +9,12 @@ let rec mult n m =
   else
     n + mult n (m - 1)
 
-let main mn = 
+let main (mn:int) = 
     assert (mn <= mult mn mn)
 
 let _ = main 234
+let _ = main 15
+let _ = main 30
+let _ = main (-43)
+let _ = main 0
+let _ = main (-3434)

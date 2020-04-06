@@ -10,7 +10,7 @@ let rec f x =
   else
     x
 
-let main n =
+let main (n:unit) =
     assert (f 3 >= 0)
 
 let _ = main ()

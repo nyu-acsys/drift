@@ -8,7 +8,7 @@ let f g x =
 
 let decr x = x - 1
 	
-let main n =
+let main (n:unit) =
 	if n >= 3 then assert(f decr n > 0)
-
+	else assert(true)
 let _ = main ()

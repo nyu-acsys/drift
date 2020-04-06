@@ -14,6 +14,6 @@ let main (k(*-:{v:Int | v >= 0}*)) (from(*-:{v:Int | v >= 0}*)) =
     if (k <= 30 && from <= k) then
         (let i = from in
         let j = 0 in
-        loop k i j)
-    else true
+        assert(loop k i j = true))
+    else assert(true)
 (* in assert (main 5 20 = true) *)

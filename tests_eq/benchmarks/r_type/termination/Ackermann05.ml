@@ -1,6 +1,5 @@
-let main =
-let rec bot bx = bot () in
-let fail fx = assert (false) in
+let rec bot bx = bot ()
+let fail fx = assert (false)
 
 let rec ack_without_checking_1087 x_DO_NOT_CARE_1093 x_DO_NOT_CARE_1094 x_DO_NOT_CARE_1095 m_1031 set_flag_ack_1075 s_ack_m_1070 s_ack_n_1071 n_1032 =
   let set_flag_ack_1075_r = true in
@@ -20,7 +19,6 @@ let rec ack_without_checking_1087 x_DO_NOT_CARE_1093 x_DO_NOT_CARE_1094 x_DO_NOT
           (ack_without_checking_1087 set_flag_ack_1075_r s_ack_m_1070_r s_ack_n_1071_r
              m_1031 set_flag_ack_1075_r s_ack_m_1070_r s_ack_n_1071_r
             (n_1032 - 1))
-in
 
 let rec ack_1030 ack_without_checking_1087 x_DO_NOT_CARE_1089 x_DO_NOT_CARE_1090 x_DO_NOT_CARE_1091 m_10311 prev_set_flag_ack_1074 s_prev_ack_m_1072 s_prev_ack_n_1073 n_10322 =
  let u = if prev_set_flag_ack_1074 then
@@ -41,7 +39,6 @@ let rec ack_1030 ack_without_checking_1087 x_DO_NOT_CARE_1089 x_DO_NOT_CARE_1090
         ack_without_checking_1087 x_DO_NOT_CARE_1089 x_DO_NOT_CARE_1090
           x_DO_NOT_CARE_1091 m_10311 prev_set_flag_ack_1074
           s_prev_ack_m_1072 s_prev_ack_n_1073 n_10322
-in
 
 let main_1033 set_flag_ack_1075 s_ack_m_1070 s_ack_n_1071 u_1034  m_1035 n_1036 =
    if n_1036 > 0 && m_1035 > 0 then
@@ -49,8 +46,6 @@ let main_1033 set_flag_ack_1075 s_ack_m_1070 s_ack_n_1071 u_1034  m_1035 n_1036 
        m_1035 set_flag_ack_1075 s_ack_m_1070 s_ack_n_1071 n_1036
    else
      0
-in
 
-
- main_1033 false 0 0 ()
-in assert(main 3 4 >= 0)
+let main =
+ assert(main_1033 false 0 0 () >= 0)

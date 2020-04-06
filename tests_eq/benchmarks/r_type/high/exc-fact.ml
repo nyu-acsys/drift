@@ -13,7 +13,13 @@ let rec fact fn exnx =
 
 let ex en = 0 - 1
 
-let main n = 
+let main (n:int) = 
     if n > 0 then assert(fact n ex >= (0 - 1))
+	else assert(true)
 
 let _ = main 342
+let _ = main 15
+let _ = main 30
+let _ = main (-43)
+let _ = main 0
+let _ = main (-3434)

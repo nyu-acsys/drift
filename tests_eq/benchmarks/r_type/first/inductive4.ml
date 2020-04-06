@@ -10,7 +10,12 @@ let rec f g x =
 
 let incr y = y + 1
 
-let main n =
+let main (n:int) =
     assert(f incr n >= -3)
 
 let _ = main 12
+let _ = main 15
+let _ = main 30
+let _ = main (-43)
+let _ = main 0
+let _ = main (-3434)

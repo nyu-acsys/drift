@@ -18,9 +18,13 @@ let rec gcd y1 y2 =
         gcd (y1 - y2) y2
     else gcd y1 (y2 - y1)
 
-let main m n =
+let main (m:int) (n:int) =
     if m > 0 && n > 0 then 
         let res = gcd m n in
-        res <= m && res <= n
+        assert(res <= m && res <= n)
+    else assert(true)
 
 let _ = main 12 24
+let _ = main 144 120
+let _ = main 0 0
+let _ = main (-45) (-30)

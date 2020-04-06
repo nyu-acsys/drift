@@ -45,7 +45,7 @@ let string_of_op = function
   | Ge    (* >= *) -> ">="
   | Mult  (* * *) -> "*"
   | Div   (* / *) -> "/"
-  | Mod   (* mod *) -> "mod"
+  | Mod   (* mod *) -> "%"
   | Minus (* - *) -> "-"
   | Eq    (* = *) -> "="
   | Ne    (* <> *) -> "!="

@@ -7,8 +7,13 @@ let rec repeat rf rn =
   then 0
   else rf (repeat rf (rn - 1))
 
-let main n =
+let main (n:int) =
     assert (repeat succ n = n)
 
 let _ = main 1023
-
+let _ = main 0
+let _ = main 15
+let _ = main 30
+let _ = main (-43)
+let _ = main 0
+let _ = main (-3434)
