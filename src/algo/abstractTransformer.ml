@@ -379,9 +379,8 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         begin
             let t_true = meet_V (extrac_bool_V t0 true) ae in (* Meet with ae*)
             let t_false = meet_V (extrac_bool_V t0 false) ae in
-            let m0' = Hashtbl.copy m0 in
             let m1 = step e1 env m0 t_true in
-            let m2 = step e2 env m0' t_false in
+            let m2 = step e2 env m1 t_false in
             let n1 = SN (true, loc e1) in
             let t1 = find n1 m1 in
             let n2 = SN (true, loc e2) in
@@ -395,10 +394,11 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                 pr_value Format.std_formatter (find n m1);
                 Format.printf "\n";
             end
-            ); *)
+               ); *)
+            let v_n = find n m0 in
             let t1', t' = 
                 (* if optmization m1 n1 find && optmization m1 n find then t1, (find n m1) else  *)
-                prop_scope env env t1 (find n m1) in
+                prop_scope env env t1 v_n in
             (* (if !debug then
             begin
                 Format.printf "\nRES for prop:\n";
@@ -419,7 +419,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             ); *)
             let t2', t'' = 
                 (* if optmization m2 n2 find && optmization m2 n find then t1, (find n m2) else *)
-                prop_scope env env t2 (find n m2) in
+                prop_scope env env t2 v_n in
             (* (if !debug then
             begin
                 Format.printf "\nRES for prop:\n";
@@ -428,15 +428,10 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                 pr_value Format.std_formatter t'';
                 Format.printf "\n";
             end
-            );  *)
-            let m1' = m1 |> NodeMap.add n1 t1' |> NodeMap.add n (stren_V t' ae) and
-            m2' = m2 |> NodeMap.add n2 t2' |> NodeMap.add n (stren_V t'' ae) in
-            let res_M = 
-                if !process = "Wid" then join_M m1' m2' 
-                else lc_M m1' m2' in
-            (* Hashtbl.reset m0 ;
-            Hashtbl.reset m1'; *)
-            res_M)
+               );  *)
+            let v_n' = join_V (stren_V t' ae) (stren_V t'' ae) in
+            let res_m = m2 |> NodeMap.add n v_n' in
+            res_m)
         end
     | Rec (f_opt, x, lx, e1, l) ->
         (* (if !debug then
