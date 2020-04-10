@@ -354,7 +354,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                     let t''' = op_V node_1 node_2 bop t'' in
                     let temp_t = getVars env |> proj_V t''' in
                     if !domain = "Box" then
-                    temp_t |> der_V e1 |> der_V e2  (*Solve remain constriant only for box*)
+                    temp_t |> der_V e1 |> der_V e2  (*Solve remaining constraint only for box*)
                     else temp_t
                 end
             in
@@ -539,15 +539,15 @@ let widening k (m1:exec_map_t) (m2:exec_map_t): exec_map_t =
     ) m2
     
 (** Narrowing **)
-let narrowing (m1:exec_map_t) (m2:exec_map_t): exec_map_t = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
-    NodeMap.mapi (fun n t ->
-        meet_V (find n m1) t
-    ) m2
+let narrowing (m1:exec_map_t) (m2:exec_map_t): exec_map_t =
+  let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
+  NodeMap.mapi
+    (fun n t -> meet_V (find n m1) t) m2
 
-let env = ref env0
+(*let env = ref env0*)
 
 (** Fixpoint loop *)
-let rec fix e (k: int) (m:exec_map_t): exec_map_t =
+let rec fix env e (k: int) (m:exec_map_t): exec_map_t =
   (if not !integrat_test then
     begin
         Format.printf "%s step %d\n" !process k;
@@ -555,8 +555,8 @@ let rec fix e (k: int) (m:exec_map_t): exec_map_t =
     end);
   let ae = Relation (top_R Plus) in
   let m_t = Hashtbl.copy m in
-  let m' = step e !env m_t ae in
-  if k < 0 then if k = -1 then m' else fix e (k+1) m' else
+  let m' = step e env m_t ae in
+  if k < 0 then if k = -1 then m' else fix env e (k+1) m' else
   (* if k > 2 then Hashtbl.reset !pre_m;
   pre_m := m; *)
   (* Format.printf "\nFinish step %d\n" k;
@@ -567,7 +567,7 @@ let rec fix e (k: int) (m:exec_map_t): exec_map_t =
   begin
     let comp = if !process = "Wid" then leq_M m'' m else leq_M m m'' in
     if comp then m
-    else (fix e (k+1) m'') (*Hashtbl.reset m; *)
+    else (fix env e (k+1) m'') (*Hashtbl.reset m; *)
   end
   else exit 0
 
@@ -580,17 +580,17 @@ let s e =
         Format.printf "\n\n";
     end); *)
     (* exit 0; *)
-    let envt, m0' = pref_M !env (Hashtbl.copy m0) in
-    env := envt;
+    let envt, m0' = pref_M env0 (Hashtbl.copy m0) in
+    (*env := envt;*)
     (* pre_m := m0'; *)
     let m =
-        let m1 = (fix e 0 m0') in
-        let m1 = m1 |> fix e (-50) in
+        let m1 = (fix envt e 0 m0') in
+        let m1 = m1 |> fix envt e (-50) in
         if !narrow then
             begin
             process := "Nar";
             let m1 = m1 |> reset in
-            (fix e 0 m1)
+            (fix envt e 0 m1)
             end
         else m1
     in
