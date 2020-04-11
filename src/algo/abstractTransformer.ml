@@ -376,7 +376,6 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             let t_false = meet_V (extrac_bool_V t0 false) ae in
             let v_n = find n m0 in
             let m1 = step e1 env m0 t_true in
-            let m2 = step e2 env m1 t_false in
             let n1 = SN (true, loc e1) in
             let t1 = find n1 m1 in
             (* (if !debug then
@@ -400,7 +399,6 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                 Format.printf "\n";
             end
             );  *)
-            let m1 = m1 |> NodeMap.add n1 t1' |> NodeMap.add n t' in
             let m2 = step e2 env m1 t_false in
             let n2 = SN (true, loc e2) in
             let t2 = find n2 m2 in
