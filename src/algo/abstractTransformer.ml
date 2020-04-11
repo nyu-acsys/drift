@@ -18,6 +18,10 @@ c[M] = {v: int | v = c && n1 >= 2}
     Using v = 1 be true once inside vt and v = 1 be false inside vf
 *)
 
+type stage =
+  | Widening
+  | Narrowing
+  
 let process = ref "Wid"
 
 let env0, m0 = 
@@ -50,7 +54,7 @@ let eq_PM (m1:exec_map_t) (m2:exec_map_t) =
         raise (Pre_Def_Change ("Predefined node changed at " ^ l))
       end
       )
-    |> Opt.get_or_else (v1 = v1)) m1
+    |> Opt.get_or_else true) m1
 
 let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 with
     | Top, Bot | Table _, Top -> Top, Top
@@ -78,12 +82,12 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
             let v1i', v2i', v1o', v2o' = 
                 let v2i', v1i' = 
                     (*Optimization 1: If those two are the same, ignore the prop step*)
-                    if is_Bot_V v1i = false && eq_V v2i v1i then v2i, v1i else 
+                    if v1i <> Bot && eq_V v2i v1i then v2i, v1i else 
                     prop v2i v1i 
                 in
                 let opt_o = false
                     (*Optimization 1: If those two are the same, ignore the prop step*)
-                    || (is_Bot_V v2o = false && eq_V v1ot v2o)
+                    || (v2o <> Bot && eq_V v1ot v2o)
                 in
                 let v1o', v2o' = 
                 if opt_o then v1ot, v2o else 
@@ -436,12 +440,13 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         end
         ); *)
         let t0 = find n m in
-        let t = if t0 = Bot then 
-            begin
-                let te = init_T (fresh_var ()) in
-                Table (te)
-            end
-            else t0 in
+        let t =
+          match t0 with
+          | Bot ->
+              let te = init_T (fresh_var ()) in
+              Table te
+          | _ -> t0
+        in
         let tl, tr = io_T t in
         if tl = Bot then m |> NodeMap.add n t
         else 
@@ -521,17 +526,11 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
 
 (** Widening **)
 let widening k (m1:exec_map_t) (m2:exec_map_t): exec_map_t =
-  let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
-  NodeMap.mapi
-    (fun n t -> (*Delay wid*)
-      if k > !delay_wid then wid_V (find n m1) t else join_V t (find n m1)
-    ) m2
+  if k > !delay_wid then wid_M m1 m2 else join_M m1 m2
     
 (** Narrowing **)
 let narrowing (m1:exec_map_t) (m2:exec_map_t): exec_map_t =
-  let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
-  NodeMap.mapi
-    (fun n t -> meet_V (find n m1) t) m2
+  meet_M m1 m2 
 
 (** Fixpoint loop *)
 let rec fix env e (k: int) (m:exec_map_t): exec_map_t =

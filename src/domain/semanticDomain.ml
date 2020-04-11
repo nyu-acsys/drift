@@ -244,10 +244,10 @@ module SemanticsDomain =
             let v2o' = alpha_rename_V v2o z2 z1 in 
             (z1, meet_V v1i v2i, meet_V v1o v2o')
         in t
-    and leq_T t1 t2 = match t1, t2 with
-        | (z1, v1i, v1o), (z2, v2i, v2o) -> if z1 = z2 then (leq_V v1i v2i) && (leq_V v1o v2o) else false
-    and eq_T t1 t2 = match t1, t2 with
-        | (z1, v1i, v1o), (z2, v2i, v2o) -> if z1 = z2 then (eq_V v1i v2i) && (eq_V v1o v2o) else false
+    and leq_T (z1, v1i, v1o) (z2, v2i, v2o) = 
+        z1 = z2 && leq_V v1i v2i && leq_V v1o v2o
+    and eq_T (z1, v1i, v1o) (z2, v2i, v2o) = 
+        z1 = z2 && eq_V v1i v2i && eq_V v1o v2o
     and forget_T var t = let (z, vi, vo) = t in (z, forget_V var vi, forget_V var vo)
     and arrow_T var t v =
         let (z, vi, vo) = t in
@@ -279,6 +279,8 @@ module SemanticsDomain =
         NodeMap.merge (fun n v1 v2 -> Some (meet_V v1 v2)) m1 m2
       and join_M (m1: exec_map_t) (m2: exec_map_t) : exec_map_t =
         NodeMap.union (fun n v1 v2 -> join_V v1 v2) m1 m2
+      and wid_M (m1: exec_map_t) (m2: exec_map_t) : exec_map_t =
+        NodeMap.union (fun n v1 v2 -> wid_V v1 v2) m1 m2
       and leq_M (m1: exec_map_t) (m2: exec_map_t) : bool =
         NodeMap.for_all (fun n v1 (*untie to node -> value*) -> 
         NodeMap.find_opt n m2 |> Opt.map (fun v2 -> leq_V v1 v2) |>
