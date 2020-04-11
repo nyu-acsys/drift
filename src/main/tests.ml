@@ -143,6 +143,10 @@ let main (n(*-:{v:Int | v >= 0}*)) =
   reduce gt_5 n 5
   "
 
+let order_test_1 = parse_from_string 
+"let id x = x in let succ s = s + 1 in let mult y = y * 2 in
+succ (id (mult 2))"
+
 let ary_test_1 = parse_from_string "let f a = len a in let ary = make 3 0 in f ary"
 (* ary_test_1
 ((lambda ary^0. (len^1 ary^2)^3)^4 ((make^5 3^6)^7 0^8)^9)^10
@@ -230,7 +234,7 @@ let high_mult_rec_test_1 = parse_from_string
 let high_mult_rec_test_2 = parse_from_string 
   "let rec id x y = id x y in let f z = z in f id 10 20"
 
-let tests = [rec_test_6]
+let tests = [order_test_1]
 
 let _ =
   Config.parse;

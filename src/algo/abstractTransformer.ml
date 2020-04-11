@@ -108,11 +108,6 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
 (* let lc_env env1 env2 = 
     Array.fold_left (fun a id -> if Array.mem id a then a else Array.append a [|id|] ) env2 env1 *)
 
-let lc_M (m1:exec_map_t) (m2:exec_map_t): exec_map_t = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
-    NodeMap.mapi (fun n t2 -> let t1 = find n m1 in
-        if leq_V t1 t2 then t1 else t2
-    ) m2
-
 (* let rec nav (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 with
     | Relation r1, Relation r2 -> 
             let r2' = if leq_R r1 r2 then r1 else r2
@@ -377,14 +372,9 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         begin
             let t_true = meet_V (extrac_bool_V t0 true) ae in (* Meet with ae*)
             let t_false = meet_V (extrac_bool_V t0 false) ae in
-            let m0' = Hashtbl.copy m0 in
             let m1 = step e1 env m0 t_true in
-            let m2 = step e2 env m0' t_false in
             let n1 = SN (true, loc e1) in
             let t1 = find n1 m1 in
-            let n2 = SN (true, loc e2) in
-            let t2 = find n2 m2 in
-            (
             (* (if !debug then
             begin
                 Format.printf "\n<=== Prop then ===> %s\n" (loc e1);
@@ -396,7 +386,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             ); *)
             let t1', t' = 
                 (* if optmization m1 n1 find && optmization m1 n find then t1, (find n m1) else  *)
-                prop_scope env env t1 (find n m1) in
+                prop t1 (find n m1) in
             (* (if !debug then
             begin
                 Format.printf "\nRES for prop:\n";
@@ -406,6 +396,10 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                 Format.printf "\n";
             end
             );  *)
+            let m1 = m1 |> NodeMap.add n1 t1' |> NodeMap.add n t' in
+            let m2 = step e2 env m1 t_false in
+            let n2 = SN (true, loc e2) in
+            let t2 = find n2 m2 in
             (* (if !debug then 
             begin
                 Format.printf "\n<=== Prop else ===> %s\n" (loc e2);
@@ -417,7 +411,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             ); *)
             let t2', t'' = 
                 (* if optmization m2 n2 find && optmization m2 n find then t1, (find n m2) else *)
-                prop_scope env env t2 (find n m2) in
+                prop t2 (find n m2) in
             (* (if !debug then
             begin
                 Format.printf "\nRES for prop:\n";
@@ -427,14 +421,9 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                 Format.printf "\n";
             end
             );  *)
-            let m1' = m1 |> NodeMap.add n1 t1' |> NodeMap.add n (stren_V t' ae) and
-            m2' = m2 |> NodeMap.add n2 t2' |> NodeMap.add n (stren_V t'' ae) in
-            let res_M = 
-                if !process = "Wid" then join_M m1' m2' 
-                else lc_M m1' m2' in
-            (* Hashtbl.reset m0 ;
-            Hashtbl.reset m1'; *)
-            res_M)
+            let res_M = m2 |> NodeMap.add n2 t2' 
+                |> NodeMap.add n (stren_V t'' ae) in
+            res_M
         end
     | Rec (f_opt, x, lx, e1, l) ->
         (* (if !debug then
@@ -494,7 +483,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             ); *)
             let nf_t2_tf'_opt =
                 Opt.map (fun (_, nf) ->
-                  let EN (envf,lf) = nf in
+                  let EN (envf, lf) = nf in
                   let nf = SN (true,lf) in
                   let tf = find nf m in
                   (* if optmization m n find && optmization m nf find then nf, t, tf else *)
@@ -583,10 +572,10 @@ let s e =
     (* pre_m := m0'; *)
     let m =
         let m1 = (fix e 0 m0') in
-        let m1 = m1 |> fix e (-50) in
         if !narrow then
             begin
             process := "Nar";
+            let m1 = m1 |> fix e (-50) in (* step^n(fixw) <= fixw *)
             let m1 = m1 |> reset in
             (fix e 0 m1)
             end
