@@ -18,8 +18,6 @@ c[M] = {v: int | v = c && n1 >= 2}
     Using v = 1 be true once inside vt and v = 1 be false inside vf
 *)
 
-let z_index = ref 0 (* first definition *)
-
 let process = ref "Wid"
 
 let env0, m0 = 
@@ -29,10 +27,14 @@ let env0, m0 =
 
 let pre_def_func = [|"make"; "len"; "set"; "get"|]
 
-let st = ref 0
-
-let incr_z () =
-    z_index := !z_index + 1
+(* Create a fresh variable name *)
+let fresh_var =
+  let z_index = ref 0 in
+  fun () ->
+    let idx = !z_index in
+    incr z_index;
+    "z" ^ (string_of_int idx)
+  
 
 let eq_PM (m1:exec_map_t) (m2:exec_map_t) =
     NodeMap.for_all (fun n v1 (*untie to node -> value*) ->
@@ -347,7 +349,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                     let t''' = op_V node_1 node_2 bop t'' in
                     let temp_t = getVars env |> proj_V t''' in
                     if !domain = "Box" then
-                    temp_t |> der_V e1 |> der_V e2  (*Solve remain constriant only for box*)
+                    temp_t |> der_V e1 |> der_V e2  (*Solve remaining constraint only for box*)
                     else temp_t
                 end
             in
@@ -372,7 +374,9 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         begin
             let t_true = meet_V (extrac_bool_V t0 true) ae in (* Meet with ae*)
             let t_false = meet_V (extrac_bool_V t0 false) ae in
+            let v_n = find n m0 in
             let m1 = step e1 env m0 t_true in
+            let m2 = step e2 env m1 t_false in
             let n1 = SN (true, loc e1) in
             let t1 = find n1 m1 in
             (* (if !debug then
@@ -383,10 +387,10 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                 pr_value Format.std_formatter (find n m1);
                 Format.printf "\n";
             end
-            ); *)
+               ); *)
             let t1', t' = 
                 (* if optmization m1 n1 find && optmization m1 n find then t1, (find n m1) else  *)
-                prop t1 (find n m1) in
+                prop t1 v_n in
             (* (if !debug then
             begin
                 Format.printf "\nRES for prop:\n";
@@ -411,7 +415,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             ); *)
             let t2', t'' = 
                 (* if optmization m2 n2 find && optmization m2 n find then t1, (find n m2) else *)
-                prop t2 (find n m2) in
+                prop t2 v_n in
             (* (if !debug then
             begin
                 Format.printf "\nRES for prop:\n";
@@ -420,10 +424,10 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                 pr_value Format.std_formatter t'';
                 Format.printf "\n";
             end
-            );  *)
-            let res_M = m2 |> NodeMap.add n2 t2' 
-                |> NodeMap.add n (stren_V t'' ae) in
-            res_M
+               );  *)
+            let v_n' = join_V (stren_V t' ae) (stren_V t'' ae) in
+            let res_m = m2 |> NodeMap.add n v_n' in
+            res_m
         end
     | Rec (f_opt, x, lx, e1, l) ->
         (* (if !debug then
@@ -436,8 +440,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         let t0 = find n m in
         let t = if t0 = Bot then 
             begin
-                let te = init_T ("z"^(string_of_int !z_index)) in
-                incr_z ();
+                let te = init_T (fresh_var ()) in
                 Table (te)
             end
             else t0 in
@@ -519,42 +522,42 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         end 
 
 (** Widening **)
-let widening (m1:exec_map_t) (m2:exec_map_t): exec_map_t = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
-    NodeMap.mapi (fun n t -> (*Delay wid*)
-        if !st > !delay_wid then wid_V (find n m1) t else join_V t (find n m1)
+let widening k (m1:exec_map_t) (m2:exec_map_t): exec_map_t =
+  let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
+  NodeMap.mapi
+    (fun n t -> (*Delay wid*)
+      if k > !delay_wid then wid_V (find n m1) t else join_V t (find n m1)
     ) m2
-
+    
 (** Narrowing **)
-let narrowing (m1:exec_map_t) (m2:exec_map_t): exec_map_t = let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
-    NodeMap.mapi (fun n t ->
-        meet_V (find n m1) t
-    ) m2
-
-let env = ref env0
+let narrowing (m1:exec_map_t) (m2:exec_map_t): exec_map_t =
+  let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
+  NodeMap.mapi
+    (fun n t -> meet_V (find n m1) t) m2
 
 (** Fixpoint loop *)
-let rec fix e (k: int) (m:exec_map_t): exec_map_t =
-  st := k;
+let rec fix env e (k: int) (m:exec_map_t): exec_map_t =
   (if not !integrat_test then
     begin
-        Format.printf "%s step %d\n" !process k;
+        let k' = if k < 0 then 50 + k else k in
+        Format.printf "%s step %d\n" !process k';
         print_exec_map m;
     end);
   let ae = Relation (top_R Plus) in
   let m_t = Hashtbl.copy m in
-  let m' = step e !env m_t ae in
-  if k < 0 then if k = -1 then m' else fix e (k+1) m' else
+  let m' = step e env m_t ae in
+  if k < 0 then if k = -1 then m' else fix env e (k+1) m' else
   (* if k > 2 then Hashtbl.reset !pre_m;
   pre_m := m; *)
   (* Format.printf "\nFinish step %d\n" k;
   flush stdout; *)
   let pre_check = if !process = "Wid" then true else eq_PM m0 m' in
-  let m'' = if !process = "Wid" then widening m m' else narrowing m m' in
+  let m'' = if !process = "Wid" then widening k m m' else narrowing m m' in
   if pre_check then
   begin
     let comp = if !process = "Wid" then leq_M m'' m else leq_M m m'' in
     if comp then m
-    else (fix e (k+1) m'') (*Hashtbl.reset m; *)
+    else (fix env e (k+1) m'') (*Hashtbl.reset m; *)
   end
   else exit 0
 
@@ -567,17 +570,17 @@ let s e =
         Format.printf "\n\n";
     end); *)
     (* exit 0; *)
-    let envt, m0' = pref_M !env (Hashtbl.copy m0) in
-    env := envt;
+    let envt, m0' = pref_M env0 (Hashtbl.copy m0) in
+    (*env := envt;*)
     (* pre_m := m0'; *)
     let m =
-        let m1 = (fix e 0 m0') in
+        let m1 = (fix envt e 0 m0') in
         if !narrow then
             begin
             process := "Nar";
-            let m1 = m1 |> fix e (-50) in (* step^n(fixw) <= fixw *)
+            let m1 = m1 |> fix envt e (-50) in (* step^50(fixw) <= fixw *)
             let m1 = m1 |> reset in
-            (fix e 0 m1)
+            (fix envt e 50 m1)
             end
         else m1
     in
