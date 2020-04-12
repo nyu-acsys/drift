@@ -2,7 +2,7 @@
 USED: PLDI2011 as mult
 USED: PEPM2013 as mult
 *)
-let main mn = 
+let main (mn(*-:{v:Int | true}*)) = 
     let rec mult n m =
       if n <= 0 || m <= 0 then
         0
@@ -10,4 +10,4 @@ let main mn =
         n + mult n (m - 1)
     in
     assert (mn <= mult mn mn)
-in main 234
+(* in main 234 *)

@@ -3,7 +3,7 @@
  * IC3 motivating example
  *)
 
-let main mm = 
+let main (mm(*-:{v:Int | true}*)) = 
 	let rec loop lx ly = 
 	    if (ly < 45) then
 	        let t1 = lx in
@@ -15,4 +15,4 @@ let main mm =
     let x = 1 in
     let y = 1 in
     loop x y
-in main()
+(* in main() *)

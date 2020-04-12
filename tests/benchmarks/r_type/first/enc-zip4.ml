@@ -1,5 +1,5 @@
 
-let main n =
+let main (n(*-:{v:Int | true}*)) =
     let rec zip x y =
       if x = 0
       then if y = 0 then 0 else (assert(false); y)
@@ -9,4 +9,4 @@ let main n =
 
     let m = zip n n in
     assert (m = n)
-in main 31233
+(* in main 31233 *)

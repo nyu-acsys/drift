@@ -4,7 +4,7 @@ USED: PEPM2013 as r-file
 KEYWORD: resource
 *)
 
-let main b2 b3 = 
+let main (b2(*-:{v:Int | true}*)) (b3(*-:{v:Int | true}*)) = 
     let rec loop x = loop () in
     let init = 0 in
     let opened = 1 in
@@ -31,4 +31,4 @@ let main b2 b3 =
     in
     
     if b2 > 0 then g b3 true opened else g b3 false init
-in main 1 2 (* bot *)
+(* in main 1 2 (* bot *) *)

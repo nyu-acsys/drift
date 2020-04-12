@@ -7,10 +7,10 @@ import sys, os
 import re
 import csv
 
-testdir = '../outputs'
+testdir = '../outputs/DART_IT'
 table_file = '../res.csv'
 pattern = re.compile(".*ml$")
-attrs = ['subdir', 'file name', 'timing (milseconds)', 'solved?', 'domain']
+attrs = ['subdir', 'file name', 'test class', 'timing (milseconds)', 'res (true/false)', 'domain']
 
 def manipulate_input_data(data):
     res_data = []
@@ -39,49 +39,107 @@ def read_info_from_file(file_name):
     data = file.readlines()
     res_data = []
     plain_data = manipulate_input_data(data)
-    for i in range(0,3):
-        plain_d = plain_data[i].replace(" ", "").replace("\t", "").replace("\n", "")
-        if i == 0:
-            _, domain_name = plain_d.split(":")
-            res_data.append(domain_name)
-        elif i == 1:
-            unit_regexp = re.compile(r'Unit')
-            int_regexp = re.compile(r'Int')
-            bool_regexp = re.compile(r'Bool')
-            bot_regexp = re.compile(r'_|_')
-            if unit_regexp.search(plain_d):
-                res_data.append('Y')
-            elif int_regexp.search(plain_d):
-                value = plain_d.split('|')[2]
-                if re.match("^bottom", value, re.IGNORECASE):
-                    res_data.append('N')
-                else:
-                    res_data.append('INT')
-            elif bool_regexp.search(plain_d):
-                true_part, false_part = plain_d.split(',')
-                _, bot_test_f = false_part.split(':')
-                bot_test_t = true_part.split(':')[2]
-                if re.match("^bottom", bot_test_f, re.IGNORECASE):
-                    res_data.append('Y')
-                elif re.match("^bottom", bot_test_t, re.IGNORECASE):
-                    res_data.append('N')
-                else:
-                    res_data.append('IM')
-            elif bot_regexp.search(plain_d):
-                res_data.append('UR') # Unreachable
+    plain_data = [d.replace(" ", "").replace("\t", "").replace("\n", "") for d in plain_data]
+    _, domain_name = plain_data[0].split(":")
+    res_data.append(domain_name)
+    _, timing = plain_data[-1].split(":")
+    if len(plain_data) < 3:
+        res_data.append('ER')
+        res_data.append('error')
+    else:
+        plain_d = plain_data[1]
+        unit_regexp = re.compile(r'Unit')
+        int_regexp = re.compile(r'Int')
+        bool_regexp = re.compile(r'Bool')
+        bot_regexp = re.compile(r'_|_')
+        pref_regexp = re.compile(r'PreDef')
+        if pref_regexp.search(plain_d):
+            res_data.append('ER')
+        elif unit_regexp.search(plain_d):
+            res_data.append('T')
+        elif int_regexp.search(plain_d):
+            value = plain_d.split('|')[2]
+            if re.match("^bottom", value, re.IGNORECASE):
+                res_data.append('N')
             else:
-                res_data.append('UN')
-        elif i == 2:
-            _, timing = plain_d.split(":")
-            res_data.append(timing)
+                res_data.append('INT')
+        elif bool_regexp.search(plain_d):
+            true_part, false_part = plain_d.split(',')
+            _, bot_test_f = false_part.split(':')
+            bot_test_t = true_part.split(':')[2]
+            if re.match("^bottom", bot_test_f, re.IGNORECASE):
+                res_data.append('T')
+            elif re.match("^bottom", bot_test_t, re.IGNORECASE):
+                res_data.append('F')
+            else:
+                res_data.append('F;IM')
+        elif bot_regexp.search(plain_d):
+            res_data.append('T') # Unreachable
+        else:
+            res_data.append('UN')
+        time = float(timing) / 1000
+        res_data.append(round(time,2))
+    return res_data
+
+def read_false_info_from_file(file_name):
+    try:
+        file = open(file_name, 'r')
+    except:
+        sys.exit("index file does not exits. Exit!")
+    data = file.readlines()
+    res_data = []
+    plain_data = manipulate_input_data(data)
+    plain_data = [d.replace(" ", "").replace("\t", "").replace("\n", "") for d in plain_data]
+    _, domain_name = plain_data[0].split(":")
+    res_data.append(domain_name)
+    _, timing = plain_data[-1].split(":")
+    if len(plain_data) < 3:
+        res_data.append('ER')
+        res_data.append('error')
+    else:
+        plain_d = plain_data[1]
+        unit_regexp = re.compile(r'Unit')
+        int_regexp = re.compile(r'Int')
+        bool_regexp = re.compile(r'Bool')
+        bot_regexp = re.compile(r'_|_')
+        if unit_regexp.search(plain_d):
+            res_data.append('T') # True Negative
+        elif int_regexp.search(plain_d):
+            value = plain_d.split('|')[2]
+            if re.match("^bottom", value, re.IGNORECASE):
+                res_data.append('F')
+            else:
+                res_data.append('T')
+        elif bool_regexp.search(plain_d):
+            true_part, false_part = plain_d.split(',')
+            _, bot_test_f = false_part.split(':')
+            bot_test_t = true_part.split(':')[2]
+            if re.match("^bottom", bot_test_f, re.IGNORECASE) and re.match("^bottom", bot_test_t, re.IGNORECASE):
+                res_data.append('T')
+            elif re.match("^bottom", bot_test_t, re.IGNORECASE):
+                res_data.append('T')
+            else:
+                res_data.append('F')
+        elif bot_regexp.search(plain_d):
+            res_data.append('F') # Unreachable
+        else:
+            res_data.append('UN')
+        time = float(timing) / 1000
+        res_data.append(round(time,2))
     return res_data
 
 def dispatch(subdir, dict):
     for root, dirs, files in os.walk(testdir+'/'+subdir):
-        dict[subdir] = [(os.path.join(root, file), file) for file in files if pattern.match(file)]
+        dict[subdir] = [(os.path.join(root, file), file, root) for file in files if pattern.match(file)]
     for file_path in dict[subdir]:
-        res_data = read_info_from_file(file_path[0])
-        test_case = file_path[1].strip('out_').strip('.ml')
+        _, dir = file_path[2].split('../outputs/DART_IT/')
+        if dir == "negative":
+            res_data = read_false_info_from_file(file_path[0])
+            res_data.append("Neg")
+        else:
+            res_data = read_info_from_file(file_path[0])
+            res_data.append("Pos")
+        test_case = file_path[1][4:-3]
         res_data.append(test_case)
         res_data.append(subdir)
         res_data.reverse()

@@ -1,5 +1,5 @@
 
-let main n =
+let main (n(*-:{v:Int | true}*)) =
   let rec loop x = loop () in
   let rec zip x y =
     if x = 0
@@ -14,4 +14,4 @@ let main n =
   in
 
   assert (zip n n = n)
-in main 456
+(* in main 456 *)

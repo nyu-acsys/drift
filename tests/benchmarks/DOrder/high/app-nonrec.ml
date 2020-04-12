@@ -1,5 +1,5 @@
 
-let main n =
+let main (n(*-:{v:Int | true}*)) =
     let apply ab af ax = af ax
     in
 
@@ -7,5 +7,5 @@ let main n =
     in
 
     apply n (check n) n
-in
-main 75
+(* in
+main 75 *)

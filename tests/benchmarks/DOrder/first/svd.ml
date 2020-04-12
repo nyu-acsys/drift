@@ -1,4 +1,5 @@
-let main ml mm mn =
+
+let main (ml(*-:{v:Int | v > 0}*)) (mm(*-:{v:Int | true}*)) (mn(*-:{v:Int | true}*)) =
     let rec loopa ai aj al am an = 
         if aj <= an then
             (1<=aj &&
@@ -58,7 +59,5 @@ let main ml mm mn =
         else true
     in
 
-    if (ml > 0) then 
-        loop mn ml mm mn
-    else false
-in assert(main 4 0 3 = true)
+    assert(loop mn ml mm mn = true)
+(* in assert(main 4 0 3 = true) *)

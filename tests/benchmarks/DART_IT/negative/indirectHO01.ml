@@ -1,14 +1,14 @@
 (*
 Implementation error
 *)
-let main r =
+let main (r(*-:{v:Int | v > 0 }*)) =
 let rec bot bx = bot () in
 let fail fx = assert (false) in
 
 let c1_COEFFICIENT_1088 = 0 in
 let c0_COEFFICIENT_1087 = 0 in
 
-let id_1030 set_flag_app_11380 s_app_h_EXPARAM_11310 x_1031 = s_app_h_EXPARAM_11310 in
+let id_1030 set_flag_app_11380 s_app_h_EXPARAM_11310 x_1031 = (0 - x_1031) in
 
 let app_without_checking_1158 x_DO_NOT_CARE_1213 x_DO_NOT_CARE_1214 h_EXPARAM_10908 x_DO_NOT_CARE_1211 x_DO_NOT_CARE_1212 h_10330 set_flag_app_11380 s_app_h_EXPARAM_11310 v_10340 =
  let set_flag_app_1138_r = true
@@ -50,4 +50,6 @@ in
  assert (f_1035 set_flag_app_1138m s_app_h_EXPARAM_1131m 0
    set_flag_app_1138m s_app_h_EXPARAM_1131m () set_flag_app_1138m
    s_app_h_EXPARAM_1131m r = r)
-in main 20200202
+
+(* in main 20200202 *)
+

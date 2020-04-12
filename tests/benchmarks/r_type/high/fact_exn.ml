@@ -10,7 +10,7 @@ let rec fact n =
     with ZERO -> 1
 *)
 
-let main n =
+let main (n(*-:{v:Int | v > 0}*)) =
   let rec fact fn exf =
     if fn <= 0
     then exf 0
@@ -21,7 +21,5 @@ let main n =
 
   let ex xn = assert(false); 1 in
 
-  if n > 0
-  then fact n ex >= (-1)
-  else false
-in assert(main 300 = true)
+  assert(fact n ex >= (-1))
+(* in assert(main 300 = true) *)

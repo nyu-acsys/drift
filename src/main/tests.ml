@@ -53,12 +53,12 @@ let id_test_2 = parse_from_string "let id x = x in let _ = id 1 in id 2"
 *)
 
 let id_test_3 = parse_from_string "let id x = x in let _ = id 1 in id true"
-(* id_test_2
-((lambda id^0. ((lambda _^1. (id^2 2^3)^4)^5 (id^6 1^7)^8)^9)^10
+(* id_test_3
+((lambda id^0. ((lambda _^1. (id^2 true^3)^4)^5 (id^6 1^7)^8)^9)^10
   (lambda x^11. x^12)^13)^14
 *)
 
-let fun_test = 
+let fun_test =
   (mk_app (mk_lambda x (mk_app (mk_var x) (mk_int 1))) (mk_lambda y (mk_var y)))
 
 let op_test = let dec_def = mk_lambda y (mk_op Plus (mk_int (-1)) (mk_var y)) in
@@ -99,8 +99,8 @@ let rec_test_1 = parse_from_string "let rec f a = if a + 1 > 9 then 10 else f (a
 (* rec_test_1
 ((lambda f^0. (f^1 8^2)^3)^4
   (mu f^5 a^6.
-     (((a^7 + 1^8)^9 > 9^10)^11 ? 
-        10^12 : 
+     (((a^7 + 1^8)^9 > 9^10)^11 ?
+        10^12 :
         (f^13 (a^14 + 1^15)^16)^17)^18)^19)^20
 *)
 
@@ -112,15 +112,34 @@ let rec_test_2 = parse_from_string "let rec f a = if a <= 1 then 0 else f (a - 1
 
 let rec_test_3 = parse_from_string "let rec f a b = if a <= b then 0 else f (a - 1) b in f 8 1"
 
-let rec_test_4 = parse_from_string 
-  "let rec f a b = if a >= 10 then b else f (a + 1) b in 
-    let _ = f 8 1 in f 8 true"
-(*
-((lambda f^0.
-    ((lambda _^1. ((f^2 8^3)^4 true^5)^6)^7 ((f^8 8^9)^10 1^11)^12)^13)^14
-  (mu f^15 a^16.
-     (lambda b^17.
-        ((a^18 >= 10^19)^20 ? b^21 : ((f^22 (a^23 + 1^24)^25)^26 b^27)^28)^29)^30)^31)^32
+let rec_test_4 = parse_from_string
+  "let rec f x = if x >= 10 then 0 else f (x + 1) in
+    let _ = f 3 in f 5"
+(* rec_test_4
+((lambda f^0. ((lambda _^1. (f^2 9^3)^4)^5 (f^6 9^7)^8)^9)^10
+  (mu f^11 x^12.
+     ((x^13 >= 10^14)^15 ? 0^16 : (f^17 (x^18 + 1^19)^20)^21)^22)^23)^24
+*)
+
+let rec_test_5 = parse_from_string
+  "let rec foldl af an au =
+	    if an = 0 then au
+	    else foldl af (an - 1) (af an au)
+	in
+  let gt_100 gk gt = if gk > 100 then 100 else gt
+	in
+  foldl gt_100 3 100"
+(* rec_test_5
+((lambda foldl^0.
+    ((lambda gt_100^1. (((foldl^2 gt_100^3)^4 2^5)^6 100^7)^8)^9
+      (lambda gk^10.
+         (lambda gt^11. ((gk^12 > 100^13)^14 ? 100^15 : gt^16)^17)^18)^19)^20)^21
+  (mu foldl^22 af^23.
+     (lambda an^24.
+        (lambda au^25.
+           ((an^26 = 0^27)^28 ? au^29 :
+             (((foldl^30 af^31)^32 (an^33 - 1^34)^35)^36
+               ((af^37 an^38)^39 au^40)^41)^42)^43)^44)^45)^46)^47
 *)
 
 let ary_test_1 = parse_from_string "let f a = len a in let ary = make 3 0 in f ary"
@@ -186,7 +205,7 @@ let seq_test_4 = parse_from_string "if false then 2 else let x = 4 in 3; x"
 
 let redef_test_1 = parse_from_string "let f a b = if a < 1 then let a = 2 in a else b in f 0 3"
 
-let scope_test = parse_from_string "let rec f x y = let a = x + 1 in let b = y - 1 in if a > 3 then b else f a b in 
+let scope_test = parse_from_string "let rec f x y = let a = x + 1 in let b = y - 1 in if a > 3 then b else f a b in
   let w = 1 in
   f w 2"
 (*
@@ -202,25 +221,25 @@ let scope_test = parse_from_string "let rec f x y = let a = x + 1 in let b = y -
 
 let normal_test = parse_from_string "let g x = 1 in let f y = 2 in let k x y = 3 in k (f 1) (g 2)"
 
-let high_mult_rec_test_1 = parse_from_string 
+let high_mult_rec_test_1 = parse_from_string
   "let k kx = kx in let id ix iy = ix iy in
   let fb xb yb = let zb = yb - 1 in xb zb in
   fb (id k) 2"
 
-let high_mult_rec_test_2 = parse_from_string 
+let high_mult_rec_test_2 = parse_from_string
   "let rec id x y = id x y in let f z = z in f id 10 20"
 
 let high_mult_call_test_1 = parse_from_string
   "let h g = g 5 in let g1 x = 1 in let g2 x = x in (h g1) / (h g2)"
 
-let tests = [id_test_1]
+let tests = [rec_test_5]
 
 let _ =
   Config.parse;
   Printexc.record_backtrace !Config.bt;
   let t = if !Config.parse_file then [parse_from_file !Config.file]
   else tests in
-  List.iter (fun e -> 
+  List.iter (fun e ->
   let el = label e in
   if not !integrat_test then
     (print_endline "Executing:";

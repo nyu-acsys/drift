@@ -1,5 +1,5 @@
 
-let main n =
+let main (n(*-:{v:Int | v >= 0}*)) =
     let rec loop x = loop x in
     let rec zip x y =
      if x = 0 then
@@ -14,4 +14,4 @@ let main n =
     in
 
     assert(map (zip n n) >= n)
-in main 10
+(* in main 10 *)

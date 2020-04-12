@@ -1,5 +1,5 @@
 
-let main n = 
+let main (n(*-:{v:Int | v < 0}*)) = 
 	let helper hg hx hy = hg (hx + 1) (hy + 1)
 	in
 
@@ -16,4 +16,5 @@ let main n =
 	in
 
 	assert(unzip n zip = n)
-in main (-10)
+
+(* in main (-10) *)

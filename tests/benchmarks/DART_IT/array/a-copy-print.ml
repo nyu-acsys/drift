@@ -3,7 +3,7 @@ USED: PLDI2011 as a-cppr
 USED: PEPM2013 as a-cppr
 *)
 
-let main mn =
+let main (mn(*-:{v:Int | true}*)) =
 
   let print_int pn = () in
 
@@ -30,6 +30,4 @@ let main mn =
 
   let array1 = make mn 0 in
   let array2 = make mn 1 in
-    if mn > 0 then f mn array1 array2 else ()
-in 
-main 10
+  if mn > 0 then f mn array1 array2 else ()

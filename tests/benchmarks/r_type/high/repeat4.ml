@@ -1,5 +1,5 @@
 
-let main n =
+let main (n(*-:{v:Int | true}*)) =
     let succ sx = sx + 1 in
     let rec repeat rf rn =
       if rn = 0
@@ -8,5 +8,5 @@ let main n =
     in
 
     assert (repeat succ n = n)
-in
-main 1023
+(* in
+main 1023 *)

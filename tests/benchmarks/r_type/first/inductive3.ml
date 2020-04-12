@@ -1,5 +1,5 @@
 
-let main n =
+let main (n(*-:{v:Int | v >= 2}*)) =
     let rec f x =
       if x < -1 then
         f (-2)
@@ -9,5 +9,5 @@ let main n =
         x
     in
 
-    if n >= 2 then f n >= 0 else false
-in assert(main 17 = true)
+    assert(f n >= 0)
+(* in assert(main 17 = true) *)

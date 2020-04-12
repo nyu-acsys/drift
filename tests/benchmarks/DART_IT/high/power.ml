@@ -1,6 +1,6 @@
 
 
-let main m n = 
+let main (m(*-:{v:Int | true}*)) (n(*-:{v:Int | true}*)) = 
 
 	let comp cf cg cx = cf (cg cx)
 	in
@@ -19,4 +19,9 @@ let main m n =
     if m > 0 then
     	assert(power succ m n >= n)
 	else assert(true)
-in main 4 2
+
+(* let _ = main 4 2
+let _ = main 0 0
+let _ = main 423 0
+let _ = main 203 403
+let _ = main 22 (-100) *)

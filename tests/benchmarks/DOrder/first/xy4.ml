@@ -1,5 +1,5 @@
 
-let main mm =
+let main (mm(*-:{v:Int | true}*)) =
     let rec loopa ax ay = 
         if ay < 4 then 
             loopa (ax + 4) (ay + 1)
@@ -17,5 +17,5 @@ let main mm =
 
     let rx = loopa x y in
     loopb rx 4
-in
-assert (main () = true)
+(* in
+assert (main () = true) *)

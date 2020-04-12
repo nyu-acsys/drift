@@ -103,6 +103,10 @@ let loc = function
   | Ite (_, _, _, l)
   | Rec (_, _, _, _, l) -> l
 
+let is_Var = function
+  | Var (_) -> true
+  | _ -> false
+
 let cond_op = function
   | Plus | Mult | Div | Mod | Minus | And | Or -> false
   | Ge | Eq | Ne | Lt | Gt | Le -> true

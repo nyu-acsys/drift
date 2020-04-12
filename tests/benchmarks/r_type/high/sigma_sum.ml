@@ -1,5 +1,5 @@
 
-let main mn =
+let main (mn(*-:{v:Int | true}*)) =
     let rec sum n =
       if n <= 0
       then 0
@@ -13,4 +13,4 @@ let main mn =
     in
 
     assert (sigma sum mn >= mn)
-in main 846
+(* in main 846 *)

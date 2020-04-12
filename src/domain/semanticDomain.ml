@@ -1,7 +1,9 @@
 open AbstractDomain
 open Syntax
 open Util
-
+(* type call_site = var * loc (* or equivalence relation of nodes?
+abstract variable node triple env_t, set of class, and variable
+finite (using paritition)*) *)
 (*
 **********************************
 ** Abstract Data Flow Semantics **
@@ -24,11 +26,11 @@ end
 
 
 type baseType = Int | Bool
-type call_site = enode_t
 and enode_t = env_t * loc (*N = E x loc*)
-and vnode_t = env_t * call_site * loc
+and vnode_t = env_t * var * stack_t (*Nx = E x var x stack*)
 and node_t = EN of enode_t | VN of vnode_t
-and env_t = node_t VarMap.t (*E = Var -> N*)
+and env_t = node_t VarMap.t (*E = Var -> Nx*)
+and stack_t = (env_t * loc) list   (*stack = (E x loc) list*)
 
 let name_of_node lb = ("z" ^ lb)
 
@@ -38,12 +40,16 @@ let incr_l () =
   l_index := !l_index + 1
 
 let get_var_env_node = function
-  | VN(env, var, l) -> env, var, l
+  | VN(env, var, stack) -> env, var, stack
   | EN(env, l) -> raise (Invalid_argument ("Expected variable node at "^l))
 
 let get_en_env_node = function
-| VN(env, var, l) -> raise (Invalid_argument ("Expected normal node at "^l))
+| VN(env, var, stack) -> raise (Invalid_argument ("Expected normal node at "^var))
 | EN(env, l) -> env, l
+
+let get_most_recent_node (st:stack_t) = match st with
+  | [] -> raise (Invalid_argument ("Expected a nonemepty stack"))
+  | (env, l) :: _ -> env, l
 
 let comp s1 s2 =
   let l1 = try int_of_string s1 
@@ -62,24 +68,26 @@ module TempNodeMap = Map.Make(struct
 end)
 
 module TempENodeMap = Map.Make(struct
-  type t = call_site
+  type t = stack_t
   let compare = compare
 end)
 
 module NodeMap = struct
   include TempNodeMap
   let find key m = let e1 = match key with 
-    | EN (env1, e1) -> e1
-    | VN (env1, _, e1) -> e1 in
+    | EN (env1, l) -> l
+    | VN (env1, var, stack) -> var in
     try TempNodeMap.find key m 
     with Not_found -> raise (Key_not_found (e1^" is not Found in NodeMap"))
 end
 
 module TableMap = struct
   include TempENodeMap
-  let find cs m = let _, key = cs in
+  let find cs m = 
     try TempENodeMap.find cs m 
-    with Not_found -> raise (Key_not_found (key^" is not Found in TableMap"))
+    with Not_found -> match cs with
+      | [] -> raise (Key_not_found ("Nil is not Found in TableMap"))
+      | (_, key) :: _ -> raise (Key_not_found (key^" is not Found in TableMap"))
   let compare = compare
 end
 
@@ -231,7 +239,7 @@ module SemanticsDomain =
     and forget_MT var mt = TableMap.map (fun (vi, vo) -> 
       forget_V var vi, forget_V var vo) mt
     and arrow_MT var mt v = TableMap.mapi (fun cs (vi, vo) -> 
-      let _, z = cs in
+      let _, z = get_most_recent_node cs in
       let v' = forget_V z v in
       arrow_V var vi v, arrow_V var vo v') mt
     and wid_MT mt1 mt2 =
@@ -240,7 +248,7 @@ module SemanticsDomain =
     and replace_MT mt var x = TableMap.map (fun (vi, vo) -> replace_V vi var x, replace_V vo var x) mt
     and stren_MT mt ae = TableMap.map (fun (vi, vo) -> stren_V vi ae, stren_V vo ae) mt
     and proj_MT mt vars = TableMap.mapi (fun cs (vi, vo) -> 
-      let _, var = cs in
+      let _, var = get_most_recent_node cs in
       let vars_o = Array.append vars [|var|] in
       proj_V vi vars, proj_V vo vars_o) mt
     and change_table_MT var mt = match TableMap.min_binding_opt mt with
@@ -251,8 +259,6 @@ module SemanticsDomain =
       ** Abstract domain for Execution Map **
       ***************************************
       *)
-      and meet_M m1 m2 =
-        NodeMap.union (fun n v1 v2 -> Some (meet_V v1 v2)) m1 m2
       and join_M m1 m2 =
         NodeMap.union (fun n v1 v2 -> Some (join_V v1 v2)) m1 m2
       and leq_M m1 m2 =
@@ -331,7 +337,7 @@ module SemanticsDomain =
           fun v2 ->
           let l = match n with 
             | EN (env1, l) -> l
-            | VN (env1, _, l) -> l in
+            | VN (env1, var, stack) -> var in
           if eq_V v1 v2 then true else 
           begin
             raise (Pre_Def_Change ("Predefined node changed at " ^ l))
@@ -344,7 +350,7 @@ module SemanticsDomain =
           m, env
         else 
           VarDefMap.fold (fun var (domain: pre_exp) (m, env) -> 
-            let vn_var = VN (env, (env,var), var) in
+            let vn_var = VN (env, var, []) in
             let t_var = match domain with
               | {name = n; dtype = Int; left = l; op = bop; right = r} -> 
                 let rm = if l = "true" then 
@@ -470,6 +476,11 @@ module SemanticsDomain =
         | _, _ -> raise (Invalid_argument "Should be a relation type when using bool_op_V")
     and is_Bot_V = function
       | Bot -> true
+      | _ -> false
+    and is_val_bot_V = function
+      | Table t -> if TableMap.is_empty t then false else
+        TableMap.fold (fun _ (vi, vo) b -> b && is_val_bot_V vi && is_val_bot_V vo) t true
+      | Relation r -> is_bot_R r
       | _ -> false
     and replace_V v var x = match v with
       | Table mt -> Table (replace_MT mt var x)
@@ -643,21 +654,25 @@ let print_exp out_ch e = Format.fprintf (Format.formatter_of_out_channel out_ch)
 
 let loc_of_node = function
   | EN (_, l) -> l
-  | VN (_, _, l) -> l
+  | VN (_, var, _) -> var
 
 let rec pr_node ppf = function 
   | EN (env, l) -> Format.fprintf ppf "%s" l
-  | VN (env, cs, l) -> let _, var = cs in
-  Format.fprintf ppf "%s_%s" l var
+  | VN (env, var, _) ->
+  Format.fprintf ppf "%s" var
 
 let rec pr_node_full ppf = function
-  | EN (env, l) -> Format.fprintf ppf "@[<1><[%a], %s>@]" pr_env (VarMap.bindings env) l
-  | VN (env, cs, l) ->  let _, var = cs in Format.fprintf ppf "@[<1><@[<1>[%a]@],@ %s,@ %s>@]"
-    pr_env (VarMap.bindings env) var l
+  | EN (env, l) -> 
+    Format.fprintf ppf "@[<1><[%a], %s>@]" pr_env (VarMap.bindings env) l
+  | VN (env, cs, stack) -> Format.fprintf ppf "@[<1><@[<1>[%a]@],@ %s,@ [%a]>@]"
+    pr_env (VarMap.bindings env) cs  pr_stack stack
 and pr_env ppf = function
   | [] -> ()
   | [x, n] -> Format.fprintf ppf "%s: %a" x pr_node_full n
   | (x, n) :: env -> Format.fprintf ppf "%s: %a,@ %a" x pr_node_full n pr_env env
+and pr_stack ppf st = match st with
+  | [] -> Format.fprintf ppf "Empty"
+  | (env, l) :: tl -> Format.fprintf ppf "@[<1><[%a], %s>@]" pr_env (VarMap.bindings env) l
 
 let string_of_node n = pr_node Format.str_formatter n; Format.flush_str_formatter ()
 
@@ -693,20 +708,23 @@ and pr_table_map ppf = function
 | [row] -> Format.fprintf ppf "%a" pr_table_row row
 | row :: rows -> Format.fprintf ppf "%a;@ %a" pr_table_row row pr_table_map rows
 and pr_table_row ppf (cs, t) = 
-  let l, var = cs in
+  let l, var = get_most_recent_node cs in
   Format.fprintf ppf "@[<2>%s:@ @[<2>%a@]@]" var pr_table t
 
 let sort_list m =
   let lst = (NodeMap.bindings m) in
   List.sort (fun (n1,_) (n2,_) -> match n1, n2 with
   | EN (env1, e1), EN (env2, e2) -> comp e1 e2
-  | EN (env1, e1), VN (env2, _, e2) -> comp e1 e2
-  | VN (env1, _, e1), EN (env2, e2) -> comp e1 e2
-  | VN (env1, cs1, e1), VN (env2, cs2, e2) -> 
+  | EN (env1, e1), VN (env2, e2, _) -> comp e1 e2
+  | VN (env1, e1, _), EN (env2, e2) -> comp e1 e2
+  | VN (env1, e1, stack1), VN (env2, e2, stack2) -> 
     if comp e1 e2 = 0 then
-      let _, var1 = cs1 in
-      let _, var2 = cs2 in
-      String.compare var1 var2 else comp e1 e2) lst 
+      (match stack1, stack2 with
+      | [], [] -> 0
+      | (_,l1)::_, [] -> 1
+      | [], (_,l2)::_ -> -1
+      | (_,l1)::_, (_,l2)::_ -> String.compare l1 l2) 
+    else comp e1 e2) lst 
      
 let print_value out_ch v = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" pr_value v
 
