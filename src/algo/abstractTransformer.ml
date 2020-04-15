@@ -38,23 +38,6 @@ let fresh_var =
     let idx = !z_index in
     incr z_index;
     "z" ^ (string_of_int idx)
-  
-
-let eq_PM (m1:exec_map_t) (m2:exec_map_t) =
-    NodeMap.for_all (fun n v1 (*untie to node -> value*) ->
-    NodeMap.find_opt n m2 |> Opt.map (
-      fun v2 -> let SN (_, l) = n in
-      if eq_V v1 v2 then true else 
-      begin
-        Format.printf "\nPre Def %s:\n" l;
-        pr_value Format.std_formatter v1;
-        Format.printf "\nNew %s\n" l;
-        pr_value Format.std_formatter v2;
-        Format.printf "\n\n";
-        raise (Pre_Def_Change ("Predefined node changed at " ^ l))
-      end
-      )
-    |> Opt.get_or_else true) m1
 
 let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 with
     | Top, Bot | Table _, Top -> Top, Top
@@ -548,15 +531,10 @@ let rec fix env e (k: int) (m:exec_map_t): exec_map_t =
   pre_m := m; *)
   (* Format.printf "\nFinish step %d\n" k;
   flush stdout; *)
-  let pre_check = if !process = "Wid" then true else eq_PM m0 m' in
   let m'' = if !process = "Wid" then widening k m m' else narrowing m m' in
-  if pre_check then
-  begin
-    let comp = if !process = "Wid" then leq_M m'' m else leq_M m m'' in
-    if comp then m
-    else (fix env e (k+1) m'') (*Hashtbl.reset m; *)
-  end
-  else exit 0
+  let comp = if !process = "Wid" then leq_M m'' m else leq_M m m'' in
+  if comp then m
+  else (fix env e (k+1) m'') (*Hashtbl.reset m; *)
 
 (** Semantic function *)
 let s e =
@@ -577,7 +555,9 @@ let s e =
             process := "Nar";
             let m1 = m1 |> fix envt e (-50) in (* step^50(fixw) <= fixw *)
             let m1 = m1 |> reset in
-            (fix envt e 50 m1)
+            let m2 = fix envt e 50 m1 in
+            if eq_PM m0 m2 then m2 
+            else exit 0
             end
         else m1
     in

@@ -285,6 +285,14 @@ module SemanticsDomain =
         NodeMap.for_all (fun n v1 (*untie to node -> value*) -> 
         NodeMap.find_opt n m2 |> Opt.map (fun v2 -> leq_V v1 v2) |>
         Opt.get_or_else (v1 = Bot)) m1
+      and eq_PM (m1:exec_map_t) (m2:exec_map_t) =
+        NodeMap.for_all (fun n v1 (*untie to node -> value*) ->
+        NodeMap.find_opt n m2 |> Opt.map (
+          fun v2 -> let SN (_, l) = n in
+          if eq_V v1 v2 then true else 
+            raise (Pre_Def_Change ("Predefined node changed at " ^ l))
+          )
+        |> Opt.get_or_else true) m1
       and top_M m = NodeMap.map (fun a -> Top) m
       and array_M env m = 
         let n_make = EN (env, "make") in

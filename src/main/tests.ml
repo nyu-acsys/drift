@@ -52,6 +52,11 @@ let id_test_2 = parse_from_string "let id x = x in let _ = id 1 in id 2"
   (lambda x^11. x^12)^13)^14
 *)
 
+let id_test_3 = parse_from_string 
+"let rec g x n = if n > 0 then g x (n - 1) else x in
+  let id x = g (g x 4) 2 in 
+  let _ = id 1 in id 4"
+
 let fun_test = 
   (mk_app (mk_lambda x (mk_app (mk_var x) (mk_int 1))) (mk_lambda y (mk_var y)))
 
@@ -234,7 +239,7 @@ let high_mult_rec_test_1 = parse_from_string
 let high_mult_rec_test_2 = parse_from_string 
   "let rec id x y = id x y in let f z = z in f id 10 20"
 
-let tests = [order_test_1]
+let tests = [ary_test_1]
 
 let _ =
   Config.parse;
