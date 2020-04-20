@@ -29,11 +29,14 @@ let lexical_error lexbuf msg =
 }
 
 let white_space = [' ']*
+let basic_type = "int" | "bool" | "unit"
+let rm_type_sig = ([^')''(''=']|'('[^')''(''=''*']+')')* 
+let types = "int" rm_type_sig | "bool" rm_type_sig  | "unit" rm_type_sig 
 let digitchar = ['0'-'9']
 let idchar = ['A'-'Z''a'-'z''_']
 let primechar = [''']
 let minus = ['-']
-let ident = (idchar | digitchar)* ('?' idchar | idchar) (idchar | digitchar | primechar)* 
+let ident = idchar(idchar | digitchar)*('.'idchar)?(idchar | digitchar | primechar)* 
 let digits = minus? digitchar+
 let bool_str = "true" | "false" | "either"
 let bin_op_str =  ['>''<''='] | "<=" | ">=" | "<>" 
@@ -43,6 +46,11 @@ rule token = parse
   [' ' '\t'] { token lexbuf }
 | '\n' { Lexing.new_line lexbuf; token lexbuf }
 | "(*" { comments 0 lexbuf }
+| "(*-:{"("v"as v)":"white_space("Unit"as d)white_space"|"white_space("unit" as t)white_space"}*)"  
+{
+  let vk = init_ref ("cur_"^ Char.escaped v) (string_to_type d) t "=" t in 
+  PRE (vk)
+}
 | "(*-:{"("v"as v)":"white_space(("Bool"|"Int")as d)white_space"|"white_space(bool_str as t)white_space"}*)"  
 { 
   let vk = init_ref ("cur_"^ Char.escaped v) (string_to_type d) t "=" t in 
@@ -55,6 +63,7 @@ rule token = parse
   let vk = init_ref ("cur_"^ Char.escaped v) (string_to_type d) ("cur_"^Char.escaped l) bop r' in 
   PRE (vk) 
 }
+| ":"  { COLON }
 | ";"  { SEMI }
 | "->" { ARROW }
 | "<=" { LE }
@@ -68,6 +77,7 @@ rule token = parse
 | '+' { PLUS }
 | '-' { MINUS }
 | '/' { DIV }
+| types {TYPE}
 | '*' { TIMES }
 | '(' { LPAREN }
 | ')' { RPAREN }

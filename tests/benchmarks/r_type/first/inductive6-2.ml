@@ -1,13 +1,14 @@
 
-let main (n(*-:{v:Int | v >= 3}*)) =
-	let f g x =
-	  if x > 0 then
-	    g x
-	  else
-	    1
-	in
-	let decr x = x - 1 in
+let f g x =
+  if x > 0 then
+    g x
+  else
+    1
 
-	assert(f decr n > 0)
-(* in
-main 79 *)
+let decr dx = dx - 1
+	
+let main (n:int(*-:{v:Int | true}*)) = 
+	if n >= 3 then assert(f decr n > 0)
+	else assert(true)
+
+let _ = main 79

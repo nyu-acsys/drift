@@ -2,12 +2,15 @@
  * Input data error
  *)
  
-let main (n(*-:{v:Int | v <= 0}*)) =
-	let compose x g h = g (h x) in
 
-	let id ix = ix in 
+let compose x g h = g (h x)
 
-	let add ay = ay + 1 in
+let id (ix:int) = ix 
 
-	assert (compose n add id > 1)
-(* in main (-100) *)
+let add (ay:int) = ay + 1
+
+let main (n:int(*-:{v:Int | v <= 0}*)) =
+	assert(compose n add id > 1)
+
+let _ = main (-100)
+let _ = main 0

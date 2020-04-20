@@ -1,20 +1,24 @@
 
-let main (n(*-:{v:Int | v > 0}*)) = 
-	let rec mapi_helper hf hi hn ha hb = 
-		if (hi < hn) then
-			let _ = set hb hi (hf hi (get ha hi)) in
-			mapi_helper hf (hi + 1) hn ha hb
-		else hb
-	in
 
-	let rec mapi mf ma =
-		let mn = len ma in
-		let mb = make mn 0 in
-		mapi_helper mf 0 mn ma mb
-	in
+let rec mapi_helper (hf: int -> int -> int) hi hn (ha: int array) (hb: int array) = 
+	if (hi < hn) then
+		let _ = Array.set hb hi (hf hi (Array.get ha hi)) in
+		mapi_helper hf (hi + 1) hn ha hb
+	else ()
 
-	let add_idx sidx si = sidx + si in
+let rec mapi (mf: int -> int -> int) (ma: int array) =
+	let mn = Array.length ma in
+	let mb = Array.make mn 0 in
+	mapi_helper mf 0 mn ma mb;
+	Array.length mb = Array.length ma
 
-	let a = make n 0 in
-	let b = mapi add_idx a in
-	assert(len b = len a)
+let add_idx sidx si = sidx + si
+
+let main (n:int(*-:{v:Int | true}*)) =
+	let ans: bool = if n > 0 then
+		let a = Array.make n 0 in
+		mapi add_idx a
+	else true
+	in assert(ans = true)
+
+let _ = main 5

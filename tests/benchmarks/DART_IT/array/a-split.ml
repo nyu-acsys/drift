@@ -1,25 +1,29 @@
 
+let rec copy cai can cbi cbn (ca: int array) (cb: int array) = 
+	if cai < can && cbi < cbn then 
+		(Array.set cb cbi (Array.get ca cai);
+		copy (cai + 1) can (cbi + 1) cbn ca cb)
+	else ()
 
-let main (n(*-:{v:Int | v >= 0}*)) (i(*-:{v:Int | v >= 0}*)) = 
-	let rec copy cai can cbi cbn ca cb = 
-		if cai < can && cbi < cbn then 
-			(set cb cbi (get ca cai);
-			copy (cai + 1) can (cbi + 1) cbn ca cb)
-		else cb
-	in
+let main (n(*-:{v:Int | true}*)) (i(*-:{v:Int | true}*)) = 
+	let ans: bool = 
+		if n > 0 then
+			let a = Array.make n 0 in
+			let la = Array.length a in
+			let res = 
+				if i >= 0 && i < n then
+					let b = Array.make i 0 in
+					let lb = Array.length b in
+					copy 0 la 0 lb a b;
+					let c = Array.make (la - i) 0 in
+					let lc = Array.length c in
+					copy i la 0 lc a c;
+					lb + lc
+				else
+					la
+			in
+			res = la
+		else true
+	in assert (ans = true)
 
-	let a = make n 0 in
-	let la = len a in
-	let res = 
-		if i < n then
-			let b = make i 0 in
-			let lb = len b in
-			let len1 = len (copy 0 la 0 lb a b) in
-			let c = make (la - i) 0 in
-			let lc = len c in
-			let len2 = len (copy i la 0 lc a c) in
-			len1 + len2
-		else
-			la
-	in
-	assert (res = la)
+let _ = main 10 4

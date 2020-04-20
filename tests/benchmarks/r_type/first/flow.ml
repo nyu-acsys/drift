@@ -1,15 +1,12 @@
 
-let main (i(*-:{v:Int | true}*))= 
-	let lamp x = x in
+let lamp (x:unit) = x
 
-	let f =
-	  let id dx = dx in
-	  let unused = id (fun _ -> assert(false)) in
-	    lamp
-	in
+let f =
+  let id (dx:int -> unit) = dx in
+  let unused = id (fun _ -> assert(false)) in
+    lamp
 
+let main (i:int(*-:{v:Int | true}*))=
 	f ()
-(* in main 10 *)
-(*
-unit
-*)
+
+let _ = main 10

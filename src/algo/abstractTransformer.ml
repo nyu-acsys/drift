@@ -29,7 +29,7 @@ let env0, m0 =
 
 (* let pre_m = ref m0 *)
 
-let pre_def_func = [|"make"; "len"; "set"; "get"|]
+let pre_def_func = [|"Array.make"; "Array.length"; "Array.set"; "Array.get"|]
 
 (* Create a fresh variable name *)
 let fresh_var =
@@ -519,7 +519,7 @@ let narrowing (m1:exec_map_t) (m2:exec_map_t): exec_map_t =
 let rec fix env e (k: int) (m:exec_map_t): exec_map_t =
   (if not !integrat_test then
     begin
-        let k' = if k < 0 then 50 + k else k in
+        let k' = if k < 0 then 10 + k else k in
         Format.printf "%s step %d\n" !process k';
         print_exec_map m;
     end);
@@ -553,9 +553,9 @@ let s e =
         if !narrow then
             begin
             process := "Nar";
-            let m1 = m1 |> fix envt e (-50) in (* step^50(fixw) <= fixw *)
+            let m1 = m1 |> fix envt e (-10) in (* step^10(fixw) <= fixw *)
             let m1 = m1 |> reset in
-            let m2 = fix envt e 50 m1 in
+            let m2 = fix envt e 10 m1 in
             if eq_PM m0 m2 then m2 
             else exit 0
             end

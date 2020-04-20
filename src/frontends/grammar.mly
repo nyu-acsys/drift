@@ -11,6 +11,9 @@ let mklocation s e = {
   pc = s.pos_cnum - s.pos_bol;
 }
 
+let final_call_name = "main"
+let universe_name = "umain"
+
 %}
 /* declarations */
 
@@ -23,8 +26,9 @@ let mklocation s e = {
 %token EOF
 %token AND OR
 %token ARROW
-%token SEMI
+%token SEMI COLON
 %token IF ELSE THEN FUN LET REC IN ASSERT
+%token TYPE
 %token <Syntax.pre_exp> PRE
 
 /* 
@@ -61,24 +65,36 @@ The precedences must be listed from low to high.
 
 main:
 | seq_term EOF { $1 }
+| let_vals EOF { $1 }
 | error { 
   let loc = mklocation $startpos $endpos in
   fail loc "Syntax error" }
 ;
 
+fun_type:
+| {}
+| COLON TYPE {}
+;
+
 param_list:
 | IDENT param_list { $1 :: $2 }
-| IDENT { [$1] }
+| LPAREN IDENT COLON TYPE RPAREN param_list { $2 :: $6 }
+| LPAREN IDENT COLON TYPE RPAREN fun_type { [$2] }
+| IDENT fun_type { [$1] }
 ;
 
 param_ref_list:
+| LPAREN IDENT COLON TYPE PRE RPAREN param_ref_list { pre_vars := VarDefMap.add ("pref"^$2) $5 !pre_vars; $2 :: $7 }
+| LPAREN IDENT COLON TYPE PRE RPAREN fun_type { pre_vars := VarDefMap.add ("pref"^$2) $5 !pre_vars; [$2] }
 | LPAREN IDENT PRE RPAREN param_ref_list { pre_vars := VarDefMap.add ("pref"^$2) $3 !pre_vars; $2 :: $5 }
-| LPAREN IDENT PRE RPAREN { pre_vars := VarDefMap.add ("pref"^$2) $3 !pre_vars; [$2] }
+| LPAREN IDENT PRE RPAREN fun_type { pre_vars := VarDefMap.add ("pref"^$2) $3 !pre_vars; [$2] }
 ;
 
 ident_list:
 | IDENT { [$1] }
+| IDENT COLON TYPE { [$1] }
 | IDENT param_list { $1 :: $2 }
+| IDENT param_ref_list { $1 :: $2 }
 ;
 
 basic_term: /*term@7 := int | bool | var | (term)*/
@@ -160,20 +176,49 @@ let_in_term:
 }
 ;
 
-/*
-let f x (*-: {v: int | true}*) = x
-<=> let f x = x in f top_x
-*/
 let_val:
-| LET REC IDENT param_ref_list EQ term {
-  let fn = mk_lambdas $4 $6 in
-  mk_let_rec $3 fn $4
+| LET REC ident_list EQ seq_term {
+  let fn = mk_lambdas (List.tl $3) $5 in
+  if (List.hd $3) = final_call_name then
+    1, (List.hd $3), fn, (List.tl $3)
+  else
+    1, (List.hd $3), fn, []
 }
-| LET IDENT param_ref_list EQ term {
-  let fn = mk_lambdas $3 $5 in
-  mk_let $2 fn $3
+| LET ident_list EQ seq_term {
+  let fn = mk_lambdas (List.tl $2) $4 in
+  if (List.hd $2) = final_call_name then
+    0, (List.hd $2), fn, (List.tl $2)
+  else
+    0, (List.hd $2), fn, []
 }
-;
+
+/*
+let main (x(*-: {v: int | true}*)) = x
+<=> let f x = x in f prefx
+*/
+let_vals:
+| let_val {
+  let rc, x, def, lst = $1 in
+  if rc = 0 then
+    if x = final_call_name then
+      mk_let_main x def lst
+    else
+      mk_let_in x def (mk_var universe_name)
+  else
+    if x = final_call_name then
+      mk_let_main_rec x def lst
+    else
+      mk_let_rec_in x def (mk_var universe_name)
+}
+| let_val let_vals {
+  let rc, x, def, lst = $1 in
+  if x = final_call_name then
+    mk_let_main_rec x def lst
+  else if rc = 0 then
+    mk_let_in x def $2
+  else 
+    mk_let_rec_in x def $2
+}
 
 term:
 | if_term_ { $1 }
@@ -183,9 +228,7 @@ term:
 
 seq_term:
 | term %prec below_SEMI { $1 }
-| term SEMI { $1 }
 | term SEMI seq_term { mk_let_in "_" $1 $3 }
-| let_val { $1 }
 ;
 
 

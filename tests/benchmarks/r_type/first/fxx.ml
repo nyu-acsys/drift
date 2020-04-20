@@ -1,6 +1,8 @@
 
-let main (mx(*-:{v:Int | true}*)) = 
-	let f x y = assert (x <= 0 || y > 0) in
+
+let f x y = assert (x <= 0 || y > 0)
+
+let main (mx:int(*-:{v:Int | true}*)) = 
  	f mx mx
-(* in
-main 10 *)
+
+let _ = main 10

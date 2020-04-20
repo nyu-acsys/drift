@@ -1,12 +1,13 @@
 
-let main (mn(*-:{v:Int | true}*)) = 
-    let rec repeat f n s =
-      if n = 0 then
-        s
-      else
-        f (repeat f (n - 1) s)
-    in
-    let succ x = x + 1 in
+let rec repeat (f:int->int) n s =
+  if n = 0 then
+    s
+  else
+    f (repeat f (n - 1) s)
+
+let succ x = x + 1
+
+let main (mn:int(*-:{v:Int | true}*)) =
     assert(repeat succ mn 0 >= mn) 
-(* in
-main 10 *)
+
+let _ = main 2

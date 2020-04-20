@@ -1,18 +1,19 @@
 
-let main (mn(*-:{v:Int | v >= 0}*)) (mm(*-:{v:Int | v >= 0}*)) =
-    let rec append x y =
-      if x = 0 then
-        y
-      else
-        1 + append (x - 1) y
-    in
 
-    let rec rev n =
-      if n = 0
-      then 0
-      else append (rev (n - 1)) 1
-    in
+let rec append x y =
+  if x = 0 then
+    y
+  else
+    1 + append (x - 1) y
 
-    assert (append mn mm = mn + mm)
-(* in
-main 3 5 *)
+let rec rev n =
+  if n = 0
+  then 0
+  else append (rev (n - 1)) 1
+
+let main (mn:int(*-:{v:Int | true}*)) (mm:int(*-:{v:Int | true}*)) =
+    if mn >= 0 && mm >= 0 then
+    	assert (append mn mm = mn + mm)
+    else assert(true)
+
+let _ = main 3 5

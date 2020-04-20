@@ -5,6 +5,7 @@
 
 OUTDIR="../outputs/DART_IT"
 PROG="../tests.native"
+PROGNAME="DART_IT"
 DOMAIN=$2
 if [ $# -gt 1 ]; then
     DOMAIN=$2
@@ -55,6 +56,9 @@ echo "Starting benchmarks testing..."
 for hdir in ${DIRS}; do
     for dir in ${INS}; do
         if [ -d "${TESTDIR}/${hdir}/${dir}" ]; then
+            if [ ${dir} = "array" ] && [ ${hdir} != ${PROGNAME} ]; then
+                continue
+            fi
             for f in `find ${TESTDIR}/${hdir}/${dir} -iname "*.ml" -type f -execdir echo '{}' ';'`; do
                 if [[ "$OSTYPE" != "darwin"* ]]; then
                     f=${f#*./}

@@ -152,23 +152,23 @@ let order_test_1 = parse_from_string
 "let id x = x in let succ s = s + 1 in let mult y = y * 2 in
 succ (id (mult 2))"
 
-let ary_test_1 = parse_from_string "let f a = len a in let ary = make 3 0 in f ary"
+let ary_test_1 = parse_from_string "let f a = Array.length a in let ary = Array.make 3 0 in f ary"
 (* ary_test_1
 ((lambda ary^0. (len^1 ary^2)^3)^4 ((make^5 3^6)^7 0^8)^9)^10
 *)
 
-let ary_test_2 = parse_from_string "let ary = make 3 0 in get ary 2"
+let ary_test_2 = parse_from_string "let ary = Array.make 3 0 in Array.get ary 2"
 (* ary_test_2
 ((lambda ary^0. ((get^1 ary^2)^3 2^4)^5)^6 ((make^7 3^8)^9 0^10)^11)^12
 *)
 
-let ary_test_3 = parse_from_string "let ary = make 3 0 in set ary 0 1"
+let ary_test_3 = parse_from_string "let ary = Array.make 3 0 in Array.set ary 0 1"
 (* ary_test_3
 ((lambda ary^0. (((set^1 ary^2)^3 2^4)^5 1^6)^7)^8
   ((make^9 3^10)^11 0^12)^13)^14
 *)
 
-let ary_test_4 = parse_from_string "let f a1 a2 = len a2 in let ary1 = make 3 0 in let ary2 = make 3 1 in f ary1 ary2"
+let ary_test_4 = parse_from_string "let f a1 a2 = len a2 in let ary1 = Array.make 3 0 in let ary2 = Array.make 3 1 in f ary1 ary2"
 
 let assert_test = parse_from_string "let a = assert(1 < 2) in a"
 (*
@@ -254,6 +254,7 @@ let _ =
   print_endline "\n";
   print_endline ("Domain specification: " ^ !Config.domain);
   print_endline "\n";
+  (* exit 0; *)
   ignore (s el);
   if not !integrat_test then
     print_exp stdout el;

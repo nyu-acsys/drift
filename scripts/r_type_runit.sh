@@ -3,12 +3,13 @@
 
 OUTDIR="../outputs/r_type"
 PROG="../comp_bin/r_type_macos"
+PROGNAME="r_type"
 
 echo "outdir=<$OUTDIR> prog=<$PROG>"
 
-TESTDIR="../tests_eq/benchmarks/"
+TESTDIR="../tests/benchmarks/"
 DIRS=" DART_IT DOrder r_type"
-INS=" first high negative" #  termination
+INS=" array first high negative" #  termination
 timeout="20"
 OUTPRE="out"
 DATE="gdate"
@@ -25,6 +26,9 @@ echo "Starting benchmarks testing..."
 for hdir in ${DIRS}; do
     for dir in ${INS}; do
         if [ -d "${TESTDIR}${hdir}/${dir}" ]; then
+            if [ ${dir} = "array" ] && [ ${hdir} != ${PROGNAME} ]; then
+                continue
+            fi 
             for f in `find ${TESTDIR}${hdir}/${dir} -iname "*.ml" -type f -execdir echo '{}' ';'`; do
                 if [[ "$OSTYPE" != "darwin"* ]]; then
                     f=${f#*./}

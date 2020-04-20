@@ -1,12 +1,9 @@
 
+let app (ab:int) (af:int->unit) ax = af ax 
 
-let main (a(*-:{v:Int | true}*)) (b(*-:{v:Int | true}*)) =
-    let app ab af ax = af ax 
-    in
+let check (cx:int) (cy:int) = assert (cx = cy) 
 
-    let check cx cy = assert (cx = cy) 
-    in
- 
+let main (a:int(*-:{v:Int | true}*)) (b:int(*-:{v:Int | true}*)) =
     app (4 * a + 2 * b) (check (4 * a + 2 * b)) (4 * a + 2 * b) 
-(* in
-main 5 3 *)
+
+let _ = main 1 1

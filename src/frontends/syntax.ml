@@ -11,6 +11,8 @@ type loc = string
 let fail pos msg =
   failwith (Printf.sprintf "Error: line %d col %d: %s" pos.pl pos.pc msg)
 
+exception Main_not_found of string
+
 (** Binary infix operators *)
 type binop =
   | Plus  (* + *)
@@ -33,12 +35,14 @@ type value =
 
 type baseType = Int | Bool
 
+type inputType = Int | Bool | Unit
+
 module VarDefMap = Map.Make(struct
   type t = var
   let compare = compare
 end)
 
-type pre_exp = {name: var; dtype: baseType; left: var; op: binop; right: var}
+type pre_exp = {name: var; dtype: inputType; left: var; op: binop; right: var}
 
 let string_of_op = function
   | Plus  (* + *) -> "+"
@@ -78,11 +82,13 @@ let pre_vars: pre_exp VarDefMap.t ref = ref VarDefMap.empty
 let string_to_type = function
   | "Bool" -> Bool
   | "Int" -> Int
+  | "Unit" -> Unit
   | _ -> raise (Invalid_argument "Predefined type should contain either Int or Bool")
 
 let type_to_string = function
   | Bool -> "Bool"
   | Int -> "Int"
+  | Unit -> "Unit"
 
 (** Terms *)
 type term =
@@ -181,13 +187,19 @@ let mk_let_rec_in x def e =
 let pr_ary ppf ary = Array.fold_left (fun a e -> Format.printf "%s " e) () ary
 
 let mk_pre_apps xs e = List.fold_right (fun x e -> mk_app e (mk_var ("pref"^x))) xs e
-let mk_let x def params = 
-  let e = let lst = List.rev params in
+
+let mk_main_call x params = 
+  let lst = List.rev params in
     mk_pre_apps lst (mk_var x)
+
+let mk_let_main x def params = 
+  let x' = if x = "_" then "main" else x in
+  let e = let lst = List.rev params in
+    mk_pre_apps lst (mk_var x')
   in
   mk_app (mk_lambda x e) def
 
-let mk_let_rec x def params =
+let mk_let_main_rec x def params =
   let e = let lst = List.rev params in
     mk_pre_apps lst (mk_var x)
   in

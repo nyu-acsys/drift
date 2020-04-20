@@ -1,9 +1,9 @@
 
-let main (mn(*-:{v:Int | true}*)) =
-    let rec fib n =
-      if n <= 1 then 1 else
-        fib (n - 1) + fib (n - 2) in
+let rec fib n =
+  if n < 2 then 1 else
+    fib (n - 1) + fib (n - 2)
 
-    fib mn >= mn
-(* in
-main 34 *)
+let main (mn:int(*-:{v:Int | true}*)) =
+    assert (fib mn >= mn)
+
+let _ = main 34

@@ -2,9 +2,12 @@
 USED: PLDI2011 as intro1
 *)
 
-let main (n(*-:{v:Int | v >= 0}*)) = 
-    let f x g = g (x + 1) in
-    let h y = y > 0 in
-    assert (f n h)
-(* in
-assert (main 120 = true) *)
+let f x (g:int -> bool) = g (x + 1)
+
+let h (y:int) = y > 0
+
+let main (n:int(*-:{v:Int | true}*)) =
+    if n > 0 then assert (f n h)
+    else assert(true)
+
+let _ = main 120

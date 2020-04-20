@@ -1,13 +1,14 @@
 
-let main (n(*-:{v:Int | true}*)) =
-	let f g x =
-	  if x > 0 then
-	    g x
-	  else
-	    1
-	in
-	let decr x = x - 1 in
 
+let f g x =
+  if x > 0 then
+    g x
+  else
+    1
+
+let decr dx = dx - 1
+	
+let main (n:unit(*-:{v:Unit | unit}*)) = 
 	assert(f decr 3 > 0)
-(* in
-main 79 *)
+
+let _ = main ()

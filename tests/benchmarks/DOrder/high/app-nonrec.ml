@@ -1,11 +1,10 @@
 
-let main (n(*-:{v:Int | true}*)) =
-    let apply ab af ax = af ax
-    in
 
-    let check cx cy = assert (cx = cy)
-    in
+let apply (ab:int) (af: int->unit) ax = af ax
 
-    apply n (check n) n
-(* in
-main 75 *)
+let check (cx:int) (cy:int) = assert (cx = cy)
+
+let main (n:int(*-:{v:Int | true}*)) =
+	apply n (check n) n
+
+let _ = main 2

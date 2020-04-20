@@ -1,25 +1,23 @@
 
-(*
-Delay widen = 300
-opt = 300
-*)
-
-let main (n(*-:{v:Int | v >= 0}*)) =
-
-    let rec loop lx ly ln = 
+let rec loop (lx:int) (ly:int) (ln:int) = 
         let ny = 
             if (lx <= ln) then ly + 1 
-            else if (lx >= ln+1) then ly - 1 
-            else (-4) in
+            else if (lx >= ln + 1) then ly - 1 
+            else (-4) 
+        in
         if (ny < 0) then 
             if ln >= 0 then 
                 if ny = (-1) then (lx < 2 * ln + 3)
                 else true
             else true
         else loop (lx+1) ny ln 
-    in
 
-    let x = 0 in
-    let y = 0 in
-    assert(loop x y n = true)
-(* in assert (main 10 = true) *)
+let main (n:int(*-:{v:Int | true}*)) =
+    let x:int = 0 in
+    let y:int = 0 in
+    if (n >= 0) then assert(loop x y n = true)
+    else assert(true)
+
+let _ = main 10
+let _ = main 9
+let _ = main (-2)

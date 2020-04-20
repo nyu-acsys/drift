@@ -1,11 +1,11 @@
 
-let main (n(*-:{v:Int | true}*)) = 
-	let apply af ax = af ax in
+let apply (af:int -> int) (ax:int) = af ax
 
-	let twice tx = 2 * tx in
+let twice (tx:int) = 2 * tx
 
-	let neg_twice nx = 0 - (2 * nx) in
+let neg_twice (nx:int) = 0 - (2 * nx)
 
+let main (n:int(*-:{v:Int | true}*)) = 
     let res =
         if n >= 0 then
             apply twice n
@@ -15,8 +15,8 @@ let main (n(*-:{v:Int | true}*)) =
     assert(res >= 0)
 
 
-(* let _ = main 3
+let _ = main 3
 let _ = main 10
 let _ = main 0
 let _ = main (-34)
-let _ = main (-203) *)
+let _ = main (-203)

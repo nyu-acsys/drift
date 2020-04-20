@@ -1,18 +1,16 @@
 
-let main (n(*-:{v:Int | true}*)) (m(*-:{v:Int | true}*)) = 
 
-	let succ sb sf sx = sf (sx + 1) in
+let succ (sb:int) (sf:int->unit) sx = sf (sx + 1)
 
-	let rec app b f x k = 
-		if k > 0 then app (b - 1) (succ (b - 1) f) (x - 1) (k - 1) else f x
-	in
+let rec app (b:int) (f:int->unit) x (k:int) = 
+	if k > 0 then app (b - 1) (succ (b - 1) f) (x - 1) (k - 1) else f x
+	
+let check (cx:int) (cy:int) = assert (cx <= cy)
 
-	let check cx cy = assert (cx <= cy) in
+let main (n:int(*-:{v:Int | true}*)) (m:int(*-:{v:Int | true}*)) = app n (check n) n m
 
-	app n (check n) n m
-
-(* let _ = main 5 4
+let _ = main 5 4
 let _ = main 30 (-2)
 let _ = main 0 3
 let _ = main (-4) (-6)
-let _ = main (-102) 1 *)
+let _ = main (-102) 1

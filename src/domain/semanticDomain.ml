@@ -295,8 +295,8 @@ module SemanticsDomain =
         |> Opt.get_or_else true) m1
       and top_M m = NodeMap.map (fun a -> Top) m
       and array_M env m = 
-        let n_make = EN (env, "make") in
-        let s_make = SN (true,  "make") in
+        let n_make = EN (env, "Array.make") in
+        let s_make = SN (true,  "Array.make") in
         let t_make = (* make *)
           (* make |-> zm: {v:int | v >= 0} -> ex: {v:int | top} -> {v: Int Array (l) | [| l=zm; zm>=0; |]} *)
           let var_l = "zm" in
@@ -308,8 +308,8 @@ module SemanticsDomain =
           let rlen = op_R "x" var_e Eq true ilen in  *)
           Table (var_l, Relation rl, Table (var_e, Relation rm, Ary ([|"l";|],llen) ))
         in
-        let n_len = EN (env, "len") in
-        let s_len = SN (true,  "len") in
+        let n_len = EN (env, "Array.length") in
+        let s_len = SN (true,  "Array.length") in
         let t_len = (* len *)
           (* len |-> zl: { v: Int Array (l) | [| l>=0; |]  } -> { v: Int | [| v=l |] } *)
           let var_l = "zl" in
@@ -320,8 +320,8 @@ module SemanticsDomain =
           let rlen = equal_R (top_R Plus) "l" in
           Table (var_l, Ary ([|"l"|], llen), Relation rlen)
         in
-        let n_get = EN (env, "get") in
-        let s_get = SN (true, "get") in
+        let n_get = EN (env, "Array.get") in
+        let s_get = SN (true, "Array.get") in
         let t_get = (* get *)
           (* get |-> zg: { v: Int Array (l) | [| l>=0; |] } -> zi: {v: int | 0 <= v < l} -> {v: int | top }  *)
           let var_l = "zg" in
@@ -334,8 +334,8 @@ module SemanticsDomain =
           let var_zi = "zi" in
           Table (var_l, Ary ([|"l"|], llen), Table (var_zi, Relation rm, Relation rr))
         in
-        let n_set = EN (env, "set") in
-        let s_set = SN (true, "set") in
+        let n_set = EN (env, "Array.set") in
+        let s_set = SN (true, "Array.set") in
         let t_set = (* set *)
           (* set |-> zs: { v: Int Array (l) | [| l>=0; |] } -> zi: {v: int | 0 <= v < l} -> ex: {v: int | top } -> unit *)
           let var_l = "zs" in
@@ -355,8 +355,8 @@ module SemanticsDomain =
           |> NodeMap.add s_set t_set
         in
         let env' = 
-          env |> VarMap.add "make" n_make |> VarMap.add "len" n_len |> VarMap.add "get" n_get
-          |> VarMap.add "set" n_set
+          env |> VarMap.add "Array.make" n_make |> VarMap.add "Array.length" n_len |> VarMap.add "Array.get" n_get
+          |> VarMap.add "Array.set" n_set
         in
         env', m'
       and pref_M env m = 
@@ -381,6 +381,9 @@ module SemanticsDomain =
                       top_R Plus |> op_R l r bop true
                   in
                   Relation (rm)
+                | {name = n; dtype = Unit; left = l; op = _; right = r} ->
+                  if l = "unit" then Unit () 
+                  else raise (Invalid_argument"Expected unit predicate as {v: Unit | unit }")
               in
               let env' = env |> VarMap.add var n_var in
               let m' = m |> NodeMap.add s_var t_var in

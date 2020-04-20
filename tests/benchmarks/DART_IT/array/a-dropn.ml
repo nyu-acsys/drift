@@ -2,26 +2,30 @@
 Drop every i'th element from 
 *)
 
-let main (n(*-:{v:Int | v = 30}*)) (i(*-:{v:Int | v = 4}*)) = 
-	let rec drop cai can cbi cbn cdi cdn ca cb = 
-		if cai < can && cbi < cbn then 
-			if cdi < cdn then
-				(set cb cbi (get ca cai);
-				drop (cai + 1) can (cbi + 1) cbn (cdi + 1) cdn ca cb)
-			else drop (cai + 1) can cbi cbn 0 cdn ca cb
-		else cb
-	in
+let rec drop cai can cbi cbn cdi cdn (ca: int array) (cb: int array) = 
+	if cai < can && cbi < cbn then 
+		if cdi < cdn then
+			(Array.set cb cbi (Array.get ca cai);
+			drop (cai + 1) can (cbi + 1) cbn (cdi + 1) cdn ca cb)
+		else drop (cai + 1) can cbi cbn 0 cdn ca cb
+	else ()
 
-	let a = make n 0 in
-	let la = len a in
-	let res = 
-		if i < n then
-			let j = n - (n - (n mod i)) / i in
-			let b = make j 0 in
-			let lb = len b in
-			let len1 = len (drop 0 la 0 lb 0 i a b) in
-			len1
-		else
-			la
-	in
-	assert(res <= la)
+let main (n(*-:{v:Int | v = 30}*)) (i(*-:{v:Int | v = 4}*)) = 
+	let ans:bool = if n > 0 then
+			let a = Array.make n 0 in
+			let la = Array.length a in
+			let res:int = 
+				if i < n then
+					let j = n - (n - (n mod i)) / i in
+					let b = Array.make j 0 in
+					let lb = Array.length b in
+					drop 0 la 0 lb 0 i a b;
+					lb
+				else
+					la
+			in
+			res <= la
+		else true
+	in assert (ans = true)
+
+let _ = main 30 4

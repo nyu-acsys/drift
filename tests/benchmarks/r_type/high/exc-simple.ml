@@ -7,9 +7,10 @@ let ff n = if n >= 0 then () else raise (Failer 0)
 let main n = try ff n with Failer 0 -> ()
 *)
 
-let main (n(*-:{v:Int | true}*)) = 
-    let f fn fk = if fn >= 0 then assert(true) else fk 0 in
-    let g gn = assert (gn = 0) in
+let f fn (fk: int -> unit) = if fn >= 0 then assert(true) else fk 0
+let g gn = assert (gn = 0)
+
+let main (n:int(*-:{v:Int | true}*)) = 
     f n g
-(* in
-main (-3) *)
+
+let _ = main (-3)
