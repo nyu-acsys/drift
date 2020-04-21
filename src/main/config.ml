@@ -17,15 +17,15 @@ let narrow = ref false
 
 let domain = ref "Oct" (*Default: Octagon domain*)
 
-let usage = "usage: ./tests.native [-domain domain_name] [-debug] [-bt] [-int]"
+let usage = "usage: ./tests.native [-file input_file_name] [-domain domain_name] [-nar true/false] [-delay-wid NUM] [-debug] [-bt] [-int]"
 
 let cmd_options_spec =
   [("-debug", Arg.Set debug, ": Debug mode");
   ("-bt", Arg.Set bt, ": Allow trace back");
   ("-domain", Arg.String (fun s -> domain := s), ": Domain specification");
   ("-delay-wid", Arg.Int (fun s -> delay_wid := s), ": Set delay widening steps");
-  ("-int", Arg.Set integrat_test, ": Start integration testing");
-  ("-nar", Arg.String (fun s -> if s = "true" then narrow:=true else narrow:=false), "Use narrowing procedure");
+  ("-int", Arg.Set integrat_test, ": Display the final result only");
+  ("-nar", Arg.String (fun s -> if s = "true" then narrow:=true else narrow:=false), ": Use narrowing procedure");
   ("-file", Arg.String (fun s -> parse_file := true; file := s), ": Input file specification")]
 
 (* Parse auxiliary 'command line options' that are set during parsing of the input file *)
