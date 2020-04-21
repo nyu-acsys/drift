@@ -6,26 +6,35 @@ parser.add_argument('folder_name')
 args = parser.parse_args()
 
 if args.folder_name == "comp_tools":
-    data_lst = { "res-polka-standard": [], "res_rtype": [], 
+    data_lst = { "res1-polka-standard": [], "res_rtype": [], 
         "res_dorder": [], "res_dsolve": [], "res_mochi": []}
-    res_lst = { "res-polka-standard": [], "res_rtype": [], 
+    res_lst = { "res1-polka-standard": [], "res_rtype": [], 
         "res_dorder": [], "res_dsolve": [], "res_mochi": []}
-    csv_lst = ["res-polka-standard", "res_rtype", "res_dorder", "res_dsolve", "res_mochi"]
+    csv_lst = ["res1-polka-standard", "res_rtype", "res_dorder", "res_dsolve", "res_mochi"]
 else:
     data_lst = {"res-oct-standard": [], "res-oct-wid+nar": [], 
         "res-oct-dwid-300": [], "res-polka-standard": [],
         "res-polka-wid+nar": [], "res-polka-dwid-300": [], "res-ppl_st-standard": [], 
-        "res-ppl_st-wid+nar": [], "res-ppl_st-dwid-300": []
+        "res-ppl_st-wid+nar": [], "res-ppl_st-dwid-300": [], "res1-oct-standard": [], "res1-oct-wid+nar": [], 
+        "res1-oct-dwid-300": [], "res1-polka-standard": [],
+        "res1-polka-wid+nar": [], "res1-polka-dwid-300": [], "res1-ppl_st-standard": [], 
+        "res1-ppl_st-wid+nar": [], "res1-ppl_st-dwid-300": []
     }
     res_lst = {"res-oct-standard": [], "res-oct-wid+nar": [], 
         "res-oct-dwid-300": [], "res-polka-standard": [],
         "res-polka-wid+nar": [], "res-polka-dwid-300": [], "res-ppl_st-standard": [], 
-        "res-ppl_st-wid+nar": [], "res-ppl_st-dwid-300": []
+        "res-ppl_st-wid+nar": [], "res-ppl_st-dwid-300": [], "res1-oct-standard": [], "res1-oct-wid+nar": [], 
+        "res1-oct-dwid-300": [], "res1-polka-standard": [],
+        "res1-polka-wid+nar": [], "res1-polka-dwid-300": [], "res1-ppl_st-standard": [], 
+        "res1-ppl_st-wid+nar": [], "res1-ppl_st-dwid-300": []
     }
     csv_lst = ["res-oct-standard", "res-oct-wid+nar", "res-oct-dwid-300", "res-polka-standard",
-"res-polka-wid+nar", "res-polka-dwid-300", "res-ppl_st-standard", "res-ppl_st-wid+nar", "res-ppl_st-dwid-300" ]
+"res-polka-wid+nar", "res-polka-dwid-300", "res-ppl_st-standard", "res-ppl_st-wid+nar", "res-ppl_st-dwid-300",
+"res1-oct-standard", "res1-oct-wid+nar", "res1-oct-dwid-300", "res1-polka-standard",
+"res1-polka-wid+nar", "res1-polka-dwid-300", "res1-ppl_st-standard", "res1-ppl_st-wid+nar", "res1-ppl_st-dwid-300" ]
 
 sort_lst = ["high", "first", "array", "negative"]
+unit_lst = ["succ", "total", "avg.", "mean"]
 
 def read_data():
     for file_name in csv_lst:
@@ -65,14 +74,26 @@ def read_data():
 
 def cal_solve(d, file_name, bench, idx):
     is_only = True
-    for filep in csv_lst:
-        if file_name != filep:
-            for dicp in data_lst[filep]:
-                if bench == dicp['bench'] and is_only:
-                    if dicp['data'][idx][2] == 'T':
-                        return 0
-        else: continue
-    return 1
+    if args.folder_name == "comp_tools":
+        for filep in csv_lst:
+            if file_name != filep:
+                for dicp in data_lst[filep]:
+                    if bench == dicp['bench'] and is_only:
+                        if dicp['data'][idx][2] == 'T':
+                            return 0
+            else: continue
+        return 1
+    else:
+        name = file_name.split('-')[1] # get domain
+        for filep in csv_lst:
+            comp_name = file_name.split('-')[1] # get comp domain
+            if file_name != filep and name == comp_name:
+                for dicp in data_lst[filep]:
+                    if bench == dicp['bench'] and is_only:
+                        if dicp['data'][idx][2] == 'T':
+                            return 0
+            else: continue
+        return 1
 
 def print_res():
     for file in csv_lst:
@@ -106,7 +127,7 @@ def print_res():
             new_dic["data"] = [succ_count, full_time, avg_time, mean_time, solve_by_this]
             res_lst[file].append(new_dic)
 
-def print_by_table():
+def print_for_table2():
     for csv in csv_lst:
         print(f'======={csv}========')
         for dic in res_lst[csv]:
@@ -121,10 +142,31 @@ def print_by_table():
             print("\n")
         print(f'=======end========')
 
+def print_for_table1():
+    for bench in sort_lst:
+        for row in range(4):
+            print("\t\t", end = '&')
+            print(" "+unit_lst[row], end = '\t')
+            for csv in csv_lst:
+                for dic in res_lst[csv]:
+                    if dic['bench'] == bench:
+                        d = dic["data"][row]
+                        if row == 0:
+                            dp = dic["data"][4]
+                            print(f'& {d}({dp})', end = '\t')
+                        elif isinstance(d, float):
+                            print(f'& {d:.2f}', end = '\t')
+                        else: print(f'& {d}', end = '\t')
+            print("\\\\")
+        print("\hline")
+
 def main():
     read_data()
     print_res()
-    print_by_table()
+    if args.folder_name == "comp_tools":
+        print_for_table2()
+    else:
+        print_for_table1()
 
 if __name__ == '__main__':
     main()

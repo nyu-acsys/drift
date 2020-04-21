@@ -49,7 +49,8 @@ def read_false_info_from_file(file_name):
     safe_regexp = re.compile(r'safe')
     unsafe_regexp = re.compile(r'unsafe')
     timeout_regexp = re.compile(r'Error')
-    if safe_regexp.search(data[0]) or timeout_regexp.search(data[0]): # state safe, but unsafe
+    if safe_regexp.search(data[0]) or timeout_regexp.search(data[0]): 
+        # state safe, but unsafe, or timeout
         res_data.append('F')
     elif unsafe_regexp.search(data[1]): # state unsafe
         res_data.append('T')

@@ -81,6 +81,11 @@ def read_info_from_file(file_name):
         res_data.append(round(time,2))
     return res_data
 
+"""
+if an assertion is supposed to fail and the tool
+detects this correctly (regardless of whether there is a precision
+loss), then this should count as "success". 
+"""
 def read_false_info_from_file(file_name):
     try:
         file = open(file_name, 'r')
@@ -114,12 +119,11 @@ def read_false_info_from_file(file_name):
             true_part, false_part = plain_d.split(',')
             _, bot_test_f = false_part.split(':')
             bot_test_t = true_part.split(':')[2]
-            if re.match("^bottom", bot_test_f, re.IGNORECASE) and re.match("^bottom", bot_test_t, re.IGNORECASE):
-                res_data.append('T')
-            elif re.match("^bottom", bot_test_t, re.IGNORECASE):
-                res_data.append('T')
-            else:
+            if re.match("^bottom", bot_test_t, re.IGNORECASE) == False and re.match("^bottom", bot_test_f, re.IGNORECASE) :
+                # True is not bottom but false is, true negative analysis
                 res_data.append('F')
+            else:
+                res_data.append('T')
         elif bot_regexp.search(plain_d):
             res_data.append('F') # Unreachable
         else:

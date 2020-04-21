@@ -37,7 +37,7 @@ echo "outdir=<$OUTDIR> prog=<$PROG>"
 
 TESTDIR="../tests/benchmarks"
 DIRS=" DART_IT DOrder r_type"
-INS=" first high negative array" # termination  
+INS=" first high negative array" #   
 OUTPRE="out"
 DATE="gdate"
 if [[ "$OSTYPE" != "darwin"* ]]; then

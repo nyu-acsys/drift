@@ -39,4 +39,3 @@ let main (r:int(*-:{v:Int | v > 0 }*)) =
 let _ = main 1234
 let _ = main 3
 let _ = main 0
-let _ = main (-232)

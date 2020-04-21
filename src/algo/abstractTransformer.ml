@@ -411,7 +411,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             end
                );  *)
             let v_n' = join_V (stren_V t' ae) (stren_V t'' ae) in
-            let res_m = m2 |> NodeMap.add n v_n' in
+            let res_m = m2 |> NodeMap.add n1 t1' |> NodeMap.add n2 t2' |> NodeMap.add n v_n' in
             res_m
         end
     | Rec (f_opt, x, lx, e1, l) ->
