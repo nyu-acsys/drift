@@ -85,9 +85,11 @@ def cal_solve(d, file_name, bench, idx):
         return 1
     else:
         name = file_name.split('-')[1] # get domain
+        tool_ver = file_name.split('-')[0]
         for filep in csv_lst:
             comp_name = file_name.split('-')[1] # get comp domain
-            if file_name != filep and name == comp_name:
+            comp_tool_ver = file_name.split('-')[0]
+            if file_name != filep and name == comp_name and tool_ver == comp_tool_ver:
                 for dicp in data_lst[filep]:
                     if bench == dicp['bench'] and is_only:
                         if dicp['data'][idx][2] == 'T':
@@ -95,7 +97,7 @@ def cal_solve(d, file_name, bench, idx):
             else: continue
         return 1
 
-def print_res():
+def cal_res():
     for file in csv_lst:
         for dic in data_lst[file]:
             full_time = 0.0
@@ -153,7 +155,8 @@ def print_for_table1():
                         d = dic["data"][row]
                         if row == 0:
                             dp = dic["data"][4]
-                            print(f'& {d}({dp})', end = '\t')
+                            if dp == 0: print(f'& {d}', end = '\t')
+                            else: print(f'& {d}({dp})', end = '\t')
                         elif isinstance(d, float):
                             print(f'& {d:.2f}', end = '\t')
                         else: print(f'& {d}', end = '\t')
@@ -162,7 +165,7 @@ def print_for_table1():
 
 def main():
     read_data()
-    print_res()
+    cal_res()
     if args.folder_name == "comp_tools":
         print_for_table2()
     else:

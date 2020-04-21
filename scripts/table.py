@@ -45,7 +45,7 @@ def read_info_from_file(file_name):
     _, timing = plain_data[-1].split(":")
     if len(plain_data) < 3:
         res_data.append('ER')
-        res_data.append('error')
+        res_data.append('timeout')
     else:
         plain_d = plain_data[1]
         unit_regexp = re.compile(r'Unit')
@@ -100,7 +100,7 @@ def read_false_info_from_file(file_name):
     _, timing = plain_data[-1].split(":")
     if len(plain_data) < 3:
         res_data.append('ER')
-        res_data.append('error')
+        res_data.append('timeout')
     else:
         plain_d = plain_data[1]
         unit_regexp = re.compile(r'Unit')
