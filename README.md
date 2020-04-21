@@ -38,3 +38,6 @@ usage: ./tests.native [-file input file name] [-domain domain_name] [-nar true/f
   -help       : Display this list of options
   --help      : Display this list of options
 ```
+
+## 1-sensitive version
+Please check branch [1-sensitive](https://github.com/nyu-acsys/DART_IT/tree/1-sensitive) for more details.
