@@ -10,5 +10,3 @@ let decr dx = dx - 1
 	
 let main (n:unit(*-:{v:Unit | unit}*)) = 
 	assert(f decr 3 > 0)
-
-let _ = main ()

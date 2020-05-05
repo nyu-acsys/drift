@@ -12,5 +12,3 @@ let rec f x =
 
 let main (n:unit(*-:{v:Unit | unit}*)) =    
     assert (f 3 >= 0)
-
-let _ = main ()

@@ -23,5 +23,3 @@ let main (mm:unit(*-:{v:Unit | unit}*)) =
     let rsz = loopa x y z in
     let rsx = 10 in
     loopb rsx rsx rsz
-
-let _ = main ()

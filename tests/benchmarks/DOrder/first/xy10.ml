@@ -10,6 +10,3 @@ let main (z:int(*-:{v:Int | true}*)) =
     let x = 0 in
     let y = 0 in
     assert (loopa x y z = true)
-
-let _ = main 5
-let _ = main (-4)

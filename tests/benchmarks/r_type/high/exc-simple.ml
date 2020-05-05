@@ -12,5 +12,3 @@ let g gn = assert (gn = 0)
 
 let main (n:int(*-:{v:Int | true}*)) = 
     f n g
-
-let _ = main (-3)

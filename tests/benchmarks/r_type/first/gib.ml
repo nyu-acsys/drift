@@ -16,6 +16,4 @@ let rec gib ga gb gn =
 let main (n:int(*-:{v:Int | true}*)) (a:int(*-:{v:Int | true}*)) (b:int(*-:{v:Int | true}*)) = 
 	if a >= 0 && b >= 0 && n >= 0 then
 		assert(gib 0 1 n >= 0)
-	else assert(true)
-
-let _ = main 10 1 2
+	else ()

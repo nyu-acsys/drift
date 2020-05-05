@@ -7,5 +7,3 @@ let rec app (a:int) (f:int->unit) (x:int) (k:int) =
 let check (cx:int) (cy:int) = assert (cx <= cy)
 
 let main (i:int(*-:{v:Int | true}*)) (j:int(*-:{v:Int | true}*)) = app i (check i) i j
-
-let _ = main 5 2

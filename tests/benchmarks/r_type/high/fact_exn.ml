@@ -23,6 +23,4 @@ let ex xn = 1
 let main (n:int(*-:{v:Int | true}*)) =
   if n > 0
   then assert(fact n ex >= (-1))
-  else assert(true)
-
-let _ = main 300
+  else ()

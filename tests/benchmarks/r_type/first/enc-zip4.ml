@@ -9,5 +9,3 @@ let rec zip x y =
 let main (n:int(*-:{v:Int | true}*)) =
     let m = zip n n in
     assert (m = n)
-
-let _ = main 10

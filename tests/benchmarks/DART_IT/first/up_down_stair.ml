@@ -20,9 +20,4 @@ let rec loop (lk:int) (ln:int) (res:int) =
 let main (k:int(*-:{v:Int | true}*)) (n:int(*-:{v:Int | true}*)) = 
     if k > 0 && n > 0 then
         assert(loop k n n = true)
-    else assert(true)
-
-let _ = main 4 100
-let _ = main 10 20
-let _ = main 0 0
-let _ = main (-1) (-20)
+    else ()

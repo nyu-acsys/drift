@@ -30,5 +30,3 @@ let g gb3 (gx:bool) gst = if gb3 > 0 then f gx true (next gst) else f gx false g
 
 let main (b2:int(*-:{v:Int | true}*)) (b3:int(*-:{v:Int | true}*)) =  
     if b2 > 0 then g b3 true opened else g b3 false init
-
-let _ = main 1 2 (*bot*)

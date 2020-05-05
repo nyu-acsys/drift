@@ -1,11 +1,15 @@
 import csv
 import argparse
+import re
+import copy
 
+exp2_regexp = re.compile(r'comp_tools')
 parser = argparse.ArgumentParser()
 parser.add_argument('folder_name')
+parser.add_argument('show_unsolved', nargs='?', default=False)
 args = parser.parse_args()
 
-if args.folder_name == "comp_tools":
+if exp2_regexp.search(args.folder_name):
     data_lst = { "res1-polka-standard": [], "res_rtype": [], 
         "res_dorder": [], "res_dsolve": [], "res_mochi": []}
     res_lst = { "res1-polka-standard": [], "res_rtype": [], 
@@ -33,69 +37,117 @@ else:
 "res1-oct-standard", "res1-oct-wid+nar", "res1-oct-dwid-300", "res1-polka-standard",
 "res1-polka-wid+nar", "res1-polka-dwid-300", "res1-ppl_st-standard", "res1-ppl_st-wid+nar", "res1-ppl_st-dwid-300" ]
 
-sort_lst = ["high", "first", "array", "negative"]
+# loc is calculated by cloc 
+sort_lst = {"high":["HO", 8], "first":["FO", 11], "array":["A", 17], "negative":["E", 16]}
 unit_lst = ["succ", "total", "avg.", "mean"]
+
+cant_solve_lst = [
+    { "oct":[], "polka":[], "ppl_st":[] },
+    { "oct":[], "polka":[], "ppl_st":[] }
+]
+
+can_solve_domain_dic = { 
+"oct":[{"high":0, "first":0, "array":0, "negative":0},{"high":0, "first":0, "array":0, "negative":0}], 
+"polka":[{"high":0, "first":0, "array":0, "negative":0},{"high":0, "first":0, "array":0, "negative":0}],
+"ppl_st":[{"high":0, "first":0, "array":0, "negative":0},{"high":0, "first":0, "array":0, "negative":0}]
+}
+
+def get_domain_idx(domain):
+    if domain == "oct": return 0
+    elif domain == "polka": return 1
+    else: return 2
+
+def get_bench_idx(bench):
+    if bench == "high": return 0
+    elif bench == "first": return 1
+    elif bench == "array": return 2
+    else: return 3
 
 def read_data():
     for file_name in csv_lst:
-        with open(args.folder_name+"/"+file_name+".csv") as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=',')
-            set_name = ""
-            data_set = {"bench": set_name,  "data": []}
-            line_count = 0
-            d_lst = []
-            for row in csv_reader:
-                if line_count == 0:
-                    line_count += 1
-                    continue
-                elif set_name != row[0]:
-                    if set_name != "":
-                        set_name = row[0]
-                        d_lst.append(data_set)
-                        data_set = {"bench": set_name,  "data": []}
-                    else: 
-                        set_name = row[0]
-                        data_set["bench"] = set_name
-                try:
-                    time = float(row[3])
-                except:
-                    time = row[3]
-                data = [row[0], time, row[4]]
-                data_set["data"].append(data)
-            d_lst.append(data_set)
-            data_lst[file_name] = d_lst
-            new_lst = []
-            for bn in sort_lst:
-                for dic in data_lst[file_name]:
-                    if dic['bench'] == bn:
-                        new_lst.append(dic)
-                    else: continue
-            data_lst[file_name] = new_lst
+        if exp2_regexp.search(args.folder_name):
+            csv_file = open(args.folder_name+"/"+file_name+".csv", 'r')
+        else:
+            try:
+                csv_file = open("non-sensitive/"+args.folder_name+"/"+file_name+".csv", 'r')
+            except:
+                csv_file = open("1-sensitive/"+args.folder_name+"/"+file_name+".csv", 'r')
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        set_name = ""
+        data_set = {"bench": set_name,  "data": []}
+        line_count = 0
+        d_lst = []
+        for row in csv_reader:
+            if line_count == 0:
+                line_count += 1
+                continue
+            elif set_name != row[0]:
+                if set_name != "":
+                    set_name = row[0]
+                    d_lst.append(data_set)
+                    data_set = {"bench": set_name,  "data": []}
+                else: 
+                    set_name = row[0]
+                    data_set["bench"] = set_name
+            try:
+                time = float(row[3])
+            except:
+                time = row[3]
+            data = [row[0], time, row[4], row[1]]
+            data_set["data"].append(data)
+        d_lst.append(data_set)
+        data_lst[file_name] = d_lst
+        new_lst = []
+        for bn, _ in sort_lst.items():
+            for dic in data_lst[file_name]:
+                if dic['bench'] == bn:
+                    new_lst.append(dic)
+                else: continue
+        data_lst[file_name] = new_lst
+
 
 def cal_solve(d, file_name, bench, idx):
-    is_only = True
-    if args.folder_name == "comp_tools":
+    if exp2_regexp.search(args.folder_name):
         for filep in csv_lst:
             if file_name != filep:
                 for dicp in data_lst[filep]:
-                    if bench == dicp['bench'] and is_only:
+                    if bench == dicp['bench']:
                         if dicp['data'][idx][2] == 'T':
                             return 0
             else: continue
         return 1
     else:
-        name = file_name.split('-')[1] # get domain
         tool_ver = file_name.split('-')[0]
         for filep in csv_lst:
-            comp_name = file_name.split('-')[1] # get comp domain
-            comp_tool_ver = file_name.split('-')[0]
-            if file_name != filep and name == comp_name and tool_ver == comp_tool_ver:
+            comp_tool_ver = filep.split('-')[0]
+            if file_name != filep and tool_ver == comp_tool_ver:
                 for dicp in data_lst[filep]:
-                    if bench == dicp['bench'] and is_only:
+                    if bench == dicp['bench']:
                         if dicp['data'][idx][2] == 'T':
                             return 0
             else: continue
         return 1
+
+def common_not_solved(file_name, bench, idx, test_name):
+    domain_name = file_name.split('-')[1] # get domain
+    tool_ver = file_name.split('-')[0]
+    common = True
+    for filep in csv_lst:
+        comp_domain_name = filep.split('-')[1] # get comp domain
+        comp_tool_ver = filep.split('-')[0]
+        if file_name != filep  and tool_ver == comp_tool_ver: # and domain_name == comp_domain_name
+            for dicp in data_lst[filep]:
+                # if bench == dicp['bench'] and test_name == "mc91_95":
+                #     print(test_name, filep, dicp['data'][idx][2])
+                if common and bench == dicp['bench']:
+                    if dicp['data'][idx][2] == 'F':
+                        continue
+                    else: common = False
+        else: continue
+    test_name = bench + "/" + test_name
+    idx = 0 if tool_ver == "res" else 1
+    if common and test_name not in cant_solve_lst[idx][domain_name]:
+        cant_solve_lst[idx][domain_name].append(test_name)
 
 def cal_res():
     for file in csv_lst:
@@ -114,6 +166,8 @@ def cal_res():
                     if d[2] == 'T':
                         solve_by_this += cal_solve(d, file, dic['bench'], i)
                         succ_count += 1
+                    elif not exp2_regexp.search(args.folder_name):
+                        common_not_solved(file, dic['bench'], i, d[3])
                     if d[1] > max_time:
                         max_time = d[1]
                     if d[1] < min_time:
@@ -126,7 +180,7 @@ def cal_res():
             bench_name = dic['bench']
             new_dic = {'bench': "", "data": []}
             new_dic['bench'] = bench_name
-            new_dic["data"] = [succ_count, full_time, avg_time, mean_time, solve_by_this]
+            new_dic["data"] = [succ_count, full_time, avg_time, mean_time, solve_by_this, total_count]
             res_lst[file].append(new_dic)
 
 def print_for_table2():
@@ -140,14 +194,24 @@ def print_for_table2():
             mean_time = dic["data"][3]
             solve_by_this = dic["data"][4]
             print("bench | succ | full | avg | mean | solvethis")
-            print(f'{bench_name} | {succ_count} | {full_time:.2f} | {avg_time:.2f} | {mean_time:.2f} | {solve_by_this}')
+            if solve_by_this == 0:
+                print(f'{bench_name}\t& {succ_count}\t& {full_time:.2f}\t& {avg_time:.2f}\t& {mean_time:.2f}')
+            else:
+                print(f'{bench_name}\t& {succ_count}({solve_by_this})\t& {full_time:.2f}\t& {avg_time:.2f}\t& {mean_time:.2f}')
             print("\n")
         print(f'=======end========')
 
 def print_for_table1():
-    for bench in sort_lst:
+    for bench, conf in sort_lst.items():
         for row in range(4):
-            print("\t\t", end = '&')
+            if row == 2:
+                test_nums = 0
+                for dic in res_lst[csv_lst[0]]:
+                    if dic['bench'] == bench:
+                        test_nums = dic['data'][5]
+                print(f'{conf[0]} ({test_nums})\t', end = '&')
+            elif row == 3: print(f'loc: {conf[1]}\t', end = '&')
+            else: print("\t\t", end = '&')
             print(" "+unit_lst[row], end = '\t')
             for csv in csv_lst:
                 for dic in res_lst[csv]:
@@ -163,12 +227,80 @@ def print_for_table1():
             print("\\\\")
         print("\hline")
 
+def cal_solve_by_domain():
+    """
+        For Experiment 1 is how many benchmarks can be
+        verified only with a specific abstract domain (regardless of which
+        widening for that domain is being used).
+    """
+    truth_list = {"oct":[], "polka":[], "ppl_st":[]}
+    # 1. Get all common res from each domain
+    for domain, _ in can_solve_domain_dic.items():
+        for x in range(0,2):
+            domain_obj = copy.deepcopy(data_lst[csv_lst[0]])
+            for dic in domain_obj:
+                for i in range(0, len(dic["data"])):
+                    dic["data"][i][2] = 'F'
+            truth_list[domain].append(domain_obj)
+    for domain, _ in can_solve_domain_dic.items():
+        common = truth_list[domain]
+        for file_name in csv_lst:
+            domain_name = file_name.split('-')[1] # get comp domain
+            tool_ver = 0 if file_name.split('-')[0] == "res" else 1
+            if domain_name == domain:
+                for dic1 in data_lst[file_name]:
+                    for dic2 in common[tool_ver]:
+                        if dic1["bench"] == dic2["bench"]:
+                            for i in range(0, len(dic1["data"])):
+                                if dic1["data"][i][2] == 'T':
+                                    dic2["data"][i][2] = 'T'
+    # 2. Compare the common results, generate the number
+    for domain, res in can_solve_domain_dic.items():
+        current_lst = truth_list[domain]
+        for i in range(0, 2): # Get tool ver
+                comp_domains = []
+                for comp_domain, res_lst in truth_list.items():
+                    if domain != comp_domain:
+                        comp_domains.append(comp_domain)
+                for dic1 in current_lst[i]:
+                    for dic2 in truth_list[comp_domains[0]][i]:
+                        if dic1["bench"] == dic2["bench"]:
+                            for dic3 in truth_list[comp_domains[1]][i]:
+                                if dic1["bench"] == dic3["bench"]:
+                                    for j in range(0, len(dic1["data"])):
+                                        if dic1["data"][j][2] == 'T' and dic2["data"][j][2] == 'F' and dic3["data"][j][2] == 'F':
+                                            res[i][dic1["bench"]] += 1
+    # print(can_solve_domain_dic)
+    
+    print("\t\tdomain | solvethis")
+    benchlst = ["high", "first", "array", "negative"]
+    for i in range(0,2):
+        if i == 0: print("non-sensitive")
+        else: print("1-sensitive")
+        for domain, res in can_solve_domain_dic.items():
+            for bench in benchlst:
+                print(f'{bench}: {domain} | {res[i][bench]}')
+    exit(0)
+
+
+def print_unsolved_tests():
+    for i in range(len(cant_solve_lst)):
+        tool_ver = "nonsensitive" if i == 0 else "1-sensitive"
+        print(f'-----{tool_ver}-----')
+        for domain, vals in cant_solve_lst[i].items():
+            print(domain, end = ":\t ")
+            print(vals)
+        print(f'-----end-----')
+
 def main():
     read_data()
     cal_res()
-    if args.folder_name == "comp_tools":
+    if exp2_regexp.search(args.folder_name):
         print_for_table2()
     else:
+        cal_solve_by_domain()
+        if args.show_unsolved:
+            print_unsolved_tests()
         print_for_table1()
 
 if __name__ == '__main__':

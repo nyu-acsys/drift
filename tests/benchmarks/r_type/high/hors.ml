@@ -19,4 +19,3 @@ let s sn sq = f sn c sq
 let main (n:int(*-:{v:Int | true}*)) =
 	s n 0 
 (* check whether S: q0 *)
-let _ = main 30

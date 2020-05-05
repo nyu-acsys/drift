@@ -14,7 +14,7 @@ let rec loopb bx by bz =
     else
         bz < 1
 
-let main (mm:unit(*-:{v:Unit | unit}*)) =
+let main (mm:unit) =
     let x = 0 in
     let y = 0 in
     let z = 0 in
@@ -22,5 +22,3 @@ let main (mm:unit(*-:{v:Unit | unit}*)) =
     let rsz = loopa x y z in
     let rsx = 10 in
     assert (loopb rsx rsx rsz = true)
-
-let _ = main ()

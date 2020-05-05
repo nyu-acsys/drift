@@ -5,5 +5,3 @@ let rec fib n =
 
 let main (mn:int(*-:{v:Int | true}*)) =
     assert (fib mn >= mn)
-
-let _ = main 34

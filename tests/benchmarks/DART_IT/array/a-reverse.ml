@@ -12,5 +12,3 @@ let main (n(*-:{v:Int | true}*)) =
 		let b = Array.make n 0 in
 		reverse 0 n a b
 	else ()
-
-let _ = main 8

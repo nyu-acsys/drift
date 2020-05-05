@@ -14,20 +14,11 @@ attrs = ['subdir', 'file name', 'test class', 'timing (seconds)', 'res (true/fal
 
 def manipulate_input_data(data):
     res_data = []
-    data = data[2:]
-    temp_data = ""
-    flag = False
     for x in data:
-        if x == '\n' and flag:
-            flag = False
-            res_data.append(temp_data)
-            temp_data = ''
-        elif x == '\n' and not flag:
-            flag = True
+        if x == '\n':
             continue
         else:
-            temp_data += x
-    res_data.append(temp_data)
+            res_data.append(x)
     return res_data
 
 
@@ -45,40 +36,25 @@ def read_info_from_file(file_name):
     _, timing = plain_data[-1].split(":")
     if len(plain_data) < 3:
         res_data.append('ER')
-        res_data.append('timeout')
     else:
         plain_d = plain_data[1]
-        unit_regexp = re.compile(r'Unit')
-        int_regexp = re.compile(r'Int')
-        bool_regexp = re.compile(r'Bool')
-        bot_regexp = re.compile(r'_|_')
-        pref_regexp = re.compile(r'PreDef')
-        if pref_regexp.search(plain_d):
-            res_data.append('ER')
-        elif unit_regexp.search(plain_d):
+        safe_regexp = re.compile(r'safe')
+        unsafe_regexp = re.compile(r'failed')
+        timeout_regexp = re.compile(r'timeout')
+        if unsafe_regexp.search(plain_d):
+            res_data.append('F')
+        elif safe_regexp.search(plain_d):
             res_data.append('T')
-        elif int_regexp.search(plain_d):
-            value = plain_d.split('|')[2]
-            if re.match("^bottom", value, re.IGNORECASE):
-                res_data.append('N')
-            else:
-                res_data.append('INT')
-        elif bool_regexp.search(plain_d):
-            true_part, false_part = plain_d.split(',')
-            _, bot_test_f = false_part.split(':')
-            bot_test_t = true_part.split(':')[2]
-            if re.match("^bottom", bot_test_f, re.IGNORECASE):
-                res_data.append('T')
-            elif re.match("^bottom", bot_test_t, re.IGNORECASE):
-                res_data.append('F')
-            else:
-                res_data.append('F')
-        elif bot_regexp.search(plain_d):
-            res_data.append('T') # Unreachable
+        elif timeout_regexp.search(plain_d):
+            res_data.append('F')
         else:
-            res_data.append('UN')
+            print("File data error: \n")
+            sys.exit(data)
+    try:
         time = float(timing) / 1000
         res_data.append(round(time,2))
+    except:
+        res_data.append(timing)
     return res_data
 
 """
@@ -100,36 +76,25 @@ def read_false_info_from_file(file_name):
     _, timing = plain_data[-1].split(":")
     if len(plain_data) < 3:
         res_data.append('ER')
-        res_data.append('timeout')
     else:
         plain_d = plain_data[1]
-        unit_regexp = re.compile(r'Unit')
-        int_regexp = re.compile(r'Int')
-        bool_regexp = re.compile(r'Bool')
-        bot_regexp = re.compile(r'_|_')
-        if unit_regexp.search(plain_d):
-            res_data.append('T') # True Negative
-        elif int_regexp.search(plain_d):
-            value = plain_d.split('|')[2]
-            if re.match("^bottom", value, re.IGNORECASE):
-                res_data.append('F')
-            else:
-                res_data.append('T')
-        elif bool_regexp.search(plain_d):
-            true_part, false_part = plain_d.split(',')
-            _, bot_test_f = false_part.split(':')
-            bot_test_t = true_part.split(':')[2]
-            if re.match("^bottom", bot_test_t, re.IGNORECASE) == False and re.match("^bottom", bot_test_f, re.IGNORECASE) :
-                # True is not bottom but false is, true negative analysis
-                res_data.append('F')
-            else:
-                res_data.append('T')
-        elif bot_regexp.search(plain_d):
-            res_data.append('F') # Unreachable
+        safe_regexp = re.compile(r'safe')
+        unsafe_regexp = re.compile(r'failed')
+        timeout_regexp = re.compile(r'timeout')
+        if unsafe_regexp.search(plain_d):
+            res_data.append('T')
+        elif safe_regexp.search(plain_d):
+            res_data.append('F')
+        elif timeout_regexp.search(plain_d):
+            res_data.append('F')
         else:
-            res_data.append('UN')
+            print("File data error: \n")
+            sys.exit(data)
+    try:
         time = float(timing) / 1000
         res_data.append(round(time,2))
+    except:
+        res_data.append(timing)
     return res_data
 
 def dispatch(subdir, dict):

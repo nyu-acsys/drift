@@ -10,6 +10,4 @@ let rec f x =
 
 let main (n:int(*-:{v:Int | true}*)) =   
     if n >= -1 then assert(f n >= -3)
-    else assert(true)
-
-let _ = main (-1)
+    else ()

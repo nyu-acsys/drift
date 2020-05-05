@@ -20,9 +20,3 @@ let main (n(*-:{v:Int | true}*)) =
 	else
     let m = 0 - n in
     assert(map2 succ m >= 2 * m)
-
-let _ = main 4
-let _ = main 12
-let _ = main 0
-let _ = main (-1)
-let _ = main (-20)

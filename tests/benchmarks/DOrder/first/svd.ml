@@ -55,9 +55,4 @@ let rec loop i l m n = (* Accumulation of right-hand transformations. *)
 let main (ml:int(*-:{v:Int | true}*)) (mm:int(*-:{v:Int | true}*)) (mn:int(*-:{v:Int | true}*)) =
     if (ml > 0) then 
         assert(loop mn ml mm mn = true)
-    else assert(true)
-        
-let _ = main 4 0 2
-let _ = main 2 0 4
-let _ = main 1 0 0
-let _ = main (-1) 0 0
+    else ()

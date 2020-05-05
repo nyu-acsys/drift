@@ -12,5 +12,3 @@ let rec sum n =
 
 let main (mn:int(*-:{v:Int | true}*)) =
 	assert (mn <= sum mn)
-
-let _ = main 123

@@ -14,5 +14,3 @@ let main (z(*-:{v:Int | true}*)) (n(*-:{v:Int | true}*)) =
 	    let v2 = Array.make n 1 in
 	    dotprod n v1 v2 z z; ()
 	else ()
-
-let _ = main 0 4

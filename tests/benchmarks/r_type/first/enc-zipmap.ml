@@ -20,5 +20,3 @@ let rec map mx =
 
 let main (n:int(*-:{v:Int | true}*)) =
   assert (map (zip n n) = n)
-
-let _ = main 31

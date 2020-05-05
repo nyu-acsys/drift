@@ -9,6 +9,4 @@ let h (z:int) (y:int) = y > z
 
 let main (n:int(*-:{v:Int | true}*)) =
 	if n >= 0 then assert(f n (h n))
-	else assert(true)
-
-let _ = main 15
+	else ()

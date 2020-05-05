@@ -12,5 +12,3 @@ let rec zip x y =
 
 let main (n:int(*-:{v:Int | true}*)) =
   assert (zip n n = n)
-
-let _ = main 100

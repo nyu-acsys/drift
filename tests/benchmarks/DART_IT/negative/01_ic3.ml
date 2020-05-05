@@ -14,6 +14,4 @@ let rec loop (lx:int) (ly:int) =
 let main (mm:unit(*-:{v:Unit | unit}*)) = 
     let x = 30 in
     let y = -1000 in
-    loop x y (* Should be false *)
-
-let _ = main ()
+    loop x y (* Should assert failure *)

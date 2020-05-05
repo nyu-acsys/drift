@@ -14,9 +14,3 @@ let rec loop (x:int) (i:int) =
 
 let main (n:int(*-:{v:Int | true}*)) =
   assert (loop (-3) n >= 3)
-
-let _ = main 15
-let _ = main 0
-let _ = main 23
-let _ = main 10
-let _ = main (-20)

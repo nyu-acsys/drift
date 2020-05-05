@@ -16,18 +16,14 @@ let append (ma: int array) (mb: int array) =
 	let mn = la + lb in
 	let mc = Array.make mn 0 in
 	append_helper 0 mn la ma mb mc;
-	Array.length mc
+	mc
 
 let main (n:int(*-:{v:Int | true}*)) =
-	let res: bool = 
-		if n > 0 then
-			let a = Array.make n 0 in
-			let b = Array.make n 0 in
-			let la = Array.length a in
-			let lb = Array.length b in
-			let lc = append a b in
-			lc = la + lb
-		else true
-	in assert (res = true)
-
-let _ = main 5
+	if n > 0 then
+		let a = Array.make n 0 in
+		let b = Array.make n 0 in
+		let la = Array.length a in
+		let lb = Array.length b in
+		let lc = Array.length (append a b) in
+		assert (lc = la + lb)
+	else ()

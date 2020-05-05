@@ -22,10 +22,4 @@ let main (n0:int(*-:{v:Int | true}*)) (n1:int(*-:{v:Int | true}*)) (n2:int(*-:{v
         let b1 = loopb i a3 n2 in
         let b2 = loopb i b1 n1 in 
         assert(loopc i b2 n0 = true)
-    else assert(true)
-
-let _ = main 2 3 4
-let _ = main 3 2 4
-let _ = main (-2) 2 3
-let _ = main 2 (-2) 3
-let _ = main 3 2 (-2)
+    else ()

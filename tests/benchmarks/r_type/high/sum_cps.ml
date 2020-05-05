@@ -10,5 +10,3 @@ let rec cps_sum (cn: int) (ck: int -> unit) =
 let main (n:int(*-:{v:Int | true}*)) =
     let u (ux: int) = assert (ux >= n) in
     cps_sum n u
-
-let _ = main 100

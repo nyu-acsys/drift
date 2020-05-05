@@ -27,3 +27,5 @@ let main (n:int) (k:int) =
 	if k >= 0 && k < n + n then
 		(c(k); ())
 	else ()
+
+let _ = main 3 4

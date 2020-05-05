@@ -94,6 +94,9 @@ ident_list:
 | IDENT { [$1] }
 | IDENT COLON TYPE { [$1] }
 | IDENT param_list { $1 :: $2 }
+;
+
+ident_ref_list:
 | IDENT param_ref_list { $1 :: $2 }
 ;
 
@@ -108,7 +111,9 @@ basic_term: /*term@7 := int | bool | var | (term)*/
 app_term: /* term@6 := term@6 term@7 | term@7 */
 | basic_term { $1 }
 | app_term basic_term { App ($1, $2, "") }
-| ASSERT LPAREN seq_term RPAREN { Ite ($3, Const (Boolean true, ""), Const (Boolean false, ""), "")}
+| ASSERT LPAREN seq_term RPAREN { 
+  let loc = Some (mklocation $startpos $endpos) |> construct_asst in
+  Ite ($3, Void(""), Void(""), "", loc)}
 ;
 
 mult_op:
@@ -158,7 +163,10 @@ bool_term: /* term@2 := term@2 bop term@3 */
 
 %inline if_term_:
 | bool_term { $1 }
-| IF seq_term THEN term ELSE term { Ite ($2, $4, $6, "") }
+| IF seq_term THEN term ELSE term { 
+  let loc = None |> construct_asst in
+  Ite ($2, $4, $6, "", loc) 
+}
 ;
 
 lambda_term:
@@ -179,22 +187,25 @@ let_in_term:
 let_val:
 | LET REC ident_list EQ seq_term {
   let fn = mk_lambdas (List.tl $3) $5 in
-  if (List.hd $3) = final_call_name then
-    1, (List.hd $3), fn, (List.tl $3)
-  else
-    1, (List.hd $3), fn, []
+  1, (List.hd $3), fn, []
 }
 | LET ident_list EQ seq_term {
   let fn = mk_lambdas (List.tl $2) $4 in
-  if (List.hd $2) = final_call_name then
-    0, (List.hd $2), fn, (List.tl $2)
-  else
-    0, (List.hd $2), fn, []
+  0, (List.hd $2), fn, []
 }
+| LET ident_ref_list EQ seq_term {
+  let fn = mk_lambdas (List.tl $2) $4 in
+  0, (List.hd $2), fn, (List.tl $2)
+}
+| LET REC ident_ref_list EQ seq_term {
+  let fn = mk_lambdas (List.tl $3) $5 in
+  1, (List.hd $3), fn, (List.tl $3)
+}
+;
 
 /*
 let main (x(*-: {v: int | true}*)) = x
-<=> let f x = x in f prefx
+<=> let main x = x in main prefx
 */
 let_vals:
 | let_val {
@@ -203,22 +214,23 @@ let_vals:
     if x = final_call_name then
       mk_let_main x def lst
     else
-      mk_let_in x def (mk_var universe_name)
+      def
   else
     if x = final_call_name then
-      mk_let_main_rec x def lst
+      mk_let_main x def lst
     else
-      mk_let_rec_in x def (mk_var universe_name)
+      def
 }
 | let_val let_vals {
   let rc, x, def, lst = $1 in
-  if x = final_call_name then
-    mk_let_main_rec x def lst
+  if x = final_call_name && lst <> [] then
+    mk_let_main x def lst
   else if rc = 0 then
     mk_let_in x def $2
   else 
     mk_let_rec_in x def $2
 }
+;
 
 term:
 | if_term_ { $1 }
@@ -232,3 +244,24 @@ seq_term:
 ;
 
 
+/*
+let main (x(*-: {v: int | true}*)) =
+  x
+
+let _ = main 3
+let _ = main 10
+
+<=>
+
+let main x = x in
+let _ = main 3 in
+let _ = main 10 in
+main top_x
+
+or
+let main x = x in
+let umain = main top_x in
+let _ = main 3 in
+let _ = main 10 in
+umain
+*/

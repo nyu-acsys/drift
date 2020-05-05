@@ -11,4 +11,7 @@ let g n st = if n > 0 then unlock (st) else st
 let main (mn:int(*-:{v:Int | true}*)) = 
     assert ((g mn (f mn 0)) = 0) 
 
-let _ = main 10
+(* let _ = 
+    for i = 1 to 1000000 do
+      main (Random.int 1000)
+    done *)

@@ -10,11 +10,9 @@ let rec loopb bx by =
         loopb (bx - 4) (by - 1)
     else by > (-1)
 
-let main (mm:unit(*-:{v:Unit | unit}*)) =
+let main (mm:unit) =
     let x = 0 in
     let y = 0 in
 
     let rx = loopa x y in
     assert (loopb rx 4 = true)
-
-let _ = main ()

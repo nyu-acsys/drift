@@ -1,19 +1,23 @@
 #!/bin/bash
 
-# ./runit.sh -domain Oct [-nar | -dwid 0]
+# ./runit.sh -set call/unv -domain Oct [-nar | -dwid 0]
 # Domain for benchmarks: Polka_st, Oct, Ppl_st
 
 OUTDIR="../outputs/DART_IT"
 PROG="../tests.native"
 PROGNAME="DART_IT"
-DOMAIN=$2
+SET=$2
+DOMAIN=$4
 if [ $# -gt 1 ]; then
-    DOMAIN=$2
+    SET=$2
+    DOMAIN=$4
 else
     echo "ERROR!!! The command should be:"
     echo "./runit.sh -domain <domain_name> [-dwid <delay_steps> | -nar]"
     exit 0
 fi
+shift
+shift
 shift
 shift
 
@@ -35,9 +39,15 @@ else
 fi
 echo "outdir=<$OUTDIR> prog=<$PROG>"
 
-TESTDIR="../tests/benchmarks"
+if [ $SET = "call" ]; then
+    TESTDIR="../tests/benchmarks_call"
+else
+    TESTDIR="../tests/benchmarks"
+fi
+
 DIRS=" DART_IT DOrder r_type"
 INS=" first high negative array" #   
+timeout="120"
 OUTPRE="out"
 DATE="gdate"
 if [[ "$OSTYPE" != "darwin"* ]]; then
@@ -63,11 +73,15 @@ for hdir in ${DIRS}; do
                 if [[ "$OSTYPE" != "darwin"* ]]; then
                     f=${f#*./}
                 fi
-                echo "${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -int -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar}"
+                echo "${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar}"
                 ts=$(${DATE} +%s%N)
-                ${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -int -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} > ${OUTDIR}/${dir}/${OUTPRE}_${f}
-                tt=$((($(${DATE} +%s%N) - $ts)/1000000))
-                echo "Time: $tt" >> ${OUTDIR}/${dir}/${OUTPRE}_${f}
+                timeout ${timeout} ${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} &> ${OUTDIR}/${dir}/${OUTPRE}_${f}
+                if [[ $? -ne 0 ]]; then
+                    echo "Time: timeout" >> ${OUTDIR}/${dir}/${OUTPRE}_${f}
+                else
+                    tt=$((($(${DATE} +%s%N) - $ts)/1000000))
+                    echo "Time: $tt" >> ${OUTDIR}/${dir}/${OUTPRE}_${f}
+                fi
             done
         fi
     done

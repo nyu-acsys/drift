@@ -22,9 +22,4 @@ let main (m:int(*-:{v:Int | true}*)) (n:int(*-:{v:Int | true}*)) =
     if m > 0 && n > 0 then 
         let res = gcd m n in
         assert(res <= m && res <= n)
-    else assert(true)
-
-let _ = main 12 24
-let _ = main 144 120
-let _ = main 0 0
-let _ = main (-45) (-30)
+    else ()

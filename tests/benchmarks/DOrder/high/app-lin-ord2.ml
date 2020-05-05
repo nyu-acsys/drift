@@ -5,5 +5,3 @@ let check (cx:int) (cy:int) = assert (cx = cy)
 
 let main (a:int(*-:{v:Int | true}*)) (b:int(*-:{v:Int | true}*)) =
     app (4 * a + 2 * b) (check (4 * a + 2 * b)) (4 * a + 2 * b) 
-
-let _ = main 1 1

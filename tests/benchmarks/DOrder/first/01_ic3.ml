@@ -15,5 +15,3 @@ let main (mm:unit(*-:{v:Unit | unit}*)) =
     let x = 1 in
     let y = 1 in
     loop x y
-
-let _ = main ()

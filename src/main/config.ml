@@ -3,7 +3,7 @@ let version = "0.1 beta"
 
 let debug = ref false
 
-let integrat_test = ref false
+let out_put_level = ref 0 (* default to print map after each step *)
 
 let bt = ref false
 
@@ -17,14 +17,19 @@ let narrow = ref false
 
 let domain = ref "Oct" (*Default: Octagon domain*)
 
-let usage = "usage: ./tests.native [-file input_file_name] [-domain domain_name] [-nar true/false] [-delay-wid NUM] [-debug] [-bt] [-int]"
+let usage = "usage: ./tests.native [-file input_file_name] [-domain domain_name] [-nar true/false] [-delay-wid NUM] [-debug] [-bt] [-out LEVEL]"
 
 let cmd_options_spec =
   [("-debug", Arg.Set debug, ": Debug mode");
   ("-bt", Arg.Set bt, ": Allow trace back");
   ("-domain", Arg.String (fun s -> domain := s), ": Domain specification");
   ("-delay-wid", Arg.Int (fun s -> delay_wid := s), ": Set delay widening steps");
-  ("-int", Arg.Set integrat_test, ": Display the final result only");
+  ("-out", Arg.Int (fun s -> out_put_level := s), 
+    ": Output result level\n
+    \t 0: Output map after each step\n
+    \t 1: Output map only for the last step\n
+    \t 2: Output the result only
+    ");
   ("-nar", Arg.String (fun s -> if s = "true" then narrow:=true else narrow:=false), ": Use narrowing procedure");
   ("-file", Arg.String (fun s -> parse_file := true; file := s), ": Input file specification")]
 

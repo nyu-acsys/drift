@@ -22,5 +22,3 @@ let main (k:unit(*-:{v:Unit | unit}*)) =
     let n = 13 in
     let result = hanoi n in
     assert (result >= n)
-
-let _ = main () 

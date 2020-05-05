@@ -2,6 +2,7 @@ open AbstractDomain
 open Syntax
 open SemanticDomain
 open SemanticsDomain
+open Printer
 open Util
 open Config
 (*
@@ -26,8 +27,6 @@ let process = ref "Wid"
 
 let env0, m0 = 
     array_M VarMap.empty (NodeMap.create 1234)
-
-(* let pre_m = ref m0 *)
 
 let pre_def_func = [|"Array.make"; "Array.length"; "Array.set"; "Array.get"|]
 
@@ -177,13 +176,13 @@ let iterEnv_v env m v = VarMap.fold (fun var n a ->
     let ai = NodeMap.find_opt n m |> Opt.get_or_else Top in
     arrow_V var a ai) env v *)
 
-(* let optmization m n find =
+(* let optmization m n find = (* Not sound for work *)
     if !st <= 6000 then false else
     let t = find n m in
     let pre_t = find n !pre_m in
     opt_eq_V pre_t t *)
 
-let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
+let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) (assertion: bool) =
     let n = SN (true, loc term) in
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     match term with
@@ -255,7 +254,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             Format.printf "\n";
         end
         ); *)
-        let m1 = step e1 env m ae in
+        let m1 = step e1 env m ae assertion in
         let n1 = SN (true, loc e1) in
         let t1 = find n1 m1 in
         if t1 = Bot then m1
@@ -264,7 +263,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         (loc e1) (string_of_value t1);
         m1 |> NodeMap.add n Top)
         else
-            let m2 = step e2 env m1 ae in
+            let m2 = step e2 env m1 ae assertion in
             let n2 = SN (true, loc e2) in
             let t2 = find n2 m2 in (* M[env*l2] *)
             (match t2 with
@@ -306,8 +305,8 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             Format.printf "\n";
         end
         ); *)
-        let m1 = step e1 env m ae in
-        let m2 = step e2 env m1 ae in
+        let m1 = step e1 env m ae assertion in
+        let m2 = step e2 env m1 ae assertion in
         let n1 = SN (true, loc e1) in
         let t1 = find n1 m2 in
         let n2 = SN (true, loc e2) in
@@ -343,7 +342,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             let _, re_t = if is_Relation raw_t then raw_t,raw_t else prop raw_t t in
             m2 |> NodeMap.add n re_t
         end
-    | Ite (e0, e1, e2, l) ->
+    | Ite (e0, e1, e2, l, asst) ->
         (* (if !debug then
         begin
             Format.printf "\n<=== Ite ===>\n";
@@ -354,15 +353,18 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
         let n0 = SN (true, loc e0) in
         let m0 = 
             (* if optmization m n0 find then m else  *)
-            step e0 env m ae in
+            step e0 env m ae assertion in
         let t0 = find n0 m0 in
         if t0 = Bot then m0 else
         if not @@ SemanticsDomain.is_bool_V t0 then m0 |> NodeMap.add n Top else
         begin
+            let { isast = isast; ps = pos } = asst in 
+            (* QUESTION: The prop is monotone and increasing, why don't we say we could earlier determine assertion failed? *)
+            if assertion && isast && is_bool_false_V t0 <> true then print_loc pos else
             let t_true = meet_V (extrac_bool_V t0 true) ae in (* Meet with ae*)
             let t_false = meet_V (extrac_bool_V t0 false) ae in
             let v_n = find n m0 in
-            let m1 = step e1 env m0 t_true in
+            let m1 = step e1 env m0 t_true assertion in
             let n1 = SN (true, loc e1) in
             let t1 = find n1 m1 in
             (* (if !debug then
@@ -386,7 +388,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
                 Format.printf "\n";
             end
             );  *)
-            let m2 = step e2 env m1 t_false in
+            let m2 = step e2 env m1 t_false assertion in
             let n2 = SN (true, loc e2) in
             let t2 = find n2 m2 in
             (* (if !debug then 
@@ -504,7 +506,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) =
             let m1 = m |> NodeMap.add nx tx' |> NodeMap.add n1 (if x = "_" then t1' else replace_V t1' (dx_T t) x) |>
             (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> NodeMap.add nf tf' |> NodeMap.add n (join_V t1 t2))
             nf_t2_tf'_opt |> Opt.get_or_else (NodeMap.add n t1)) in
-            step e1 env1 m1 ae'
+            step e1 env1 m1 ae' assertion
         end 
 
 (** Widening **)
@@ -516,8 +518,8 @@ let narrowing (m1:exec_map_t) (m2:exec_map_t): exec_map_t =
   meet_M m1 m2 
 
 (** Fixpoint loop *)
-let rec fix env e (k: int) (m:exec_map_t): exec_map_t =
-  (if not !integrat_test then
+let rec fix env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_map_t =
+  (if !out_put_level = 0 then
     begin
         let k' = if k < 0 then 10 + k else k in
         Format.printf "%s step %d\n" !process k';
@@ -525,16 +527,24 @@ let rec fix env e (k: int) (m:exec_map_t): exec_map_t =
     end);
   let ae = Relation (top_R Plus) in
   let m_t = Hashtbl.copy m in
-  let m' = step e env m_t ae in
-  if k < 0 then if k = -1 then m' else fix env e (k+1) m' else
+  let m' = step e env m_t ae assertion in
+  if k < 0 then if k = -1 then "", m' else fix env e (k+1) m' assertion else
   (* if k > 2 then Hashtbl.reset !pre_m;
   pre_m := m; *)
   (* Format.printf "\nFinish step %d\n" k;
   flush stdout; *)
   let m'' = if !process = "Wid" then widening k m m' else narrowing m m' in
   let comp = if !process = "Wid" then leq_M m'' m else leq_M m m'' in
-  if comp then m
-  else (fix env e (k+1) m'') (*Hashtbl.reset m; *)
+  if comp then
+      begin
+      if assertion || !narrow then "The input program verified safe\n", m 
+      else 
+        begin
+        try fix env e k m true (* Final step to check assertions *)
+        with Input_Assert_failure s -> s, m 
+        end
+      end
+  else (fix env e (k+1) m'' assertion) (*Hashtbl.reset m; *)
 
 (** Semantic function *)
 let s e =
@@ -546,23 +556,27 @@ let s e =
     end); *)
     (* exit 0; *)
     let envt, m0' = pref_M env0 (Hashtbl.copy m0) in
-    (*env := envt;*)
     (* pre_m := m0'; *)
-    let m =
-        let m1 = (fix envt e 0 m0') in
+    let check_str, m =
+        let s1, m1 = (fix envt e 0 m0' false) in
         if !narrow then
             begin
             process := "Nar";
-            let m1 = m1 |> fix envt e (-10) in (* step^10(fixw) <= fixw *)
+            narrow := false;
+            let _, m1 = fix envt e (-10) m1 false in (* step^10(fixw) <= fixw *)
             let m1 = m1 |> reset in
-            let m2 = fix envt e 10 m1 in
-            if eq_PM m0 m2 then m2 
+            let s2, m2 = fix envt e 10 m1 false in
+            if eq_PM m0 m2 then s2, m2 
             else exit 0
             end
-        else m1
+        else s1, m1
     in
-    (if !integrat_test then
-        print_last_node m);
+    if !out_put_level = 1 then
+        begin
+        Format.printf "Final step \n";
+        print_exec_map m;
+        end;
+    Format.printf "%s" check_str;
     m
 
 

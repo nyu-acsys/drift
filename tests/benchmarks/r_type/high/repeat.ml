@@ -13,5 +13,3 @@ let rec repeat (rf: int -> int) rn rs =
 
 let main (n:int(*-:{v:Int | true}*)) =
 	assert (repeat succ n 0 = n)
-
-let _ = main 103

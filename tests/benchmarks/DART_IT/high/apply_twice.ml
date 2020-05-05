@@ -13,10 +13,3 @@ let main (n:int(*-:{v:Int | true}*)) =
             apply neg_twice n
     in
     assert(res >= 0)
-
-
-let _ = main 3
-let _ = main 10
-let _ = main 0
-let _ = main (-34)
-let _ = main (-203)

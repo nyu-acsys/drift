@@ -12,18 +12,14 @@ let rec sub (ma: int array) mstart mlen =
 	mb
 
 let main (n(*-:{v:Int | true}*)) (start(*-:{v:Int | true}*)) (subl(*-:{v:Int | true}*)) = 
-	let ans: bool = 
-		if n > 0 then
-			let a = Array.make n 0 in
-			let res: int array =
-				let la = Array.length a in
-				if subl >= 0 && start >= 0 && start + subl < la then
-					sub a start subl
-				else
-					a
-			in
-			Array.length res <= Array.length a
-		else true
-	in assert (ans = true)
-
-let _ = main 10 3 4
+	if n > 0 then
+		let a = Array.make n 0 in
+		let res: int array =
+			let la = Array.length a in
+			if subl >= 0 && start >= 0 && start + subl < la then
+				sub a start subl
+			else
+				a
+		in
+		assert(Array.length res <= Array.length a)
+	else ()

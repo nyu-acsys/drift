@@ -8,5 +8,3 @@ let rec copy (x:int) =
 
 let main (n:int(*-:{v:Int | true}*)) =
     assert (copy (copy n) = n)
-
-let _ = main 100

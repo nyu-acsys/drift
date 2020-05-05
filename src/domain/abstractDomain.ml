@@ -21,7 +21,6 @@ module type AbstractDomainType =
   sig
     type t
     val lc_env: t -> t -> t * t
-    val max_size: int
     val leq: t -> t -> bool
     val eq: t -> t -> bool
     val init_c: int -> t
@@ -44,7 +43,8 @@ module type AbstractDomainType =
 module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
   struct
     type t = Man.t Abstract1.t (*Could be parsed constraints or given initial*)
-    let max_size = 500
+    let max_size = 150
+    let max_length = 15
     let init_c c = let var_v = "cur_v" |> Var.of_string in
         let env = Environment.make [|var_v|] [||] in
         let expr = "cur_v=" ^ (string_of_int c) in
@@ -94,7 +94,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
           Format.printf "\n";
       end); *)
       if !domain <> "Oct" && ((Abstract1.size Man.man res > max_size) ||
-        (Tcons1.array_length (Abstract1.to_tcons_array Man.man res)) >= 10)
+        (Tcons1.array_length (Abstract1.to_tcons_array Man.man res)) >= max_length)
         then delay_wid := 0;
       (* Abstract1.minimize_environment Man.man res *)
       res
@@ -119,8 +119,14 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         end
       ); *)
       let res = Abstract1.meet Man.man v1' v2' in
+      (* (if !debug then
+        begin
+          Format.printf "result: ";
+          Abstract1.print Format.std_formatter (Abstract1.minimize_environment Man.man res);
+          Format.printf "\n";
+      end); *)
       if !domain <> "Oct" && ((Abstract1.size Man.man res > max_size) ||
-        (Tcons1.array_length (Abstract1.to_tcons_array Man.man res)) >= 10)
+        (Tcons1.array_length (Abstract1.to_tcons_array Man.man res)) >= max_length)
         then delay_wid := 0;
       res
     let alpha_rename v prevar var =

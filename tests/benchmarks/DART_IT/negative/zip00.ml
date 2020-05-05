@@ -33,10 +33,3 @@ let main (l1_1037:int(*-:{v:Int | true}*)) (l2_1038:int(*-:{v:Int | true}*)) =
       set_flag_zip_1063m s_zip_xs_1058m s_zip_ys_1059m l2_1038 in
   assert(res < 0)
 
-let _ = main 103 1034
-let _ = main 2 3
-let _ = main 0 0 
-let _ = main (-1) 23
-let _ = main 25 (-30)
-let _ = main (-100) (-50)
-

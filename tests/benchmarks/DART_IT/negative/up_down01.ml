@@ -39,6 +39,3 @@ let main (t1_1039:int(*-:{v:Int | true}*)) (t2_1040:int(*-:{v:Int | true}*)) =
           ((c4_COEFFICIENT_1081 * t1_1039) + c5_COEFFICIENT_1082))
          set_flag_up_1089 s_up_x_1086 down_1031 set_flag_up_1089 s_up_x_1086
          t1_1039 = 0)
-
-let _ = main 109123 (-62823)
-let _ = main 202 (-202)

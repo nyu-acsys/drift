@@ -14,6 +14,4 @@ let rec rev n =
 let main (mn:int(*-:{v:Int | true}*)) (mm:int(*-:{v:Int | true}*)) =
     if mn >= 0 && mm >= 0 then
     	assert (append mn mm = mn + mm)
-    else assert(true)
-
-let _ = main 3 5
+    else ()

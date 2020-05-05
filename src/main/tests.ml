@@ -5,6 +5,7 @@ open Syntax
 open Config
 open Util
 open Parser
+open Printer
 
 let x = "x"
 let y = "y"
@@ -76,6 +77,11 @@ let op_test_3 = parse_from_string "let f a b = a + b in f (f 1 2) 3"
 *)
 
 let op_test_4 = parse_from_string "let f a b = a mod b in f 30 23"
+
+let op_test_5 = parse_from_string "
+  let min a b = if a < b then a else b
+  let main (m(*-:{v:Int | v > 0}*)) (n(*-:{v:Int | v > 0}*)) = 
+  m / (min m n) * n"
 
 let if_test_1 = let def_if = (mk_lambda x (mk_lambda y (mk_ite (mk_op Gt (mk_var x) (mk_var y)) (mk_var x) (mk_var y)))) in
   (mk_app (mk_app def_if (mk_int 1)) (mk_int 2))
@@ -239,16 +245,26 @@ let high_mult_rec_test_1 = parse_from_string
 let high_mult_rec_test_2 = parse_from_string 
   "let rec id x y = id x y in let f z = z in f id 10 20"
 
-let tests = [ary_test_1]
+let main_test_1 = parse_from_string 
+  "let main (k(*-:{v:Int | true}*)) = k
+  let _ = main 3
+  let _ = main 10
+  "
+
+let tests = []
 
 let _ =
   Config.parse;
   Printexc.record_backtrace !Config.bt;
-  let t = if !Config.parse_file then [parse_from_file !Config.file]
+  let t = if !Config.parse_file then 
+    begin
+    pre_vars := VarDefMap.empty;
+    [parse_from_file !Config.file]
+    end
   else tests in
   List.iter (fun e -> 
   let el = label e in
-  if not !integrat_test then
+  if !out_put_level < 2 then
     (print_endline "Executing:";
     print_exp stdout el);
   print_endline "\n";
@@ -256,6 +272,6 @@ let _ =
   print_endline "\n";
   (* exit 0; *)
   ignore (s el);
-  if not !integrat_test then
+  if !out_put_level < 2 then
     print_exp stdout el;
   print_newline ()) t

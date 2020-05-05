@@ -13,10 +13,4 @@ let succ (sx:int) = sx + 1
 let main (m(*-:{v:Int | true}*)) (n(*-:{v:Int | true}*)) = 
 	if m > 0 then
     	assert(power succ m n >= n)
-	else assert(true)
-
-let _ = main 4 2
-let _ = main 0 0
-let _ = main 423 0
-let _ = main 203 403
-let _ = main 22 (-100)
+	else ()

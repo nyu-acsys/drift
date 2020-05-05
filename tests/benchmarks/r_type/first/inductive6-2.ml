@@ -9,6 +9,4 @@ let decr dx = dx - 1
 	
 let main (n:int(*-:{v:Int | true}*)) = 
 	if n >= 3 then assert(f decr n > 0)
-	else assert(true)
-
-let _ = main 79
+	else ()

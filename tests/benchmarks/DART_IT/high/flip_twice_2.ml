@@ -12,8 +12,8 @@ let main (mx:int(*-:{v:Int | true}*)) =
     in
     assert(res = mx * (0 - mx))
 
-let _ = main 6
-let _ = main 0
-let _ = main 100
-let _ = main (-203)
-let _ = main 1033
+(*
+mx : { v: int | v = mx}
+(0 - mx) : {v: int | v = -mx}
+mx * (0 - mx): {v:int | top}
+*)

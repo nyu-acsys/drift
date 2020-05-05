@@ -12,5 +12,3 @@ let rec loop x i =
 
 let main (n:int(*-:{v:Int | true}*)) =    
     assert (loop 1 n >= 0)
-
-let _ = main 4

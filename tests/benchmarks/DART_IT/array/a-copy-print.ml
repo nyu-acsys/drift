@@ -29,5 +29,3 @@ let main (mn:int(*-:{v:Int | true}*)) =
     let array2 = Array.make mn 1 in
     f mn array1 array2
   else ()
-
-let _ = main 3

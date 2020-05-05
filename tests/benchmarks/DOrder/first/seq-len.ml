@@ -21,9 +21,7 @@ let main (n0:int(*-:{v:Int | true}*)) (n1:int(*-:{v:Int | true}*)) (n2:int(*-:{v
     let res_b1 = loopb i res_a3 n2 in
     let res_b2 = loopb i res_b1 n1 in 
     assert(loopc i res_b2 n0 = true)
-
-let _ = main 2 3 4
-let _ = main 3 2 4
-let _ = main (-2) 2 3
-let _ = main 2 (-2) 3
-let _ = main 3 2 (-2)
+(* let _ = 
+    for i = 1 to 10000 do
+      main (Random.int 1000) (Random.int 1000) (Random.int 1000)
+    done *)

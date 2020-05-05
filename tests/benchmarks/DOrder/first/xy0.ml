@@ -8,13 +8,10 @@ let rec loopa lx ly =
 let rec loopb bx by =
     if (bx > 0) then 
         loopb (bx - 1) (bx - 1)
-    else by > (-1)
+    else assert (by > (-1))
 
 let main (mm:unit(*-:{v:Unit | unit}*)) =
   let x = 0 in
   let y = 0 in
 
-  let ansa = loopa x y in
-  assert (loopb ansa ansa = true)
-
-let _ = main()
+  loopa x y

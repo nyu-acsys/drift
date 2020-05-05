@@ -11,6 +11,3 @@ let rec g ge (ga: int -> int) gj =
 
 let main (n:int(*-:{v:Int | true}*)) =
 	g n ar 0
-
-let _ = main 30
-(* unit *)

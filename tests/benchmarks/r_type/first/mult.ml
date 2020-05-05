@@ -11,5 +11,3 @@ let rec mult n m =
 
 let main (mn:int(*-:{v:Int | true}*)) =
     assert (mn <= mult mn mn)
-
-let _ = main 234

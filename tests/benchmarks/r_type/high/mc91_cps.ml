@@ -17,6 +17,4 @@ let main (n:int(*-:{v:Int | true}*)) =
 	if n <= 101 then
 	    (let k kr = (kr = 91) in
 	    assert (m n k = true))
-	else assert(true)
-
-let _ = main 22
+	else ()

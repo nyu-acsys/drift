@@ -7,11 +7,10 @@ let rec loop (ly:int) (lz:int) (lc:int) =
         else -1
     else lz
 
-let main (y(*-:{v:Int | v < 0}*)) = 
-    let c = 0 in
-    let z = y * 36 in
-    let ans = loop y z c in
-    assert(ans >= 0 && ans <= 4608)
-
-let _ = main (-234)
-let _ = main (-3)
+let main (y(*-:{v:Int | true}*)) = 
+    if y < 0 then
+	    (let c = 0 in
+	    let z = y * 36 in
+	    let ans = loop y z c in
+	    assert(ans >= 0 && ans <= 4608))
+	else ()

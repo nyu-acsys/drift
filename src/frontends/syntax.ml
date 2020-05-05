@@ -3,13 +3,29 @@ open Util
 
 (** {1} Type definitions for representing syntax *)
 type pos = { pl: int; pc: int }
+
+let mk_default_loc = {pl=0;pc=0}
+
 (** Variable names *)
 
 type var = string
 type loc = string
 
+type asst = { isast: bool; ps: pos }
+
+exception Input_Assert_failure of string
+
 let fail pos msg =
   failwith (Printf.sprintf "Error: line %d col %d: %s" pos.pl pos.pc msg)
+
+let print_loc pos = 
+  raise (Input_Assert_failure 
+  ("The program may not be safe, assertion failed at line "^(string_of_int pos.pl)^" col "^
+  (string_of_int pos.pc)^".\n" ))
+
+let construct_asst ps = match ps with
+  | None -> { isast = false; ps = mk_default_loc }
+  | Some ps -> { isast = true; ps = ps }
 
 exception Main_not_found of string
 
@@ -97,7 +113,7 @@ type term =
   | Var of var * loc                   (* x (variable) *)
   | App of term * term * loc           (* t1 t2 (function application) *)
   | BinOp of binop * term * term * loc (* t1 bop t2 (binary infix operator) *)
-  | Ite of term * term * term * loc    (* if t1 then t2 else t3 (conditional) *)
+  | Ite of term * term * term * loc * asst    (* if t1 then t2 else t3 (conditional) *)
   | Rec of (var * loc) option * var * loc * term * loc (*lambda and recursive function*)
 
 let loc = function
@@ -106,7 +122,7 @@ let loc = function
   | Var (_, l)
   | App (_, _, l)
   | BinOp (_, _, _, l)
-  | Ite (_, _, _, l)
+  | Ite (_, _, _, l, _)
   | Rec (_, _, _, _, l) -> l
 
 let cond_op = function
@@ -151,11 +167,11 @@ let label e =
           in
           let e1', k2 = l (k1 + 1) e1 in
         Rec (fopt', x, string_of_int k1, e1', string_of_int k2), k2 + 1
-      | Ite (e0, e1, e2, _) ->
+      | Ite (e0, e1, e2, _, b) ->
           let e0', k0 = l k e0 in
           let e1', k1 = l k0 e1 in
           let e2', k2 = l k1 e2 in
-          Ite (e0', e1', e2', string_of_int k2), k2 + 1
+          Ite (e0', e1', e2', string_of_int k2, b), k2 + 1
       | BinOp (bop, e1, e2, _) ->
         let e1', k1 = l k e1 in
         let e2', k2 = l k1 e2 in
@@ -170,7 +186,7 @@ let mk_app e1 e2 = App (e1, e2, "")
 let mk_lambda x e = Rec (None, x, "", e, "")
 let mk_lambdas xs e = List.fold_right (fun x e -> mk_lambda x e) xs e
 let mk_rec f x e = Rec (Some (f, ""), x, "", e, "")
-let mk_ite e0 e1 e2 = Ite (e0, e1, e2, "")
+let mk_ite e0 e1 e2 = Ite (e0, e1, e2, "", construct_asst None)
 let mk_op op e1 e2 = BinOp (op, e1, e2, "")
 
 let mk_let_in x def e = mk_app (mk_lambda x e) def

@@ -9,5 +9,3 @@ let succ x = x + 1
 
 let main (mn:int(*-:{v:Int | true}*)) =
     assert(repeat succ mn 0 >= mn) 
-
-let _ = main 2

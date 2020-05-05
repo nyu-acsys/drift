@@ -1,0 +1,90 @@
+=======res1-polka-standard========
+bench | succ | full | avg | mean | solvethis
+high	& 33(1)	& 18.32	& 0.48	& 0.95
+
+
+bench | succ | full | avg | mean | solvethis
+first	& 45(2)	& 80.35	& 1.16	& 13.54
+
+
+bench | succ | full | avg | mean | solvethis
+array	& 7	& 26.75	& 2.06	& 3.44
+
+
+bench | succ | full | avg | mean | solvethis
+negative	& 15(1)	& 42.61	& 2.84	& 10.89
+
+
+=======end========
+=======res_rtype========
+bench | succ | full | avg | mean | solvethis
+high	& 27	& 14.78	& 0.39	& 4.33
+
+
+bench | succ | full | avg | mean | solvethis
+first	& 50(3)	& 38.43	& 0.56	& 3.86
+
+
+bench | succ | full | avg | mean | solvethis
+array	& 5(1)	& 15.59	& 1.20	& 2.52
+
+
+bench | succ | full | avg | mean | solvethis
+negative	& 13	& 2.54	& 0.17	& 0.24
+
+
+=======end========
+=======res_dorder========
+bench | succ | full | avg | mean | solvethis
+high	& 9	& 51.60	& 1.36	& 8.33
+
+
+bench | succ | full | avg | mean | solvethis
+first	& 38	& 32.02	& 0.46	& 1.74
+
+
+bench | succ | full | avg | mean | solvethis
+array	& 4	& 28.92	& 2.22	& 9.16
+
+
+bench | succ | full | avg | mean | solvethis
+negative	& 4	& 9.05	& 0.60	& 1.82
+
+
+=======end========
+=======res_dsolve========
+bench | succ | full | avg | mean | solvethis
+high	& 31(1)	& 13.97	& 0.37	& 0.41
+
+
+bench | succ | full | avg | mean | solvethis
+first	& 50	& 34.30	& 0.50	& 1.48
+
+
+bench | succ | full | avg | mean | solvethis
+array	& 8(2)	& 12.14	& 0.93	& 0.97
+
+
+bench | succ | full | avg | mean | solvethis
+negative	& 14	& 11.37	& 0.76	& 1.29
+
+
+=======end========
+=======res_mochi========
+bench | succ | full | avg | mean | solvethis
+high	& 32(2)	& 65.92	& 1.73	& 8.92
+
+
+bench | succ | full | avg | mean | solvethis
+first	& 46(2)	& 153.25	& 2.22	& 7.25
+
+
+bench | succ | full | avg | mean | solvethis
+array	& 9(2)	& 4.50	& 0.35	& 0.56
+
+
+bench | succ | full | avg | mean | solvethis
+negative	& 5	& 2.58	& 0.17	& 0.52
+
+
+=======end========

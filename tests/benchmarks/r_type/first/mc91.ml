@@ -15,6 +15,4 @@ let rec mc91 x =
 let main (n:int(*-:{v:Int | true}*)) =
     if n <= 101
     then assert (mc91 n = 91)
-    else assert(true)
-
-let _ = main 12
+    else ()

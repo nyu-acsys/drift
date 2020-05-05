@@ -7,6 +7,4 @@ let rec rev n m =
 
 let main (mn:int(*-:{v:Int | true}*)) =
     if mn > 0 then assert (rev mn 0 >= mn)
-	else assert(true)
-
-let _ = main 300
+	else ()

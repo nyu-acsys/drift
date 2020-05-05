@@ -29,13 +29,10 @@ let rec f_1035 x_DO_NOT_CARE_1209 x_DO_NOT_CARE_1210 n_1036 set_flag_app_1138 s_
  else
    id_1030
 
-let main (r:int(*-:{v:Int | v > 0 }*)) =
+let main (r:int(*-:{v:Int | true }*)) =
  let set_flag_app_1138m = false in
  let s_app_h_EXPARAM_1131m = 0 in
- assert (f_1035 set_flag_app_1138m s_app_h_EXPARAM_1131m 0
+ if r > 0 then assert (f_1035 set_flag_app_1138m s_app_h_EXPARAM_1131m 0
    set_flag_app_1138m s_app_h_EXPARAM_1131m () set_flag_app_1138m
    s_app_h_EXPARAM_1131m r = r)
-
-let _ = main 1234
-let _ = main 3
-let _ = main 0
+ else ()

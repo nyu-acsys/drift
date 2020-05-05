@@ -10,5 +10,3 @@ let f (fx:int) (fy:int) = if fx >= fy then fx else fy
 let main (x:int(*-:{v:Int | true}*)) (y:int(*-:{v:Int | true}*)) (z:int(*-:{v:Int | true}*)) =
     let m = max f x y z in
     assert (f x m = m)
-
-let _ = main 3 4 5

@@ -8,6 +8,4 @@ let h (y:int) = y > 0
 
 let main (n:int(*-:{v:Int | true}*)) =
     if n > 0 then assert (f n h)
-    else assert(true)
-
-let _ = main 120
+    else ()

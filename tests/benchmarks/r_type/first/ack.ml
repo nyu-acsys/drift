@@ -11,6 +11,4 @@ let rec ack m n =
 let main (mm:int(*-:{v:Int | true}*)) (mn:int(*-:{v:Int | true}*)) =
     if (mm >= 0 && mn >= 0)
     then assert(ack mm mn >= mn)
-	else assert(true)
-
-let _ = main 3 2
+	else ()

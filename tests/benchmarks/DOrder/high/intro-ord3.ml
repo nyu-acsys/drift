@@ -9,5 +9,3 @@ let app ax (ab:int) (af:int->unit) = af ax
 let check (cx:int) (cy:int) = assert (cx <= cy)
 
 let main (i:int(*-:{v:Int | true}*)) (j:int(*-:{v:Int | true}*)) = app3 i (check i) i (app i) j
-
-let _ = main 2 4

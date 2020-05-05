@@ -12,5 +12,3 @@ let rec sigma (f: int -> int) n =
 
 let main (mn:int(*-:{v:Int | true}*)) =
     assert (sigma sum mn >= mn)
-
-let _ = main 54

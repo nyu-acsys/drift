@@ -12,5 +12,3 @@ let incr y = y + 1
 
 let main (n:int(*-:{v:Int | true}*)) =   
     assert(f incr n >= -3)
-
-let _ = main 12

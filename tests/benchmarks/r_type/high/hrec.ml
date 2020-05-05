@@ -8,5 +8,3 @@ let succ sx = sx + 1
 
 let main (n:int(*-:{v:Int | true}*)) = 
 	assert (f succ n >= 0)
-
-let _ = main (-44)

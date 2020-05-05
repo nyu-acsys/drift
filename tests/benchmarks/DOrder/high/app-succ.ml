@@ -8,9 +8,3 @@ let rec app (b:int) (f:int->unit) x (k:int) =
 let check (cx:int) (cy:int) = assert (cx <= cy)
 
 let main (n:int(*-:{v:Int | true}*)) (m:int(*-:{v:Int | true}*)) = app n (check n) n m
-
-let _ = main 5 4
-let _ = main 30 (-2)
-let _ = main 0 3
-let _ = main (-4) (-6)
-let _ = main (-102) 1

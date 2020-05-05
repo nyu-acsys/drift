@@ -16,9 +16,4 @@ let main (n:int(*-:{v:Int | true}*)) =
     let y:int = 0 in
     if(n < 0) then
         assert(loop x y n = false)
-    else assert(true)
-
-let _ = main (-3)
-let _ = main 7
-let _ = main 0
-let _ = main (-49)
+    else ()

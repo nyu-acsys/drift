@@ -18,9 +18,3 @@ let main (n:int(*-:{v:Int | true}*)) =
       let m = 0 - n in
       assert(accumulate_neg and_not_0 m true = true)
 
-let _ = main 20
-let _ = main 30
-let _ = main 0
-let _ = main (-1)
-let _ = main (-20)
-

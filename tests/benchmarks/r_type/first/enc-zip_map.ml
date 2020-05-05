@@ -13,6 +13,4 @@ let rec map (mx:int) =
 
 let main (n:int(*-:{v:Int | true}*)) =
   if n >= 0 then assert(map (zip n n) >= n)
-  else assert(true)
-
-let _ = main 10
+  else ()

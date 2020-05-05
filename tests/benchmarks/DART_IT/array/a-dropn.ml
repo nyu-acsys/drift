@@ -11,21 +11,18 @@ let rec drop cai can cbi cbn cdi cdn (ca: int array) (cb: int array) =
 	else ()
 
 let main (n(*-:{v:Int | v = 30}*)) (i(*-:{v:Int | v = 4}*)) = 
-	let ans:bool = if n > 0 then
-			let a = Array.make n 0 in
-			let la = Array.length a in
-			let res:int = 
-				if i < n then
-					let j = n - (n - (n mod i)) / i in
-					let b = Array.make j 0 in
-					let lb = Array.length b in
-					drop 0 la 0 lb 0 i a b;
-					lb
-				else
-					la
-			in
-			res <= la
-		else true
-	in assert (ans = true)
-
-let _ = main 30 4
+	if n > 0 then
+		let a = Array.make n 0 in
+		let la = Array.length a in
+		let res:int = 
+			if i < n then
+				let j = n - (n - (n mod i)) / i in
+				let b = Array.make j 0 in
+				let lb = Array.length b in
+				drop 0 la 0 lb 0 i a b;
+				lb
+			else
+				la
+		in
+		assert (res <= la)
+	else ()

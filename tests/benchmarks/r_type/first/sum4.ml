@@ -12,7 +12,3 @@ let rec sum n =
 
 let main (mn:int(*-:{v:Int | true}*)) =
     assert (4 * mn - 6 <= sum mn)
-
-let _ = main 754
-
-(* Reason: wid overapproximate *)

@@ -16,5 +16,3 @@ let main (n(*-:{v:Int | true}*)) =
 		let a = Array.make n 0 in
 		iter succ a
 	else ()
-
-let _ = main 30
