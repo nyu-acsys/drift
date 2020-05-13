@@ -36,6 +36,7 @@ type binop =
   | Mult  (* * *)
   | Div   (* / *)
   | Mod   (* mod *)
+  | Modc  (* mod const *)
   | Minus (* - *)
   | Eq    (* = *)
   | Ne    (* <> *)
@@ -66,6 +67,7 @@ let string_of_op = function
   | Mult  (* * *) -> "*"
   | Div   (* / *) -> "/"
   | Mod   (* mod *) -> "%"
+  | Modc  (* mod const *) -> "mod"
   | Minus (* - *) -> "-"
   | Eq    (* = *) -> "="
   | Ne    (* <> *) -> "!="
@@ -90,6 +92,14 @@ let op_of_string = function
   |  "&&" -> And   (* && *)
   |  "||" -> Or    (* || *)
   | s -> raise (Invalid_argument (s^": Invalid operator inside pre-defined var"))
+
+let is_mod = function
+  | Mod -> true
+  | _ -> false
+
+let is_mod_const = function
+  | Modc -> true
+  | _ -> false
 
 let init_ref n d l o r = {name = n; dtype = d; left = l; op=op_of_string o; right = r}
 
@@ -126,12 +136,22 @@ let loc = function
   | Rec (_, _, _, _, l) -> l
 
 let cond_op = function
-  | Plus | Mult | Div | Mod | Minus | And | Or -> false
+  | Plus | Mult | Div | Mod | Modc | Minus | And | Or -> false
   | Ge | Eq | Ne | Lt | Gt | Le -> true
 
 let bool_op = function
   | And | Or -> true
   | _ -> false
+
+let is_const = function
+  | Const (_, _) -> true
+  | _ -> false
+
+let str_of_const = function
+  | Const (d, _) -> (match d with
+    | Integer i -> string_of_int i
+    | Boolean _ -> raise (Invalid_argument ("Expected mod <const> is an integer.")))
+  | _ -> raise (Invalid_argument ("Expected mod <const> procedure for apron."))
 
 let str_of_val = function
   | Integer i -> string_of_int i

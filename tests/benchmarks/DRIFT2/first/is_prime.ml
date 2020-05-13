@@ -37,7 +37,4 @@ let main (k:unit(*-:{v:Unit | unit}*))  =
 		if res then assert(mult f1 f2 + 1 = n)
 		else ()
 
-(* let _ = 
-    for i = 1 to 1000000 do
-      main (Random.int 42) (Random.int 42) (Random.int 42)
-    done *)
+(* let _ = main () *)

@@ -7,7 +7,7 @@ import sys, os
 import re
 import csv
 
-testdir = '../outputs/DART_IT'
+testdir = '../outputs/DRIFT2'
 table_file = '../res.csv'
 pattern = re.compile(".*ml$")
 attrs = ['subdir', 'file name', 'test class', 'timing (seconds)', 'res (true/false)', 'domain']
@@ -101,7 +101,7 @@ def dispatch(subdir, dict):
     for root, dirs, files in os.walk(testdir+'/'+subdir):
         dict[subdir] = [(os.path.join(root, file), file, root) for file in files if pattern.match(file)]
     for file_path in dict[subdir]:
-        _, dir = file_path[2].split('../outputs/DART_IT/')
+        _, dir = file_path[2].split('../outputs/DRIFT2/')
         if dir == "negative":
             res_data = read_false_info_from_file(file_path[0])
             res_data.append("Neg")

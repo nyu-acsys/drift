@@ -270,11 +270,11 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
       try let _ = int_of_string var in None
       with e -> Some (var |> Var.of_string)
     let operator vl vr op cons v = 
-      (if !debug then
+      (* (if !debug then
       begin
         Format.printf "\n\nOperator abs\n";
         Format.printf "%s %s %s\n" vl (string_of_op op) vr
-      end);
+      end); *)
       let var_v = "cur_v" |> Var.of_string in
       let env = (match (make_var vl, make_var vr) with
       | None, Some var_r -> Environment.make [|var_r|] [||]
@@ -322,7 +322,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
             Abstract1.meet_tcons_array Man.man vt tab
           )
         else (* Int value *)
-          (let expr = "cur_v=" ^ vl ^ temp ^ vr in
+          (let expr = "cur_v=" ^ vl ^ " " ^ temp ^ " " ^ vr in
             let tab = Parser.tcons1_of_lstring env [expr] in
           Abstract1.meet_tcons_array Man.man v' tab)
       in
@@ -424,6 +424,17 @@ module PplStrictManager: ManagerType =
     let man = Ppl.manager_alloc_strict() |> Ppl.manager_of_ppl_strict
   end
 
+module PolkaGridManager: ManagerType =
+  struct
+    (* 
+      Reduced product of NewPolka polyhedra (strict) and PPL grids
+    *)
+    type t = (Polka.strict) PolkaGrid.t
+    let man = let man_polka = Polka.manager_alloc_strict() in
+      let man_pplgrid = Ppl.manager_alloc_grid() in
+      PolkaGrid.manager_alloc man_polka man_pplgrid |> PolkaGrid.manager_of_polkagrid
+  end
+
 let parse_domain = function
   | "Box" -> (module (MakeAbstractDomainValue(BoxManager)): AbstractDomainType)
   | "Oct" -> (module (MakeAbstractDomainValue(OctManager)): AbstractDomainType)
@@ -432,6 +443,7 @@ let parse_domain = function
   | "Polka_eq" -> (module (MakeAbstractDomainValue(PolkaEqManager)): AbstractDomainType)
   | "Ppl_st" -> (module (MakeAbstractDomainValue(PplStrictManager)): AbstractDomainType)
   | "Ppl_gd" -> (module (MakeAbstractDomainValue(PplGridManager)): AbstractDomainType)
+  | "Polka_gd" -> (module (MakeAbstractDomainValue(PolkaGridManager)): AbstractDomainType)
   | _ -> raise (Invalid_argument "Incorrect domain specification")
 
 module AbstractValue = (val (!domain |> parse_domain))

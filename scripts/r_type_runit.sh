@@ -7,7 +7,7 @@ PROGNAME="r_type"
 SET=$2
 echo "outdir=<$OUTDIR> prog=<$PROG>"
 
-DIRS=" DART_IT DOrder r_type"
+DIRS=" DRIFT2 DOrder r_type"
 INS=" array first high negative" #  termination
 timeout="20"
 OUTPRE="out"

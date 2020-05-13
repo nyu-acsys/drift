@@ -18,38 +18,38 @@ if exp2_regexp.search(args.folder_name):
 else:
     data_lst = {"res-oct-standard": [], "res-oct-wid+nar": [], 
         "res-oct-dwid-300": [], "res-polka-standard": [],
-        "res-polka-wid+nar": [], "res-polka-dwid-300": [], "res-ppl_st-standard": [], 
-        "res-ppl_st-wid+nar": [], "res-ppl_st-dwid-300": [], "res1-oct-standard": [], "res1-oct-wid+nar": [], 
+        "res-polka-wid+nar": [], "res-polka-dwid-300": [], "res-polka_ls-standard": [], 
+        "res-polka_ls-wid+nar": [], "res-polka_ls-dwid-300": [], "res1-oct-standard": [], "res1-oct-wid+nar": [], 
         "res1-oct-dwid-300": [], "res1-polka-standard": [],
-        "res1-polka-wid+nar": [], "res1-polka-dwid-300": [], "res1-ppl_st-standard": [], 
-        "res1-ppl_st-wid+nar": [], "res1-ppl_st-dwid-300": []
+        "res1-polka-wid+nar": [], "res1-polka-dwid-300": [], "res1-polka_ls-standard": [], 
+        "res1-polka_ls-wid+nar": [], "res1-polka_ls-dwid-300": []
     }
     res_lst = {"res-oct-standard": [], "res-oct-wid+nar": [], 
         "res-oct-dwid-300": [], "res-polka-standard": [],
-        "res-polka-wid+nar": [], "res-polka-dwid-300": [], "res-ppl_st-standard": [], 
-        "res-ppl_st-wid+nar": [], "res-ppl_st-dwid-300": [], "res1-oct-standard": [], "res1-oct-wid+nar": [], 
+        "res-polka-wid+nar": [], "res-polka-dwid-300": [], "res-polka_ls-standard": [], 
+        "res-polka_ls-wid+nar": [], "res-polka_ls-dwid-300": [], "res1-oct-standard": [], "res1-oct-wid+nar": [], 
         "res1-oct-dwid-300": [], "res1-polka-standard": [],
-        "res1-polka-wid+nar": [], "res1-polka-dwid-300": [], "res1-ppl_st-standard": [], 
-        "res1-ppl_st-wid+nar": [], "res1-ppl_st-dwid-300": []
+        "res1-polka-wid+nar": [], "res1-polka-dwid-300": [], "res1-polka_ls-standard": [], 
+        "res1-polka_ls-wid+nar": [], "res1-polka_ls-dwid-300": []
     }
     csv_lst = ["res-oct-standard", "res-oct-wid+nar", "res-oct-dwid-300", "res-polka-standard",
-"res-polka-wid+nar", "res-polka-dwid-300", "res-ppl_st-standard", "res-ppl_st-wid+nar", "res-ppl_st-dwid-300",
+"res-polka-wid+nar", "res-polka-dwid-300", "res-polka_ls-standard", "res-polka_ls-wid+nar", "res-polka_ls-dwid-300",
 "res1-oct-standard", "res1-oct-wid+nar", "res1-oct-dwid-300", "res1-polka-standard",
-"res1-polka-wid+nar", "res1-polka-dwid-300", "res1-ppl_st-standard", "res1-ppl_st-wid+nar", "res1-ppl_st-dwid-300" ]
+"res1-polka-wid+nar", "res1-polka-dwid-300", "res1-polka_ls-standard", "res1-polka_ls-wid+nar", "res1-polka_ls-dwid-300" ]
 
 # loc is calculated by cloc 
 sort_lst = {"high":["HO", 8], "first":["FO", 11], "array":["A", 17], "negative":["E", 16]}
 unit_lst = ["succ", "total", "avg.", "mean"]
 
 cant_solve_lst = [
-    { "oct":[], "polka":[], "ppl_st":[] },
-    { "oct":[], "polka":[], "ppl_st":[] }
+    { "oct":[], "polka":[], "polka_ls":[] },
+    { "oct":[], "polka":[], "polka_ls":[] }
 ]
 
 can_solve_domain_dic = { 
 "oct":[{"high":0, "first":0, "array":0, "negative":0},{"high":0, "first":0, "array":0, "negative":0}], 
 "polka":[{"high":0, "first":0, "array":0, "negative":0},{"high":0, "first":0, "array":0, "negative":0}],
-"ppl_st":[{"high":0, "first":0, "array":0, "negative":0},{"high":0, "first":0, "array":0, "negative":0}]
+"polka_ls":[{"high":0, "first":0, "array":0, "negative":0},{"high":0, "first":0, "array":0, "negative":0}]
 }
 
 def get_domain_idx(domain):
@@ -160,6 +160,7 @@ def cal_res():
             max_time = 0.0
             min_time = 600.0
             solve_by_this = 0
+            timeout_count = 0
             for i in range(0, len(dic["data"])):
                 d = dic["data"][i]
                 if isinstance(d[1], float):
@@ -173,6 +174,7 @@ def cal_res():
                     if d[1] < min_time:
                         min_time = d[1]
                     full_time += d[1]
+                else: timeout_count += 1
                 total_count += 1
             mean_time = round((max_time + min_time) / 2, 2)
             full_time = round(full_time, 2)
@@ -180,7 +182,7 @@ def cal_res():
             bench_name = dic['bench']
             new_dic = {'bench': "", "data": []}
             new_dic['bench'] = bench_name
-            new_dic["data"] = [succ_count, full_time, avg_time, mean_time, solve_by_this, total_count]
+            new_dic["data"] = [succ_count, full_time, avg_time, mean_time, solve_by_this, total_count, timeout_count]
             res_lst[file].append(new_dic)
 
 def print_for_table2():
@@ -193,11 +195,19 @@ def print_for_table2():
             avg_time = dic["data"][2]
             mean_time = dic["data"][3]
             solve_by_this = dic["data"][4]
-            print("bench | succ | full | avg | mean | solvethis")
+            timeout_count = dic["data"][6]
+            print("bench | succ(solvethis) | full(timeout) | avg | mean | ")
+            print(f'{bench_name}\t',end='&')
             if solve_by_this == 0:
-                print(f'{bench_name}\t& {succ_count}\t& {full_time:.2f}\t& {avg_time:.2f}\t& {mean_time:.2f}')
+                print(f' {succ_count}\t',end='&')
             else:
-                print(f'{bench_name}\t& {succ_count}({solve_by_this})\t& {full_time:.2f}\t& {avg_time:.2f}\t& {mean_time:.2f}')
+                print(f' {succ_count}({solve_by_this})\t',end='&')
+            if timeout_count == 0:
+                print(f' {full_time:.2f}\t',end='&')
+            else:
+                print(f' {full_time:.2f}({timeout_count})\t',end='&')
+            print(f' {avg_time:.2f}\t', end='&')
+            print(f' {mean_time:.2f}\t')
             print("\n")
         print(f'=======end========')
 
@@ -221,6 +231,10 @@ def print_for_table1():
                             dp = dic["data"][4]
                             if dp == 0: print(f'& {d}', end = '\t')
                             else: print(f'& {d}({dp})', end = '\t')
+                        elif row == 1:
+                            dp = dic["data"][6]
+                            if dp == 0: print(f'& {d:.2f}', end = '\t')
+                            else: print(f'& {d:.2f}({dp})', end = '\t')
                         elif isinstance(d, float):
                             print(f'& {d:.2f}', end = '\t')
                         else: print(f'& {d}', end = '\t')
@@ -233,7 +247,7 @@ def cal_solve_by_domain():
         verified only with a specific abstract domain (regardless of which
         widening for that domain is being used).
     """
-    truth_list = {"oct":[], "polka":[], "ppl_st":[]}
+    truth_list = {"oct":[], "polka":[], "polka_ls":[]}
     # 1. Get all common res from each domain
     for domain, _ in can_solve_domain_dic.items():
         for x in range(0,2):
@@ -280,7 +294,6 @@ def cal_solve_by_domain():
         for domain, res in can_solve_domain_dic.items():
             for bench in benchlst:
                 print(f'{bench}: {domain} | {res[i][bench]}')
-    exit(0)
 
 
 def print_unsolved_tests():
@@ -298,7 +311,7 @@ def main():
     if exp2_regexp.search(args.folder_name):
         print_for_table2()
     else:
-        cal_solve_by_domain()
+        #cal_solve_by_domain()
         if args.show_unsolved:
             print_unsolved_tests()
         print_for_table1()

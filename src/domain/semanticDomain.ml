@@ -66,7 +66,7 @@ end
 type node_t = EN of env_t * loc (*N = E x loc*)
 and env_t = node_t VarMap.t (*E = Var -> N*)
 
-type node_s_t = SN of bool * loc (*N = E x loc*)
+type node_s_t = SN of bool * loc (*N = loc*)
 
 module TempNodeMap = MakeHash(struct
   type t = node_s_t
@@ -120,10 +120,10 @@ module SemanticsDomain =
         | Int v -> Int (AbstractValue.alpha_rename v prevar var)
         | Bool (vt, vf) -> Bool ((AbstractValue.alpha_rename vt prevar var), (AbstractValue.alpha_rename vf prevar var))
     and top_R = function
-    | Plus | Mult | Div | Mod | Minus -> (Int AbstractValue.top)
+    | Plus | Mult | Div | Mod | Modc | Minus -> (Int AbstractValue.top)
     | Ge | Eq | Ne | Lt | Gt | Le | And | Or -> (Bool (AbstractValue.top, AbstractValue.top))
     and bot_R = function
-    | Plus | Mult | Div | Mod | Minus -> (Int AbstractValue.bot)
+    | Plus | Mult | Div | Mod | Modc | Minus -> (Int AbstractValue.bot)
     | Ge | Eq | Ne | Lt | Gt | Le | And | Or -> (Bool (AbstractValue.bot, AbstractValue.bot))
     and is_bool_R a = match a with
         | Int _ -> false
@@ -177,7 +177,7 @@ module SemanticsDomain =
       | _, _ -> raise (Invalid_argument "Widening: Base Type not equal")
     and op_R l r op cons a = (*cons for flag of linear constraints*)
       match op with
-      | Plus | Mult | Div | Mod | Minus -> (match a with
+      | Plus | Mult | Div | Mod | Modc | Minus -> (match a with
         | Int v -> Int (AbstractValue.operator l r op (-1) v)
         | Bool (vt, vf) -> raise (Invalid_argument "Conditional value given, expect arithmetic one"))
       | Ge | Eq | Ne | Lt | Gt | Le -> (if cons then

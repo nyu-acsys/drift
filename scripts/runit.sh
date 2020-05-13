@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # ./runit.sh -set call/unv -domain Oct [-nar | -dwid 0]
-# Domain for benchmarks: Polka_st, Oct, Ppl_st
+# Domain for benchmarks: Oct, Polka_st, Polka_ls
 
-OUTDIR="../outputs/DART_IT"
-PROG="../tests.native"
-PROGNAME="DART_IT"
+OUTDIR="../outputs/DRIFT2"
+PROG="../drift2.native"
+PROGNAME="DRIFT2"
 SET=$2
 DOMAIN=$4
 if [ $# -gt 1 ]; then
@@ -45,7 +45,7 @@ else
     TESTDIR="../tests/benchmarks"
 fi
 
-DIRS=" DART_IT DOrder r_type"
+DIRS=" DRIFT2 DOrder r_type"
 INS=" first high negative array" #   
 timeout="120"
 OUTPRE="out"

@@ -321,10 +321,20 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) (assertion: bool) =
             Format.printf "Error at location %s: expected value, but found %s.\n"
                 (loc e2) (string_of_value t2))
             );
+            let bop = if is_mod bop then if is_const e2 then
+                Modc else Mod
+                else bop in
             let t = find n m2 in
             (* if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then m2 else *)
             let td = Relation (top_R bop) in
             let raw_t = if bool_op bop then bool_op_V bop t1 t2
+                else if is_mod_const bop then
+                    (* {v:int | a(t) ^ v = n1 mod const }[n1 <- t1] *)
+                    let node_1 = e1 |> loc |> name_of_node in
+                    let t' = arrow_V node_1 td t1 in
+                    let t''' = op_V node_1 (str_of_const e2) bop t' in
+                    let t = getVars env |> proj_V t''' in
+                    t
                 else
                 begin
                     (* {v:int | a(t) ^ v = n1 op n2 }[n1 <- t1, n2 <- t2] *)
@@ -335,12 +345,12 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) (assertion: bool) =
                     let t''' = op_V node_1 node_2 bop t'' in
                     let temp_t = getVars env |> proj_V t''' in
                     if !domain = "Box" then
-                    temp_t |> der_V e1 |> der_V e2  (*Solve remaining constraint only for box*)
+                    temp_t |> der_V e1 |> der_V e2  (* Deprecated: Solve remaining constraint only for box*)
                     else temp_t
                 end
             in
             let _, re_t = if is_Relation raw_t then raw_t,raw_t else prop raw_t t in
-            m2 |> NodeMap.add n re_t
+            m2 |> NodeMap.add n (stren_V re_t ae)
         end
     | Ite (e0, e1, e2, l, asst) ->
         (* (if !debug then
