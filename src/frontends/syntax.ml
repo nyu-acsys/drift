@@ -1,4 +1,3 @@
-
 open Util
 
 (** {1} Type definitions for representing syntax *)
@@ -58,6 +57,13 @@ module VarDefMap = Map.Make(struct
   type t = var
   let compare = compare
 end)
+
+module ThresholdsSetType = Set.Make(struct
+  type t = int
+  let compare = compare
+  end)
+
+let thresholdsSet = ref ThresholdsSetType.empty
 
 type pre_exp = {name: var; dtype: inputType; left: var; op: binop; right: var}
 

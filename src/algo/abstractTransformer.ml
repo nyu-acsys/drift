@@ -2,6 +2,8 @@ open AbstractDomain
 open Syntax
 open SemanticDomain
 open SemanticsDomain
+open SensitiveDomain
+open SenSemantics
 open Printer
 open Util
 open Config
@@ -41,7 +43,7 @@ let fresh_var =
 let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 with
     | Top, Bot | Table _, Top -> Top, Top
     | Unit _, Bot -> v1, v1
-    | Table t, Bot -> let t' = init_T (dx_Ta t) in
+    | Table t, Bot -> let t' = init_T (dx_T v1) in
         v1, Table (t')
     | Ary ary, Bot -> let vars, r = ary in
         let ary' = init_Ary vars in
@@ -51,46 +53,43 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
       let _, ary2'' = alpha_rename_Arys ary2 (join_Ary ary1' ary2') in
       Ary ary1, Ary ary2''
     | Table t1, Table t2 -> 
-        let t1', t2' = alpha_rename t1 t2 in
-        let (z1, v1i, v1o) = t1' and (z2, v2i, v2o) = t2' in
-        let v1ot = 
+        let t1', t2' = prop_table (fun cs (v1i, v1o) (v2i, v2o) -> 
+            let _, z = cs in
+            let v1ot = 
             if is_Array v1i && is_Array v2i then
                 let l1 = get_len_var_V v1i in
                 let l2 = get_len_var_V v2i in
                 replace_V v1o l1 l2
             else v1o
         in
-        let p1, p2 = 
-            let v1i', v2i', v1o', v2o' = 
-                let v2i', v1i' = 
-                    (*Optimization 1: If those two are the same, ignore the prop step*)
-                    if v1i <> Bot && eq_V v2i v1i then v2i, v1i else 
-                    prop v2i v1i 
-                in
-                let opt_o = false
-                    (*Optimization 1: If those two are the same, ignore the prop step*)
-                    || (v2o <> Bot && eq_V v1ot v2o)
-                in
-                let v1o', v2o' = 
-                if opt_o then v1ot, v2o else 
-                prop (arrow_V z1 v1ot v2i) (arrow_V z1 v2o v2i)
-                in
-                let v1o' =
-                    if is_Array v1i' && is_Array v2i' then
-                        let l1 = get_len_var_V v1i' in
-                        let l2 = get_len_var_V v2i' in
-                        replace_V v1o' l2 l1
-                    else v1o'
-                in
-                let v1o', v2o' = 
-                    if opt_o then v1o', v2o' else (join_V v1o v1o', join_V v2o v2o')
-                in
-                v1i', v2i', v1o', v2o'
+        let v1i', v2i', v1o', v2o' = 
+            let v2i', v1i' = 
+                (*Optimization 1: If those two are the same, ignore the prop step*)
+                if v1i <> Bot && eq_V v2i v1i then v2i, v1i else 
+                prop v2i v1i 
             in
-            (v1i', v1o'), (v2i', v2o') 
+            let opt_o = false
+                (*Optimization 1: If those two are the same, ignore the prop step*)
+                || (v2o <> Bot && eq_V v1ot v2o)
+            in
+            let v1o', v2o' = 
+            if opt_o then v1ot, v2o else 
+            prop (arrow_V z v1ot v2i) (arrow_V z v2o v2i)
+            in
+            let v1o' =
+                if is_Array v1i' && is_Array v2i' then
+                    let l1 = get_len_var_V v1i' in
+                    let l2 = get_len_var_V v2i' in
+                    replace_V v1o' l2 l1
+                else v1o'
+            in
+            let v1o', v2o' = 
+                if opt_o then v1o', v2o' else (join_V v1o v1o', join_V v2o v2o')
+            in
+            v1i', v2i', v1o', v2o'
         in
-        let t1'' = (z1, fst p1, snd p1) and t2'' = (z2, fst p2, snd p2) in
-        Table t1'', Table t2''
+        (v1i', v1o'), (v2i', v2o')) alpha_rename_V t1 t2 in
+        Table t1', Table t2'
     | _, _ -> v1, join_V v1 v2
 
 (* let lc_env env1 env2 = 
@@ -182,8 +181,43 @@ let iterEnv_v env m v = VarMap.fold (fun var n a ->
     let pre_t = find n !pre_m in
     opt_eq_V pre_t t *)
 
-let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) (assertion: bool) =
-    let n = SN (true, loc term) in
+let prop_predef l v0 v = 
+    let l = l |> name_of_node in
+    let rec alpha_rename v0 v = 
+        match v0, v with
+        | Table t0, Table t -> 
+            if table_isempty t || table_isempty t0  then Table t else
+            let (var0, z0), (vi0, vo0) = get_full_table_T t0 in
+            let (var, z), (vi, vo) = get_full_table_T t in
+            let vo' = alpha_rename vo0 (alpha_rename_V vo z z0) in
+            let t' = construct_table (var0,z0) (vi, vo') in
+            Table t'
+        | _, _ -> v
+    in
+    match v0, v with
+    | Table t0, Table t -> 
+        let cs0, _ = get_full_table_T t0 in
+        let vpdef = Table (construct_table cs0 (get_table_by_cs_T cs0 t)) in
+        let pdefvp = ref (construct_table cs0 (get_table_by_cs_T cs0 t)) in
+        let t' = table_mapi (fun cs (vi, vo) -> 
+            let _, l' = cs in
+            if cs = cs0 || l' <> l then vi, vo else
+            let vs = Table (construct_table cs (vi, vo)) in
+            let v' = vs |> alpha_rename v0 in
+            let vt, v'' = prop vpdef v' in
+            pdefvp := join_V vt (Table !pdefvp) |> get_table_T;
+            let vi', vo' = match alpha_rename vs v'' with
+                | Table t'' -> let _, (vi, vo) = get_full_table_T t'' in (vi, vo)
+                | _ -> raise (Invalid_argument "Expect predefined functions as table")
+            in vi', vo') t
+        in Table (
+            let _, vio = get_full_table_T !pdefvp in
+            t' |> update_table cs0 vio
+        )
+    | _, _ -> v
+
+let rec step term (env: env_t) (sx: var) (m:exec_map_t) (ae: value_t) (assertion: bool) =
+    let n = construct_enode env (loc term) |> construct_snode sx in
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     match term with
     | Void l ->
@@ -212,8 +246,8 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) (assertion: bool) =
         end
         ); *)
         let nx = VarMap.find x env in
-        let EN (envx, lx) = nx in
-        let nx = SN (true, lx) in
+        let envx, lx,_ = get_vnode nx in
+        let nx = construct_snode sx nx in
         let tx = let tx' = find nx m in
             if is_Relation tx' then equal_V tx' x (* M<E(x)>[v=E(x)] *) 
             else tx'
@@ -231,6 +265,8 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) (assertion: bool) =
         let raw_tx', t' =
             (* if optmization m n find && optmization m nx find then tx, t else *)
             if Array.mem lx pre_def_func then
+                let tx0 = find nx m0 in
+                let tx = if !sensitive then prop_predef l tx0 tx else tx in
                 prop tx t
             else
                 prop_scope envx env tx t
@@ -254,8 +290,8 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) (assertion: bool) =
             Format.printf "\n";
         end
         ); *)
-        let m1 = step e1 env m ae assertion in
-        let n1 = SN (true, loc e1) in
+        let m1 = step e1 env sx m ae assertion in
+        let n1 = construct_enode env (loc e1) |> construct_snode sx in
         let t1 = find n1 m1 in
         if t1 = Bot then m1
         else if not @@ is_table t1 then
@@ -263,14 +299,15 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) (assertion: bool) =
         (loc e1) (string_of_value t1);
         m1 |> NodeMap.add n Top)
         else
-            let m2 = step e2 env m1 ae assertion in
-            let n2 = SN (true, loc e2) in
+            let m2 = step e2 env sx m1 ae assertion in
+            let n2 = construct_enode env (loc e2) |> construct_snode sx in
             let t2 = find n2 m2 in (* M[env*l2] *)
             (match t2 with
                 | Bot -> m2
                 | Top -> m2 |> NodeMap.add n Top
                 | _ -> let t = find n m2 in
-                let t_temp = Table ((dx_T t1), t2, t) in
+                let cs = if !sensitive then (loc e1, loc e1 |> name_of_node) else (dx_T t1) in
+                let t_temp = Table (construct_table cs (t2, t)) in
                 (* (if !debug then
                 begin
                     Format.printf "\n<=== Prop APP ===> %s\n" (loc e1);
@@ -293,7 +330,7 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) (assertion: bool) =
                     Format.printf "\n";
                 end
                 ); *)
-                let t2', raw_t' = io_T t0 in
+                let t2', raw_t' = io_T cs t0 in
                 let t' = getVars env |> proj_V raw_t' in
                 m2 |> NodeMap.add n1 t1' |> NodeMap.add n2 t2' |> NodeMap.add n t'
             )
@@ -305,11 +342,11 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) (assertion: bool) =
             Format.printf "\n";
         end
         ); *)
-        let m1 = step e1 env m ae assertion in
-        let m2 = step e2 env m1 ae assertion in
-        let n1 = SN (true, loc e1) in
+        let m1 = step e1 env sx m ae assertion in
+        let m2 = step e2 env sx m1 ae assertion in
+        let n1 = construct_enode env (loc e1) |> construct_snode sx in
         let t1 = find n1 m2 in
-        let n2 = SN (true, loc e2) in
+        let n2 = construct_enode env (loc e2) |> construct_snode sx in
         let t2 = find n2 m2 in
         if t1 = Bot || t2 = Bot then m2 
         else
@@ -360,10 +397,10 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) (assertion: bool) =
             Format.printf "\n";
         end
         ); *)
-        let n0 = SN (true, loc e0) in
+        let n0 = construct_enode env (loc e0) |> construct_snode sx in
         let m0 = 
             (* if optmization m n0 find then m else  *)
-            step e0 env m ae assertion in
+            step e0 env sx m ae assertion in
         let t0 = find n0 m0 in
         if t0 = Bot then m0 else
         if not @@ SemanticsDomain.is_bool_V t0 then m0 |> NodeMap.add n Top else
@@ -374,8 +411,8 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) (assertion: bool) =
             let t_true = meet_V (extrac_bool_V t0 true) ae in (* Meet with ae*)
             let t_false = meet_V (extrac_bool_V t0 false) ae in
             let v_n = find n m0 in
-            let m1 = step e1 env m0 t_true assertion in
-            let n1 = SN (true, loc e1) in
+            let m1 = step e1 env sx m0 t_true assertion in
+            let n1 = construct_enode env (loc e1) |> construct_snode sx in
             let t1 = find n1 m1 in
             (* (if !debug then
             begin
@@ -398,8 +435,8 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) (assertion: bool) =
                 Format.printf "\n";
             end
             );  *)
-            let m2 = step e2 env m1 t_false assertion in
-            let n2 = SN (true, loc e2) in
+            let m2 = step e2 env sx m1 t_false assertion in
+            let n2 = construct_enode env (loc e2) |> construct_snode sx in
             let t2 = find n2 m2 in
             (* (if !debug then 
             begin
@@ -438,11 +475,84 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) (assertion: bool) =
         let t =
           match t0 with
           | Bot ->
-              let te = init_T (fresh_var ()) in
+              let te = let z = fresh_var () in init_T (z,z) in
               Table te
           | _ -> t0
         in
-        let tl, tr = io_T t in
+        step_func (fun cs (tl, tr) m' -> 
+            if tl = Bot then m' |> NodeMap.add n t
+            else 
+            if tr = Top then top_M m' else
+            begin
+                let _, var = cs in
+                let nx = construct_vnode env lx cs in
+                let f_nf_opt = Opt.map (fun (f, lf) -> f, construct_vnode env lf cs) f_opt in
+                let env1 =
+                    env |> VarMap.add x nx |>
+                    (Opt.map (uncurry VarMap.add) f_nf_opt |>
+                    Opt.get_or_else (fun env -> env))
+                in
+                let n1 = construct_enode env1 (loc e1) |> construct_snode x in
+                let nx = construct_snode x nx in
+                let tx = find nx m in
+                let ae' = if is_Relation tx && x <> "_" then (arrow_V x ae tx) else ae in
+                let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x var in
+                let prop_t = Table (construct_table cs (tx, t1)) in
+                (if !debug then
+                begin
+                    Format.printf "\n<=== Prop lamb ===> %s %s\n" lx (loc e1);
+                    pr_value Format.std_formatter prop_t;
+                    Format.printf "\n<<~~~~>> %s\n" l;
+                    pr_value Format.std_formatter t;
+                    Format.printf "\n";
+                end
+                );
+                let px_t, t1 = prop_scope env1 env prop_t t
+                in
+                (if !debug then
+                begin
+                    Format.printf "\nRES for prop:\n";
+                    pr_value Format.std_formatter px_t;
+                    Format.printf "\n<<~~~~>>\n";
+                    pr_value Format.std_formatter t1;
+                    Format.printf "\n";
+                end
+                );
+                let nf_t2_tf'_opt =
+                    Opt.map (fun (_, nf) ->
+                    let envf, lf, fcs = get_vnode nf in
+                    let nf = construct_snode x nf in
+                    let tf = find nf m in
+                    (if !debug then
+                        begin
+                            Format.printf "\n<=== Prop um ===> %s\n" l;
+                            pr_value Format.std_formatter t;
+                            Format.printf "\n<<~~~~>> %s\n" lf;
+                            pr_value Format.std_formatter tf;
+                            Format.printf "\n";
+                        end
+                    );
+                    let t2, tf' = prop_scope env envf t tf in
+                    (if !debug then
+                        begin
+                            Format.printf "\nRES for prop:\n";
+                            pr_value Format.std_formatter t2;
+                            Format.printf "\n<<~~~~>>\n";
+                            pr_value Format.std_formatter tf';
+                            Format.printf "\n";
+                        end
+                    );
+                    nf, t2, tf') f_nf_opt
+                in
+                let tx', t1' = io_T cs px_t in
+                let m1 = m |> NodeMap.add nx tx' |> NodeMap.add n1 (if x = "_" then t1' else replace_V t1' var x) |>
+                (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> NodeMap.add nf tf' |> NodeMap.add n (join_V t1 t2))
+                nf_t2_tf'_opt |> Opt.get_or_else (NodeMap.add n t1)) in
+                let m1' = step e1 env1 x m1 ae' assertion in
+                join_M m1' m'
+            end
+        ) t (m |> NodeMap.add n t |> Hashtbl.copy)
+        (* let tl, tr = io_T t in
         if tl = Bot then m |> NodeMap.add n t
         else 
         if tr = Top then top_M m else
@@ -516,8 +626,8 @@ let rec step term (env: env_t) (m:exec_map_t) (ae: value_t) (assertion: bool) =
             let m1 = m |> NodeMap.add nx tx' |> NodeMap.add n1 (if x = "_" then t1' else replace_V t1' (dx_T t) x) |>
             (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> NodeMap.add nf tf' |> NodeMap.add n (join_V t1 t2))
             nf_t2_tf'_opt |> Opt.get_or_else (NodeMap.add n t1)) in
-            step e1 env1 m1 ae' assertion
-        end 
+            step e1 env1 x m1 ae' assertion 
+        end *)
 
 (** Widening **)
 let widening k (m1:exec_map_t) (m2:exec_map_t): exec_map_t =
@@ -537,7 +647,7 @@ let rec fix env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_map_t 
     end);
   let ae = Relation (top_R Plus) in
   let m_t = Hashtbl.copy m in
-  let m' = step e env m_t ae assertion in
+  let m' = step e env "" m_t ae assertion in
   if k < 0 then if k = -1 then "", m' else fix env e (k+1) m' assertion else
   (* if k > 2 then Hashtbl.reset !pre_m;
   pre_m := m; *)
@@ -547,7 +657,7 @@ let rec fix env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_map_t 
   let comp = if !process = "Wid" then leq_M m'' m else leq_M m m'' in
   if comp then
       begin
-      if assertion || !narrow then "The input program verified safe\n", m 
+      if assertion || !narrow then "The input program is safe\n", m 
       else 
         begin
         try fix env e k m true (* Final step to check assertions *)
@@ -565,6 +675,11 @@ let s e =
         Format.printf "\n\n";
     end); *)
     (* exit 0; *)
+    (* let rec print_list = function 
+    [] -> ()
+    | e::l -> print_int e ; print_string " " ; print_list l in
+    ThresholdsSetType.elements !thresholdsSet |> print_list; *)
+    AbstractDomain.AbstractValue.licons_ref := AbstractDomain.AbstractValue.licons_earray ();
     let envt, m0' = pref_M env0 (Hashtbl.copy m0) in
     (* pre_m := m0'; *)
     let check_str, m =

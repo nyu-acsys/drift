@@ -10,32 +10,32 @@ parser.add_argument('show_unsolved', nargs='?', default=False)
 args = parser.parse_args()
 
 if exp2_regexp.search(args.folder_name):
-    data_lst = { "res1-polka-standard": [], "res_rtype": [], 
+    data_lst = { "res1-polka_st-standard": [], "res_rtype": [], 
         "res_dorder": [], "res_dsolve": [], "res_mochi": []}
-    res_lst = { "res1-polka-standard": [], "res_rtype": [], 
+    res_lst = { "res1-polka_st-standard": [], "res_rtype": [], 
         "res_dorder": [], "res_dsolve": [], "res_mochi": []}
-    csv_lst = ["res1-polka-standard", "res_rtype", "res_dorder", "res_dsolve", "res_mochi"]
+    csv_lst = ["res1-polka_st-standard", "res_rtype", "res_dorder", "res_dsolve", "res_mochi"]
 else:
     data_lst = {"res-oct-standard": [], "res-oct-wid+nar": [], 
-        "res-oct-dwid-300": [], "res-polka-standard": [],
-        "res-polka-wid+nar": [], "res-polka-dwid-300": [], "res-polka_ls-standard": [], 
-        "res-polka_ls-wid+nar": [], "res-polka_ls-dwid-300": [], "res1-oct-standard": [], "res1-oct-wid+nar": [], 
-        "res1-oct-dwid-300": [], "res1-polka-standard": [],
-        "res1-polka-wid+nar": [], "res1-polka-dwid-300": [], "res1-polka_ls-standard": [], 
-        "res1-polka_ls-wid+nar": [], "res1-polka_ls-dwid-300": []
+        "res-oct-thowid": [], "res-polka_st-standard": [],
+        "res-polka_st-wid+nar": [], "res-polka_st-thowid": [], "res-polka_ls-standard": [], 
+        "res-polka_ls-wid+nar": [], "res-polka_ls-thowid": [], "res1-oct-standard": [], "res1-oct-wid+nar": [], 
+        "res1-oct-thowid": [], "res1-polka_st-standard": [],
+        "res1-polka_st-wid+nar": [], "res1-polka_st-thowid": [], "res1-polka_ls-standard": [], 
+        "res1-polka_ls-wid+nar": [], "res1-polka_ls-thowid": []
     }
     res_lst = {"res-oct-standard": [], "res-oct-wid+nar": [], 
-        "res-oct-dwid-300": [], "res-polka-standard": [],
-        "res-polka-wid+nar": [], "res-polka-dwid-300": [], "res-polka_ls-standard": [], 
-        "res-polka_ls-wid+nar": [], "res-polka_ls-dwid-300": [], "res1-oct-standard": [], "res1-oct-wid+nar": [], 
-        "res1-oct-dwid-300": [], "res1-polka-standard": [],
-        "res1-polka-wid+nar": [], "res1-polka-dwid-300": [], "res1-polka_ls-standard": [], 
-        "res1-polka_ls-wid+nar": [], "res1-polka_ls-dwid-300": []
+        "res-oct-thowid": [], "res-polka_st-standard": [],
+        "res-polka_st-wid+nar": [], "res-polka_st-thowid": [], "res-polka_ls-standard": [], 
+        "res-polka_ls-wid+nar": [], "res-polka_ls-thowid": [], "res1-oct-standard": [], "res1-oct-wid+nar": [], 
+        "res1-oct-thowid": [], "res1-polka_st-standard": [],
+        "res1-polka_st-wid+nar": [], "res1-polka_st-thowid": [], "res1-polka_ls-standard": [], 
+        "res1-polka_ls-wid+nar": [], "res1-polka_ls-thowid": []
     }
-    csv_lst = ["res-oct-standard", "res-oct-wid+nar", "res-oct-dwid-300", "res-polka-standard",
-"res-polka-wid+nar", "res-polka-dwid-300", "res-polka_ls-standard", "res-polka_ls-wid+nar", "res-polka_ls-dwid-300",
-"res1-oct-standard", "res1-oct-wid+nar", "res1-oct-dwid-300", "res1-polka-standard",
-"res1-polka-wid+nar", "res1-polka-dwid-300", "res1-polka_ls-standard", "res1-polka_ls-wid+nar", "res1-polka_ls-dwid-300" ]
+    csv_lst = ["res-oct-standard", "res-oct-wid+nar", "res-oct-thowid", "res-polka_st-standard",
+"res-polka_st-wid+nar", "res-polka_st-thowid", "res-polka_ls-standard", "res-polka_ls-wid+nar", "res-polka_ls-thowid",
+"res1-oct-standard", "res1-oct-wid+nar", "res1-oct-thowid", "res1-polka_st-standard",
+"res1-polka_st-wid+nar", "res1-polka_st-thowid", "res1-polka_ls-standard", "res1-polka_ls-wid+nar", "res1-polka_ls-thowid" ]
 
 # loc is calculated by cloc 
 sort_lst = {"high":["HO", 8], "first":["FO", 11], "array":["A", 17], "negative":["E", 16]}
@@ -301,7 +301,7 @@ def print_unsolved_tests():
         tool_ver = "nonsensitive" if i == 0 else "1-sensitive"
         print(f'-----{tool_ver}-----')
         for domain, vals in cant_solve_lst[i].items():
-            print(domain, end = ":\t ")
+            print(f'{domain} ({len(vals)})', end = ":\t ")
             print(vals)
         print(f'-----end-----')
 
@@ -311,7 +311,7 @@ def main():
     if exp2_regexp.search(args.folder_name):
         print_for_table2()
     else:
-        #cal_solve_by_domain()
+        cal_solve_by_domain()
         if args.show_unsolved:
             print_unsolved_tests()
         print_for_table1()

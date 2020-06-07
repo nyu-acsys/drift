@@ -251,7 +251,15 @@ let main_test_1 = parse_from_string
   let _ = main 10
   "
 
-let tests = []
+let flow_test = parse_from_string
+"
+let id x = x in
+let x = 1 in
+let _ = assert(id 1 = 1) in
+assert(id 2 = 2)
+"
+
+let tests = [id_test_2]
 
 let _ =
   Config.parse;
@@ -259,6 +267,7 @@ let _ =
   let t = if !Config.parse_file then 
     begin
     pre_vars := VarDefMap.empty;
+    thresholdsSet := ThresholdsSetType.empty;
     [parse_from_file !Config.file]
     end
   else tests in

@@ -1,6 +1,8 @@
 open Syntax
 open AbstractDomain
 open SemanticDomain
+open SensitiveDomain
+open SenSemantics
 
 (** Pretty printing *)
 let pr_relation ppf a = let open SemanticsDomain in match a with
@@ -52,13 +54,11 @@ let rec pr_exp pl ppf = function
 
 let print_exp out_ch e = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" (pr_exp true) e
 
-let loc_of_node = function
-  | SN (_, l) -> l
+let loc_of_node n = get_label_snode n
 
 let pr_node ppf n = Format.fprintf ppf "%s" (loc_of_node n)
 
-let rec pr_node_full ppf = function
-  | EN (env, l) -> Format.fprintf ppf "@[<1><[%a], %s>@]" pr_env (VarMap.bindings env) l
+let rec pr_node_full ppf n = print_node n ppf pr_env
 and pr_env ppf = function
   | [] -> ()
   | [x, n] -> Format.fprintf ppf "%s: %a" x pr_node_full n
@@ -86,18 +86,24 @@ let rec pr_value ppf v = let open SemanticsDomain in match v with
   | Bot -> Format.fprintf ppf "_|_"
   | Top -> Format.fprintf ppf "T"
   | Relation r -> pr_relation ppf r
-  | Table t -> pr_table ppf t
+  | Table t -> print_table t ppf pr_value
   | Unit u -> pr_unit ppf u
   | Ary ary -> pr_ary ppf ary
-and pr_table ppf t = let open SemanticsDomain in let (z, vi, vo) = t in
-    Format.fprintf ppf "@[<2>%s: (%a ->@ %a)@]" z pr_value vi pr_value vo
 
-let sort_list (m: SemanticsDomain.exec_map_t) =
+let sort_list (m: exec_map_t) =
+  let comp s1 s2 =
+  let l1 = try int_of_string s1 
+    with _ -> -1 in
+  let l2 = try int_of_string s2
+    with _ -> -1 in
+  if l1 = -1 then
+    if l2 = -1 then String.compare s1 s2
+    else -1
+  else if l2 = -1 then 1
+  else l1 - l2 in
   let lst = (NodeMap.bindings m) in
   List.sort (fun (n1,_) (n2,_) -> 
-  let SN (_, e1) = n1 in
-    let SN (_, e2) = n2 in
-    comp e1 e2) lst 
+    compare_node comp n1 n2) lst 
 
 let print_value out_ch v = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" pr_value v
 

@@ -6,9 +6,14 @@
 import sys, os
 import re
 import csv
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-csv', type=str, help='give an output csv name', required=True)
+args = parser.parse_args()
 
 testdir = '../outputs/DRIFT2'
-table_file = '../res.csv'
+table_file = '../' + args.csv + '.csv'
 pattern = re.compile(".*ml$")
 attrs = ['subdir', 'file name', 'test class', 'timing (seconds)', 'res (true/false)', 'domain']
 
@@ -48,7 +53,7 @@ def read_info_from_file(file_name):
         elif timeout_regexp.search(plain_d):
             res_data.append('F')
         else:
-            print("File data error: \n")
+            print(file_name+" File data error: \n")
             sys.exit(data)
     try:
         time = float(timing) / 1000

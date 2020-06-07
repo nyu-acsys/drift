@@ -101,7 +101,7 @@ ident_ref_list:
 ;
 
 basic_term: /*term@7 := int | bool | var | (term)*/
-| INTCONST { Const (Integer $1, "") }
+| INTCONST { thresholdsSet := ThresholdsSetType.add $1 !thresholdsSet; Const (Integer $1, "") }
 | BOOLCONST { Const (Boolean $1, "") }
 | IDENT { Var ($1, "") }
 | LPAREN seq_term RPAREN { $2 } /*Parentheses*/

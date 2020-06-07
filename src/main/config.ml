@@ -17,7 +17,11 @@ let narrow = ref false
 
 let domain = ref "Oct" (*Default: Octagon domain*)
 
-let usage = "usage: ./tests.native [-file input_file_name] [-domain domain_name] [-nar true/false] [-delay-wid NUM] [-debug] [-bt] [-out LEVEL]"
+let use_threshold = ref false
+
+let sensitive = ref false
+
+let usage = "usage: ./tests.native [] [-file input_file_name] [-domain domain_name] [-nar true/false] [-delay-wid NUM] [-debug] [-bt] [-out LEVEL]"
 
 let cmd_options_spec =
   [("-debug", Arg.Set debug, ": Debug mode");
@@ -30,6 +34,8 @@ let cmd_options_spec =
     \t 1: Output map only for the last step\n
     \t 2: Output the result only
     ");
+    ("-sen", Arg.String (fun s -> if s = "true" then sensitive:=true else sensitive:=false), ": Use sensitive");
+  ("-thold", Arg.String (fun s -> if s = "true" then use_threshold:=true else use_threshold:=false), ": Use widening with thresholds");
   ("-nar", Arg.String (fun s -> if s = "true" then narrow:=true else narrow:=false), ": Use narrowing procedure");
   ("-file", Arg.String (fun s -> parse_file := true; file := s), ": Input file specification")]
 

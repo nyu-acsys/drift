@@ -9,7 +9,7 @@ echo "outdir=<$OUTDIR> prog=<$PROG>"
 
 DIRS=" DRIFT2 DOrder r_type"
 INS=" array first high negative" #  termination
-timeout="20"
+timeout="300" # timeout set for 5 minutes
 OUTPRE="out"
 DATE="gdate"
 if [[ "$OSTYPE" != "darwin"* ]]; then
@@ -41,10 +41,11 @@ for hdir in ${DIRS}; do
                 echo "${PROG} --solver \"z3 -in\" ${TESTDIR}/${hdir}/${dir}/${f}"
                 ts=$(${DATE} +%s%N)
                 timeout ${timeout} ${PROG} --solver "z3 -in" ${TESTDIR}/${hdir}/${dir}/${f} &> ${OUTDIR}/${dir}/${OUTPRE}_${f}
-                if [[ $? -ne 0 ]]; then
+                tt=$((($(${DATE} +%s%N) - $ts)/1000000))
+                st=$(($timeout*1000))
+                if [[ $tt -gt $st ]]; then
                     echo "Time: timeout" >> ${OUTDIR}/${dir}/${OUTPRE}_${f}
                 else
-                    tt=$((($(${DATE} +%s%N) - $ts)/1000000))
                     echo "Time: $tt" >> ${OUTDIR}/${dir}/${OUTPRE}_${f}
                 fi
             done

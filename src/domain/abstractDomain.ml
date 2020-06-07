@@ -38,6 +38,8 @@ module type AbstractDomainType =
     val print_abs: Format.formatter -> t -> unit
     val print_env: Format.formatter -> t -> unit
     val derived: string -> t -> t
+    val licons_ref: Apron.Lincons1.earray ref
+    val licons_earray: unit -> Apron.Lincons1.earray
   end
 
 module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
@@ -258,11 +260,42 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         end);
         (* Abstract1.minimize_environment Man.man res *)
         res
+    let licons_ref = 
+      let env = Environment.make [||] [||] in
+      let ary = Lincons1.array_make env 0 in
+      ref ary
+    let licons_earray () = 
+      let size = 4 * (ThresholdsSetType.cardinal !thresholdsSet) in
+      let var_v = "cur_v" |> Var.of_string in
+      let env = Environment.make [|var_v|] [||] in
+      let thehold_ary = Lincons1.array_make env size in
+      let idx2 = ref 0 in
+      let _ = ThresholdsSetType.map (fun i -> 
+      let eq = "cur_v <=" ^ (string_of_int i) in (* v <=  threshold_const *)
+      Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
+      idx2 := !idx2 + 1;
+      let eq = "cur_v >=" ^ (string_of_int i) in (* v >=  threshold_const *)
+      Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
+      idx2 := !idx2 + 1;
+      let eq = "cur_v <" ^ (string_of_int i) in (* v <=  threshold_const *)
+      Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
+      idx2 := !idx2 + 1;
+      let eq = "cur_v >" ^ (string_of_int i) in (* v >=  threshold_const *)
+      Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
+      idx2 := !idx2 + 1;
+      i) !thresholdsSet in
+      thehold_ary
+    let generate_threshold_earray env = 
+      if Environment.size env = 0 || Environment.mem_var env (Var.of_string "cur_v") = false 
+      then Lincons1.array_make env 0 else !licons_ref
     let widening v1 v2 = 
       if is_bot v2 then v1 else
       let v1', v2' = lc_env v1 v2 in
-      let res =
-        Abstract1.widening Man.man v1' v2'
+      let res = 
+        if !use_threshold then
+          Abstract1.widening_threshold Man.man v1' v2' (generate_threshold_earray (Abstract1.env v1'))
+        else
+          Abstract1.widening Man.man v1' v2'
       in
       (* Abstract1.minimize_environment Man.man res *)
       res

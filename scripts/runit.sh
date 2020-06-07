@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# ./runit.sh -set call/unv -domain Oct [-nar | -dwid 0]
+# ./runit.sh -set call/unv -domain Oct [-nar | -dwid 0 | -thold] [-sen]
 # Domain for benchmarks: Oct, Polka_st, Polka_ls
 
 OUTDIR="../outputs/DRIFT2"
@@ -23,13 +23,25 @@ shift
 
 wid=0
 nar=false
+thold=false
+sen=false
 
-if [ $# -eq 1 ] && [ $1 = "-nar" ]; then
+if [[ $# -ge 1 && ($1 = "-sen" || $2 = "-sen" || $3 = "-sen") ]]; then
+    echo "Use sensitive"
+    sen=true;
+fi
+
+if [ $# -ge 1 ] && [ $1 = "-nar" ]; then
     echo "Wid + Nar..."
     wid=0;
     nar=true;
+elif [ $# -ge 1 ] && [ $1 = "-thold" ]; then
+    echo "Wid with threshold + Nar..."
+    thold=true;
+    nar=true;
+    wid=0;
 else 
-    if [ $# -eq 2 ] && [ $1 = "-dwid" ]; then
+    if [ $# -ge 2 ] && [ $1 = "-dwid" ]; then
         echo "Delay widening + Nar. Widen steps occur after $2"
         nar=true;
         wid=$2;
@@ -47,7 +59,7 @@ fi
 
 DIRS=" DRIFT2 DOrder r_type"
 INS=" first high negative array" #   
-timeout="120"
+timeout="300"
 OUTPRE="out"
 DATE="gdate"
 if [[ "$OSTYPE" != "darwin"* ]]; then
@@ -73,9 +85,9 @@ for hdir in ${DIRS}; do
                 if [[ "$OSTYPE" != "darwin"* ]]; then
                     f=${f#*./}
                 fi
-                echo "${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar}"
+                echo "${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -sen ${sen}"
                 ts=$(${DATE} +%s%N)
-                timeout ${timeout} ${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} &> ${OUTDIR}/${dir}/${OUTPRE}_${f}
+                timeout ${timeout} ${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -sen ${sen} &> ${OUTDIR}/${dir}/${OUTPRE}_${f}
                 if [[ $? -ne 0 ]]; then
                     echo "Time: timeout" >> ${OUTDIR}/${dir}/${OUTPRE}_${f}
                 else
@@ -87,5 +99,26 @@ for hdir in ${DIRS}; do
     done
 done
 
-echo "Gnerate table results..."
-python3 table.py  
+csv_name="res"
+
+if [[ $sen == true ]]; then
+    csv_name="${csv_name}1-"
+else
+    csv_name="${csv_name}-"
+fi
+
+DOMAIN=$(echo "$DOMAIN" | tr '[:upper:]' '[:lower:]')
+csv_name="${csv_name}${DOMAIN}"
+
+if [[ $thold == true ]]; then
+    csv_name="${csv_name}-thowid"
+elif [[ $wid -gt 0 ]]; then
+    csv_name="${csv_name}-dwid-${wid}"
+elif [[ $nar == true ]]; then
+    csv_name="${csv_name}-wid+nar"
+else
+    csv_name="${csv_name}-standard"
+fi
+
+echo "Gnerate ${csv_name} table results..."
+python3 table.py -csv ${csv_name}

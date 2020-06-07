@@ -22,10 +22,14 @@ def read_info_from_file(file_name):
     res_data = []
     safe_regexp = re.compile(r'safe')
     unsafe_regexp = re.compile(r'unsafe')
-    timeout_regexp = re.compile(r'Error')
+    error_regexp = re.compile(r'Error')
+    timeout_regexp = re.compile(r'timeout')
     if safe_regexp.search(data[0]): # safe
         res_data.append('T')
-    elif unsafe_regexp.search(data[1]) or timeout_regexp.search(data[0]): # state unsafe, but safe
+    elif error_regexp.search(data[0]) and timeout_regexp.search(data[-1]) == None: # Error
+        res_data.append('ER')
+    elif timeout_regexp.search(data[-1]) or unsafe_regexp.search(data[1]): 
+        # state unsafe, but safe OR run forever
         res_data.append('F')
     else:
         print("File data error: \n")
@@ -48,10 +52,13 @@ def read_false_info_from_file(file_name):
     res_data = []
     safe_regexp = re.compile(r'safe')
     unsafe_regexp = re.compile(r'unsafe')
-    timeout_regexp = re.compile(r'Error')
-    if safe_regexp.search(data[0]) or timeout_regexp.search(data[0]): 
-        # state safe, but unsafe, or timeout
+    error_regexp = re.compile(r'Error')
+    timeout_regexp = re.compile(r'timeout')
+    if safe_regexp.search(data[0]) or timeout_regexp.search(data[-1]): 
+        # state safe, but unsafe, OR run forever
         res_data.append('F')
+    elif error_regexp.search(data[0]): # Error
+        res_data.append('ER')
     elif unsafe_regexp.search(data[1]): # state unsafe
         res_data.append('T')
     else:

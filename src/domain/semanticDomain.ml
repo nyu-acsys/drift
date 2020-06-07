@@ -1,83 +1,14 @@
 open AbstractDomain
 open Syntax
 open Util
+open SensitiveDomain
+open SenSemantics
 
 (*
 **********************************
 ** Abstract Data Flow Semantics **
 **********************************
 *)
-
-module type HashType =
-  sig
-    type t
-  end
-
-module MakeHash(Hash: HashType) = struct
-  type key = Hash.t
-  type 'a t = (key, 'a) Hashtbl.t
-  (* let empty : 'a t = Hashtbl.create 1234 *)
-  let create (num: int) : 'a t = Hashtbl.create num
-  let add key v (m: 'a t) : 'a t = Hashtbl.replace m key v; m
-  let merge f m1 m2 : 'a t = 
-    Hashtbl.filter_map_inplace (
-    fun key v1 -> match Hashtbl.find_opt m2 key with
-      | None -> None
-      | Some v2 -> (f key v1 v2)
-  ) m1; m1
-  let union f (m1: 'a t) (m2: 'a t) : 'a t = 
-    Hashtbl.iter (
-    fun key v1 -> (match Hashtbl.find_opt m2 key with
-      | None -> Hashtbl.add m2 key v1
-      | Some v2 -> Hashtbl.replace m2 key (f key v1 v2))
-  ) m1; m2
-  let for_all f (m: 'a t) : bool = Hashtbl.fold (
-    fun key v b -> if b = false then b else
-      f key v
-  ) m true
-  let find_opt key (m: 'a t) = Hashtbl.find_opt m key
-  let map f (m: 'a t) : 'a t = Hashtbl.filter_map_inplace (
-    fun key v -> Some (f v)
-  ) m; m
-  let mapi f (m: 'a t) : 'a t = Hashtbl.filter_map_inplace (
-    fun key v -> Some (f key v)
-  ) m; m
-  let find key (m: 'a t): 'a = Hashtbl.find m key
-  let bindings (m: 'a t) = Hashtbl.fold (
-    fun key v lst -> (key, v) :: lst
-  ) m []
-  let fold = Hashtbl.fold
-end
-
-exception Pre_Def_Change of string
-exception Key_not_found of string
-
-module TempVarMap =  Map.Make(struct
-  type t = var
-  let compare = compare
-  end)
-
-module VarMap = struct
-  include TempVarMap
-  let find key m = try TempVarMap.find key m 
-    with Not_found -> raise (Key_not_found (key^" is not Found in VarMap"))
-end
-
-type node_t = EN of env_t * loc (*N = E x loc*)
-and env_t = node_t VarMap.t (*E = Var -> N*)
-
-type node_s_t = SN of bool * loc (*N = loc*)
-
-module TempNodeMap = MakeHash(struct
-  type t = node_s_t
-  end)
-
-module NodeMap = struct
-  include TempNodeMap
-  let find key (m: 'a t): 'a = let SN (_, e1) = key in
-    try TempNodeMap.find key m
-    with Not_found -> raise (Key_not_found (e1^" is not Found in NodeMap"))
-end
 
 let name_of_node lb = ("z" ^ lb)
 
@@ -86,17 +17,6 @@ let l_index = ref 0
 let incr_l () =
   l_index := !l_index + 1
 
-let comp s1 s2 =
-  let l1 = try int_of_string s1 
-    with _ -> -1 in
-  let l2 = try int_of_string s2
-    with _ -> -1 in
-  if l1 = -1 then
-    if l2 = -1 then String.compare s1 s2
-    else -1
-  else if l2 = -1 then 1
-  else l1 - l2
-
 module SemanticsDomain =
   struct
     (*
@@ -104,19 +24,7 @@ module SemanticsDomain =
     ** Abstract domain for Relation **
     **********************************
     *)
-    type relation_t = Int of AbstractValue.t
-      | Bool of AbstractValue.t * AbstractValue.t
-    type value_t =
-      | Bot
-      | Top
-      | Relation of relation_t
-      | Table of table_t
-      | Ary of array_t
-      | Unit of unit
-    and array_t = (var array) * relation_t (* disable element for now*)
-    and table_t = var * value_t * value_t
-    and exec_map_t = value_t NodeMap.t
-    let rec alpha_rename_R a prevar var = match a with
+    let rec alpha_rename_R (a:relation_t) prevar var :relation_t = match a with
         | Int v -> Int (AbstractValue.alpha_rename v prevar var)
         | Bool (vt, vf) -> Bool ((AbstractValue.alpha_rename vt prevar var), (AbstractValue.alpha_rename vf prevar var))
     and top_R = function
@@ -225,7 +133,7 @@ module SemanticsDomain =
     ** Abstract domain for Table **
     *******************************
     *)
-    and init_T var = (var, Bot, Bot)
+    (* and init_T var = (var, Bot, Bot)
     and dx_Ta t = let (z, vi, vo) = t in z
     and io_Ta t = let (z, vi, vo) = t in vi, vo
     and alpha_rename_T t prevar var = let (z, vi, vo) = t in
@@ -272,7 +180,7 @@ module SemanticsDomain =
       (z, stren_V vi ae, stren_V vo ae)
     and proj_T t vars = let (z, vi, vo) = t in
       let vars_o = Array.append vars [|z|] in
-      (z, proj_V vi vars, proj_V vo vars_o)
+      (z, proj_V vi vars, proj_V vo vars_o) *)
     (*
       ***************************************
       ** Abstract domain for Execution Map **
@@ -291,15 +199,16 @@ module SemanticsDomain =
       and eq_PM (m1:exec_map_t) (m2:exec_map_t) =
         NodeMap.for_all (fun n v1 (*untie to node -> value*) ->
         NodeMap.find_opt n m2 |> Opt.map (
-          fun v2 -> let SN (_, l) = n in
+          fun v2 -> 
+          let l = get_label_snode n in
           if eq_V v1 v2 then true else 
             raise (Pre_Def_Change ("Predefined node changed at " ^ l))
           )
-        |> Opt.get_or_else true) m1
+        |> Opt.get_or_else (v1 = v1)) m1
       and top_M m = NodeMap.map (fun a -> Top) m
       and array_M env m = 
-        let n_make = EN (env, "Array.make") in
-        let s_make = SN (true,  "Array.make") in
+        let n_make = construct_vnode env "Array.make" ("", "") in
+        let s_make = construct_snode "" n_make in
         let t_make = (* make *)
           (* make |-> zm: {v:int | v >= 0} -> ex: {v:int | top} -> {v: Int Array (l) | [| l=zm; zm>=0; |]} *)
           let var_l = "zm" in
@@ -309,10 +218,13 @@ module SemanticsDomain =
           let llen = arrow_R var_l rm rl |> op_R "l" var_l Eq true in
           (* let ilen = op_R "i" "0" Ge true llen |> op_R "i" "l" Lt true in
           let rlen = op_R "x" var_e Eq true ilen in  *)
-          Table (var_l, Relation rl, Table (var_e, Relation rm, Ary ([|"l";|],llen) ))
+          let t = 
+            let t' = Table (construct_table (var_e, var_e) (Relation rm, Ary ([|"l";|],llen))) in
+            Table (construct_table (var_l, var_l) (Relation rl, t')) in
+          t
         in
-        let n_len = EN (env, "Array.length") in
-        let s_len = SN (true,  "Array.length") in
+        let n_len = construct_vnode env  "Array.length" ("", "") in
+        let s_len = construct_snode "" n_len in
         let t_len = (* len *)
           (* len |-> zl: { v: Int Array (l) | [| l>=0; |]  } -> { v: Int | [| v=l |] } *)
           let var_l = "zl" in
@@ -321,10 +233,10 @@ module SemanticsDomain =
           let llen = top_R Plus |> op_R var_len "0" Ge true in
           (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
           let rlen = equal_R (top_R Plus) "l" in
-          Table (var_l, Ary ([|"l"|], llen), Relation rlen)
+          Table (construct_table (var_l, var_l) (Ary ([|"l"|], llen), Relation rlen))
         in
-        let n_get = EN (env, "Array.get") in
-        let s_get = SN (true, "Array.get") in
+        let n_get = construct_vnode env "Array.get" ("", "") in
+        let s_get = construct_snode "" n_get in
         let t_get = (* get *)
           (* get |-> zg: { v: Int Array (l) | [| l>=0; |] } -> zi: {v: int | 0 <= v < l} -> {v: int | top }  *)
           let var_l = "zg" in
@@ -335,10 +247,13 @@ module SemanticsDomain =
           let rm = top_R Plus |> op_R "cur_v" "0" Ge true |> op_R "cur_v" var_len Lt true in
           let rr = top_R Plus (*|> op_R "cur_v" "x" Eq true*) in 
           let var_zi = "zi" in
-          Table (var_l, Ary ([|"l"|], llen), Table (var_zi, Relation rm, Relation rr))
+          let t = 
+            let t' = Table (construct_table (var_zi, var_zi) (Relation rm, Relation rr)) in
+            Table (construct_table (var_l, var_l) (Ary ([|"l"|], llen), t')) in
+          t
         in
-        let n_set = EN (env, "Array.set") in
-        let s_set = SN (true, "Array.set") in
+        let n_set = construct_vnode env "Array.set" ("", "") in
+        let s_set = construct_snode "" n_set in
         let t_set = (* set *)
           (* set |-> zs: { v: Int Array (l) | [| l>=0; |] } -> zi: {v: int | 0 <= v < l} -> ex: {v: int | top } -> unit *)
           let var_l = "zs" in
@@ -351,7 +266,11 @@ module SemanticsDomain =
           let var_zi = "zi" in
           let rri = top_R Plus in
           let rrr = () in
-          Table (var_l, Ary ([|"l"|], llen), Table (var_zi, Relation rm, Table (var_e, Relation rri, Unit rrr)))
+          let t = 
+            let t' = Table (construct_table (var_e, var_e) (Relation rri, Unit rrr)) in
+            let t'' = Table (construct_table (var_zi, var_zi) (Relation rm, t')) in
+            Table (construct_table (var_l, var_l) (Ary ([|"l"|], llen), t'')) in
+          t
         in
         let m' = 
           m |> NodeMap.add s_make t_make |> NodeMap.add s_len t_len |> NodeMap.add s_get t_get
@@ -368,8 +287,8 @@ module SemanticsDomain =
             m, env
           else 
             VarDefMap.fold (fun var (domain: pre_exp) (m, env) -> 
-              let n_var = EN (env, var) in
-              let s_var = SN (true, var) in
+              let n_var = construct_vnode env var ("", "") in
+              let s_var = construct_snode "" n_var in
               let t_var = match domain with
                 | {name = n; dtype = Int; left = l; op = bop; right = r} -> 
                   let rm = if l = "true" then 
@@ -400,7 +319,7 @@ module SemanticsDomain =
       *)
       and alpha_rename_V v prevar var = match v with
         | Relation r -> Relation (alpha_rename_R r prevar var)
-        | Table t -> Table (alpha_rename_T t prevar var)
+        | Table t -> Table (alpha_rename_T alpha_rename_V t prevar var)
         | Ary ary -> Ary (alpha_rename_Ary ary prevar var)
         | _ -> v
       and init_V_c (c:value) = Relation (init_R_c c)
@@ -414,14 +333,14 @@ module SemanticsDomain =
       and join_V (v1:value_t) (v2:value_t) :value_t = match v1, v2 with
         | Bot, v | v, Bot -> v
         | Relation r1, Relation r2 -> Relation (join_R r1 r2)
-        | Table t1, Table t2 -> Table (join_T t1 t2)
+        | Table t1, Table t2 -> Table (join_T join_V alpha_rename_V t1 t2)
         | Ary ary1, Ary ary2 -> Ary (join_Ary ary1 ary2)
         | Unit u1, Unit u2 -> Unit u1
         | _, _ -> Top
       and meet_V (v1:value_t) (v2:value_t) :value_t = match v1, v2 with
         | Top, v | v, Top -> v
         | Relation r1, Relation r2 -> Relation (meet_R r1 r2)
-        | Table t1, Table t2 -> Table (meet_T t1 t2)
+        | Table t1, Table t2 -> Table (meet_T meet_V alpha_rename_V t1 t2)
         | Ary ary1, Ary ary2 -> Ary (meet_Ary ary1 ary2)
         | Unit u1, Unit u2 -> Unit u1
         | _, _ -> Bot
@@ -429,7 +348,7 @@ module SemanticsDomain =
         | Bot, _ -> true
         | _, Top -> true
         | Relation r1, Relation r2 -> leq_R r1 r2
-        | Table t1, Table t2 -> leq_T t1 t2
+        | Table t1, Table t2 -> leq_T leq_V t1 t2
         | Ary ary1, Ary ary2 -> leq_Ary ary1 ary2
         | Unit u1, Unit u2 -> true
         | _, _ -> false
@@ -437,7 +356,7 @@ module SemanticsDomain =
       | Bot, Bot -> true
       | Top, Top -> true
       | Relation r1, Relation r2 -> eq_R r1 r2
-      | Table t1, Table t2 -> eq_T t1 t2
+      | Table t1, Table t2 -> eq_T eq_V t1 t2
       | Ary ary1, Ary ary2 -> eq_Ary ary1 ary2
       | Unit u1, Unit u2 -> true
       | _, _ -> false
@@ -457,28 +376,28 @@ module SemanticsDomain =
         | Bot -> Bot
         | Top | Table _ | Unit _ -> v
         | Relation r2 -> (match v with
-            | Table t -> Table (arrow_T var t v')
+            | Table t -> Table (arrow_T forget_V arrow_V var t v')
             | Relation r1 -> Relation (arrow_R var r1 r2)
             | Ary ary -> Ary (arrow_Ary var ary r2)
             | _ -> v)
         | Ary ary2 -> let (vars, r2) = ary2 in
           (match v with
-          | Table t -> Table (arrow_T var t v')
+          | Table t -> Table (arrow_T forget_V arrow_V var t v')
           | Relation r1 -> Relation (arrow_R var r1 r2)
           | Ary ary -> Ary (arrow_Ary var ary r2)
           | _ -> v)
       and forget_V var v = match v with
-        | Table t -> Table (forget_T var t)
+        | Table t -> Table (forget_T forget_V var t)
         | Ary ary -> Ary (forget_Ary var ary)
         | Relation r -> Relation (forget_R var r)
         | _ -> v
       and equal_V v var = match v with
         | Relation r -> Relation (equal_R r var)
-        | Table t -> Table (equal_T t var)
+        | Table t -> Table (equal_T equal_V alpha_rename_V t var)
         | _ -> v
       and wid_V v1 v2 = match v1, v2 with
         | Relation r1, Relation r2 -> Relation (wid_R r1 r2)
-        | Table t1, Table t2 -> Table (wid_T t1 t2)
+        | Table t1, Table t2 -> Table (wid_T wid_V alpha_rename_V t1 t2)
         | Ary ary1, Ary ary2 -> Ary (wid_Ary ary1 ary2)
         | Unit u1, Unit u2 -> Unit u1
         | _, _ -> join_V v1 v2
@@ -493,17 +412,11 @@ module SemanticsDomain =
         | Relation _, Bot -> if string_of_op op = "&&" then Bot else v1
         | Relation _, Top -> if string_of_op op = "&&" then v1 else Top
         | _, _ -> raise (Invalid_argument "Should be a relation type when using bool_op_V")
-      and dx_T v = match v with
-        | Table t -> dx_Ta t
-        | _ -> raise (Invalid_argument "Should be a table when using dx_T")
-      and io_T v = match v with
-        | Table t -> io_Ta t
-        | _ -> raise (Invalid_argument "Should be a table when using io_T")
     and is_Bot_V = function
       | Bot -> true
       | _ -> false
     and replace_V v var x = match v with
-      | Table t -> Table (replace_T t var x)
+      | Table t -> Table (replace_T replace_V t var x)
       | Relation r -> Relation (replace_R r var x)
       | Ary ary -> Ary (replace_Ary ary var x)
       | _ -> v
@@ -540,13 +453,13 @@ module SemanticsDomain =
     and proj_V v vars =
       match v with
       | Relation r -> Relation (proj_R r vars)
-      | Table t -> Table (proj_T t vars)
+      | Table t -> Table (proj_T proj_V t vars)
       | Ary ary -> Ary (proj_Ary ary vars)
       | _ -> v
     and get_len_var_V = function
       | Ary ary -> get_len_var_Ary ary
       | _ -> raise (Invalid_argument "get length dep variable unsucessful")
-    and opt_eq_V v1 v2 = match v1, v2 with
+    (* and opt_eq_V v1 v2 = match v1, v2 with
       | Bot, _ | _, Bot -> false
       | _, Top -> true
       | Relation r1, Relation r2 -> is_bot_R r1 = false && is_bot_R r2 = false && eq_R r1 r2
@@ -554,7 +467,7 @@ module SemanticsDomain =
           z1 = z2 && opt_eq_V v1i v2i && opt_eq_V v1o v2o
       | Ary ary1, Ary ary2 -> eq_Ary ary1 ary2
       | Unit u1, Unit u2 -> true
-      | _, _ -> false 
+      | _, _ -> false  *)
     and is_bool_false_V = function
       | Relation r -> is_bool_false_R r
       | _ -> true
