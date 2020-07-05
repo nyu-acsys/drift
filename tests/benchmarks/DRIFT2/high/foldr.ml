@@ -22,11 +22,3 @@ let main (n:int(*-:{v:Int | true}*)) =
     else
         let m = 0 - n in
         assert(reduce_neg exor m true = true)
-
-let _ = main 20
-let _ = main 30
-let _ = main 3098
-let _ = main 0
-let _ = main (-1)
-let _ = main (-20)
-let _ = main (-304)

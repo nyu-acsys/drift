@@ -8,7 +8,8 @@ let int_of_bool b = if b then 1 else 0
 type stack_t = var * loc
 type relation_t = Int of AbstractValue.t 
   | Bool of AbstractValue.t * AbstractValue.t
-type array_t = (var array) * relation_t
+  | Unit of unit
+type array_t = (var * var) * (relation_t * relation_t)
 
 module type HashType =
   sig
@@ -90,7 +91,10 @@ module type SensitiveSemanticsType =
       | Relation of relation_t
       | Table of table_t
       | Ary of array_t
-      | Unit of unit
+      | Lst of list_t
+      | Tuple of tuple_t
+    and list_t = (var * var) * (relation_t * value_t)
+    and tuple_t = value_t list
     val init_T: (var * loc) -> table_t
     val alpha_rename_T: (value_t -> string -> string -> value_t) -> table_t -> string -> string -> table_t
     val join_T: (value_t -> value_t -> value_t) -> (value_t -> string -> string -> value_t) -> table_t -> table_t -> table_t
@@ -103,7 +107,8 @@ module type SensitiveSemanticsType =
     val equal_T: (value_t -> var -> value_t) -> (value_t -> string -> string -> value_t) -> table_t -> var -> table_t
     val replace_T: (value_t -> var -> var -> value_t) -> table_t -> var -> var -> table_t
     val stren_T: (value_t -> value_t -> value_t) -> table_t -> value_t -> table_t
-    val proj_T: (value_t -> string array -> value_t) -> table_t -> string array -> table_t
+    val proj_T: (value_t -> string list -> value_t) -> (value_t -> string list) -> table_t -> string list -> table_t
+    val bot_shape_T: (value_t -> value_t) -> table_t -> table_t
     val get_label_snode: node_s_t -> string
     val construct_vnode: env_t -> loc -> (var * loc) -> node_t
     val construct_enode: env_t -> loc -> node_t
@@ -136,8 +141,11 @@ module NonSensitive: SensitiveSemanticsType =
       | Relation of relation_t
       | Table of table_t
       | Ary of array_t
-      | Unit of unit
+      | Lst of list_t
+      | Tuple of tuple_t
     and table_t = var * value_t * value_t
+    and list_t = (var * var) * (relation_t * value_t)
+    and tuple_t = value_t list
     type call_site = None (* Not used *)
     let init_T (var, _) = var, Bot, Bot
     let alpha_rename_T (f: value_t -> string -> string -> value_t) (t:table_t) (prevar:string) (var:string) :table_t = 
@@ -178,8 +186,11 @@ module NonSensitive: SensitiveSemanticsType =
       (z, f vi var x, f vo var x)
     let stren_T f t ae = let (z, vi, vo) = t in
       (z, f vi ae, f vo ae)
-    let proj_T f t vars = let (z, vi, vo) = t in
-      let vars_o = Array.append vars [|z|] in
+    let proj_T f g t vars = let (z, vi, vo) = t in
+      let vars_o = 
+        let vars = z :: vars in
+        List.append vars (g vi)
+      in
       (z, f vi vars, f vo vars_o)
     let get_label_snode n = let SN (_, e1) = n in e1
     let construct_vnode env label _ = EN (env, label)
@@ -227,6 +238,9 @@ module NonSensitive: SensitiveSemanticsType =
     let update_table cs vio t = construct_table cs vio
     let table_isempty t = false
     let table_mapi f t = t
+    let bot_shape_T f t = 
+      let (z, vi, vo) = t in
+      (z, f vi, f vo)
   end
 
 module OneSensitive: SensitiveSemanticsType =
@@ -243,8 +257,11 @@ module OneSensitive: SensitiveSemanticsType =
       | Relation of relation_t
       | Table of table_t (* [<call_site>: table_t ...]*)
       | Ary of array_t
-      | Unit of unit
+      | Lst of list_t
+      | Tuple of tuple_t
     and table_t = (value_t * value_t) TableMap.t
+    and list_t = (var * var) * (relation_t * value_t)
+    and tuple_t = value_t list
     let init_T var = TableMap.empty
     let alpha_rename_T f (mt:table_t) (prevar:string) (var:string) = TableMap.map (fun (vi, vo) -> 
       f vi prevar var, f vo prevar var) mt
@@ -273,9 +290,12 @@ module OneSensitive: SensitiveSemanticsType =
     let equal_T f g mt var = TableMap.map (fun (vi, vo) -> f vi var, f vo var) mt
     let replace_T f mt var x = TableMap.map (fun (vi, vo) -> f vi var x, f vo var x) mt
     let stren_T f mt ae = TableMap.map (fun (vi, vo) -> f vi ae, f vo ae) mt
-    let proj_T f mt vars = TableMap.mapi (fun cs (vi, vo) -> 
+    let proj_T f g mt vars = TableMap.mapi (fun cs (vi, vo) -> 
       let _, var = cs in
-      let vars_o = Array.append vars [|var|] in
+      let vars_o = 
+        let vars = var :: vars in
+        List.append vars (g vi)
+      in
       f vi vars, f vo vars_o) mt
     let get_label_snode n = match n with 
       | SEN (_, l) -> l
@@ -360,6 +380,9 @@ module OneSensitive: SensitiveSemanticsType =
     let update_table cs vio t = TableMap.add cs vio t
     let table_isempty t = TableMap.is_empty t
     let table_mapi f t = TableMap.mapi f t
+    let bot_shape_T f t = 
+      TableMap.mapi (fun cs (vi, vo) -> 
+        (f vi, f vo)) t
   end
 
 let parse_sensitive = function

@@ -8,17 +8,27 @@ open SenSemantics
 let pr_relation ppf a = let open SemanticsDomain in match a with
   | Bool (vt, vf) -> Format.fprintf ppf "@[<1>{@ cur_v:@ Bool@ |@ TRUE:@ %a,@ FALSE:@ %a@ }@]"  AbstractValue.print_abs vt AbstractValue.print_abs vf
   | (Int v) -> Format.fprintf ppf "@[<1>{@ cur_v:@ Int@ |@ %a@ }@]" AbstractValue.print_abs v
+  | (Unit u) -> Format.fprintf ppf "@[<1>Unit@]"
 
 let pr_label pl ppf l = if pl then Format.fprintf ppf "^%s" l else ()
 
-let pr_const ppf = function
-  | Boolean b -> Format.fprintf ppf "%s" (string_of_bool b) 
-  | Integer k -> Format.fprintf ppf "%s" (string_of_int k)
+let pr_const ppf value = Format.fprintf ppf "%s" (str_of_val value)
 
 let pr_op ppf op = Format.fprintf ppf "%s" (string_of_op op)
 
 let rec pr_exp pl ppf = function
-| Void (l) -> Format.fprintf ppf "()%a" (pr_label pl) l
+| TupleLst (u, l) -> 
+    let rec print_tuple pl ppf = function
+      | [] -> ()
+      | [e] -> Format.fprintf ppf "@[<1>%a@]" 
+        (pr_exp pl) e
+      | e :: tl -> 
+        Format.fprintf ppf "@[<2>%a,@ %a@]" 
+        (pr_exp pl) e
+        (print_tuple pl) tl
+    in
+    Format.fprintf ppf "@[<2>(%a)%a@]"
+      (print_tuple pl) u (pr_label pl) l
 | Const (c, l) ->
     Format.fprintf ppf "%a%a" pr_const c (pr_label pl) l
 | Var (x, l) ->
@@ -28,15 +38,15 @@ let rec pr_exp pl ppf = function
       (pr_exp pl) e1
       (pr_exp pl) e2
       (pr_label pl) l
-| Rec (None, x, lx, e, l) ->
-    Format.fprintf ppf "@[<3>(lambda %s%a.@ %a)%a@]"
-      x (pr_label pl) lx
+| Rec (None, px, e, l) ->
+    Format.fprintf ppf "@[<3>(lambda %a.@ %a)%a@]"
+      (pr_exp pl) px
       (pr_exp pl) e
       (pr_label pl) l
-| Rec (Some (f, lf), x, lx, e, l) ->
-    Format.fprintf ppf "@[<3>(mu %s%a %s%a.@ %a)%a@]"
-      f (pr_label pl) lf
-      x (pr_label pl) lx
+| Rec (Some (pf), px, e, l) ->
+    Format.fprintf ppf "@[<3>(mu %a %a.@ %a)%a@]"
+      (pr_exp pl) pf
+      (pr_exp pl) px
       (pr_exp pl) e
       (pr_label pl) l
 | Ite (e1, e2, e3, l, _) ->
@@ -51,6 +61,17 @@ let rec pr_exp pl ppf = function
     pr_op bop
     (pr_exp pl) e2
     (pr_label pl) l
+| PatMat (e, patlst, l) ->
+  Format.fprintf ppf "@[<2>(match@ %a@ with@ %a)%a@]"
+    (pr_exp pl) e
+    (pr_pm pl) patlst
+    (pr_label pl) l
+and pr_pm pl ppf = function
+  | [] -> ()
+  | [c] -> Format.fprintf ppf "%a" (pr_pattern pl) c
+  | hd::tl -> Format.fprintf ppf "%a@ |@ %a" (pr_pattern pl) hd (pr_pm pl) tl
+and pr_pattern pl ppf (Case (e1, e2)) = 
+  Format.fprintf ppf "@[<2>%a@ ->@ %a@]" (pr_exp pl) e1 (pr_exp pl) e2
 
 let print_exp out_ch e = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" (pr_exp true) e
 
@@ -66,29 +87,55 @@ and pr_env ppf = function
 
 let string_of_node n = pr_node Format.str_formatter n; Format.flush_str_formatter ()
 
-let pr_ary_val ppf a = let open SemanticsDomain in match a with
+let pr_agg_val ppf a = match a with
   | Bool (vt, vf) -> Format.fprintf ppf "@[<1>@ TRUE:@ %a,@ FALSE:@ %a@ @]"  AbstractValue.print_abs vt AbstractValue.print_abs vf
   | (Int v) -> Format.fprintf ppf "@[<1>@ %a@ @]" AbstractValue.print_abs v
+  | (Unit u) -> Format.fprintf ppf "@[<1>Unit@]"
 
-let pr_vars ppf vars = 
-  let rec prtt = function
-    | [] -> ()
-    | [hd] -> Format.fprintf ppf "%s" hd; ()
-    | hd :: tl -> Format.fprintf ppf "%s, " hd; prtt tl in
-  prtt (Array.to_list vars)
 
-let pr_ary ppf ary = let vars, l = ary in
-  Format.fprintf ppf "@[<1>{@ cur_v:@ Int Array (%a)@ |@ %a@ }@]" pr_vars vars pr_ary_val l
+let pr_ary ppf ary = 
+  let (l,e), (rl, ve) = ary in
+  Format.fprintf ppf "@[<1>{@ cur_v:@ Int Array (%s, %s)@ |@ len:@ %a,@ item:@ %a@ }@]" l e pr_agg_val rl pr_agg_val ve
 
-let pr_unit ppf u = Format.fprintf ppf "@[<1>Unit@]"
+let rec shape_value = function
+  | Bot -> "Bot"
+  | Top -> "Top"
+  | Relation r -> (match r with
+    | Int _ -> "Int"
+    | Bool _ -> "Bool"
+    | Unit _ -> "Unit")
+  | Table t -> let (_, (vi,vo)) = get_full_table_T t in 
+    (shape_value vi)^"->"^(shape_value vo)
+  | Tuple u -> if List.length u = 0 then "Unit"
+    else 
+      let rec shape_tuple = function
+      | [] -> ""
+      | [it] -> shape_value it
+      | hd :: tl -> (shape_value hd) ^ "*" ^ (shape_tuple tl) in
+      shape_tuple u
+  | Ary _ -> "Array"
+  | Lst _ -> "List"
 
-let rec pr_value ppf v = let open SemanticsDomain in match v with
+let rec pr_value ppf v = match v with
   | Bot -> Format.fprintf ppf "_|_"
   | Top -> Format.fprintf ppf "T"
   | Relation r -> pr_relation ppf r
   | Table t -> print_table t ppf pr_value
-  | Unit u -> pr_unit ppf u
+  | Tuple u -> pr_tuple ppf u
   | Ary ary -> pr_ary ppf ary
+  | Lst lst -> pr_lst ppf lst
+and pr_lst ppf lst =
+    let (l,e), (rl, ve) = lst in
+    Format.fprintf ppf "@[<1>{@ cur_v:@ %s List (%s, %s)@ |@ len:@ %a,@ item:@ %a@ }@]" (shape_value ve) l e pr_agg_val rl pr_value ve
+and pr_tuple ppf u = 
+  if List.length u = 0 then Format.fprintf ppf "@[<1>Unit@]"
+  else 
+    let rec print_list ppf = function
+    | [] -> ()
+    | [it] -> pr_value ppf it
+    | hd :: tl -> 
+    Format.fprintf ppf "@[<1>%a,@ %a @]" pr_value hd print_list tl in
+    print_list ppf u
 
 let sort_list (m: exec_map_t) =
   let comp s1 s2 =

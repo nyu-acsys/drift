@@ -14,7 +14,7 @@ let main_p (n:int) (i:int) =
 	if n > 0 then
 		let a = Array.make n 0 in
 		let la = Array.length a in
-		let res:int = 
+		let res = 
 			if i < n then
 				let j = n - (n - (n mod i)) / i in
 				let b = Array.make j 0 in

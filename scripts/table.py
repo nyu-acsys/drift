@@ -45,6 +45,7 @@ def read_info_from_file(file_name):
         plain_d = plain_data[1]
         safe_regexp = re.compile(r'safe')
         unsafe_regexp = re.compile(r'failed')
+        error_regexp = re.compile(r'error')
         timeout_regexp = re.compile(r'timeout')
         if unsafe_regexp.search(plain_d):
             res_data.append('F')
@@ -52,6 +53,8 @@ def read_info_from_file(file_name):
             res_data.append('T')
         elif timeout_regexp.search(plain_d):
             res_data.append('F')
+        elif error_regexp.search(plain_d):
+            res_data.append('ER')
         else:
             print(file_name+" File data error: \n")
             sys.exit(data)

@@ -14,6 +14,8 @@ let _ =
       ("fun", FUN);
       ("if", IF);
       ("in", IN);
+      ("match", MATCH);
+      ("with", WITH);
       ("let", LET);
       ("mod", MOD);
       ("rec", REC);
@@ -31,7 +33,7 @@ let lexical_error lexbuf msg =
 let white_space = [' ']*
 let basic_type = "int" | "bool" | "unit"
 let rm_type_sig = ([^')''(''=']|'('[^')''(''=''*']+')')* 
-let types = "int" rm_type_sig | "bool" rm_type_sig  | "unit" rm_type_sig 
+let types = "int" rm_type_sig | "bool" rm_type_sig  | "unit" rm_type_sig | "(int->int)" rm_type_sig
 let digitchar = ['0'-'9']
 let idchar = ['A'-'Z''a'-'z''_']
 let primechar = [''']
@@ -41,6 +43,7 @@ let digits = minus? digitchar+
 let bool_str = "true" | "false" | "either"
 let bin_op_str =  ['>''<''='] | "<=" | ">=" | "<>" 
 let arth_op_str = ['+''-''*''/'] | "mod" | "&&" | "||" 
+let empty_list = "[" white_space "]"
 
 rule token = parse
   [' ' '\t'] { token lexbuf }
@@ -64,16 +67,23 @@ rule token = parse
   PRE (vk) 
 }
 | ":"  { COLON }
+| ","  { COMMA }
 | ";"  { SEMI }
 | "->" { ARROW }
 | "<=" { LE }
 | ">=" { GE }
 | "&&" { AND }
 | "||" { OR }
+| "|" { BAR }
 | "=" { EQ }
 | "<>" { NE }
 | "<" { LT }
 | ">" { GT }
+| "::" { CONS }
+| "[" { LSQBR }
+| "]" { RSQBR }
+| "[|" { LARYBR }
+| "|]" { RARYBR }
 | '+' { PLUS }
 | '-' { MINUS }
 | '/' { DIV }
@@ -87,6 +97,7 @@ rule token = parse
     with Not_found ->
       IDENT (kw)
     }
+| empty_list { EMPTYLST }
 | digits as num { INTCONST (int_of_string num) }
 | eof { EOF }
 | _ { lexical_error lexbuf None }

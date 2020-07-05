@@ -12,7 +12,7 @@ let rec map (mf: int -> int) (ma: int array) =
 
 let succ si = si + 1
 
-let main (n:int(*-:{v:Int | v = 10}*)) =
+let main (n:int(*-:{v:Int | true}*)) =
 	if n > 0 then
 		let a = Array.make n 0 in
 		assert(Array.length (map succ a) = Array.length a)

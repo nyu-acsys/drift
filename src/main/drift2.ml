@@ -174,7 +174,7 @@ let ary_test_3 = parse_from_string "let ary = Array.make 3 0 in Array.set ary 0 
   ((make^9 3^10)^11 0^12)^13)^14
 *)
 
-let ary_test_4 = parse_from_string "let f a1 a2 = len a2 in let ary1 = Array.make 3 0 in let ary2 = Array.make 3 1 in f ary1 ary2"
+let ary_test_4 = parse_from_string "let f a1 a2 = Array.length a2 in let ary1 = Array.make 3 0 in let ary2 = Array.make 3 1 in f ary1 ary2"
 
 let assert_test = parse_from_string "let a = assert(1 < 2) in a"
 (*
@@ -245,12 +245,6 @@ let high_mult_rec_test_1 = parse_from_string
 let high_mult_rec_test_2 = parse_from_string 
   "let rec id x y = id x y in let f z = z in f id 10 20"
 
-let main_test_1 = parse_from_string 
-  "let main (k(*-:{v:Int | true}*)) = k
-  let _ = main 3
-  let _ = main 10
-  "
-
 let flow_test = parse_from_string
 "
 let id x = x in
@@ -259,7 +253,55 @@ let _ = assert(id 1 = 1) in
 assert(id 2 = 2)
 "
 
-let tests = [id_test_2]
+let list_test_1 = parse_from_string "let f a = List.length a in let lst = List.cons 1 [] in f lst"
+(* list_test_1
+((lambda f^0.
+    ((lambda lst^1. (f^2 lst^3)^4)^5 ((List.cons^6 1^7)^8 []^9)^10)^11)^12
+  (lambda a^13. (List.length^14 a^15)^16)^17)^18
+*)
+
+let list_test_2 = parse_from_string 
+"let lst = List.cons 1 [] in 
+let lst' = List.cons 2 lst in
+List.hd (List.cons 3 lst')"
+(* list_test_2
+((lambda lst^0.
+    ((lambda lst'^1. (List.hd^2 ((List.cons^3 3^4)^5 lst'^6)^7)^8)^9
+      ((List.cons^10 2^11)^12 lst^13)^14)^15)^16
+  ((List.cons^17 1^18)^19 []^20)^21)^22
+*)
+
+let list_test_3 = parse_from_string "
+let lst = List.cons 1 [] in 
+let lst' = List.cons 2 lst in
+assert(List.length (List.tl lst') = 1)"
+(* list_test_3
+((lambda lst^0.
+    ((lambda lst'^1.
+        (((List.length^2 (List.tl^3 lst'^4)^5)^6 = 1^7)^8 ? ()^9 : ()^10)^11)^12
+      ((List.cons^13 2^14)^15 lst^16)^17)^18)^19
+  ((List.cons^20 1^21)^22 []^23)^24)^25
+ *)
+
+let list_test_4 = parse_from_string "
+let f l1 l2 = (List.hd l2) - (List.hd l1) in 
+let lst1 = List.cons 1 [] in 
+let lst2 = List.cons 2 lst1 in 
+f lst1 lst2"
+(* list_test_4 Should get overappoximate result 0<=v<=1
+((lambda f^0.
+    ((lambda lst1^1.
+        ((lambda lst2^2. ((f^3 lst1^4)^5 lst2^6)^7)^8
+          ((List.cons^9 2^10)^11 lst1^12)^13)^14)^15
+      ((List.cons^16 1^17)^18 []^19)^20)^21)^22
+  (lambda l1^23.
+     (lambda l2^24. ((List.hd^25 l2^26)^27 - (List.hd^28 l1^29)^30)^31)^32)^33)^34
+ *)
+
+let pair_test_1 = parse_from_string
+"1, 2"
+
+let tests = [pair_test_1]
 
 let _ =
   Config.parse;

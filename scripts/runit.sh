@@ -38,7 +38,7 @@ if [ $# -ge 1 ] && [ $1 = "-nar" ]; then
 elif [ $# -ge 1 ] && [ $1 = "-thold" ]; then
     echo "Wid with threshold + Nar..."
     thold=true;
-    nar=true;
+    nar=false;
     wid=0;
 else 
     if [ $# -ge 2 ] && [ $1 = "-dwid" ]; then
@@ -58,8 +58,8 @@ else
 fi
 
 DIRS=" DRIFT2 DOrder r_type"
-INS=" first high negative array" #   
-timeout="300"
+INS=" first high negative array list" #   
+timeout="30"
 OUTPRE="out"
 DATE="gdate"
 if [[ "$OSTYPE" != "darwin"* ]]; then

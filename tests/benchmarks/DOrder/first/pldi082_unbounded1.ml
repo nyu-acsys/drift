@@ -13,7 +13,7 @@ let rec loop (lx:int) (ly:int) (ln:int) =
         else loop (lx+1) ny ln 
 
 let main (n:int(*-:{v:Int | true}*)) =
-    let x:int = 0 in
-    let y:int = 0 in
+    let x = 0 in
+    let y = 0 in
     if (n >= 0) then assert(loop x y n = true)
     else ()

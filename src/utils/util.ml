@@ -47,3 +47,12 @@ module Opt = struct
     | None -> Some x
     | o -> o
 end
+
+let rec zip_list xs ys =
+  match xs with
+      [] -> (match ys with
+              [] -> []
+            | y::ys' -> failwith "oops, the lists seems to have different lengths")
+    | x::xs' -> (match ys with
+            [] -> failwith "oops, the lists seems to have different lengths"
+          | y::ys' -> (x,y) :: zip_list xs' ys')
