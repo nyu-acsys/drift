@@ -78,7 +78,7 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         v1
       else
       let v1',v2' = lc_env v1 v2 in
-      (if !debug then
+      (* (if !debug then
         begin
         Format.printf "\n\nJoin\n";
         Abstract1.print Format.std_formatter v1';
@@ -90,14 +90,14 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         flush stdout;
         Format.print_flush ();
         end
-      );
+      ); *)
       let res = Abstract1.join Man.man v1' v2' in
-      (if !debug then
+      (* (if !debug then
         begin
           Format.printf "result: ";
           Abstract1.print Format.std_formatter res;
           Format.printf "\n";
-      end);
+      end); *)
       if !domain <> "Oct" && ((Abstract1.size Man.man res > max_size) ||
         (Tcons1.array_length (Abstract1.to_tcons_array Man.man res)) >= max_length)
         then delay_wid := 0;
@@ -256,12 +256,12 @@ module MakeAbstractDomainValue (Man: ManagerType): AbstractDomainType =
         let env' = Environment.lce env env_v in
         let v' = Abstract1.change_environment Man.man v env' false in
         let res = Abstract1.meet_tcons_array Man.man v' tab in
-        (if !debug then
+        (* (if !debug then
         begin
           Format.printf "result: " ;
           Abstract1.print Format.std_formatter res;
           Format.printf "\n";
-        end);
+        end); *)
         Abstract1.minimize_environment Man.man res
         (* res *)
     let licons_ref = 

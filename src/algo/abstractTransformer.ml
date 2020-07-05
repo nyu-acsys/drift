@@ -243,7 +243,7 @@ let rec list_var_item eis sx (cs: (var * loc)) m env nlst =
         let n = construct_snode sx n in
         let t = find n m in
         let tp = cons_temp_lst_V t vlst in
-        (if !debug then
+        (* (if !debug then
         begin
             Format.printf "\n<---Pattern var---> %s\n" l;
             pr_value Format.std_formatter vlst;
@@ -252,10 +252,10 @@ let rec list_var_item eis sx (cs: (var * loc)) m env nlst =
             pr_value Format.std_formatter tp;
             Format.printf "\n";
         end
-        );
+        ); *)
         let vlst', tp' = prop vlst tp in
         let t' = extrac_item_V (get_env_list env1 sx m) tp' in
-        (if !debug then
+        (* (if !debug then
         begin
             Format.printf "\nRES for prop:\n";
             pr_value Format.std_formatter vlst';
@@ -263,7 +263,7 @@ let rec list_var_item eis sx (cs: (var * loc)) m env nlst =
             pr_value Format.std_formatter t';
             Format.printf "\n";
         end
-        );
+        ); *)
         let m' = m |> NodeMap.add n t' |> NodeMap.add nlst vlst' in
         [x], m', env1, 1
     | TupleLst (termlst, l) -> 
@@ -274,7 +274,7 @@ let rec list_var_item eis sx (cs: (var * loc)) m env nlst =
             else 
                 let u' = List.init (List.length termlst) (fun _ ->
              Bot) in Tuple u' in
-        (if !debug then
+        (* (if !debug then
         begin
             Format.printf "\n<---Pattern tuple---> %s\n" l;
             pr_value Format.std_formatter vlst;
@@ -282,7 +282,7 @@ let rec list_var_item eis sx (cs: (var * loc)) m env nlst =
             pr_value Format.std_formatter t;
             Format.printf "\n";
         end
-        );
+        ); *)
         let tlst = get_tuple_list_V t in
         let tllst = extrac_item_V (get_env_list env sx m) vlst |> get_tuple_list_V in
         let env', m', tlst', tllst' = List.fold_left2 (fun (env, m, li, llst) e (ti, tlsti) -> 
@@ -302,7 +302,7 @@ let rec list_var_item eis sx (cs: (var * loc)) m env nlst =
         let t', vlst' = Tuple tlst', (cons_temp_lst_V (Tuple tllst') vlst) in
         let m'' = m' |> NodeMap. add n t'
             |> NodeMap.add nlst vlst' in
-        (if !debug then
+        (* (if !debug then
         begin
             Format.printf "\nRES for tuple:\n";
             pr_value Format.std_formatter vlst';
@@ -310,7 +310,7 @@ let rec list_var_item eis sx (cs: (var * loc)) m env nlst =
             pr_value Format.std_formatter t';
             Format.printf "\n";
         end
-        );
+        ); *)
         [], m'', env', 1
     | BinOp (bop, e1, e2, l) ->
         let l1, m', env', len = list_var_item e1 sx cs m env nlst in
@@ -412,7 +412,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (m:exec_map_t) (ae: v
         let t = let t' = find n m in
             if is_Relation t' then equal_V t' x (* t[v=E(x)] *) 
             else t' in (* M[env*l] *)
-        (if !debug then
+        (* (if !debug then
         begin
             Format.printf "\n<=== Prop Var ===> %s\n" lx;
             pr_value Format.std_formatter tx;
@@ -420,7 +420,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (m:exec_map_t) (ae: v
             pr_value Format.std_formatter t;
             Format.printf "\n";
         end
-        );
+        ); *)
         let raw_tx', t' =
             (* if optmization m n find && optmization m nx find then tx, t else *)
             if List.mem lx !pre_def_func then
@@ -431,7 +431,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (m:exec_map_t) (ae: v
                 prop_scope envx env sx m tx t
         in
         let tx' = forget_V x raw_tx' in
-        (if !debug then
+        (* (if !debug then
         begin
             Format.printf "\nRES for prop:\n";
             pr_value Format.std_formatter tx';
@@ -439,7 +439,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (m:exec_map_t) (ae: v
             pr_value Format.std_formatter t';
             Format.printf "\n";
         end
-        );
+        ); *)
         m |> NodeMap.add nx tx' |> NodeMap.add n (stren_V t' ae) (* t' ^ ae *)
     | App (e1, e2, l) ->
         (* (if !debug then
@@ -467,7 +467,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (m:exec_map_t) (ae: v
                 | _ -> let t = find n m2 in
                 let cs = if !sensitive then (loc e1, loc e1 |> name_of_node) else (dx_T t1) in
                 let t_temp = Table (construct_table cs (t2, t)) in
-                (if !debug then
+                (* (if !debug then
                 begin
                     Format.printf "\n<=== Prop APP ===> %s\n" (loc e1);
                     pr_value Format.std_formatter t1;
@@ -475,12 +475,12 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (m:exec_map_t) (ae: v
                     pr_value Format.std_formatter t_temp;
                     Format.printf "\n";
                 end
-                );
+                ); *)
                 let t1', t0 = 
                     (* if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then t1, t_temp else *)
                     prop t1 t_temp
                 in
-                (if !debug then
+                (* (if !debug then
                 begin
                     Format.printf "\nRES for prop:\n";
                     pr_value Format.std_formatter t1';
@@ -488,7 +488,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (m:exec_map_t) (ae: v
                     pr_value Format.std_formatter t0;
                     Format.printf "\n";
                 end
-                );
+                ); *)
                 let t2', raw_t' = if is_array_set e1 then
                     let t2', t' = io_T cs t0 in
                     let elt = proj_V (get_second_table_input_V t') [] in
@@ -614,7 +614,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (m:exec_map_t) (ae: v
                 let t1 = if is_List te then
                     item_shape_V te t1
                     else t1 in
-                (if !debug then
+                (* (if !debug then
                     begin
                         Format.printf "\n %s\n" (loc e1);
                         pr_value Format.std_formatter t1;
@@ -624,7 +624,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (m:exec_map_t) (ae: v
                         pr_value Format.std_formatter (join_V t1 te);
                         Format.printf "\n";
                     end
-                );
+                ); *)
                 let m1 = m1 |> NodeMap.add n1 t1 in
                 let b =
                     eq_V te (join_V t1 te)
@@ -842,7 +842,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (m:exec_map_t) (ae: v
                 let ae' = if (is_Relation tx && x <> "_") || is_List tx then (arrow_V x ae tx) else ae in
                 let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x var in
                 let prop_t = Table (construct_table cs (tx, t1)) in
-                (if !debug then
+                (* (if !debug then
                 begin
                     Format.printf "\n<=== Prop lamb ===> %s %s\n" (loc px) (loc e1);
                     pr_value Format.std_formatter prop_t;
@@ -850,10 +850,10 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (m:exec_map_t) (ae: v
                     pr_value Format.std_formatter t;
                     Format.printf "\n";
                 end
-                );
+                ); *)
                 let px_t, t1 = prop_scope env1 env x m prop_t t
                 in
-                (if !debug then
+                (* (if !debug then
                 begin
                     Format.printf "\nRES for prop:\n";
                     pr_value Format.std_formatter px_t;
@@ -861,13 +861,13 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (m:exec_map_t) (ae: v
                     pr_value Format.std_formatter t1;
                     Format.printf "\n";
                 end
-                );
+                ); *)
                 let nf_t2_tf'_opt =
                     Opt.map (fun (_, nf) ->
                     let envf, lf, fcs = get_vnode nf in
                     let nf = construct_snode x nf in
                     let tf = find nf m in
-                    (if !debug then
+                    (* (if !debug then
                         begin
                             Format.printf "\n<=== Prop um ===> %s\n" l;
                             pr_value Format.std_formatter t;
@@ -875,9 +875,9 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (m:exec_map_t) (ae: v
                             pr_value Format.std_formatter tf;
                             Format.printf "\n";
                         end
-                    );
+                    ); *)
                     let t2, tf' = prop_scope env envf x m t tf in
-                    (if !debug then
+                    (* (if !debug then
                         begin
                             Format.printf "\nRES for prop:\n";
                             pr_value Format.std_formatter t2;
@@ -885,7 +885,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (m:exec_map_t) (ae: v
                             pr_value Format.std_formatter tf';
                             Format.printf "\n";
                         end
-                    );
+                    ); *)
                     nf, t2, tf') f_nf_opt
                 in
                 let tx', t1' = io_T cs px_t in
