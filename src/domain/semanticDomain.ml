@@ -108,18 +108,18 @@ module SemanticsDomain =
       match op with
       | Plus | Mult | Div | Mod | Modc | Minus -> (match a with
         | Int v -> Int (AbstractValue.operator res l r op (-1) v)
-        | _ -> raise (Invalid_argument "Given unit type"))
+        | _ -> raise (Invalid_argument "opR: Given a unit type"))
       | Ge | Eq | Ne | Lt | Gt | Le -> (if cons then
         (match a with
         | Int v -> Int (AbstractValue.operator res l r op (-1) v)
         | Bool (vt, vf) -> Bool (AbstractValue.operator res l r op 1 vt, AbstractValue.operator res l r (rev_op op) 0 vf)
-        | Unit _ -> raise (Invalid_argument "Given unit type")
+        | Unit _ -> raise (Invalid_argument "opR: Given a unit type")
         )
         else
         (match a with
         | Int v -> Bool (AbstractValue.operator res l r op 1 v, AbstractValue.operator res l r (rev_op op) 0 v)
         | Bool (vt, vf) -> Bool (AbstractValue.operator res l r op 1 vt, AbstractValue.operator res l r (rev_op op) 0 vf)
-        | Unit _ -> raise (Invalid_argument "Given unit type"))
+        | Unit _ -> raise (Invalid_argument "opR: Given a unit type"))
       )
       | Cons | And | Or -> raise (Invalid_argument ("Invalid operator matched " ^ (string_of_op op)))
     and assign_R res l r op = function 
@@ -500,8 +500,6 @@ module SemanticsDomain =
           | Table t' -> v'
           | _ -> v)
         | Table _ -> v
-        | Tuple u2 -> List.fold_left (fun v1 v2 ->
-          arrow_V var v1 v2) v u2
         | Relation r2 -> (match v with
             | Table t -> Table (arrow_T forget_V arrow_V var t v')
             | Relation r1 -> Relation (arrow_R var r1 r2)
@@ -509,6 +507,8 @@ module SemanticsDomain =
             | Lst lst -> Lst (arrow_Lst var lst (Relation r2) None)
             | Tuple u -> Tuple (arrow_Tuple var u v')
             | _ -> v)
+        | Tuple u2 -> List.fold_left (fun v1 v2 ->
+          arrow_V var v1 v2) v u2
         | Ary ary2 -> let (vars, (rl2, re2)) = ary2 in
           (match v with
           | Table t -> Table (arrow_T forget_V arrow_V var t v')
