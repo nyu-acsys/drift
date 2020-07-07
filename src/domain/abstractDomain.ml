@@ -319,9 +319,16 @@ module AbstractValue =
       let env = Environment.make [||] [||] in
       let ary = Lincons1.array_make env 0 in
       ref ary
-    let licons_earray vars = 
-      let size = (Array.length vars) * 4 * (ThresholdsSetType.cardinal !thresholdsSet) in
+    let licons_earray vars advar = 
+      let tset_size = if Opt.exist advar then 
+        ThresholdsSetType.cardinal !thresholdsSet + 1 else 
+        ThresholdsSetType.cardinal !thresholdsSet in
+      let size =
+        (Array.length vars) * 4 * tset_size in
       let int_vars = Array.map (fun var -> var |> Var.of_string) vars in
+      let int_vars = if Opt.exist advar then
+        let advar = Opt.get advar in
+        Array.append int_vars [|Var.of_string advar; Var.of_string "min"|] else int_vars in
       let env = Environment.make int_vars [||] in
       let thehold_ary = Lincons1.array_make env size in
       let idx2 = ref 0 in
@@ -339,7 +346,25 @@ module AbstractValue =
       Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
       idx2 := !idx2 + 1;
       i) !thresholdsSet in ()) vars;
-      thehold_ary
+      if Opt.exist advar then
+      let advar = Opt.get advar in
+      Array.iter (fun var -> 
+        if var = advar then () else
+        let eq = "min"^" <=" ^ advar in (* v <=  threshold_const *)
+        Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
+        idx2 := !idx2 + 1;
+        let eq = "min"^"-"^advar^" >=" ^ "0" in (* v >=  threshold_const *)
+        Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
+        idx2 := !idx2 + 1;
+        let eq = "min"^" <" ^ advar in (* v <=  threshold_const *)
+        Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
+        idx2 := !idx2 + 1;
+        let eq = "min"^"-"^advar^" >" ^ "0" in (* v >=  threshold_const *)
+        Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
+        idx2 := !idx2 + 1;) vars;
+        thehold_ary
+      else
+        thehold_ary
     let generate_threshold_earray env = 
       if Environment.size env = 0 then Lincons1.array_make env 0 
       (* else if Environment.mem_var env (Var.of_string "cur_v") then !licons_ref  *)
@@ -350,14 +375,20 @@ module AbstractValue =
         else if String.sub var 0 1 = "l" then Array.append ary [|var|]
         else if String.sub var 0 1 = "e" then Array.append ary [|var|]
         else ary) [||] int_vars in
-        licons_earray ary
+        (* if Environment.mem_var env (Var.of_string "min") && Environment.mem_var env (Var.of_string "max") then
+          (Environment.print Format.std_formatter env;
+          licons_earray ary (Some "max"))
+        else  *)
+          licons_earray ary None
     let widening v1 v2 = 
       if is_bot v2 then v1 else
       if eq v1 v2 then v2 else
       let v1', v2' = lc_env v1 v2 in
       let res = 
         if !use_threshold then
+          begin
           Abstract1.widening_threshold man v1' v2' (generate_threshold_earray (Abstract1.env v1'))
+          end
         else
           Abstract1.widening man v1' v2'
       in

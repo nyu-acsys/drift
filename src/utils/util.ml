@@ -46,6 +46,10 @@ module Opt = struct
   let some x = function
     | None -> Some x
     | o -> o
+  
+  let exist = function
+    | None -> false
+    | Some _ -> true
 end
 
 let rec zip_list xs ys =

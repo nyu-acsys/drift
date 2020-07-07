@@ -38,7 +38,8 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
     | Top, Bot | Table _, Top -> Top, Top
     | Table t, Bot -> let t' = init_T (dx_T v1) in
         v1, Table (t')
-    | Relation r1, Relation r2 -> Relation r1, Relation (join_R r1 r2)
+    | Relation r1, Relation r2 -> if leq_R r1 r2 then v1, v2 else
+        Relation r1, Relation (join_R r1 r2)
     | Table t1, Table t2 -> 
         let t1', t2' = prop_table (fun cs (v1i, v1o) (v2i, v2o) -> 
             let _, z = cs in
@@ -134,7 +135,7 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
                 (v1'::u1', v2'::u2')
             ) u1 u2 ([],[]) in
             Tuple u1', Tuple u2'
-    | _, _ -> v1, join_V v1 v2
+    | _, _ -> if leq_V v1 v2 then v1, v2 else v1, join_V v1 v2
 
 (* let lc_env env1 env2 = 
     Array.fold_left (fun a id -> if Array.mem id a then a else Array.append a [|id|] ) env2 env1 *)
@@ -215,7 +216,7 @@ let reset (m:exec_map_t): exec_map_t = NodeMap.fold (fun n t m ->
 
 (* let iterUpdate m v l = NodeMap.map (fun x -> arrow_V l x v) m *)
 
-let getVars env = VarMap.fold (fun var n lst -> var :: lst) env []
+(* let getVars env = VarMap.fold (fun var n lst -> var :: lst) env [] *)
 
 (* let iterEnv_c env m c = VarMap.fold (fun var n a ->
     let v = NodeMap.find_opt n m |> Opt.get_or_else Top in
@@ -367,10 +368,13 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         ); *)
         (* if optmization m n find then m else *)
         let t = find n m in (* M[env*l] *)
-        let t' =
+        let t' = if leq_V ae t then
+            t
+            else
             let ct = init_V_c c in
-            join_V t ct in
-        m |> NodeMap.add n (stren_V t' ae) (* {v = c ^ aE}*)
+            let t' = join_V t ct in
+            (stren_V t' ae) in
+        m |> NodeMap.add n t' (* {v = c ^ aE}*)
     | Var (x, l) ->
         (* (if !debug then
         begin
@@ -398,7 +402,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             Format.printf "\n";
         end
         ); *)
-        let raw_tx', t' =
+        let tx', t' =
             (* if optmization m n find && optmization m nx find then tx, t else *)
             if List.mem lx !pre_def_func then
                 let tx0 = find nx m0 in
@@ -407,7 +411,6 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             else
                 prop_scope envx env sx m tx t
         in
-        let tx' = forget_V x raw_tx' in
         (* (if !debug then
         begin
             Format.printf "\nRES for prop:\n";
@@ -711,7 +714,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 in
                 let n1 = construct_enode env1 (loc e1) |> construct_snode x in
                 let tx = find nx m in
-                let ae' = if (is_Relation tx && x <> "_") || is_List tx then (arrow_V x ae tx) else ae in
+                let ae' = if (x <> "_" && is_Relation tx) || is_List tx then (arrow_V x ae tx) else ae in
                 let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x var in
                 let prop_t = Table (construct_table cs (tx, t1)) in
                 (* (if !debug then
@@ -894,7 +897,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 |> NodeMap.add n2 t2' |> NodeMap.add n t'
                 else raise (Invalid_argument "Pattern only supports list cons")
             | _ -> raise (Invalid_argument "Pattern should only be either constant, variable, and list cons")
-        ) (NodeMap.add ne te m') patlst in
+        ) (NodeMap.add ne te m' |> Hashtbl.copy) patlst in
         m''
 
 (** Widening **)
@@ -953,7 +956,7 @@ let s e =
     [] -> ()
     | e::l -> print_int e ; print_string " " ; print_list l in
     ThresholdsSetType.elements !thresholdsSet |> print_list; *)
-     AbstractDomain.AbstractValue.licons_ref := AbstractDomain.AbstractValue.licons_earray [|"cur_v"|];
+    (* AbstractDomain.AbstractValue.licons_ref := AbstractDomain.AbstractValue.licons_earray [|"cur_v"|]; *)
     let envt, m0' = pref_M env0 (Hashtbl.copy m0) in
     (* pre_m := m0'; *)
     let check_str, m =

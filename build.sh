@@ -5,7 +5,7 @@ set -e
 DIRS="-Is src/utils,src/domain,src/main,src/algo,src/frontends"
 TARGET="src/main/drift2 "
 APRONPKG="apron,apron.boxD,apron.boxMPFR,apron.boxMPQ,apron.octD,apron.octMPQ,apron.polkaMPQ,apron.polkaRll,\
-apron.ppl,apron.t1pD,apron.t1pMPFR,apron.t1pMPQ,apron.polkaGrid,elina"
+apron.ppl,apron.t1pD,apron.t1pMPFR,apron.t1pMPQ,apron.polkaGrid"
 FLAGS="-cflags -g -lflags -g -libs str -pkgs $APRONPKG $DIRS"
 OCAMLBUILD=ocamlbuild
 MENHIR=menhir
