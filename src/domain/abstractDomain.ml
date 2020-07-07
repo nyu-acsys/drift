@@ -90,6 +90,9 @@ module AbstractValue =
         (* Creation of abstract value v = c *)
         Abstract1.of_lincons_array man env tab
     let is_bot v = Abstract1.is_bottom man v
+    let contain_var var v = 
+      let env = Abstract1.env v in
+      Environment.mem_var env (Var.of_string var) 
     let lc_env v1 v2 = 
       (* let v1, v2 = (Abstract1.minimize_environment man v1), (Abstract1.minimize_environment man v2) in *)
       let env1 = Abstract1.env v1 in
@@ -112,13 +115,15 @@ module AbstractValue =
     let eq v1 v2 = 
       let v1',v2' = lc_env v1 v2 in
       Abstract1.is_eq man v1' v2'
+    let leq_without_lcenv v1 v2 = Abstract1.is_leq man v1 v2
+    let eq_without_lcenv v1 v2 = Abstract1.is_eq man v1 v2
     let join v1 v2 = 
-      if leq v1 v2 then
+      let v1',v2' = lc_env v1 v2 in
+      if leq_without_lcenv v1' v2' then
         v2
-      else if leq v2 v1 then
+      else if leq_without_lcenv v2' v1' then
         v1
       else
-      let v1',v2' = lc_env v1 v2 in
       (* (if !debug then
         begin
         Format.printf "\n\nJoin\n";
@@ -145,12 +150,12 @@ module AbstractValue =
       Abstract1.minimize_environment man res
       (* res *)
     let meet v1 v2 =
-      if leq v1 v2 then
+      let v1',v2' = lc_env v1 v2 in
+      if leq_without_lcenv v1' v2' then
         v1
-      else if leq v2 v1 then
+      else if leq_without_lcenv v2' v1' then
         v2
       else
-      let v1',v2' = lc_env v1 v2 in
       (* (if !debug then
         begin
         Format.printf "\n\nMeet\n";
@@ -175,6 +180,7 @@ module AbstractValue =
         (Tcons1.array_length (Abstract1.to_tcons_array man res)) >= max_length)
         then delay_wid := 0;
       Abstract1.minimize_environment man res
+      (* res *)
     let alpha_rename v prevar var =
         (* (if !debug then
         begin
@@ -187,16 +193,12 @@ module AbstractValue =
         end
         ); *)
         if is_bot v then v else
-        if prevar = var then v else
-        let (int_vars, real_vars) = Environment.vars (Abstract1.env v) in
+        if prevar = var 
         (* Check previous variable exists or not *)
-        let pre_b = Array.fold_left (fun b x -> prevar = Var.to_string x || b) false int_vars in
-        let v' = if pre_b = false then v (* ignore rename if prevar does not exist *)
-          else
-          begin
-            (* Check new variable exists or not *)
-            let v_b = Array.fold_left (fun b x -> var = Var.to_string x || b) false int_vars in
-            if v_b = true then 
+          || contain_var prevar v = false then v else
+        let (int_vars, real_vars) = Environment.vars (Abstract1.env v) in
+        let v' = if contain_var var v then
+            (* Check new variable exists or not *) 
               begin
                 (* check prevar and newvar has the same constraint or not *)
                 (* TODO: If not the same, return bottom *)
@@ -212,7 +214,6 @@ module AbstractValue =
               let int_vars_new = Array.map (fun x -> if prevar = Var.to_string x then var_V else x) int_vars in
               Abstract1.rename_array man v int_vars int_vars_new
               end
-          end
         in
         (* (if !debug then 
         begin
@@ -221,6 +222,7 @@ module AbstractValue =
           Format.printf "\n";
         end); *)
         Abstract1.minimize_environment man v'
+        (* v' *)
     let forget_var var v =
         (* (if !debug then
           begin
@@ -232,11 +234,9 @@ module AbstractValue =
           end
         ); *)
         if is_bot v then v else
-        let (int_vars, real_vars) = Environment.vars (Abstract1.env v) in
-        let var_b = Array.fold_left (fun b x -> var = Var.to_string x || b) false int_vars in
-        let res = if var_b = false then v
-          else
-          begin
+        if contain_var var v = false then v else
+        let res =  
+           begin
             let vari = var |> Var.of_string in
             let arr = [|vari|] in
             let v' = Abstract1.forget_array man v arr false in
@@ -374,6 +374,7 @@ module AbstractValue =
         if var = "cur_v" then Array.append ary [|var|]
         else if String.sub var 0 1 = "l" then Array.append ary [|var|]
         else if String.sub var 0 1 = "e" then Array.append ary [|var|]
+        else if String.length var > 4 && String.sub var 0 1 = "pref" then Array.append ary [|var|]
         else ary) [||] int_vars in
         (* if Environment.mem_var env (Var.of_string "min") && Environment.mem_var env (Var.of_string "max") then
           (Environment.print Format.std_formatter env;
@@ -529,9 +530,6 @@ module AbstractValue =
           Format.printf "\n";
         end); *)
       res
-    let contain_var var v = 
-      let env = Abstract1.env v in
-      Environment.mem_var env (Var.of_string var) 
     let sat_cons v var =
       if contain_var var v && contain_var "cur_v" v then
         let env = Abstract1.env v in

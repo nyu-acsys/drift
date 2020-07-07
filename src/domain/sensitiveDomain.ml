@@ -157,7 +157,7 @@ module NonSensitive: SensitiveSemanticsType =
           let v2o' = g v2o z2 z1 in 
           (z1, f v1i v2i, f v1o v2o')
         in t
-    let meet_T f g t1 t2 = let t =
+    let meet_T f g (t1:table_t) (t2:table_t) = let t =
         let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
         if z1 = z2 then (z1, f v1i v2i, f v1o v2o) else (*a renaming*)
           let v2o' = g v2o z2 z1 in 
@@ -166,27 +166,27 @@ module NonSensitive: SensitiveSemanticsType =
     let leq_T f (z1, v1i, v1o) (z2, v2i, v2o) = z1 = z2 && f v1i v2i && f v1o v2o
     let eq_T f (z1, v1i, v1o) (z2, v2i, v2o) = 
         z1 = z2 && f v1i v2i && f v1o v2o
-    let forget_T f var t = let (z, vi, vo) = t in (z, f var vi, f var vo)
-    let arrow_T f1 f2 var t v =
+    let forget_T f var (t:table_t) = let (z, vi, vo) = t in (z, f var vi, f var vo)
+    let arrow_T f1 f2 var (t:table_t) v =
         let (z, vi, vo) = t in
-        let v' = f1 z v in
-        (z, f2 var vi v, f2 var vo v')
-    let wid_T f g t1 t2 = let t =
+        (* let v' = f1 z v in *)
+        (z, f2 var vi v, vo)
+    let wid_T f g (t1:table_t) (t2:table_t) = let t =
         let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
         if z1 = z2 then (z1, f v1i v2i, f v1o v2o) else (*a renaming*)
         let v2o' = g v2o z2 z1 in 
         (z1, f v1i v2i, f v1o v2o') 
       in t
-    let equal_T f g t var = let (z, vi, vo) = t in
+    let equal_T f g (t:table_t) var = let (z, vi, vo) = t in
         let vo' = if z = var then 
           g vo z "z1"
           else vo in
         (z, f vi var, f vo' var)
-    let replace_T f t var x = let (z, vi, vo) = t in
+    let replace_T f (t:table_t) var x = let (z, vi, vo) = t in
       (z, f vi var x, f vo var x)
-    let stren_T f t ae = let (z, vi, vo) = t in
+    let stren_T f (t:table_t) ae = let (z, vi, vo) = t in
       (z, f vi ae, f vo ae)
-    let proj_T f g t vars = let (z, vi, vo) = t in
+    let proj_T f g (t:table_t) vars = let (z, vi, vo) = t in
       let vars_o = 
         let vars = z :: vars in
         List.append vars (g vi)
@@ -216,7 +216,7 @@ module NonSensitive: SensitiveSemanticsType =
       let SN (_, e1) = n1 in
       let SN (_, e2) = n2 in
       comp e1 e2
-    let prop_table f g t1 t2 = 
+    let prop_table f g (t1:table_t) (t2:table_t) = 
       let alpha_rename t1 t2 = let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
         if z1 = z2 then t1, t2
         else (*a renaming*)
@@ -282,9 +282,9 @@ module OneSensitive: SensitiveSemanticsType =
     let forget_T f var mt = TableMap.map (fun (vi, vo) -> 
       f var vi, f var vo) mt
     let arrow_T f1 f2 var mt v = TableMap.mapi (fun cs (vi, vo) -> 
-      let _, z = cs in
-      let v' = f1 z v in
-      f2 var vi v, f2 var vo v') mt
+      (* let _, z = cs in *)
+      (* let v' = f1 z v in f2 var vo v' *)
+      f2 var vi v, vo) mt
     let wid_T f g mt1 mt2 =
       TableMap.union (fun cs (v1i, v1o) (v2i, v2o) -> Some (f v1i v2i, f v1o v2o)) mt1 mt2
     let equal_T f g mt var = TableMap.map (fun (vi, vo) -> f vi var, f vo var) mt
@@ -386,11 +386,10 @@ module OneSensitive: SensitiveSemanticsType =
   end
 
 let parse_sensitive = function
-  | 0 -> (module NonSensitive: SensitiveSemanticsType)
-  | 1 -> (module OneSensitive: SensitiveSemanticsType)
-  | _ -> raise (Invalid_argument "Incorrect sensitive specification")
+  | false -> (module NonSensitive: SensitiveSemanticsType)
+  | _ -> (module OneSensitive: SensitiveSemanticsType)
 
-module SenSemantics = (val (!sensitive |> int_of_bool |> parse_sensitive))
+module SenSemantics = (val (!sensitive |> parse_sensitive))
 
 module TempNodeMap = MakeHash(struct
   type t = SenSemantics.node_s_t

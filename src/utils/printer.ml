@@ -1,11 +1,12 @@
 open Syntax
 open AbstractDomain
 open SemanticDomain
+open SemanticsDomain
 open SensitiveDomain
 open SenSemantics
 
 (** Pretty printing *)
-let pr_relation ppf a = let open SemanticsDomain in match a with
+let pr_relation ppf = function
   | Bool (vt, vf) -> Format.fprintf ppf "@[<1>{@ cur_v:@ Bool@ |@ TRUE:@ %a,@ FALSE:@ %a@ }@]"  AbstractValue.print_abs vt AbstractValue.print_abs vf
   | (Int v) -> Format.fprintf ppf "@[<1>{@ cur_v:@ Int@ |@ %a@ }@]" AbstractValue.print_abs v
   | (Unit u) -> Format.fprintf ppf "@[<1>Unit@]"

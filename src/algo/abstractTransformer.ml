@@ -54,18 +54,20 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
             else v1o, v2i
         in
         let v1i', v2i', v1o', v2o' = 
-            let v2i', v1i' = 
+            let opt_i = false 
                 (*Optimization 1: If those two are the same, ignore the prop step*)
-                if v1i <> Bot && eq_V v2i v1i then v2i, v1i else 
+                || (v1i <> Bot && v2i <> Bot && eq_V v2i v1i) in
+            let v2i', v1i' = 
+                if opt_i then v2i, v1i else 
                 prop v2i v1i 
             in
             let opt_o = false
-                (*Optimization 1: If those two are the same, ignore the prop step*)
-                || (v2o <> Bot && eq_V v1o v2o)
+                (*Optimization 2: If those two are the same, ignore the prop step*)
+                || (v2o <> Bot && v1o <> Bot && eq_V v1ot v2o)
             in
             let v1o', v2o' = 
-            if opt_o then v1ot, v2o else 
-            prop (arrow_V z v1ot v2ip) (arrow_V z v2o v2i)
+                if opt_o then v1ot, v2o else
+                prop (arrow_V z v1ot v2ip) (arrow_V z v2o v2i)
             in
             let v1o' =
                 if (is_Array v1i' && is_Array v2i') || (is_List v1i' && is_List v2i') then
@@ -392,8 +394,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             else tx'
         in 
         let t = let t' = find n m in
-            if is_Relation t' then equal_V t' x (* t[v=E(x)] *) 
-            else t' in (* M[env*l] *)
+            t' in (* M[env*l] *)
         (* (if !debug then
         begin
             Format.printf "\n<=== Prop Var ===> %s\n" lx;
@@ -470,10 +471,11 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                     Format.printf "\n";
                 end
                 ); *)
-                let t2', raw_t' = if is_array_set e1 then
-                    let t2', t' = io_T cs t0 in
-                    let elt = proj_V (get_second_table_input_V t') [] in
-                    join_for_item_V t2' elt, t'
+                let t2', raw_t' = 
+                    if is_array_set e1 then
+                        let t2', t' = io_T cs t0 in
+                        let elt = proj_V (get_second_table_input_V t') [] in
+                        join_for_item_V t2' elt, t'
                     else io_T cs t0 in
                 let t' = get_env_list env sx m |> proj_V raw_t' in
                 let res_m = m2 |> NodeMap.add n1 t1' |> NodeMap.add n2 t2' |> NodeMap.add n t' in
@@ -498,9 +500,9 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         let m1 = if list_op bop then
             let rec cons_list_items m term = match term with
                 | BinOp (Cons, e1', e2', l') ->
-                        let l1, t1', m1' = cons_list_items m e1' in
-                        let l2, t2', m2' = cons_list_items m1' e2' in
-                        l1 + l2, join_V t1' t2', m2'
+                    let l1, t1', m1' = cons_list_items m e1' in
+                    let l2, t2', m2' = cons_list_items m1' e2' in
+                    l1 + l2, join_V t1' t2', m2'
                 | _ ->
                     let m' = step term env sx cs ae assertion m in
                     let n' = construct_enode env (loc term) |> construct_snode sx in
@@ -592,7 +594,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             step e0 env sx cs ae assertion m in
         let t0 = find n0 m0 in
         if t0 = Bot then m0 else
-        if not @@ SemanticsDomain.is_bool_V t0 then m0 |> NodeMap.add n Top else
+        if not @@ is_bool_V t0 then m0 |> NodeMap.add n Top else
         begin
             let { isast = isast; ps = pos } = asst in 
             (* QUESTION: The prop is monotone and increasing, why don't we say we could earlier determine assertion failed? *)
