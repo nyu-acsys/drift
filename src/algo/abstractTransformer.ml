@@ -387,7 +387,8 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         let envx, lx, _ = get_vnode nx in
         let nx = construct_snode sx nx in
         let tx = let tx' = find nx m in
-            if is_Relation tx' then equal_V tx' x (* M<E(x)>[v=E(x)] *) 
+            if is_Relation tx' then 
+            if sat_equal_V tx' x then tx' else equal_V tx' x (* M<E(x)>[v=E(x)] *) 
             else tx'
         in 
         let t = let t' = find n m in

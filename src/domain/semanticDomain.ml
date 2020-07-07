@@ -104,6 +104,10 @@ module SemanticsDomain =
       | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> Bool (AbstractValue.widening v1t v2t, AbstractValue.widening v1f v2f)
       | Unit u1, Unit u2 -> Unit ()
       | _, _ -> raise (Invalid_argument "Widening: Base Type not equal")
+    and sat_equal_R a x = match a with
+      | Int v -> AbstractValue.sat_cons v x
+      | Bool (vt, vf) -> AbstractValue.sat_cons vt x && AbstractValue.sat_cons vf x
+      | _ -> false
     and op_R res l r op cons a = (*cons for flag of linear constraints*)
       match op with
       | Plus | Mult | Div | Mod | Modc | Minus -> (match a with
@@ -597,6 +601,9 @@ module SemanticsDomain =
       | _, Bot -> Bot
       | _, Top -> v
       | _,_ -> raise (Invalid_argument "ae should not be a table")
+    and sat_equal_V v x = match v with
+      | Relation r -> sat_equal_R r x
+      | _ -> false
     (* and der_V term v = match term, v with
       | _, Top | _, Bot -> v
       | Const (c,l), Relation r -> 

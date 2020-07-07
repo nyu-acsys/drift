@@ -532,6 +532,13 @@ module AbstractValue =
     let contain_var var v = 
       let env = Abstract1.env v in
       Environment.mem_var env (Var.of_string var) 
+    let sat_cons v var =
+      if contain_var var v && contain_var "cur_v" v then
+        let env = Abstract1.env v in
+        let expr = "cur_v = " ^ var in
+        let tab = Parser.tcons1_of_string env expr in
+        Abstract1.sat_tcons man v tab
+      else false
   end
 
 (* Domain Specification
