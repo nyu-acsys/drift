@@ -3,4 +3,4 @@
 <src/*.ml>: package(apron.octMPQ),package(apron.polkaMPQ),package(apron.polkaRll), package(apron.ppl), package(apron.polkaGrid)
 <src/*.ml>: package(apron.ppl), package(apron.t1pD), package(apron.t1pMPFR), package(apron.t1pMPR)
 true: use_menhir
-true: debug
+true : optimize(classic), unbox_closures, inline_max_depth(20), optimization_rounds(20)

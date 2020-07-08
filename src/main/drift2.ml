@@ -16,7 +16,7 @@ let dec = "dec"
 let id = "id"
 let loop = "loop"
 
-let test_1 = mk_lets [id, mk_lambda x (mk_var x)]
+(* let test_1 = mk_lets [id, mk_lambda x (mk_var x)]
 (mk_app
    (mk_app (mk_var id) (mk_var id))
    (mk_int 1))
@@ -299,9 +299,9 @@ f lst1 lst2"
  *)
 
 let pair_test_1 = parse_from_string
-"1, 2"
+"1, 2" *)
 
-let tests = [pair_test_1]
+let tests = []
 
 let _ =
   Config.parse;
