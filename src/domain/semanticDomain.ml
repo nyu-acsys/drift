@@ -651,10 +651,12 @@ module SemanticsDomain =
       | _ -> true
     and get_second_table_input_V = function
       | Bot -> Bot
-      | Table t -> let _,(_,vo) = get_full_table_T t in
+      | Table t -> if table_isempty t then Bot else
+        let _,(_,vo) = get_full_table_T t in
         (match vo with
           | Bot -> Bot
-          | Table t -> let _,(vi,_) = get_full_table_T t in vi
+          | Table t -> if table_isempty t then Bot else
+            let _,(vi,_) = get_full_table_T t in vi
           | _ -> raise (Invalid_argument "array.set should be a table"))
       | _ -> raise (Invalid_argument "array.set should be a table")
     and join_for_item_V v1 v2 = match v1, v2 with
@@ -694,6 +696,7 @@ module SemanticsDomain =
     and only_shape_V = function
       | Relation r -> is_bot_R r
       | Lst lst -> only_shape_Lst lst
+      | Ary ary -> only_shape_Ary ary
       | _ -> false
     and cons_temp_lst_V t = function
       | Lst lst -> Lst (cons_temp_lst_Lst t lst)
@@ -758,14 +761,18 @@ module SemanticsDomain =
       let ary1', ary2' = alpha_rename_Arys ary1 ary2 in
       let vars1, (rl1,re1) = ary1' in let vars2, (rl2,re2) = ary2' in
       vars1, (wid_R rl1 rl2,wid_R re1 re2)
-    and arrow_Ary var ary r ropt = let (vars, (rl,re)) = ary in
+    and arrow_Ary var ary r ropt = let ((l,e) as vars, (rl,re)) = ary in
+      let r' = forget_R l r |> forget_R e in
       match ropt with
-      | Some rl' -> (vars, (arrow_R var rl rl',arrow_R var re r))
+      | Some rl' -> 
+        let rl' = forget_R l rl' |> forget_R e in
+        (vars, (arrow_R var rl rl',arrow_R var re r'))
       | None -> (vars, (arrow_R var rl r,arrow_R var re r))
     and forget_Ary var ary = let (vars, (rl,re)) = ary in
       (vars, (forget_R var rl, forget_R var re))
-    and stren_Ary ary ae = let (vars, (rl,re)) = ary in
-      (vars, (stren_R rl ae, stren_R re ae))
+    and stren_Ary ary ae = let ((l,e) as vars, (rl,re)) = ary in
+      let ae' = (forget_R e ae |> forget_R l) in
+      (vars, (stren_R rl ae', stren_R re ae'))
     and proj_Ary ary vars = let ((l,e), (rl,re)) = ary in
       let vars' = e :: l :: vars in
       ((l,e), (proj_R rl vars', proj_R re vars'))
@@ -792,10 +799,13 @@ module SemanticsDomain =
       (l',e'), (rl',re')
     and join_for_item_Ary ary r = 
       let ((l,e), (rl,re)) = ary in
+      if is_bot_R rl && is_bot_R re then ary else
       let re' = alpha_rename_R r "cur_v" e |> join_R re in
       (l,e), (rl,re')
     and bot_shape_Ary (vars, (rl, re)) = 
       (vars, (rl, bot_shape_R re))
+    and only_shape_Ary (vars, (rl, re)) = 
+      is_bot_R rl && is_bot_R re 
     (*
       *******************************
       ** Abstract domain for List **
@@ -963,11 +973,11 @@ module SemanticsDomain =
         | l' :: e' :: [] -> if l = l' then fresh_length (), fresh_item() else l', e'
         | _ -> raise (Invalid_argument "construct pattern tl should give [] or [l;e]")
        in
-      let rl' = op_R l' l (string_of_int len) Minus true rl |> op_R "" l' "0" Ge true in
+      let rl' = assign_R l' l (string_of_int len) Minus rl |> op_R "" l' "0" Ge true in
       let ve' = 
         match ve with
         | Relation re -> 
-          let r' = op_R l' l (string_of_int len) Minus true re |> op_R "" l' "0" Ge true in
+          let r' = assign_R l' l (string_of_int len) Minus re |> op_R "" l' "0" Ge true in
           Relation (alpha_rename_R r' e e')
         | _ -> ve
       in
@@ -996,8 +1006,10 @@ module SemanticsDomain =
       | _, Bot | Bot, _ -> ve1, ve1
       | Relation re1, Relation re2 -> ve1, Relation (join_R re1 re2)
       | Table te1, Table te2 -> prop ve1 ve2
-      | Lst lst1, Lst lst2 -> let lst1', lst2' = prop_Lst prop lst1 lst2 in
-        Lst lst1', Lst lst2'
+      | Lst lst1, Lst lst2 -> let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
+        let lst1'', lst2'' = prop_Lst prop lst1' lst2' in
+        let _, lst2'' = alpha_rename_Lsts lst2 lst2'' in
+        Lst lst1'', Lst lst2''
       | Ary ary1, Ary ary2 -> Ary ary1, Ary (join_Ary ary1 ary2)
       | _, _ -> ve1, join_V ve1 ve2 in
       (vars1, (rl1', ve1')), (vars2, (rl2', ve2'))

@@ -10,22 +10,20 @@ let rec list_interval min max =
 
 (* filter p L returns the list of the elements in list L
    that satisfy predicate p *)
-let rec filter p xs = 
-	match xs with
+let rec filter p flst = 
+	match flst with
 		| [] -> []
-		| (x::xs) -> 
-			if p x then x :: (filter p xs) 
-			else filter p xs
+		| (x::xs') -> 
+			if p x then x :: (filter p xs') 
+			else filter p xs'
 (*withtype ('a -> bool) ->
          {n:nat} <n> => 'a list(n) -> [n':nat | n' <= n] 'a list(n')*)
 
 (* The sieve itself *)
-let rec sieve max lst =
+let rec sieve smax lst =
   match lst with
     [] -> []
-  | x :: xs ->
-    if x > max then lst
-    else x :: (sieve max (filter (fun m -> m > 0) xs))
+  | d :: ds -> d :: (sieve smax (filter (fun k -> k > 0) ds))
 (*withtype {max:int | max >= 2} int(max) ->
          {l:nat} <l> => int list(l) -> [l':nat | l' <= l] int list(l')*)
 

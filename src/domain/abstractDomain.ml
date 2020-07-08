@@ -319,16 +319,18 @@ module AbstractValue =
       let env = Environment.make [||] [||] in
       let ary = Lincons1.array_make env 0 in
       ref ary
-    let licons_earray vars advar = 
-      let tset_size = if Opt.exist advar then 
-        ThresholdsSetType.cardinal !thresholdsSet + 1 else 
+    let licons_earray vars = 
+      let tset_size = 
+        (* if Opt.exist advar then 
+        ThresholdsSetType.cardinal !thresholdsSet + 1 else  *)
         ThresholdsSetType.cardinal !thresholdsSet in
       let size =
         (Array.length vars) * 4 * tset_size in
       let int_vars = Array.map (fun var -> var |> Var.of_string) vars in
-      let int_vars = if Opt.exist advar then
-        let advar = Opt.get advar in
-        Array.append int_vars [|Var.of_string advar; Var.of_string "min"|] else int_vars in
+      let int_vars = 
+        (* if Opt.exist advar then let advar = Opt.get advar in
+        Array.append int_vars [|Var.of_string advar; Var.of_string "min"|] else  *)
+        int_vars in
       let env = Environment.make int_vars [||] in
       let thehold_ary = Lincons1.array_make env size in
       let idx2 = ref 0 in
@@ -346,7 +348,7 @@ module AbstractValue =
       Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
       idx2 := !idx2 + 1;
       i) !thresholdsSet in ()) vars;
-      if Opt.exist advar then
+      (* if Opt.exist advar then
       let advar = Opt.get advar in
       Array.iter (fun var -> 
         if var = advar then () else
@@ -363,7 +365,7 @@ module AbstractValue =
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;) vars;
         thehold_ary
-      else
+      else *)
         thehold_ary
     let generate_threshold_earray env = 
       if Environment.size env = 0 then Lincons1.array_make env 0 
@@ -374,13 +376,14 @@ module AbstractValue =
         if var = "cur_v" then Array.append ary [|var|]
         else if String.sub var 0 1 = "l" then Array.append ary [|var|]
         else if String.sub var 0 1 = "e" then Array.append ary [|var|]
+        else if String.sub var 0 1 = "z" then Array.append ary [|var|]
         else if String.length var > 4 && String.sub var 0 1 = "pref" then Array.append ary [|var|]
         else ary) [||] int_vars in
         (* if Environment.mem_var env (Var.of_string "min") && Environment.mem_var env (Var.of_string "max") then
           (Environment.print Format.std_formatter env;
           licons_earray ary (Some "max"))
         else  *)
-          licons_earray ary None
+          licons_earray ary
     let widening v1 v2 = 
       if is_bot v2 then v1 else
       if eq v1 v2 then v2 else
@@ -493,7 +496,7 @@ module AbstractValue =
         else (* Int value *)
           (let expr = vl ^ " " ^ temp ^ " " ^ vr in
             let tab = Parser.texpr1_of_string env expr in
-          Abstract1.assign_texpr_array man v' [|var_v|] [|tab|] None)
+          Abstract1.assign_texpr man v' var_v tab None)
       in
       (* Creation of abstract value vl op vr *)
       (* (if !debug then

@@ -36,7 +36,7 @@ if [ $# -ge 1 ] && [ $1 = "-nar" ]; then
     wid=0;
     nar=true;
 elif [ $# -ge 1 ] && [ $1 = "-thold" ]; then
-    echo "Wid with threshold + Nar..."
+    echo "Wid with threshold..."
     thold=true;
     nar=false;
     wid=0;
@@ -59,7 +59,7 @@ fi
 
 DIRS=" DRIFT2 DOrder r_type"
 INS=" first high negative array list" #   
-timeout="30"
+timeout="300"
 OUTPRE="out"
 DATE="gdate"
 if [[ "$OSTYPE" != "darwin"* ]]; then
@@ -108,17 +108,19 @@ else
 fi
 
 DOMAIN=$(echo "$DOMAIN" | tr '[:upper:]' '[:lower:]')
-csv_name="${csv_name}${DOMAIN}"
+# csv_name="${csv_name}${DOMAIN}"
 
 if [[ $thold == true ]]; then
-    csv_name="${csv_name}-thowid"
+    config="-thowid"
 elif [[ $wid -gt 0 ]]; then
-    csv_name="${csv_name}-dwid-${wid}"
+    config="-dwid-${wid}"
 elif [[ $nar == true ]]; then
-    csv_name="${csv_name}-wid+nar"
+    config="-wid+nar"
 else
-    csv_name="${csv_name}-standard"
+    config="-standard"
 fi
+
+csv_name="${csv_name}${DOMAIN}${config}"
 
 echo "Gnerate ${csv_name} table results..."
 python3 table.py -csv ${csv_name}

@@ -10,11 +10,11 @@ parser.add_argument('show_unsolved', nargs='?', default=False)
 args = parser.parse_args()
 
 if exp2_regexp.search(args.folder_name):
-    data_lst = { "res1-polka_st-standard": [], "res_rtype": [], 
+    data_lst = { "res1-polka_st-thowid": [], "res_rtype": [], 
         "res_dorder": [], "res_dsolve": [], "res_mochi": []}
-    res_lst = { "res1-polka_st-standard": [], "res_rtype": [], 
+    res_lst = { "res1-polka_st-thowid": [], "res_rtype": [], 
         "res_dorder": [], "res_dsolve": [], "res_mochi": []}
-    csv_lst = ["res1-polka_st-standard", "res_rtype", "res_dorder", "res_dsolve", "res_mochi"]
+    csv_lst = ["res1-polka_st-thowid", "res_rtype", "res_dorder", "res_dsolve", "res_mochi"]
 else:
     data_lst = {"res-oct-standard": [], "res-oct-wid+nar": [], 
         "res-oct-thowid": [], "res-polka_st-standard": [],
@@ -38,30 +38,31 @@ else:
 "res1-polka_st-wid+nar", "res1-polka_st-thowid", "res1-polka_ls-standard", "res1-polka_ls-wid+nar", "res1-polka_ls-thowid" ]
 
 # loc is calculated by cloc 
-sort_lst = {"high":["HO", 8], "first":["FO", 11], "array":["A", 17], "negative":["E", 16]}
+sort_lst = {"high":["HO", 8], "first":["FO", 11], "array":["A", 17], "list":["L", 16], "negative":["E", 16]}
 unit_lst = ["succ", "total", "avg.", "mean"]
 
 cant_solve_lst = [
-    { "oct":[], "polka":[], "polka_ls":[] },
-    { "oct":[], "polka":[], "polka_ls":[] }
+    { "oct":[], "polka_st":[], "polka_ls":[] },
+    { "oct":[], "polka_st":[], "polka_ls":[] }
 ]
 
 can_solve_domain_dic = { 
-"oct":[{"high":0, "first":0, "array":0, "negative":0},{"high":0, "first":0, "array":0, "negative":0}], 
-"polka":[{"high":0, "first":0, "array":0, "negative":0},{"high":0, "first":0, "array":0, "negative":0}],
-"polka_ls":[{"high":0, "first":0, "array":0, "negative":0},{"high":0, "first":0, "array":0, "negative":0}]
+"oct":[{"high":0, "first":0, "array":0, "list":0, "negative":0},{"high":0, "first":0, "array":0, "list":0, "negative":0}], 
+"polka_st":[{"high":0, "first":0, "array":0, "list":0, "negative":0},{"high":0, "first":0, "array":0, "list":0, "negative":0}],
+"polka_ls":[{"high":0, "first":0, "array":0, "list":0, "negative":0},{"high":0, "first":0, "array":0, "list":0, "negative":0}]
 }
 
 def get_domain_idx(domain):
     if domain == "oct": return 0
-    elif domain == "polka": return 1
+    elif domain == "polka_st": return 1
     else: return 2
 
 def get_bench_idx(bench):
     if bench == "high": return 0
     elif bench == "first": return 1
     elif bench == "array": return 2
-    else: return 3
+    elif bench == "list": return 3
+    else: return 4
 
 def read_data():
     for file_name in csv_lst:
@@ -247,7 +248,7 @@ def cal_solve_by_domain():
         verified only with a specific abstract domain (regardless of which
         widening for that domain is being used).
     """
-    truth_list = {"oct":[], "polka":[], "polka_ls":[]}
+    truth_list = {"oct":[], "polka_st":[], "polka_ls":[]}
     # 1. Get all common res from each domain
     for domain, _ in can_solve_domain_dic.items():
         for x in range(0,2):
@@ -287,7 +288,7 @@ def cal_solve_by_domain():
     # print(can_solve_domain_dic)
     
     print("\t\tdomain | solvethis")
-    benchlst = ["high", "first", "array", "negative"]
+    benchlst = ["high", "first", "array", "list", "negative"]
     for i in range(0,2):
         if i == 0: print("non-sensitive")
         else: print("1-sensitive")
