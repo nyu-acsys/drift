@@ -83,8 +83,8 @@ let pr_node ppf n = Format.fprintf ppf "%s" (loc_of_node n)
 let rec pr_node_full ppf n = print_node n ppf pr_env
 and pr_env ppf = function
   | [] -> ()
-  | [x, n] -> Format.fprintf ppf "%s: %a" x pr_node_full n
-  | (x, n) :: env -> Format.fprintf ppf "%s: %a,@ %a" x pr_node_full n pr_env env
+  | [x, (n,r)] -> Format.fprintf ppf "%s, %b: %a" x r pr_node_full n
+  | (x, (n,r)) :: env -> Format.fprintf ppf "%s, %b: %a,@ %a" x r pr_node_full n pr_env env
 
 let string_of_node n = pr_node Format.str_formatter n; Format.flush_str_formatter ()
 

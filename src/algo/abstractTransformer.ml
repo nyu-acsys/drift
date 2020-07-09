@@ -190,7 +190,7 @@ let get_env_list (env: env_t) (sx: var) (m: exec_map_t) =
     let env_l = (VarMap.bindings env) in
     let rec helper ls lst = match ls with
         | [] -> lst
-        | (x, n) :: env -> 
+        | (x, (n, _)) :: env -> 
             let n = construct_snode sx n in
             let t = find n m in
             let lst' = if is_List t then 
@@ -242,7 +242,7 @@ let rec list_var_item eis sx (cs: (var * loc)) m env nlst =
     match eis with
     | Var (x, l) -> 
         let n = construct_vnode env l cs in
-        let env1 = env |> VarMap.add x n in
+        let env1 = env |> VarMap.add x (n, false) in
         let n = construct_snode sx n in
         let t = find n m in
         let tp = cons_temp_lst_V t vlst in
@@ -292,7 +292,7 @@ let rec list_var_item eis sx (cs: (var * loc)) m env nlst =
             match e with
             | Var (x, l') -> 
                 let nx = construct_vnode env l' cs in
-                let env1 = env |> VarMap.add x nx in
+                let env1 = env |> VarMap.add x (nx, false) in
                 let nx = construct_snode sx nx in
                 let tx = find nx m in
                 let ti', tx' = prop ti tx in
@@ -385,25 +385,25 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             Format.printf "\n";
         end
         ); *)
-        let nx = VarMap.find x env in
+        let (nx, recnb) = VarMap.find x env in
         let envx, lx, _ = get_vnode nx in
         let nx = construct_snode sx nx in
         let tx = let tx' = find nx m in
             if is_Relation tx' then 
-            if sat_equal_V tx' x then tx' else equal_V tx' x (* M<E(x)>[v=E(x)] *) 
+            if sat_equal_V tx' x then tx' else equal_V (forget_V x tx') x (* M<E(x)>[v=E(x)] *) 
             else tx'
         in 
         let t = let t' = find n m in
             t' in (* M[env*l] *)
-        (if l = "61" then
+        (* (if !debug then
         begin
-            Format.printf "\n<=== Prop Var ===> %s\n" lx;
+            Format.printf "\n<=== Prop Var %s %b ===> %s\n" x recnb lx;
             pr_value Format.std_formatter tx;
             Format.printf "\n<<~~~~>> %s\n" l;
             pr_value Format.std_formatter t;
             Format.printf "\n";
         end
-        );
+        ); *)
         let tx', t' =
             (* if optmization m n find && optmization m nx find then tx, t else *)
             if List.mem lx !pre_def_func then
@@ -411,9 +411,11 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 let tx = if !sensitive then prop_predef l tx0 tx else tx in
                 prop tx t
             else
-                prop_scope envx env sx m tx t
+                (* if recnb then prop tx t
+                else *)
+                    prop_scope envx env sx m tx t
         in
-        (if l = "61" then
+        (* (if !debug then
         begin
             Format.printf "\nRES for prop:\n";
             pr_value Format.std_formatter tx';
@@ -421,7 +423,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             pr_value Format.std_formatter t';
             Format.printf "\n";
         end
-        );
+        ); *)
         m |> NodeMap.add nx tx' |> NodeMap.add n (stren_V t' ae) (* t' ^ ae *)
     | App (e1, e2, l) ->
         (* (if !debug then
@@ -498,21 +500,22 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         end
         ); *)
         let n1 = construct_enode env (loc e1) |> construct_snode sx in
-        let m1 = if list_op bop then
-            let rec cons_list_items m term = match term with
-                | BinOp (Cons, e1', e2', l') ->
-                    let l1, t1', m1' = cons_list_items m e1' in
-                    let l2, t2', m2' = cons_list_items m1' e2' in
-                    l1 + l2, join_V t1' t2', m2'
-                | _ ->
-                    let m' = step term env sx cs ae assertion m in
-                    let n' = construct_enode env (loc term) |> construct_snode sx in
-                    let t' = find n' m' in
-                    1, t', m' in
-            let len, t1', m1 = cons_list_items m e1 in
-            let t1 = find n1 m1 in
-            let t1', _ = prop t1 t1' in
-            m1 |> NodeMap.add n1 t1'
+        let m1 = 
+            if list_op bop then
+                let rec cons_list_items m term = match term with
+                    | BinOp (Cons, e1', e2', l') ->
+                        let l1, t1', m1' = cons_list_items m e1' in
+                        let l2, t2', m2' = cons_list_items m1' e2' in
+                        l1 + l2, join_V t1' t2', m2'
+                    | _ ->
+                        let m' = step term env sx cs ae assertion m in
+                        let n' = construct_enode env (loc term) |> construct_snode sx in
+                        let t' = find n' m' in
+                        1, t', m' in
+                let len, t1', m1 = cons_list_items m e1 in
+                let t1 = find n1 m1 in
+                let t1', _ = prop t1 t1' in
+                m1 |> NodeMap.add n1 t1'
             else step e1 env sx cs ae assertion m
         in
         let m2 = step e2 env sx cs ae assertion m1 in
@@ -564,7 +567,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 end
             in
             let _, re_t = if is_Relation raw_t then raw_t,raw_t else 
-                let t, raw_t = alpha_rename_Vs t raw_t in
+                (* let t, raw_t = alpha_rename_Vs t raw_t in *)
                 prop raw_t t in
             let m2, re_t = if list_op bop then 
                 let t1l = cons_temp_lst_V t1 re_t in
@@ -574,13 +577,13 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                     m2 |> NodeMap.add n1 t1' |> NodeMap.add n2 t2', re_t'
                 else m2, re_t 
             in
-            (if l = "73" then
+            (* (if l = "73" then
                 begin
                     Format.printf "\nRES for op:\n";
                     pr_value Format.std_formatter re_t;
                     Format.printf "\n";
                 end
-                );
+                ); *)
             (* (if string_of_op bop = ">" then
             begin
                 Format.printf "\nRES for test:\n";
@@ -611,7 +614,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             if assertion && isast && is_bool_false_V t0 <> true then print_loc pos else
             let t_true = meet_V (extrac_bool_V t0 true) ae in (* Meet with ae*)
             let t_false = meet_V (extrac_bool_V t0 false) ae in
-            let v_n = find n m0 in
+            let t = find n m0 in
             let m1 = step e1 env sx cs t_true assertion m0 in
             let n1 = construct_enode env (loc e1) |> construct_snode sx in
             let t1 = find n1 m1 in
@@ -626,7 +629,8 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                ); *)
             let t1', t' = 
                 (* if optmization m1 n1 find && optmization m1 n find then t1, (find n m1) else  *)
-                prop t1 v_n in
+                (* let t1, t = alpha_rename_Vs t1 t in *)
+                prop t1 t in
             (* (if !debug then
             begin
                 Format.printf "\nRES for prop:\n";
@@ -650,7 +654,8 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             ); *)
             let t2', t'' = 
                 (* if optmization m2 n2 find && optmization m2 n find then t1, (find n m2) else *)
-                prop t2 v_n in
+                (* let t2, t = alpha_rename_Vs t2 t in *)
+                prop t2 t in
             (* (if !debug then
             begin
                 Format.printf "\nRES for prop:\n";
@@ -660,8 +665,25 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 Format.printf "\n";
             end
                );  *)
-            let v_n' = join_V (stren_V t' ae) (stren_V t'' ae) in
-            let res_m = m2 |> NodeMap.add n1 t1' |> NodeMap.add n2 t2' |> NodeMap.add n v_n' in
+            (* (if (loc e1) = "63" then 
+            begin
+                Format.printf "\n<=== join then else ===> %s\n" (loc e1);
+                pr_value Format.std_formatter t';
+                Format.printf "\n<<~~~~>> %s\n" (loc e2);
+                pr_value Format.std_formatter t'';
+                Format.printf "\n";
+            end
+            ); *)
+            (* let t'', t' = alpha_rename_Vs t'' t' in *)
+            let t_n' = join_V (stren_V t' ae) (stren_V t'' ae) in
+            (* (if (loc e1) = "63" then
+            begin
+                Format.printf "\nRES for join then else:\n";
+                pr_value Format.std_formatter t_n';
+                Format.printf "\n";
+            end
+               );  *)
+            let res_m = m2 |> NodeMap.add n1 t1' |> NodeMap.add n2 t2' |> NodeMap.add n t_n' in
             res_m
         end
     | Rec (f_opt, px, e1, l) ->
@@ -688,11 +710,12 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 let _, var = cs in
                 let f_nf_opt = Opt.map (fun pf -> 
                     match pf with
-                    | Var (f, lf) -> f, construct_vnode env lf cs
+                    | Var (f, lf) -> f, (construct_vnode env lf cs, true)
                     | _ -> raise (Invalid_argument "Not implement recursive patterns")) f_opt in
                 let x, nx, env, m' = match px with
-                    | Var (x, lx) -> let nx = construct_vnode env lx cs in
-                        let env' = env |> VarMap.add x nx in
+                    | Var (x, lx) ->
+                        let nx = construct_vnode env lx cs in
+                        let env' = env |> VarMap.add x (nx, false) in
                         let nx = construct_snode x nx in
                        x, nx, env', m'
                     | TupleLst (termlst, lt) ->
@@ -708,7 +731,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                             match e with
                             | Var (x, l') -> 
                                 let nx = construct_vnode env l' cs in
-                                let env1 = env |> VarMap.add x nx in
+                                let env1 = env |> VarMap.add x (nx, false) in
                                 let nx = construct_snode sx nx in
                                 let tx = find nx m in
                                 let ti', tx' = prop ti tx in
@@ -751,11 +774,11 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 end
                 ); *)
                 let nf_t2_tf'_opt =
-                    Opt.map (fun (_, nf) ->
+                    Opt.map (fun (_, (nf, bf)) ->
                     let envf, lf, fcs = get_vnode nf in
                     let nf = construct_snode x nf in
                     let tf = find nf m in
-                    (if false then
+                    (* (if !debug then
                         begin
                             Format.printf "\n<=== Prop um ===> %s\n" l;
                             pr_value Format.std_formatter t;
@@ -763,9 +786,10 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                             pr_value Format.std_formatter tf;
                             Format.printf "\n";
                         end
-                    );
+                    ); *)
                     let t2, tf' = prop_scope env envf x m t tf in
-                    (if false then
+                    (* let t2, tf' = prop t tf in *)
+                    (* (if !debug then
                         begin
                             Format.printf "\nRES for prop:\n";
                             pr_value Format.std_formatter t2;
@@ -773,7 +797,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                             pr_value Format.std_formatter tf';
                             Format.printf "\n";
                         end
-                    );
+                    ); *)
                     nf, t2, tf') f_nf_opt
                 in
                 let tx', t1' = io_T cs px_t in
@@ -857,7 +881,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 |> NodeMap.add n2 t2' |> NodeMap.add n t'
             | Var (x, l') ->
                 let n1 = construct_vnode env l' (sx,sx) in
-                let env1 = env |> VarMap.add x n1 in
+                let env1 = env |> VarMap.add x (n1, false) in
                 let n1 = construct_snode x n1 in
                 let t1 = find n1 m in let te = find ne m in
                 let _, t1' = prop te t1 in
@@ -883,7 +907,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                     | Var(xtl, l'') ->
                         let x = xtl in
                         let nr = construct_vnode envl l'' cs in
-                        let envr = envl |> VarMap.add x nr in
+                        let envr = envl |> VarMap.add x (nr, false) in
                         let nr = construct_snode sx nr in
                         let lst = find nr ml |> get_list_length_item_V in
                         nr, envr, reduce_len_V len lst te
@@ -929,7 +953,7 @@ let rec fix env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_map_t 
         print_exec_map m;
     end);
   (* if k > 45 then exit 0 else *)
-  let ae = VarMap.fold (fun var n ae ->
+  let ae = VarMap.fold (fun var (n, b) ae ->
     let n = construct_snode "" n in
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     let t = find n m in
@@ -971,6 +995,8 @@ let s e =
     ThresholdsSetType.elements !thresholdsSet |> print_list; *)
     (* AbstractDomain.AbstractValue.licons_ref := AbstractDomain.AbstractValue.licons_earray [|"cur_v"|]; *)
     let envt, m0' = pref_M env0 (Hashtbl.copy m0) in
+    thresholdsSet := !thresholdsSet |> ThresholdsSetType.add 0 
+    |> ThresholdsSetType.add 2 |> ThresholdsSetType.add 4 |> ThresholdsSetType.add (-1) |> ThresholdsSetType.add (-2);
     (* pre_m := m0'; *)
     let check_str, m =
         let s1, m1 = (fix envt e 0 m0' false) in

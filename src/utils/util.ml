@@ -60,3 +60,21 @@ let rec zip_list xs ys =
     | x::xs' -> (match ys with
             [] -> failwith "oops, the lists seems to have different lengths"
           | y::ys' -> (x,y) :: zip_list xs' ys')
+
+let rec extract k list =
+    if k <= 0 then [ [] ]
+    else match list with
+         | [] -> []
+         | h :: tl ->
+            let with_h = List.map (fun l -> h :: l) (extract (k-1) tl) in
+            let without_h = extract k tl in
+            with_h @ without_h
+(* l1 <> "l" && contain_var_R l1 rl2 && contain_var_R l2 rl1 then
+        let l', e' = fresh_length (), fresh_item () in
+        let lst1' = alpha_rename_Lst lst1 l1 l' in
+        let lst2' = alpha_rename_Lst lst2 l2 l' in
+        alpha_rename_Lst lst1' e1 e', alpha_rename_Lst lst2' e2 e'
+        else if *)
+let arrange list = 
+    List.fold_right (fun y acc -> 
+    List.fold_right (fun x acc -> [x; y] :: acc) list acc) list []

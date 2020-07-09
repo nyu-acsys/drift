@@ -23,7 +23,9 @@ let rec filter p flst =
 let rec sieve smax lst =
   match lst with
     [] -> []
-  | d :: ds -> d :: (sieve smax (filter (fun k -> k > 0) ds))
+  | d :: ds ->
+    if d > smax then lst
+    else d :: (sieve smax (filter (fun k -> k > 0) ds))
 (*withtype {max:int | max >= 2} int(max) ->
          {l:nat} <l> => int list(l) -> [l':nat | l' <= l] int list(l')*)
 

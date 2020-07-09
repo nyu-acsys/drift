@@ -1,58 +1,88 @@
-		domain | solvethis
-non-sensitive
-high: oct | 0
-first: oct | 1
-array: oct | 0
-list: oct | 0
-negative: oct | 0
-high: polka_st | 0
-first: polka_st | 0
-array: polka_st | 0
-list: polka_st | 0
-negative: polka_st | 0
-high: polka_ls | 0
-first: polka_ls | 0
-array: polka_ls | 0
-list: polka_ls | 0
-negative: polka_ls | 0
-1-sensitive
-high: oct | 1
-first: oct | 1
-array: oct | 0
-list: oct | 0
-negative: oct | 0
-high: polka_st | 0
-first: polka_st | 0
-array: polka_st | 0
-list: polka_st | 0
-negative: polka_st | 0
-high: polka_ls | 0
-first: polka_ls | 0
-array: polka_ls | 0
-list: polka_ls | 0
-negative: polka_ls | 0
-		& succ	& 20	& 20	& 20	& 32	& 32	& 32	& 32	& 32	& 32	& 24	& 24	& 24	& 34	& 34	& 35	& 34	& 34	& 35	\\
-		& total	& 4.52	& 4.58	& 4.70	& 7.88	& 8.05	& 8.18	& 7.25	& 7.51	& 7.75	& 8.94	& 8.82	& 9.40	& 15.51	& 15.68	& 16.41	& 17.36	& 14.64	& 15.55	\\
-HO (38)	& avg.	& 0.12	& 0.12	& 0.12	& 0.21	& 0.21	& 0.22	& 0.19	& 0.20	& 0.20	& 0.24	& 0.23	& 0.25	& 0.41	& 0.41	& 0.43	& 0.46	& 0.39	& 0.41	\\
-loc: 8	& mean	& 0.21	& 0.22	& 0.22	& 0.39	& 0.36	& 0.41	& 0.36	& 0.35	& 0.37	& 0.45	& 0.47	& 0.49	& 0.82	& 0.79	& 0.80	& 1.68	& 0.78	& 0.72	\\
-\hline
-		& succ	& 27	& 27	& 31(1)	& 42	& 42	& 45	& 42	& 42	& 45	& 35	& 35	& 36	& 47	& 47	& 51	& 47	& 47	& 51	\\
-		& total	& 12.49	& 12.85	& 14.34	& 21.66	& 24.17	& 22.68(1)	& 19.96	& 21.17	& 21.34(1)	& 32.84	& 31.86	& 34.37	& 53.71	& 53.66	& 53.85(1)	& 51.95	& 53.28	& 57.11(1)	\\
-FO (70)	& avg.	& 0.18	& 0.18	& 0.20	& 0.31	& 0.35	& 0.32	& 0.29	& 0.30	& 0.30	& 0.47	& 0.46	& 0.49	& 0.77	& 0.77	& 0.77	& 0.74	& 0.76	& 0.82	\\
-loc: 11	& mean	& 2.16	& 2.19	& 2.17	& 3.41	& 4.18	& 3.44	& 3.14	& 3.50	& 3.31	& 7.43	& 7.01	& 7.08	& 10.20	& 10.55	& 10.16	& 10.86	& 10.98	& 11.35	\\
-\hline
-		& succ	& 8	& 8	& 8	& 11	& 11	& 11	& 11	& 11	& 11	& 8	& 8	& 8	& 11	& 11	& 11	& 11	& 11	& 11	\\
-		& total	& 6.76	& 6.55	& 7.41	& 12.10	& 13.13	& 13.68	& 11.45	& 11.58	& 12.44	& 16.33	& 15.54	& 16.97	& 28.12	& 28.06	& 28.74	& 28.25	& 26.80	& 28.45	\\
-A (13)	& avg.	& 0.52	& 0.50	& 0.57	& 0.93	& 1.01	& 1.05	& 0.88	& 0.89	& 0.96	& 1.26	& 1.20	& 1.31	& 2.16	& 2.16	& 2.21	& 2.17	& 2.06	& 2.19	\\
-loc: 17	& mean	& 0.72	& 0.68	& 0.96	& 1.15	& 1.23	& 1.39	& 1.07	& 1.11	& 1.31	& 2.46	& 2.42	& 2.65	& 4.28	& 3.93	& 4.10	& 4.26	& 3.67	& 4.27	\\
-\hline
-		& succ	& 5	& 5	& 17	& 8	& 8	& 17	& 8	& 8	& 17	& 9	& 9	& 16	& 9	& 9	& 16	& 9	& 9	& 16	\\
-		& total	& 3.04	& 3.07	& 3.75	& 6.54	& 6.48	& 6.98	& 5.48	& 6.05	& 6.43	& 6.53	& 6.18	& 7.62	& 13.79	& 13.86	& 14.32	& 12.30	& 12.23	& 13.56	\\
-L (19)	& avg.	& 0.16	& 0.16	& 0.20	& 0.34	& 0.34	& 0.37	& 0.29	& 0.32	& 0.34	& 0.34	& 0.33	& 0.40	& 0.73	& 0.73	& 0.75	& 0.65	& 0.64	& 0.71	\\
-loc: 16	& mean	& 0.32	& 0.31	& 0.32	& 0.52	& 0.53	& 0.55	& 0.45	& 0.52	& 0.51	& 0.77	& 0.66	& 0.67	& 1.12	& 1.10	& 1.05	& 1.04	& 0.98	& 1.18	\\
-\hline
-		& succ	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	\\
-		& total	& 14.69	& 13.97	& 15.03	& 17.92	& 17.38	& 18.42	& 15.71	& 16.08	& 17.51	& 22.49	& 22.22	& 23.98	& 28.15	& 28.40	& 28.16	& 26.12	& 25.60	& 34.04	\\
-E (15)	& avg.	& 0.98	& 0.93	& 1.00	& 1.19	& 1.16	& 1.23	& 1.05	& 1.07	& 1.17	& 1.50	& 1.48	& 1.60	& 1.88	& 1.89	& 1.88	& 1.74	& 1.71	& 2.27	\\
-loc: 16	& mean	& 2.92	& 2.87	& 2.82	& 3.83	& 3.99	& 3.82	& 3.45	& 3.58	& 3.62	& 4.89	& 4.83	& 4.75	& 6.25	& 6.33	& 5.86	& 5.74	& 5.63	& 7.11	\\
-\hline
+=======res1-polka_st-thowid========
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+high	& 36	& 22.21	& 0.58	& 1.53	
+
+
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+first	& 49(1)	& 74.00	& 1.06	& 10.88	
+
+
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+array	& 11	& 35.29	& 2.71	& 4.77	
+
+
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+list	& 15(4)	& 22.09	& 1.16	& 1.69	
+
+
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+negative	& 15	& 35.22	& 2.35	& 5.74	
+
+
+=======end========
+=======res_rtype========
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+high	& 28	& 26.86(2)	& 0.71	& 12.06	
+
+
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+first	& 47	& 29.45(8)	& 0.42	& 8.62	
+
+
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+array	& 4	& 1.39(2)	& 0.11	& 0.14	
+
+
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+list	& 0	& 1.20	& 0.06	& 0.06	
+
+
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+negative	& 15	& 1.79	& 0.12	& 0.17	
+
+
+=======end========
+=======res_dsolve========
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+high	& 29	& 13.65	& 0.36	& 0.39	
+
+
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+first	& 48(1)	& 31.58	& 0.45	& 1.49	
+
+
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+array	& 8	& 11.31	& 0.87	& 1.28	
+
+
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+list	& 10(1)	& 8.25	& 0.43	& 0.47	
+
+
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+negative	& 14	& 12.28	& 0.82	& 1.53	
+
+
+=======end========
+=======res_mochi========
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+high	& 33	& 63.65(5)	& 1.68	& 4.12	
+
+
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+first	& 56	& 255.55(12)	& 3.65	& 15.29	
+
+
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+array	& 9(1)	& 4.21	& 0.32	& 0.73	
+
+
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+list	& 5	& 121.35(14)	& 6.39	& 53.51	
+
+
+bench | succ(solvethis) | full(timeout) | avg | mean | 
+negative	& 12	& 151.43(3)	& 10.10	& 71.94	
+
+
+=======end========

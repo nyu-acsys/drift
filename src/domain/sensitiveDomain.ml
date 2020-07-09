@@ -83,7 +83,7 @@ module type SensitiveSemanticsType =
   sig
     type node_t
     type node_s_t
-    type env_t = node_t VarMap.t
+    type env_t = (node_t * bool) VarMap.t
     type table_t
     type call_site
     type value_t = | Bot
@@ -118,7 +118,7 @@ module type SensitiveSemanticsType =
     val get_vnode: node_t -> env_t * loc * (var * loc)
     val dx_T: value_t -> (var * loc)
     val get_table_T: value_t -> table_t
-    val print_node: node_t -> Format.formatter -> (Format.formatter -> (string * node_t) list -> unit) -> unit
+    val print_node: node_t -> Format.formatter -> (Format.formatter -> (string * (node_t * bool)) list -> unit) -> unit
     val print_table: table_t -> Format.formatter -> (Format.formatter -> value_t -> unit) -> unit
     val compare_node: (string -> string -> int) -> node_s_t -> node_s_t -> int
     val prop_table: ((var * loc) -> value_t * value_t -> value_t * value_t -> (value_t * value_t) * (value_t * value_t)) -> (value_t -> string -> string -> value_t) -> table_t -> table_t -> table_t * table_t
@@ -133,7 +133,7 @@ module type SensitiveSemanticsType =
 module NonSensitive: SensitiveSemanticsType =
   struct
     type node_t = EN of env_t * loc (*N = E x loc*)
-    and env_t = node_t VarMap.t (*E = Var -> N*)
+    and env_t = (node_t * bool) VarMap.t (*E = Var -> N*)
     type node_s_t = SN of bool * loc
     type value_t =
       | Bot
@@ -248,7 +248,7 @@ module OneSensitive: SensitiveSemanticsType =
     type enode_t = env_t * loc (*N = E x loc*)
     and vnode_t = env_t * var * call_site (*Nx = E x var x stack*)
     and node_t = EN of enode_t | VN of vnode_t
-    and env_t = node_t VarMap.t (*E = Var -> N*)
+    and env_t = (node_t * bool) VarMap.t (*E = Var -> N*)
     and call_site = var * loc   (*stack = var * loc*)
     and node_s_t = SEN of call_site | SVN of (call_site * var) (* call site * label *)
     type value_t =
@@ -316,7 +316,9 @@ module OneSensitive: SensitiveSemanticsType =
     let construct_enode env label = EN (env, label)
     let construct_snode (x: var) (n:node_t): node_s_t = match n with
     | EN (env, l) -> if VarMap.is_empty env || x = "" then SEN ("", l) else
-      let _, _, (_, va) = VarMap.find x env |> get_var_env_node in
+      let _, _, (_, va) = 
+        let n, _ = VarMap.find x env in
+        get_var_env_node n in
       SEN (va, l)
     | VN (env, xl, (cx, cl)) -> SVN ((cx, cl), xl)
     let construct_table cs (vi,vo) = TableMap.singleton cs (vi, vo)

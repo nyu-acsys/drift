@@ -159,7 +159,7 @@ module SemanticsDomain =
       | Bool (vt, vf) -> AbstractValue.is_bot vt && AbstractValue.is_bot vf
       | Unit _ -> false
     and is_bool_false_R a = match a with
-      | Bool (vt, vf) -> AbstractValue.is_bot vf
+      | Bool (vt, vf) -> AbstractValue.is_bot vt = false && AbstractValue.is_bot vf
       | _ -> raise (Invalid_argument "Expect a bool value")
     and opt_eq_R a1 a2 = is_bot_R a1 = false && is_bot_R a2 = false && eq_R a1 a2
     and contain_var_R var a = match a with
@@ -290,8 +290,8 @@ module SemanticsDomain =
           |> NodeMap.add s_set t_set
         in
         let env' = 
-          env |> VarMap.add "Array.make" n_make |> VarMap.add "Array.length" n_len |> VarMap.add "Array.get" n_get
-          |> VarMap.add "Array.set" n_set
+          env |> VarMap.add "Array.make" (n_make, false) |> VarMap.add "Array.length" (n_len, false) |> VarMap.add "Array.get" (n_get, false)
+          |> VarMap.add "Array.set" (n_set, false)
         in
         pre_def_func := List.append !pre_def_func ["Array.make"; "Array.length"; "Array.get"; "Array.set"];
         env', m'
@@ -390,8 +390,8 @@ module SemanticsDomain =
           |> NodeMap.add s_cons t_cons
         in
         let env' = 
-          env |> VarMap.add "List.hd" n_hd |> VarMap.add "List.length" n_len |> VarMap.add "List.tl" n_tl
-          |> VarMap.add "List.cons" n_cons
+          env |> VarMap.add "List.hd" (n_hd, false) |> VarMap.add "List.length" (n_len, false) |> VarMap.add "List.tl" (n_tl, false)
+          |> VarMap.add "List.cons" (n_cons, false)
         in
         pre_def_func := List.append !pre_def_func ["List.hd"; "List.length"; "List.tl"; "List.cons"];
         env', m'
@@ -421,7 +421,7 @@ module SemanticsDomain =
                   if l = "unit" then Tuple []
                   else raise (Invalid_argument"Expected unit predicate as {v: Unit | unit }")
               in
-              let env' = env |> VarMap.add var n_var in
+              let env' = env |> VarMap.add var (n_var, false) in
               let m' = m |> NodeMap.add s_var t_var in
               m', env'
             ) !pre_vars (m, env)
@@ -844,9 +844,14 @@ module SemanticsDomain =
       in
       ve'
     and join_Lst lst1 lst2 = 
-      let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
-      let vars1, (rl1,ve1) = lst1' in let vars2, (rl2,ve2) = lst2' in
-      vars1, (join_R rl1 rl2,join_V ve1 ve2)
+      let (l1, e1), (rl1,ve1) = lst1 in
+      let (l2, e2), (rl2,ve2) = lst2 in
+      let lst1', lst2' = if l1 <> "l" && contain_var_R l1 rl2 then
+        let a, b = alpha_rename_Lsts lst2 lst1 in 
+        b, a
+        else alpha_rename_Lsts lst1 lst2 in
+      let (l1, e1) as vars1, (rl1,ve1) = lst1' in let (l2, e2) as vars2, (rl2,ve2) = lst2' in
+      vars1, (join_R rl1 rl2, join_V ve1 ve2)
     and meet_Lst lst1 lst2 = 
       let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
       let vars1, (rl1,ve1) = lst1' in let vars2, (rl2,ve2) = lst2' in

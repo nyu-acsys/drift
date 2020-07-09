@@ -11,31 +11,29 @@ args = parser.parse_args()
 
 if exp2_regexp.search(args.folder_name):
     data_lst = { "res1-polka_st-thowid": [], "res_rtype": [], 
-        "res_dorder": [], "res_dsolve": [], "res_mochi": []}
+         "res_dsolve": [], "res_mochi": []}
     res_lst = { "res1-polka_st-thowid": [], "res_rtype": [], 
-        "res_dorder": [], "res_dsolve": [], "res_mochi": []}
-    csv_lst = ["res1-polka_st-thowid", "res_rtype", "res_dorder", "res_dsolve", "res_mochi"]
+         "res_dsolve": [], "res_mochi": []}
+    csv_lst = ["res1-polka_st-thowid", "res_rtype", "res_dsolve", "res_mochi"]
 else:
-    data_lst = {"res-oct-standard": [], "res-oct-wid+nar": [], 
-        "res-oct-thowid": [], "res-polka_st-standard": [],
-        "res-polka_st-wid+nar": [], "res-polka_st-thowid": [], "res-polka_ls-standard": [], 
-        "res-polka_ls-wid+nar": [], "res-polka_ls-thowid": [], "res1-oct-standard": [], "res1-oct-wid+nar": [], 
+    data_lst = {"res-oct-standard": [], 
+        "res-oct-thowid": [], "res-polka_st-standard": [], "res-polka_st-thowid": [], "res-polka_ls-standard": [], 
+         "res-polka_ls-thowid": [], "res1-oct-standard": [], 
         "res1-oct-thowid": [], "res1-polka_st-standard": [],
-        "res1-polka_st-wid+nar": [], "res1-polka_st-thowid": [], "res1-polka_ls-standard": [], 
-        "res1-polka_ls-wid+nar": [], "res1-polka_ls-thowid": []
+         "res1-polka_st-thowid": [], "res1-polka_ls-standard": [], 
+         "res1-polka_ls-thowid": []
     }
-    res_lst = {"res-oct-standard": [], "res-oct-wid+nar": [], 
-        "res-oct-thowid": [], "res-polka_st-standard": [],
-        "res-polka_st-wid+nar": [], "res-polka_st-thowid": [], "res-polka_ls-standard": [], 
-        "res-polka_ls-wid+nar": [], "res-polka_ls-thowid": [], "res1-oct-standard": [], "res1-oct-wid+nar": [], 
+    res_lst = {"res-oct-standard": [], 
+        "res-oct-thowid": [], "res-polka_st-standard": [], "res-polka_st-thowid": [], "res-polka_ls-standard": [], 
+         "res-polka_ls-thowid": [], "res1-oct-standard": [], 
         "res1-oct-thowid": [], "res1-polka_st-standard": [],
-        "res1-polka_st-wid+nar": [], "res1-polka_st-thowid": [], "res1-polka_ls-standard": [], 
-        "res1-polka_ls-wid+nar": [], "res1-polka_ls-thowid": []
+         "res1-polka_st-thowid": [], "res1-polka_ls-standard": [], 
+         "res1-polka_ls-thowid": []
     }
-    csv_lst = ["res-oct-standard", "res-oct-wid+nar", "res-oct-thowid", "res-polka_st-standard",
-"res-polka_st-wid+nar", "res-polka_st-thowid", "res-polka_ls-standard", "res-polka_ls-wid+nar", "res-polka_ls-thowid",
-"res1-oct-standard", "res1-oct-wid+nar", "res1-oct-thowid", "res1-polka_st-standard",
-"res1-polka_st-wid+nar", "res1-polka_st-thowid", "res1-polka_ls-standard", "res1-polka_ls-wid+nar", "res1-polka_ls-thowid" ]
+    csv_lst = ["res-oct-standard", "res-oct-thowid", "res-polka_st-standard",
+ "res-polka_st-thowid", "res-polka_ls-standard", "res-polka_ls-thowid",
+"res1-oct-standard", "res1-oct-thowid", "res1-polka_st-standard",
+"res1-polka_st-thowid", "res1-polka_ls-standard", "res1-polka_ls-thowid" ]
 
 # loc is calculated by cloc 
 sort_lst = {"high":["HO", 8], "first":["FO", 11], "array":["A", 17], "list":["L", 16], "negative":["E", 16]}
