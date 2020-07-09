@@ -159,7 +159,7 @@ module SemanticsDomain =
       | Bool (vt, vf) -> AbstractValue.is_bot vt && AbstractValue.is_bot vf
       | Unit _ -> false
     and is_bool_false_R a = match a with
-      | Bool (vt, vf) -> AbstractValue.is_bot vt = false && AbstractValue.is_bot vf
+      | Bool (vt, vf) -> AbstractValue.is_bot vf
       | _ -> raise (Invalid_argument "Expect a bool value")
     and opt_eq_R a1 a2 = is_bot_R a1 = false && is_bot_R a2 = false && eq_R a1 a2
     and contain_var_R var a = match a with

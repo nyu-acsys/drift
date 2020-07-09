@@ -9,8 +9,10 @@ let rec make_list n =
 
 let div x y = (assert (y <> 0); x / y)
 
-let main (n:int(*-:{v:Int | true}*)) (m:int(*-:{v:Int | true}*)) =
+let main (n:int) (m:int) =
   if n > 0 && m > 0 then
   	let xs = make_list n in
   	assert(fold_left div m xs >= 0)
   else ()
+
+let _ = main 1 1

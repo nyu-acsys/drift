@@ -8,8 +8,10 @@ let rec make_list n =
   then [] (* 'a list *)
   else n :: make_list (n - 1)
 
-let main (n:int(*-:{v:Int | true }*)) =
+let main (n:int) =
   if n > 0 then
 	  let xs = make_list n in
 	  assert (length xs = n)
   else ()
+
+let _ = main 1

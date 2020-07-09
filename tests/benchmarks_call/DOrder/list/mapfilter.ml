@@ -25,9 +25,11 @@ let rec map f (xs: int list list) = match xs with
   | x::xs' -> (assert(f x > 0);
     f x :: map f xs')
 
-let main (m:int(*-:{v:Int | true}*)) = 
+let main (m:int) = 
   if m > 0 then 
     let xs = make_list_list m in
     let ys = map head (filter ne xs) in
     ()
   else ()
+
+let _ = main 3

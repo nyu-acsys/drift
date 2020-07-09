@@ -14,9 +14,11 @@ let compose (f:int->int) (g:int->int) (d:int) = f (g d)
 
 let id (c:int) = c
 
-let main (n:int(*-:{v:Int | true}*)) =
+let main (n:int) =
   if n > 0 then
     let xs = make_list n in
     let f = fold_right compose xs id in
     assert (f 0 >= 0)
   else ()
+
+let _ = main 3

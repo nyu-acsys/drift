@@ -18,10 +18,13 @@ let rec risers (xs:int list) rn = match xs with
   | x :: [] -> let ys = x :: [] in ys :: []
   | x::y::etc ->
        if (x > rn) then risersThen x (risers (y::etc) rn)
-			 else risersElse x (risers (y::etc) rn)
+       else risersElse x (risers (y::etc) rn)
 				
-let main (m:int(*-:{v:Int | true}*)) (n:int(*-:{v:Int | true}*)) = 
+let main (m:int) (n:int) = 
   if m > 0 && n > 0 then
     let _ = risers (make_list m) n in
     ()
   else ()
+
+let _ = main 1 2
+let _ = main 2 1
