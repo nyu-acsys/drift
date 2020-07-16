@@ -10,11 +10,11 @@ parser.add_argument('show_unsolved', nargs='?', default=False)
 args = parser.parse_args()
 
 if exp2_regexp.search(args.folder_name):
-    data_lst = { "res1-polka_st-thowid": [], "res_rtype": [], 
+    data_lst = { "res1-polka_ls-thowid": [], "res_rtype": [], 
          "res_dsolve": [], "res_mochi": []}
-    res_lst = { "res1-polka_st-thowid": [], "res_rtype": [], 
+    res_lst = { "res1-polka_ls-thowid": [], "res_rtype": [], 
          "res_dsolve": [], "res_mochi": []}
-    csv_lst = ["res1-polka_st-thowid", "res_rtype", "res_dsolve", "res_mochi"]
+    csv_lst = ["res1-polka_ls-thowid", "res_rtype", "res_dsolve", "res_mochi"]
 else:
     data_lst = {"res-oct-standard": [], 
         "res-oct-thowid": [], "res-polka_st-standard": [], "res-polka_st-thowid": [], "res-polka_ls-standard": [], 
@@ -303,6 +303,7 @@ def print_unsolved_tests():
             print(f'{domain} ({len(vals)})', end = ":\t ")
             print(vals)
         print(f'-----end-----')
+
 
 def main():
     read_data()
