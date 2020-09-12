@@ -13,7 +13,7 @@ if [ $# -gt 1 ]; then
     DOMAIN=$4
 else
     echo "ERROR!!! The command should be:"
-    echo "./runit.sh -domain <domain_name> [-dwid <delay_steps> | -nar]"
+    echo "./runit.sh -set call/unv -domain <domain_name> [-dwid <delay_steps> | -nar]"
     exit 0
 fi
 shift

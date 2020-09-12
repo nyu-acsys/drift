@@ -164,6 +164,20 @@ let is_const = function
   | Const (_, _) -> true
   | _ -> false
 
+let is_var = function
+  | Var (_,_) -> true
+  | _ -> false
+
+let is_func = function
+  | Rec (_) -> true
+  | _ -> false
+
+let is_asst_false = function
+  | Const (c,_) -> (match c with
+    | Boolean b -> b = false
+    | _ -> false)
+  | _ -> false
+
 let str_of_const = function
   | Const (d, _) -> (match d with
     | Integer i -> string_of_int i

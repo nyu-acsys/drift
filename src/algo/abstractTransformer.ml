@@ -27,6 +27,15 @@ type stage =
   
 let process = ref "Wid"
 
+module AssertionPosMap =  Map.Make(struct
+  type t = Syntax.pos
+  let compare = compare
+  end)
+
+type asst_map_t = (int * int) AssertionPosMap.t
+
+let sens : asst_map_t ref = ref AssertionPosMap.empty
+
 let env0, m0 = 
     let enva, ma = array_M VarMap.empty (NodeMap.create 500) in
     list_M enva ma
@@ -79,7 +88,7 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
                     replace_V v e2 e1
                 else v1o'
             in
-            (* if String.sub z 0 2 = "z1" then
+            (* if !debug then
                 begin
                 (if true then
                 begin
@@ -356,7 +365,7 @@ let prop_predef l v0 v =
         )
     | _, _ -> v
 
-let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assertion: bool) (m:exec_map_t) =
+let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assertion: bool) (is_rec: bool) (m:exec_map_t) =
     let n = construct_enode env (loc term) |> construct_snode sx in
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     match term with
@@ -395,7 +404,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         in 
         let t = let t' = find n m in
             t' in (* M[env*l] *)
-        (* (if !debug then
+        (* (if x = "ys" then
         begin
             Format.printf "\n<=== Prop Var %s %b ===> %s\n" x recnb lx;
             pr_value Format.std_formatter tx;
@@ -415,7 +424,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 else *)
                     prop_scope envx env sx m tx t
         in
-        (* (if !debug then
+        (* (if x = "ys" then
         begin
             Format.printf "\nRES for prop:\n";
             pr_value Format.std_formatter tx';
@@ -433,7 +442,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             Format.printf "\n";
         end
         ); *)
-        let m1 = step e1 env sx cs ae assertion m in
+        let m1 = step e1 env sx cs ae assertion is_rec m in
         let n1 = construct_enode env (loc e1) |> construct_snode sx in
         let t1 = find n1 m1 in
         if t1 <> Bot && not @@ is_table t1 then
@@ -441,14 +450,19 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         (loc e1) (string_of_value t1);
         m1 |> NodeMap.add n Top)
         else
-            let m2 = step e2 env sx cs ae assertion m1 in
+            let m2 = step e2 env sx cs ae assertion is_rec m1 in
             let n2 = construct_enode env (loc e2) |> construct_snode sx in
             let t2 = find n2 m2 in (* M[env*l2] *)
             (match t1, t2 with
                 | Bot, _ | _, Bot -> m2
                 | _, Top -> m2 |> NodeMap.add n Top
                 | _ -> let t = find n m2 in
-                let cs = if !sensitive then (loc e1, loc e1 |> name_of_node) else (dx_T t1) in
+                let cs = if !sensitive then
+                (* let var1, var2 = cs in
+                (Format.printf "\nis_rec? %b\n") is_rec;
+                (Format.printf "\nAPP cs at %s: %s, %s\n") (loc e1) var1 var2; *)
+                if is_rec && is_func e1 then cs else
+                (loc e1, loc e1 |> name_of_node) else (dx_T t1) in
                 let t_temp = Table (construct_table cs (t2, t)) in
                 (* (if !debug then
                 begin
@@ -508,7 +522,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                         let l2, t2', m2' = cons_list_items m1' e2' in
                         l1 + l2, join_V t1' t2', m2'
                     | _ ->
-                        let m' = step term env sx cs ae assertion m in
+                        let m' = step term env sx cs ae assertion is_rec m in
                         let n' = construct_enode env (loc term) |> construct_snode sx in
                         let t' = find n' m' in
                         1, t', m' in
@@ -516,9 +530,9 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 let t1 = find n1 m1 in
                 let t1', _ = prop t1 t1' in
                 m1 |> NodeMap.add n1 t1'
-            else step e1 env sx cs ae assertion m
+            else step e1 env sx cs ae assertion is_rec m
         in
-        let m2 = step e2 env sx cs ae assertion m1 in
+        let m2 = step e2 env sx cs ae assertion is_rec m1 in
         let t1 = find n1 m2 in
         let n2 = construct_enode env (loc e2) |> construct_snode sx in
         let t2 = find n2 m2 in
@@ -604,18 +618,21 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         let n0 = construct_enode env (loc e0) |> construct_snode sx in
         let m0 = 
             (* if optmization m n0 find then m else  *)
-            step e0 env sx cs ae assertion m in
+            step e0 env sx cs ae assertion is_rec m in
         let t0 = find n0 m0 in
         if t0 = Bot then m0 else
         if not @@ is_bool_V t0 then m0 |> NodeMap.add n Top else
         begin
             let { isast = isast; ps = pos } = asst in 
             (* QUESTION: The prop is monotone and increasing, why don't we say we could earlier determine assertion failed? *)
-            if assertion && isast && is_bool_false_V t0 <> true then print_loc pos else
+            if assertion && isast && is_bool_bot_V t0 = false && is_bool_false_V t0 <> true then print_loc pos else
             let t_true = meet_V (extrac_bool_V t0 true) ae in (* Meet with ae*)
             let t_false = meet_V (extrac_bool_V t0 false) ae in
+            (if assertion && isast then 
+                let i, j = AssertionPosMap.find_opt pos !sens |> Opt.get_or_else (0,0) in
+                sens := AssertionPosMap.add pos ((if is_bool_bot_V t0 && is_asst_false e0 = false then i + 1 else i), j + 1) !sens);
             let t = find n m0 in
-            let m1 = step e1 env sx cs t_true assertion m0 in
+            let m1 = step e1 env sx cs t_true assertion is_rec m0 in
             let n1 = construct_enode env (loc e1) |> construct_snode sx in
             let t1 = find n1 m1 in
             (* (if !debug then
@@ -640,7 +657,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 Format.printf "\n";
             end
             );  *)
-            let m2 = step e2 env sx cs t_false assertion m1 in
+            let m2 = step e2 env sx cs t_false assertion is_rec m1 in
             let n2 = construct_enode env (loc e2) |> construct_snode sx in
             let t2 = find n2 m2 in
             (* (if !debug then 
@@ -702,6 +719,8 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
               Table te
           | _ -> t0
         in
+        (* let cs' = cs in *)
+        let is_rec' = Opt.exist f_opt || is_rec in
         step_func (fun cs (tl, tr) m' -> 
             if tl = Bot then m' |> NodeMap.add n t
             else 
@@ -750,7 +769,8 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 in
                 let n1 = construct_enode env1 (loc e1) |> construct_snode x in
                 let tx = find nx m in
-                let ae' = if (x <> "_" && is_Relation tx) || is_List tx then (arrow_V x ae tx) else ae in
+                let ae' = if (x <> "_" && is_Relation tx) || is_List tx then 
+                    if only_shape_V tx then ae else (arrow_V x ae tx) else ae in
                 let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x var in
                 let prop_t = Table (construct_table cs (tx, t1)) in
                 (* (if !debug then
@@ -778,7 +798,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                     let envf, lf, fcs = get_vnode nf in
                     let nf = construct_snode x nf in
                     let tf = find nf m in
-                    (* (if !debug then
+                    (* (if true then
                         begin
                             Format.printf "\n<=== Prop um ===> %s\n" l;
                             pr_value Format.std_formatter t;
@@ -789,7 +809,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                     ); *)
                     let t2, tf' = prop_scope env envf x m t tf in
                     (* let t2, tf' = prop t tf in *)
-                    (* (if !debug then
+                    (* (if true then
                         begin
                             Format.printf "\nRES for prop:\n";
                             pr_value Format.std_formatter t2;
@@ -804,7 +824,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 let m1 = m |> NodeMap.add nx tx' |> NodeMap.add n1 (if x = "_" then t1' else replace_V t1' var x) |>
                 (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> NodeMap.add nf tf' |> NodeMap.add n (join_V t1 t2))
                 nf_t2_tf'_opt |> Opt.get_or_else (NodeMap.add n t1)) in
-                let m1' = step e1 env1 x cs ae' assertion m1 in
+                let m1' = step e1 env1 x cs ae' assertion is_rec' m1 in
                 join_M m1' m'
             end
         ) t (m |> NodeMap.add n t |> Hashtbl.copy)
@@ -823,7 +843,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             m |> NodeMap.add n t'
         else
             let tp, m' = List.fold_right (fun e (t, m) -> 
-                let m' = step e env sx cs ae assertion m in
+                let m' = step e env sx cs ae assertion is_rec m in
                 let ne = construct_enode env (loc e) |> construct_snode sx in
                 let te = find ne m' in
                 let t' = add_tuple_item_V t te in
@@ -834,13 +854,13 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
     | PatMat (e, patlst, l) ->
         let ne = construct_enode env (loc e) |> construct_snode sx in
         (* let ex = get_var_name e in *)
-        let m' = step e env sx cs ae assertion m in
+        let m' = step e env sx cs ae assertion is_rec m in
         let te = find ne m' in
         if te = Bot || only_shape_V te then m' else
         let m'' = List.fold_left (fun m (Case (e1, e2)) -> 
             match e1 with
             | Const (c, l') ->
-                let m1 = step e1 env sx cs ae assertion m in
+                let m1 = step e1 env sx cs ae assertion is_rec m in
                 let n1 = construct_enode env (loc e1) |> construct_snode sx in
                 let te, t1 = find ne m1, find n1 m1 in
                 let te, t1 = alpha_rename_Vs te t1 in
@@ -848,7 +868,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 let t1 = if is_List te then
                     item_shape_V te t1
                     else t1 in
-                (* (if !debug then
+                (* (if true then
                     begin
                         Format.printf "\n %s\n" (loc e1);
                         pr_value Format.std_formatter t1;
@@ -861,13 +881,27 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 ); *)
                 let m1 = m1 |> NodeMap.add n1 t1 in
                 let b =
-                    eq_V te (join_V t1 te)
+                    sat_leq_V t1 te 
                 in
                 let n1 = construct_enode env (loc e1) |> construct_snode sx in
                 let n2 = construct_enode env (loc e2) |> construct_snode sx in
+                (* (if true then
+                begin
+                    Format.printf "\npattern ae: %b\n" b;
+                    pr_value Format.std_formatter ae;
+                    Format.printf "\n";
+                end
+                ); *)
                 let ae' = if not b then bot_relation_V Int else 
                     arrow_V (loc e) ae (find n1 m1) in
-                let m2 = step e2 env sx cs ae' assertion m1 in
+                (* (if true then
+                begin
+                    Format.printf "\nRES for ae:\n";
+                    pr_value Format.std_formatter ae';
+                    Format.printf "\n";
+                end
+                );  *)
+                let m2 = step e2 env sx cs ae' assertion is_rec m1 in
                 if not b then 
                     let t, t2 = find n m2, find n2 m2 in
                     let t2', t' = prop t2 t in
@@ -886,7 +920,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 let t1 = find n1 m in let te = find ne m in
                 let _, t1' = prop te t1 in
                 let m1 = m |> NodeMap.add n1 t1' in
-                let m2 = step e2 env1 sx cs ae assertion m1 in
+                let m2 = step e2 env1 sx cs ae assertion is_rec m1 in
                 let n2 = construct_enode env1 (loc e2) |> construct_snode sx in
                 let t = find n m2 in let t2 = find n2 m2 in
                 let t2', t' = prop t2 t in
@@ -920,12 +954,12 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 let n1 = construct_enode envr l' |> construct_snode sx in
                 let _, tr' = prop tr_new (find nr ml) in
                 let mr = NodeMap.add nr tr' ml in
-                let m1 = step e1 envr sx cs ae assertion mr in
+                let m1 = step e1 envr sx cs ae assertion is_rec mr in
                 let te, t1 = find ne m1, find n1 m1 in
                 let te, t1 = alpha_rename_Vs te t1 in
                 let ae' = let ae = arrow_V (loc e) ae t1 in 
                     arrow_V (loc er) ae (find nr m1) in
-                let m2 = step e2 envr sx cs ae' assertion m1 in
+                let m2 = step e2 envr sx cs ae' assertion is_rec m1 in
                 let te, t, t1, t2 = find ne m2, find n m2, find n1 m2, find n2 m2 in
                 let t1', te' = let te, t1 = alpha_rename_Vs te t1 in 
                     prop t1 te in
@@ -952,7 +986,7 @@ let rec fix env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_map_t 
         Format.printf "%s step %d\n" !process k;
         print_exec_map m;
     end);
-  (* if k > 45 then exit 0 else *)
+  (* if k > 40 then exit 0 else *)
   let ae = VarMap.fold (fun var (n, b) ae ->
     let n = construct_snode "" n in
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
@@ -961,7 +995,7 @@ let rec fix env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_map_t 
     arrow_V var ae t else ae
     ) env (Relation (top_R Plus)) in
   let m_t = Hashtbl.copy m in
-  let m' = step e env "" ("","") ae assertion m_t in
+  let m' = step e env "" ("","") ae assertion false m_t in
   if k < 0 then if k = -1 then "", m' else fix env e (k+1) m' assertion else
   (* if k > 2 then Hashtbl.reset !pre_m;
   pre_m := m; *)
@@ -971,7 +1005,11 @@ let rec fix env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_map_t 
   let comp = if !process = "Wid" then leq_M m'' m else leq_M m m'' in
   if comp then
       begin
-      if assertion || !narrow then "The input program is safe\n", m 
+      if assertion || !narrow then 
+        let s = AssertionPosMap.fold (fun pos (i, j) s ->
+            if i = j then try print_loc pos with 
+            Input_Assert_failure s -> s else s) !sens "The input program is safe\n" in
+        s, m 
       else 
         begin
         try fix env e k m true (* Final step to check assertions *)

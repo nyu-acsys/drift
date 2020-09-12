@@ -3,7 +3,7 @@
 (* list_interval min max = [min; min+1; ...; max-1; max] *)
 let rec list_interval min max =
   if min > max then [] 
-	else min :: list_interval (min + 1) max
+  else min :: list_interval (min + 1) max
 (*withtype {min:int} int (min) ->
          {max:int | min <= max+1} <max-min+1> =>
          int(max) -> int list(max-min+1)*)
@@ -11,11 +11,11 @@ let rec list_interval min max =
 (* filter p L returns the list of the elements in list L
    that satisfy predicate p *)
 let rec filter p flst = 
-	match flst with
-		| [] -> []
-		| (x::xs') -> 
-			if p x then x :: (filter p xs') 
-			else filter p xs'
+  match flst with
+    | [] -> []
+    | (x::xs') -> 
+      if p x then x :: (filter p xs') 
+      else filter p xs'
 (*withtype ('a -> bool) ->
          {n:nat} <n> => 'a list(n) -> [n':nat | n' <= n] 'a list(n')*)
 

@@ -10,7 +10,7 @@ let rec mult (mn:int) (mm:int) =
 
 let rec multiple_of (on:int) (om:int) = 
 	if om < 0 then multiple_of on (0 - om)
-	else if on < 0 then false
+	else if on < 0 then multiple_of (0 - on) om
 	else if om = 0 then false
 	else if on = 0 then true
 	else multiple_of (on - om) om

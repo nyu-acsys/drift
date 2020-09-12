@@ -158,8 +158,11 @@ module SemanticsDomain =
       | Int v -> AbstractValue.is_bot v
       | Bool (vt, vf) -> AbstractValue.is_bot vt && AbstractValue.is_bot vf
       | Unit _ -> false
+    and is_bool_bot_R a = match a with
+      | Bool (vt, vf) -> AbstractValue.is_bot vf && AbstractValue.is_bot vt
+      | _ -> raise (Invalid_argument "Expect a bool value")
     and is_bool_false_R a = match a with
-      | Bool (vt, vf) -> AbstractValue.is_bot vf
+      | Bool (vt, vf) -> AbstractValue.is_bot vf && (AbstractValue.is_bot vt <> true)
       | _ -> raise (Invalid_argument "Expect a bool value")
     and opt_eq_R a1 a2 = is_bot_R a1 = false && is_bot_R a2 = false && eq_R a1 a2
     and contain_var_R var a = match a with
@@ -473,6 +476,15 @@ module SemanticsDomain =
         | Lst lst1, Lst lst2 -> leq_Lst lst1 lst2
         | Tuple u1, Tuple u2 -> leq_Tuple u1 u2
         | _, _ -> false
+      and sat_leq_V (v1:value_t) (v2:value_t) :bool = match v1, v2 with
+        | Bot, _ -> true
+        | _, Top -> true
+        | Relation r1, Relation r2 -> leq_R r1 r2
+        | Table t1, Table t2 -> leq_T leq_V t1 t2
+        | Ary ary1, Ary ary2 -> leq_Ary ary1 ary2
+        | Lst lst1, Lst lst2 -> sat_leq_Lst lst1 lst2
+        | Tuple u1, Tuple u2 -> leq_Tuple u1 u2
+        | _, _ -> false
       and eq_V (v1:value_t) (v2:value_t) :bool = match v1, v2 with
         | Bot, Bot -> true
         | Top, Top -> true
@@ -527,14 +539,14 @@ module SemanticsDomain =
         | Lst lst2 -> let ((l2,e2) as vars, (rl2, ve2)) = lst2 in
           (match v with
           | Table t -> Table (arrow_T forget_V arrow_V var t v')
-          | Relation r1 ->
+          | Relation r1 -> if is_bot_R rl2 then Relation (bot_shape_R r1) else
             let r1' = meet_R r1 rl2 in
             (match ve2 with
             | Bot -> if String.length var >= 2 && String.sub var 0 2 = "zh" then
                 raise (Invalid_argument "List.hd expects non empty list")
               else Relation r1' 
             | Relation re2 -> if is_bot_R re2 then Relation r1'
-              else Relation (meet_R r1' re2)
+              else Relation (meet_R r1' (proj_R re2 [e2]))
             | Tuple ue -> Relation r1'
             | _ -> arrow_V var (Relation r1') ve2)
           | Ary ary -> (match ve2 with
@@ -646,6 +658,9 @@ module SemanticsDomain =
       | Ary ary1, Ary ary2 -> eq_Ary ary1 ary2
       | Unit u1, Unit u2 -> true
       | _, _ -> false  *)
+    and is_bool_bot_V = function
+      | Relation r -> is_bool_bot_R r
+      | _ -> true
     and is_bool_false_V = function
       | Relation r -> is_bool_false_R r
       | _ -> true
@@ -860,6 +875,14 @@ module SemanticsDomain =
       let (l1,e1), (rl1,ve1) = lst1 in let (l2,e2), (rl2,ve2) = lst2 in
       let scop_check = l1 = l2 && e1 = e2 in
       if scop_check then leq_R rl1 rl2 && leq_V ve1 ve2 else false
+    and sat_leq_Lst lst1 lst2 = 
+      let (l1,e1), (rl1,ve1) = lst1 in let (l2,e2), (rl2,ve2) = lst2 in
+      let scop_check = l1 = l2 && e1 = e2 in
+      if scop_check then 
+        let rl1 = proj_R rl1 [l1] in
+        let rl2 = proj_R rl2 [l2] in
+        leq_R rl1 rl2 && leq_V ve1 ve2
+      else false
     and eq_Lst lst1 lst2 =
       let (l1,e1), (rl1,ve1) = lst1 in let (l2,e2), (rl2,ve2) = lst2 in
       let scop_check = l1 = l2 && e1 = e2 in
@@ -982,12 +1005,13 @@ module SemanticsDomain =
       let ve' = 
         match ve with
         | Relation re -> 
-          let r' = assign_R l' l (string_of_int len) Minus re |> op_R "" l' "0" Ge true in
+          let r' = (meet_R (forget_R l re) rl') in
           Relation (alpha_rename_R r' e e')
         | _ -> ve
       in
       (l',e'), (rl',ve')
     and list_cons_Lst f v lst = let ((l,e), (rl,ve)) = lst in
+      if v = Bot || is_bot_R rl then (l,e), (bot_R Plus, Bot) else
       let rl' = assign_R l l "1" Plus rl in
       let ve' = match v, ve with
         | Relation r, Bot ->
@@ -1004,7 +1028,7 @@ module SemanticsDomain =
       (l,e), (rl',ve')
     and get_list_length_item_Lst ((l,e), _) = [l;e]
     and only_shape_Lst ((l,e), (rl,ve)) = 
-      is_bot_R rl && is_Bot_V ve
+      is_bot_R rl && ve = Bot
     and prop_Lst prop ((l1,e1) as vars1, (rl1,ve1)) ((l2,e2) as vars2, (rl2,ve2)) =
       let rl1', rl2' = rl1, join_R rl1 rl2 in
       let ve1', ve2' = match ve1, ve2 with
