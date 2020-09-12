@@ -58,7 +58,15 @@ module SemanticsDomain =
       | (Int v1), (Int v2) -> Int (AbstractValue.join v1 v2)
       | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> Bool (AbstractValue.join v1t v2t, AbstractValue.join v1f v2f)
       | Unit _, _ | _, Unit _ -> Unit ()
-      | _, _ -> raise (Invalid_argument "Join: Base Type not equal")
+      | Int v1, Bool (v2t, v2f) | Bool (v2t, v2f) , Int v1
+        when AbstractValue.eq v2t AbstractValue.bot &&
+          AbstractValue.eq v2f AbstractValue.bot
+        -> Int v1
+      | Int v1, Bool (v2t, v2f) | Bool (v2t, v2f) , Int v1
+        when AbstractValue.eq v1 AbstractValue.bot
+        -> Bool (v2t, v2f)          
+      | _, _ ->          
+          raise (Invalid_argument "Join: Base Type not equal")
     and meet_R a1 a2 =
       match a1, a2 with
       | (Int v1), (Int v2) -> Int  (AbstractValue.meet v1 v2)
