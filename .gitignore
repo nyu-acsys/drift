@@ -15,3 +15,10 @@ out.spl
 .vscode/
 *.log
 *.byte
+*.json
+*.sol
+*.status
+*.hors
+*.horsat_out
+*.annot
+missing.txt
