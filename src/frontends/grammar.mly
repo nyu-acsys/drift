@@ -33,6 +33,7 @@ let universe_name = "umain"
 %token ARROW CONS BAR 
 %token SEMI COLON COMMA LSQBR RSQBR LARYBR RARYBR
 %token IF ELSE THEN FUN LET REC IN ASSERT MATCH WITH
+%token BEGIN END        
 %token TYPE
 %token <Syntax.pre_exp> PRE
 
@@ -126,6 +127,7 @@ basic_term: /*term@7 := int | bool | [] | var | (term)*/
 | LARYBR int_ary RARYBR { Const (IntList [], "") } /*TODO: Implement this*/
 | IDENT { Var ($1, "") }
 | LPAREN seq_term RPAREN { $2 } /*Parentheses*/
+| BEGIN seq_term END { $2 } /*begin/end blocks*/
 | LPAREN RPAREN { Const (Unit (), "") }
 ;
 
@@ -137,6 +139,16 @@ app_term: /* term@6 := term@6 term@7 | term@7 */
   Ite ($3, Const (Unit (), ""), Const (Unit (), ""), "", loc)}
 ;
 
+unary_term:
+| app_term { $1 }
+| MINUS unary_term {
+  match $2 with
+  | Const (Integer i, _) ->
+      thresholdsSet := ThresholdsSetType.add (-i) !thresholdsSet;
+      Const (Integer (-i), "")
+  | _ -> UnOp (UMinus, $2, "") }
+;
+
 mult_op:
 | TIMES { Mult }
 | DIV { Div }
@@ -144,8 +156,8 @@ mult_op:
 ;
 
 mult_term: /* term@5 := term@5 mop term@6 */
-| app_term { $1 }
-| mult_term mult_op app_term { BinOp ($2, $1, $3, "") }
+| unary_term { $1 }
+| mult_term mult_op unary_term { BinOp ($2, $1, $3, "") }
 ;
 
 add_op:

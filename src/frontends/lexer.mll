@@ -8,7 +8,9 @@ open Lexing
 let keyword_table = Hashtbl.create 32
 let _ =
   List.iter (fun (kwd, tok) -> Hashtbl.add keyword_table kwd tok)
-    ([("else", ELSE);
+    ([("begin", BEGIN);
+      ("else", ELSE);
+      ("end", END);
       ("false", BOOLCONST false);
       ("assert", ASSERT);
       ("fun", FUN);
@@ -39,7 +41,7 @@ let idchar = ['A'-'Z''a'-'z''_']
 let primechar = [''']
 let minus = ['-']
 let ident = idchar(idchar | digitchar)*('.'idchar)?(idchar | digitchar | primechar)* 
-let digits = minus? digitchar+
+let digits = digitchar+
 let bool_str = "true" | "false" | "either"
 let bin_op_str =  ['>''<''='] | "<=" | ">=" | "<>" 
 let arth_op_str = ['+''-''*''/'] | "mod" | "&&" | "||" 

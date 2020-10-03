@@ -17,6 +17,8 @@ let pr_const ppf value = Format.fprintf ppf "%s" (str_of_val value)
 
 let pr_op ppf op = Format.fprintf ppf "%s" (string_of_op op)
 
+let pr_unop ppf op = Format.fprintf ppf "%s" (string_of_unop op)
+
 let rec pr_exp pl ppf = function
 | TupleLst (u, l) -> 
     let rec print_tuple pl ppf = function
@@ -61,6 +63,11 @@ let rec pr_exp pl ppf = function
     (pr_exp pl) e1
     pr_op bop
     (pr_exp pl) e2
+    (pr_label pl) l
+| UnOp (uop, e1, l) ->
+    Format.fprintf ppf "@[<3>(%a@ %a)%a@]"
+    pr_unop uop
+    (pr_exp pl) e1
     (pr_label pl) l
 | PatMat (e, patlst, l) ->
   Format.fprintf ppf "@[<2>(match@ %a@ with@ %a)%a@]"

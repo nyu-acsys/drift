@@ -40,6 +40,9 @@ module SemanticsDomain =
       | Plus | Mult | Div | Mod | Modc | Minus -> (Int AbstractValue.top)
       | Ge | Eq | Ne | Lt | Gt | Le | And | Or -> (Bool (AbstractValue.top, AbstractValue.top))
       | _ -> raise (Invalid_argument "top_R should use a relational type operator")
+    and utop_R = function
+      | UMinus -> (Int AbstractValue.top)
+      | Not -> (Bool (AbstractValue.top, AbstractValue.top))
     and bot_R = function
       | Plus | Mult | Div | Mod | Modc | Minus -> (Int AbstractValue.bot)
       | Ge | Eq | Ne | Lt | Gt | Le | And | Or -> (Bool (AbstractValue.bot, AbstractValue.bot))
@@ -134,6 +137,12 @@ module SemanticsDomain =
         | Unit _ -> raise (Invalid_argument "opR: Given a unit type"))
       )
       | Cons | And | Or -> raise (Invalid_argument ("Invalid operator matched " ^ (string_of_op op)))
+    and uop_R res op e cons a = (*cons for flag of linear constraints*)
+      match op with
+      | UMinus -> (match a with
+        | Int v -> Int (AbstractValue.uoperator res e op (-1) v)
+        | _ -> raise (Invalid_argument "uop_R: Given a unit type"))
+      | Not -> failwith "unary negation not yet implemented"
     and assign_R res l r op = function 
       | Int v -> Int (AbstractValue.assign res l r op v)
       | _ -> raise (Invalid_argument "Assign boolean does not support")
@@ -591,6 +600,10 @@ module SemanticsDomain =
         | Bot | Top -> Top
         | Relation r -> Relation (op_R "" sl sr op false r)
         | _ -> raise (Invalid_argument "Should be a relation type when using op_V")
+      and uop_V op s v = match v with
+        | Bot | Top -> Top
+        | Relation r -> Relation (uop_R "" op s false r)
+        | _ -> raise (Invalid_argument "Should be a relation type when using uop_V")
       and bool_op_V op v1 v2 = match v1, v2 with
         | Bot, Relation _ -> if string_of_op op = "&&" then Bot else v2
         | Top, Relation _ -> if string_of_op op = "&&" then v2 else Top

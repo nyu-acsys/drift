@@ -28,6 +28,11 @@ let construct_asst ps = match ps with
 
 exception Main_not_found of string
 
+(** Unary operators *)
+type unop =
+  | UMinus (* - *)
+  | Not (* not *)
+    
 (** Binary infix operators *)
 type binop =
   | Plus  (* + *)
@@ -85,6 +90,10 @@ let string_of_op = function
   | Or    (* || *) -> "||"
   | Cons  (* :: *) -> "::"
 
+let string_of_unop = function
+  | UMinus (* - *) -> "-"
+  | Not (* not *) -> "not"
+        
 let op_of_string = function
   |  "+" -> Plus  (* + *) 
   | ">=" -> Ge    (* >= *) 
@@ -102,6 +111,11 @@ let op_of_string = function
   |  "::" -> Cons  (* :: *)
   | s -> raise (Invalid_argument (s^": Invalid operator inside pre-defined var"))
 
+let unop_of_string = function
+  | "-" -> UMinus
+  | "not" -> Not
+  | s -> raise (Invalid_argument (s^": Invalid unary operator inside pre-defined var"))
+        
 let is_mod = function
   | Mod -> true
   | _ -> false
@@ -131,6 +145,7 @@ type term =
   | Const of value * loc               (* i (int constant) *)
   | Var of var * loc                   (* x (variable) *)
   | App of term * term * loc           (* t1 t2 (function application) *)
+  | UnOp of unop * term * loc          (* uop t (unary operator) *)
   | BinOp of binop * term * term * loc (* t1 bop t2 (binary infix operator) *)
   | PatMat of term * (patcase list) * loc     (* match t1 with t2 -> t3 | ... *)
   | Ite of term * term * term * loc * asst    (* if t1 then t2 else t3 (conditional) *)
@@ -144,6 +159,7 @@ let loc = function
   | Var (_, l)
   | App (_, _, l)
   | BinOp (_, _, _, l)
+  | UnOp (_, _, l)
   | Ite (_, _, _, l, _)
   | PatMat (_, _, l)
   | Rec (_, _, _, l) -> l
@@ -250,6 +266,9 @@ let label e =
           let e', k' = l k e in
           let patlst', k'' = lp k' patlst in
           PatMat (e', patlst', string_of_int k''), k'' + 1
+      | UnOp (uop, e1, _) ->
+        let e1', k1 = l k e1 in
+        UnOp (uop, e1', string_of_int k1), k1 + 1
       | BinOp (bop, e1, e2, _) ->
         let e1', k1 = l k e1 in
         let e2', k2 = l k1 e2 in
@@ -275,6 +294,7 @@ let mk_lambdas xs e = List.fold_right (fun x e -> mk_lambda x e) xs e
 let mk_rec f x e = Rec (Some (Var (f, "")), Var (x, ""), e, "")
 let mk_ite e0 e1 e2 = Ite (e0, e1, e2, "", construct_asst None)
 let mk_op op e1 e2 = BinOp (op, e1, e2, "")
+let mk_unop uop e1 = UnOp (uop, e1, "")
 
 let mk_let_in x def e = mk_app (mk_lambda x e) def
 let mk_lets defs e =
