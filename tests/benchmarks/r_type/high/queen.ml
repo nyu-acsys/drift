@@ -7,14 +7,14 @@ let abs x = if x < 0 then 0 - x else x
 let queen size =
   let queenArray = make_array size 0 in
   let assign i j queenArray = update (i) size queenArray j in
-  let rec dotsPrint n = if n = 0 then () else begin print_string (); dotsPrint (n-1) end in
+  let rec dotsPrint n = if n = 0 then () else ( print_string (); dotsPrint (n - 1) ) in
   let queenPrint queenArray =
     let rec aux1 row = 
       let r =
         if row = size then () else
         let n = queenArray row in
         assert (0 <= row && row <= size);
-        dotsPrint(n-1); print_string (); dotsPrint(size - n); print_string (); aux1 (row + 1)
+        dotsPrint(n- 1); print_string (); dotsPrint(size - n); print_string (); aux1 (row + 1)
       in
       r
     in
@@ -32,7 +32,7 @@ let queen size =
     let next = queenArray(row) + 1 in
     if next > size then
       let queenArray = assign row 0 queenArray in
-      if row = 0 then () else loop (row-1) queenArray
+      if row = 0 then () else loop (row - 1) queenArray
     else
       let queenArray = assign row next queenArray in
       if test row queenArray then

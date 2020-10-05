@@ -27,7 +27,7 @@ let kmpMatch slen str plen pat =
           if p = 0 then
             loop (s+1) p
           else
-            loop s (shiftArray3 (p-1) + 1)
+            loop s (shiftArray3 (p - 1) + 1)
         else (-1)
     else (s - plen)
   in

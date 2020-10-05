@@ -11,7 +11,7 @@ let rec bs_aux key vec l u =
     let m = l + (u-l) / 2 in
     let x = sub vec m in
       if x < key then bs_aux key vec (m+1) u
-      else if x > key then bs_aux key vec l (m-1)
+      else if x > key then bs_aux key vec l (m - 1)
              else m
 
 let bsearch key vec = bs_aux key vec 0 (arraysize vec - 1)
