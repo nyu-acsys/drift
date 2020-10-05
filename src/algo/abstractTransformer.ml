@@ -404,7 +404,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         in 
         let t = let t' = find n m in
             t' in (* M[env*l] *)
-        (* (if x = "ys" then
+        (* (if x = "src" && l = "78" then
         begin
             Format.printf "\n<=== Prop Var %s %b ===> %s\n" x recnb lx;
             pr_value Format.std_formatter tx;
@@ -424,7 +424,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 else *)
                     prop_scope envx env sx m tx t
         in
-        (* (if x = "ys" then
+        (* (if x = "src" && l = "78" then
         begin
             Format.printf "\nRES for prop:\n";
             pr_value Format.std_formatter tx';
@@ -464,7 +464,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 if is_rec && is_func e1 then cs else
                 (loc e1, loc e1 |> name_of_node) else (dx_T t1) in
                 let t_temp = Table (construct_table cs (t2, t)) in
-                (* (if !debug then
+                (* (if is_var_x "src" e1 then
                 begin
                     Format.printf "\n<=== Prop APP ===> %s\n" (loc e1);
                     pr_value Format.std_formatter t1;
@@ -477,7 +477,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                     (* if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then t1, t_temp else *)
                     prop t1 t_temp
                 in
-                (* (if !debug then
+                (* (if is_var_x "src" e1 then
                 begin
                     Format.printf "\nRES for prop:\n";
                     pr_value Format.std_formatter t1';
@@ -719,7 +719,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
               Table te
           | _ -> t0
         in
-        (* let cs' = cs in *)
+        let cs' = cs in
         let is_rec' = Opt.exist f_opt || is_rec in
         step_func (fun cs (tl, tr) m' -> 
             if tl = Bot then m' |> NodeMap.add n t
@@ -824,6 +824,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 let m1 = m |> NodeMap.add nx tx' |> NodeMap.add n1 (if x = "_" then t1' else replace_V t1' var x) |>
                 (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> NodeMap.add nf tf' |> NodeMap.add n (join_V t1 t2))
                 nf_t2_tf'_opt |> Opt.get_or_else (NodeMap.add n t1)) in
+                let cs = if is_rec' && x = "_" then cs' else cs in
                 let m1' = step e1 env1 x cs ae' assertion is_rec' m1 in
                 join_M m1' m'
             end

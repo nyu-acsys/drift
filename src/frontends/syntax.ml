@@ -168,8 +168,16 @@ let is_var = function
   | Var (_,_) -> true
   | _ -> false
 
+let is_var_x x = function
+  | Var (y,_) -> y = x
+  | _ -> false
+
 let is_func = function
   | Rec (_) -> true
+  | _ -> false
+
+let is_tuple = function
+  | TupleLst _ -> true
   | _ -> false
 
 let is_asst_false = function
