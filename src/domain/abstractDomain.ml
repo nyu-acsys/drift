@@ -382,9 +382,14 @@ module AbstractValue =
       in
       Abstract1.minimize_environment man res
       (* res *)
+
     let make_var var = 
       try let _ = int_of_string var in None
       with e -> Some (var |> Var.of_string)
+
+    let uoperator vres op ve cons v =
+      failwith "Not yet implemented"
+    
     let operator vres vl vr op cons v = 
       (* (if !debug then
       begin

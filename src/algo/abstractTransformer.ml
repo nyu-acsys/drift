@@ -328,6 +328,9 @@ let rec list_var_item eis sx (cs: (var * loc)) m env nlst =
         let l1, m', env', len = list_var_item e1 sx cs m env nlst in
         let l2, m'', env'', len' = list_var_item e2 sx cs m' env' nlst in
         List.append l1 l2, m'', env'', len + len'
+    | UnOp (uop, e1, l) ->
+        let l1, m', env', len = list_var_item e1 sx cs m env nlst in
+        l1, m', env', len
     | _ -> raise (Invalid_argument "Pattern should only be either constant, variable, and list cons")
 
 let prop_predef l v0 v = 
@@ -607,6 +610,34 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             ); *)
             m2 |> NodeMap.add n (stren_V re_t ae)
         end
+    | UnOp (uop, e1, l) ->
+        (* (if !debug then
+        begin
+            Format.printf "\n<=== Binop ===>\n";
+            pr_exp true Format.std_formatter term;
+            Format.printf "\n";
+        end
+        ); *)
+        let n1 = construct_enode env (loc e1) |> construct_snode sx in
+        let m1 = step e1 env sx cs ae assertion is_rec m in
+        let t1 = find n1 m1 in
+        if t1 = Bot then m1
+        else
+          let node_1 = e1 |> loc |> name_of_node in
+          let td = Relation (utop_R uop) in
+          let t = find n m1 in
+          let t' = arrow_V node_1 td t1 in
+          let t'' = uop_V uop node_1 t' in
+          let raw_t = get_env_list env sx m1 |> proj_V t'' in
+          (* if !domain = "Box" then
+             temp_t |> der_V e1 |> der_V e2  (* Deprecated: Solve remaining constraint only for box*)
+             else  *)
+          let _, re_t =
+            if is_Relation raw_t
+            then raw_t, raw_t
+            else prop raw_t t
+          in
+          m1 |> NodeMap.add n (stren_V re_t ae)
     | Ite (e0, e1, e2, l, asst) ->
         (* (if !debug then
         begin
