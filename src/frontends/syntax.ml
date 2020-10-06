@@ -149,7 +149,7 @@ type term =
   | BinOp of binop * term * term * loc (* t1 bop t2 (binary infix operator) *)
   | PatMat of term * (patcase list) * loc     (* match t1 with t2 -> t3 | ... *)
   | Ite of term * term * term * loc * asst    (* if t1 then t2 else t3 (conditional) *)
-  | Rec of (term) option * term * term * loc (*lambda and recursive function*)
+  | Rec of (var * loc) option * term * term * loc (*lambda and recursive function*)
 and patcase = 
   | Case of term * term
 
@@ -189,7 +189,7 @@ let is_var_x x = function
   | _ -> false
 
 let is_func = function
-  | Rec (_) -> true
+  | Rec _ -> true
   | _ -> false
 
 let is_tuple = function
@@ -258,8 +258,8 @@ let label e =
       | Rec (fopt, px, e1, _) ->
           let fopt', k1 =
             fopt |>
-            Opt.map (function (pf) -> let pf', kf' = l k pf in
-              Some (pf'), kf') |>
+            Opt.map (function (x, _) -> let xl', k' = (x, string_of_int k), k + 1 in
+            Some xl', k') |>
             Opt.get_or_else (None, k)
           in
           let px', kx' = l k1 px in
@@ -299,7 +299,7 @@ let mk_app e1 e2 = App (e1, e2, "")
 let mk_pattern_case ep eval = Case (ep, eval)
 let mk_lambda x e = Rec (None, Var (x, ""), e, "")
 let mk_lambdas xs e = List.fold_right (fun x e -> mk_lambda x e) xs e
-let mk_rec f x e = Rec (Some (Var (f, "")), Var (x, ""), e, "")
+let mk_rec f x e = Rec (Some (f, ""), Var (x, ""), e, "")
 let mk_ite e0 e1 e2 = Ite (e0, e1, e2, "", construct_asst None)
 let mk_op op e1 e2 = BinOp (op, e1, e2, "")
 let mk_unop uop e1 = UnOp (uop, e1, "")
@@ -309,7 +309,7 @@ let mk_lets defs e =
   List.fold_right (fun (x, def) e -> mk_let_in x def e) defs e
 
 let lam_to_mu f = function
-  | Rec(_, px, e, le) -> Rec (Some (Var (f, "")), px, e, le)
+  | Rec(_, px, e, le) -> Rec (Some (f, ""), px, e, le)
   | _ -> raise (Invalid_argument "Invalid function lambda")
 
 let mk_let_rec_in x def e = 

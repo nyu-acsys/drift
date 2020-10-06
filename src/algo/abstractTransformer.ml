@@ -754,82 +754,84 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         let is_rec' = Opt.exist f_opt || is_rec in
         step_func (fun cs (tl, tr) m' -> 
             if tl = Bot then m' |> NodeMap.add n t
-            else 
-            if tr = Top then top_M m' else
+            else if tr = Top then top_M m' else
             begin
-                let _, var = cs in
-                let f_nf_opt = Opt.map (fun pf -> 
-                    match pf with
-                    | Var (f, lf) -> f, (construct_vnode env lf cs, true)
-                    | _ -> raise (Invalid_argument "Not implement recursive patterns")) f_opt in
-                let x, nx, env, m' = match px with
-                    | Var (x, lx) ->
-                        let nx = construct_vnode env lx cs in
-                        let env' = env |> VarMap.add x (nx, false) in
-                        let nx = construct_snode x nx in
-                       x, nx, env', m'
-                    | TupleLst (termlst, lt) ->
-                        let nt = construct_enode env lt |> construct_snode sx in
-                        let lt = let lt = find nt m in
-                            if is_tuple_V lt then lt
-                            else 
-                                let u' = List.init (List.length termlst) (fun _ ->
-                            Bot) in Tuple u'
-                        in
-                        let tlst = get_tuple_list_V lt in
-                        let x, env', m', tlst' = List.fold_left2 (fun (var, env, m, llst) e ti -> 
-                            match e with
-                            | Var (x, l') -> 
-                                let nx = construct_vnode env l' cs in
-                                let env1 = env |> VarMap.add x (nx, false) in
-                                let nx = construct_snode sx nx in
-                                let tx = find nx m in
-                                let ti', tx' = prop ti tx in
-                                let m' = m |> NodeMap.add nx tx' in
-                                x, env1, m', ti' :: llst
-                            | _ -> raise (Invalid_argument "Tuple only for variables now")
-                        ) ("", env, m, []) termlst tlst in
-                        let tlst' = List.rev tlst' in
-                        let lt' = Tuple tlst' in
-                        let m'' = m' |> NodeMap. add nt lt' in
-                        x, nt, env', m''
-                    | _ -> raise (Invalid_argument "Not implement function patterns") in
-                let env1 = env |>
-                    (Opt.map (uncurry VarMap.add) f_nf_opt |>
-                    Opt.get_or_else (fun env -> env))
-                in
-                let n1 = construct_enode env1 (loc e1) |> construct_snode x in
-                let tx = find nx m in
-                let ae' = if (x <> "_" && is_Relation tx) || is_List tx then 
-                    if only_shape_V tx then ae else (arrow_V x ae tx) else ae in
-                let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x var in
-                let prop_t = Table (construct_table cs (tx, t1)) in
-                (* (if !debug then
-                begin
-                    Format.printf "\n<=== Prop lamb ===> %s %s\n" (loc px) (loc e1);
-                    pr_value Format.std_formatter prop_t;
-                    Format.printf "\n<<~~~~>> %s\n" l;
-                    pr_value Format.std_formatter t;
-                    Format.printf "\n";
-                end
-                ); *)
-                let px_t, t1 = prop_scope env1 env x m prop_t t
-                in
-                (* (if !debug then
-                begin
-                    Format.printf "\nRES for prop:\n";
-                    pr_value Format.std_formatter px_t;
-                    Format.printf "\n<<~~~~>>\n";
-                    pr_value Format.std_formatter t1;
-                    Format.printf "\n";
-                end
-                ); *)
-                let nf_t2_tf'_opt =
-                    Opt.map (fun (_, (nf, bf)) ->
-                    let envf, lf, fcs = get_vnode nf in
-                    let nf = construct_snode x nf in
-                    let tf = find nf m in
-                    (* (if true then
+              let _, var = cs in
+              let f_nf_opt =
+                Opt.map (fun (f, lf) -> f, (construct_vnode env lf cs, true)) f_opt
+              in
+              let x, nx, env, m' = match px with
+              | Var (x, lx) ->
+                  let nx = construct_vnode env lx cs in
+                  let env' = env |> VarMap.add x (nx, false) in
+                  let nx = construct_snode x nx in
+                  x, nx, env', m'
+              | TupleLst (termlst, lt) ->
+                  let nt = construct_enode env lt |> construct_snode sx in
+                  let lt = let lt = find nt m in
+                  if is_tuple_V lt then lt
+                  else 
+                    let u' =
+                      List.init (List.length termlst) (fun _ -> Bot)
+                    in
+                    Tuple u'
+                  in
+                  let tlst = get_tuple_list_V lt in
+                  let x, env', m', tlst' =
+                    List.fold_left2 (fun (var, env, m, llst) e ti -> 
+                      match e with
+                      | Var (x, l') -> 
+                          let nx = construct_vnode env l' cs in
+                          let env1 = env |> VarMap.add x (nx, false) in
+                          let nx = construct_snode sx nx in
+                          let tx = find nx m in
+                          let ti', tx' = prop ti tx in
+                          let m' = m |> NodeMap.add nx tx' in
+                          x, env1, m', ti' :: llst
+                      | _ -> raise (Invalid_argument "Tuple only for variables now"))
+                      ("", env, m, []) termlst tlst
+                  in
+                  let tlst' = List.rev tlst' in
+                  let lt' = Tuple tlst' in
+                  let m'' = m' |> NodeMap. add nt lt' in
+                  x, nt, env', m''
+              | _ -> raise (Invalid_argument "Not implement function patterns") in
+              let env1 =
+                env |>
+                (Opt.map (uncurry VarMap.add) f_nf_opt |>
+                Opt.get_or_else (fun env -> env))
+              in
+              let n1 = construct_enode env1 (loc e1) |> construct_snode x in
+              let tx = find nx m in
+              let ae' = if (x <> "_" && is_Relation tx) || is_List tx then 
+                if only_shape_V tx then ae else (arrow_V x ae tx) else ae in
+              let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x var in
+              let prop_t = Table (construct_table cs (tx, t1)) in
+              (* (if !debug then
+                 begin
+                 Format.printf "\n<=== Prop lamb ===> %s %s\n" (loc px) (loc e1);
+                 pr_value Format.std_formatter prop_t;
+                 Format.printf "\n<<~~~~>> %s\n" l;
+                 pr_value Format.std_formatter t;
+                 Format.printf "\n";
+                 end
+                 ); *)
+              let px_t, t1 = prop_scope env1 env x m prop_t t in
+              (* (if !debug then
+                 begin
+                 Format.printf "\nRES for prop:\n";
+                 pr_value Format.std_formatter px_t;
+                 Format.printf "\n<<~~~~>>\n";
+                 pr_value Format.std_formatter t1;
+                 Format.printf "\n";
+                 end
+                 ); *)
+              let nf_t2_tf'_opt =
+                Opt.map (fun (_, (nf, bf)) ->
+                  let envf, lf, fcs = get_vnode nf in
+                  let nf = construct_snode x nf in
+                  let tf = find nf m in
+                  (* (if true then
                         begin
                             Format.printf "\n<=== Prop um ===> %s\n" l;
                             pr_value Format.std_formatter t;
@@ -838,26 +840,26 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                             Format.printf "\n";
                         end
                     ); *)
-                    let t2, tf' = prop_scope env envf x m t tf in
-                    (* let t2, tf' = prop t tf in *)
-                    (* (if true then
-                        begin
-                            Format.printf "\nRES for prop:\n";
-                            pr_value Format.std_formatter t2;
-                            Format.printf "\n<<~~~~>>\n";
-                            pr_value Format.std_formatter tf';
-                            Format.printf "\n";
-                        end
-                    ); *)
-                    nf, t2, tf') f_nf_opt
-                in
-                let tx', t1' = io_T cs px_t in
-                let m1 = m |> NodeMap.add nx tx' |> NodeMap.add n1 (if x = "_" then t1' else replace_V t1' var x) |>
-                (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> NodeMap.add nf tf' |> NodeMap.add n (join_V t1 t2))
-                nf_t2_tf'_opt |> Opt.get_or_else (NodeMap.add n t1)) in
-                let cs = if is_rec' && x = "_" then cs' else cs in
-                let m1' = step e1 env1 x cs ae' assertion is_rec' m1 in
-                join_M m1' m'
+                  let t2, tf' = prop_scope env envf x m t tf in
+                  (* let t2, tf' = prop t tf in *)
+                  (* (if true then
+                     begin
+                     Format.printf "\nRES for prop:\n";
+                     pr_value Format.std_formatter t2;
+                     Format.printf "\n<<~~~~>>\n";
+                     pr_value Format.std_formatter tf';
+                     Format.printf "\n";
+                     end
+                     ); *)
+                  nf, t2, tf') f_nf_opt
+              in
+              let tx', t1' = io_T cs px_t in
+              let m1 = m |> NodeMap.add nx tx' |> NodeMap.add n1 (if x = "_" then t1' else replace_V t1' var x) |>
+              (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> NodeMap.add nf tf' |> NodeMap.add n (join_V t1 t2))
+                 nf_t2_tf'_opt |> Opt.get_or_else (NodeMap.add n t1)) in
+              let cs = if is_rec' && x = "_" then cs' else cs in
+              let m1' = step e1 env1 x cs ae' assertion is_rec' m1 in
+              join_M m1' m'
             end
         ) t (m |> NodeMap.add n t |> Hashtbl.copy)
     | TupleLst (tlst, l) ->

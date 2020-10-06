@@ -46,9 +46,9 @@ let rec pr_exp pl ppf = function
       (pr_exp pl) px
       (pr_exp pl) e
       (pr_label pl) l
-| Rec (Some (pf), px, e, l) ->
-    Format.fprintf ppf "@[<3>(mu %a %a.@ %a)%a@]"
-      (pr_exp pl) pf
+| Rec (Some (x, lx), px, e, l) ->
+    Format.fprintf ppf "@[<3>(mu %s%a %a.@ %a)%a@]"
+      x (pr_label pl) lx
       (pr_exp pl) px
       (pr_exp pl) e
       (pr_label pl) l
