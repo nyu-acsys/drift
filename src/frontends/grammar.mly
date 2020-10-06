@@ -134,9 +134,9 @@ basic_term: /*term@7 := int | bool | [] | var | (term)*/
 app_term: /* term@6 := term@6 term@7 | term@7 */
 | basic_term { $1 }
 | app_term basic_term { App ($1, $2, "") }
-| ASSERT LPAREN seq_term RPAREN { 
+| ASSERT basic_term { 
   let loc = Some (mklocation $startpos $endpos) |> construct_asst in
-  Ite ($3, Const (Unit (), ""), Const (Unit (), ""), "", loc)}
+  Ite ($2, Const (Unit (), ""), Const (Unit (), ""), "", loc)}
 ;
 
 unary_term:
