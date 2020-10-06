@@ -7,11 +7,11 @@ let rec bcopy_aux m src des i =
   if i >= m
   then ()
   else
-    let r =
+    begin
       assert (0<=i && i<=m);
       let des = update des i (src i) in
         bcopy_aux m src des (i+1)
-    in r
+    end
 
 
 let main (n(*-:{v:Int|true}*)) =
