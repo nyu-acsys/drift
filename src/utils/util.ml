@@ -77,4 +77,11 @@ let rec extract k list =
         else if *)
 let arrange list = 
     List.fold_right (fun y acc -> 
-    List.fold_right (fun x acc -> [x; y] :: acc) list acc) list []
+      List.fold_right (fun x acc -> [x; y] :: acc) list acc) list []
+
+let fresh_func var =
+  let ref_index = ref 0 in
+  fun () ->
+    let idx = !ref_index in
+    incr ref_index;
+    var ^ (string_of_int idx)

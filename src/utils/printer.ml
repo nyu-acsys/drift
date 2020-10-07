@@ -8,8 +8,8 @@ open SenSemantics
 (** Pretty printing *)
 let pr_relation ppf = function
   | Bool (vt, vf) -> Format.fprintf ppf "@[<1>{@ cur_v:@ Bool@ |@ TRUE:@ %a,@ FALSE:@ %a@ }@]"  AbstractValue.print_abs vt AbstractValue.print_abs vf
-  | (Int v) -> Format.fprintf ppf "@[<1>{@ cur_v:@ Int@ |@ %a@ }@]" AbstractValue.print_abs v
-  | (Unit u) -> Format.fprintf ppf "@[<1>Unit@]"
+  | Int v -> Format.fprintf ppf "@[<1>{@ cur_v:@ Int@ |@ %a@ }@]" AbstractValue.print_abs v
+  | Unit u -> Format.fprintf ppf "@[<1>Unit@]"
 
 let pr_label pl ppf l = if pl then Format.fprintf ppf "^%s" l else ()
 
@@ -41,15 +41,15 @@ let rec pr_exp pl ppf = function
       (pr_exp pl) e1
       (pr_exp pl) e2
       (pr_label pl) l
-| Rec (None, px, e, l) ->
-    Format.fprintf ppf "@[<3>(lambda %a.@ %a)%a@]"
-      (pr_exp pl) px
+| Rec (None, (x, lx), e, l) ->
+    Format.fprintf ppf "@[<3>(lambda %s%a.@ %a)%a@]"
+      x (pr_label pl) lx
       (pr_exp pl) e
       (pr_label pl) l
-| Rec (Some (x, lx), px, e, l) ->
-    Format.fprintf ppf "@[<3>(mu %s%a %a.@ %a)%a@]"
+| Rec (Some (f, lf), (x, lx), e, l) ->
+    Format.fprintf ppf "@[<3>(mu %s%a %s%a.@ %a)%a@]"
+      f (pr_label pl) lf
       x (pr_label pl) lx
-      (pr_exp pl) px
       (pr_exp pl) e
       (pr_label pl) l
 | Ite (e1, e2, e3, l, _) ->
@@ -97,8 +97,8 @@ let string_of_node n = pr_node Format.str_formatter n; Format.flush_str_formatte
 
 let pr_agg_val ppf a = match a with
   | Bool (vt, vf) -> Format.fprintf ppf "@[<1>@ TRUE:@ %a,@ FALSE:@ %a@ @]"  AbstractValue.print_abs vt AbstractValue.print_abs vf
-  | (Int v) -> Format.fprintf ppf "@[<1>@ %a@ @]" AbstractValue.print_abs v
-  | (Unit u) -> Format.fprintf ppf "@[<1>Unit@]"
+  | Int v -> Format.fprintf ppf "@[<1>@ %a@ @]" AbstractValue.print_abs v
+  | Unit u -> Format.fprintf ppf "@[<1>Unit@]"
 
 
 let pr_ary ppf ary = 

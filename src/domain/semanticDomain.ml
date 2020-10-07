@@ -12,13 +12,6 @@ open SenSemantics
 
 let name_of_node lb = ("z" ^ lb)
 
-let fresh_func var =
-  let ref_index = ref 0 in
-  fun () ->
-    let idx = !ref_index in
-    incr ref_index;
-    var ^ (string_of_int idx)
-
 let fresh_length = fresh_func "l"
 
 let fresh_item = fresh_func "e"
@@ -54,7 +47,7 @@ module SemanticsDomain =
       | Boolean true -> Bool (AbstractValue.init_c 1, AbstractValue.bot)
       | Boolean false -> Bool (AbstractValue.bot, AbstractValue.init_c 0)
       | Integer i -> Int (AbstractValue.init_c i)
-      | Unit u -> Unit u
+      | UnitLit  -> Unit ()
       | IntList lst -> raise (Invalid_argument "This should be cover on the upper level")
     and join_R a1 a2 =
       match a1, a2 with

@@ -734,7 +734,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             let res_m = m2 |> NodeMap.add n1 t1' |> NodeMap.add n2 t2' |> NodeMap.add n t_n' in
             res_m
         end
-    | Rec (f_opt, px, e1, l) ->
+    | Rec (f_opt, (x, lx), e1, l) ->
         (* (if !debug then
         begin
             Format.printf "\n<=== Func ===>\n";
@@ -760,44 +760,11 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
               let f_nf_opt =
                 Opt.map (fun (f, lf) -> f, (construct_vnode env lf cs, true)) f_opt
               in
-              let x, nx, env, m' = match px with
-              | Var (x, lx) ->
-                  let nx = construct_vnode env lx cs in
-                  let env' = env |> VarMap.add x (nx, false) in
-                  let nx = construct_snode x nx in
-                  x, nx, env', m'
-              | TupleLst (termlst, lt) ->
-                  let nt = construct_enode env lt |> construct_snode sx in
-                  let lt = let lt = find nt m in
-                  if is_tuple_V lt then lt
-                  else 
-                    let u' =
-                      List.init (List.length termlst) (fun _ -> Bot)
-                    in
-                    Tuple u'
-                  in
-                  let tlst = get_tuple_list_V lt in
-                  let x, env', m', tlst' =
-                    List.fold_left2 (fun (var, env, m, llst) e ti -> 
-                      match e with
-                      | Var (x, l') -> 
-                          let nx = construct_vnode env l' cs in
-                          let env1 = env |> VarMap.add x (nx, false) in
-                          let nx = construct_snode sx nx in
-                          let tx = find nx m in
-                          let ti', tx' = prop ti tx in
-                          let m' = m |> NodeMap.add nx tx' in
-                          x, env1, m', ti' :: llst
-                      | _ -> raise (Invalid_argument "Tuple only for variables now"))
-                      ("", env, m, []) termlst tlst
-                  in
-                  let tlst' = List.rev tlst' in
-                  let lt' = Tuple tlst' in
-                  let m'' = m' |> NodeMap. add nt lt' in
-                  x, nt, env', m''
-              | _ -> raise (Invalid_argument "Not implement function patterns") in
+              let nx = construct_vnode env lx cs in
+              let env' = env |> VarMap.add x (nx, false) in
+              let nx = construct_snode x nx in
               let env1 =
-                env |>
+                env' |>
                 (Opt.map (uncurry VarMap.add) f_nf_opt |>
                 Opt.get_or_else (fun env -> env))
               in
@@ -816,7 +783,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                  Format.printf "\n";
                  end
                  ); *)
-              let px_t, t1 = prop_scope env1 env x m prop_t t in
+              let px_t, t1 = prop_scope env1 env' x m prop_t t in
               (* (if !debug then
                  begin
                  Format.printf "\nRES for prop:\n";
@@ -840,7 +807,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                             Format.printf "\n";
                         end
                     ); *)
-                  let t2, tf' = prop_scope env envf x m t tf in
+                  let t2, tf' = prop_scope env' envf x m t tf in
                   (* let t2, tf' = prop t tf in *)
                   (* (if true then
                      begin
@@ -872,7 +839,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         ); *)
         let t = find n m in
         if List.length tlst = 0 then
-            let t' = let ct = init_V_c (Unit ()) in
+            let t' = let ct = init_V_c UnitLit in
             join_V t ct in
             m |> NodeMap.add n t'
         else
