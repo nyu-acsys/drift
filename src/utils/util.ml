@@ -1,6 +1,11 @@
 
 let uncurry f (x, y) = f x y
 
+module StringSet = Set.Make(struct
+    type t = string
+    let compare = compare
+  end)
+    
 (** Utility functions on option types *)
 module Opt = struct
   let to_list = function
