@@ -398,7 +398,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         end
         ); *)
         let (nx, recnb) = VarMap.find x env in
-        let envx, lx, _ = get_vnode nx in
+        let envx, lx, (varcs, lcs) = get_vnode nx in
         let nx = construct_snode sx nx in
         let tx = let tx' = find nx m in
             if is_Relation tx' then 
@@ -407,9 +407,10 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         in 
         let t = let t' = find n m in
             t' in (* M[env*l] *)
-        (* (if x = "src" && l = "78" then
+        (* (if x = "src" && l = "62" then
         begin
             Format.printf "\n<=== Prop Var %s %b ===> %s\n" x recnb lx;
+            Format.printf "cs %s, %s \n" varcs lcs;
             pr_value Format.std_formatter tx;
             Format.printf "\n<<~~~~>> %s\n" l;
             pr_value Format.std_formatter t;
@@ -427,7 +428,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 else *)
                     prop_scope envx env sx m tx t
         in
-        (* (if x = "src" && l = "78" then
+        (* (if x = "src" && l = "62" then
         begin
             Format.printf "\nRES for prop:\n";
             pr_value Format.std_formatter tx';
@@ -467,7 +468,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 if is_rec && is_func e1 then cs else
                 (loc e1, loc e1 |> name_of_node) else (dx_T t1) in
                 let t_temp = Table (construct_table cs (t2, t)) in
-                (* (if is_var_x "src" e1 then
+                (* (if loc e1 = "78" then
                 begin
                     Format.printf "\n<=== Prop APP ===> %s\n" (loc e1);
                     pr_value Format.std_formatter t1;
@@ -480,7 +481,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                     (* if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then t1, t_temp else *)
                     prop t1 t_temp
                 in
-                (* (if is_var_x "src" e1 then
+                (* (if loc e1 = "78" then
                 begin
                     Format.printf "\nRES for prop:\n";
                     pr_value Format.std_formatter t1';
@@ -800,13 +801,20 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 in
                 let n1 = construct_enode env1 (loc e1) |> construct_snode x in
                 let tx = find nx m in
+                (* (if x = "src" then
+                begin
+                    Format.printf "\n";
+                    pr_value Format.std_formatter tx;
+                    Format.printf "\n";
+                end
+                ); *)
                 let ae' = if (x <> "_" && is_Relation tx) || is_List tx then 
                     if only_shape_V tx then ae else (arrow_V x ae tx) else ae in
                 let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x var in
                 let prop_t = Table (construct_table cs (tx, t1)) in
-                (* (if !debug then
+                (* (if x = "src" || l = "88" then
                 begin
-                    Format.printf "\n<=== Prop lamb ===> %s %s\n" (loc px) (loc e1);
+                    Format.printf "\n<=== Prop lamb ===> %s %s cs: %s\n" (loc px) (loc e1) var;
                     pr_value Format.std_formatter prop_t;
                     Format.printf "\n<<~~~~>> %s\n" l;
                     pr_value Format.std_formatter t;
@@ -815,7 +823,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 ); *)
                 let px_t, t1 = prop_scope env1 env x m prop_t t
                 in
-                (* (if !debug then
+                (* (if x = "src" || l = "88" then
                 begin
                     Format.printf "\nRES for prop:\n";
                     pr_value Format.std_formatter px_t;
