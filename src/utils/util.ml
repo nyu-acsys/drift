@@ -1,6 +1,11 @@
 
 let uncurry f (x, y) = f x y
 
+module StringSet = Set.Make(struct
+    type t = string
+    let compare = compare
+  end)
+    
 (** Utility functions on option types *)
 module Opt = struct
   let to_list = function
@@ -77,4 +82,11 @@ let rec extract k list =
         else if *)
 let arrange list = 
     List.fold_right (fun y acc -> 
-    List.fold_right (fun x acc -> [x; y] :: acc) list acc) list []
+      List.fold_right (fun x acc -> [x; y] :: acc) list acc) list []
+
+let fresh_func var =
+  let ref_index = ref 0 in
+  fun () ->
+    let idx = !ref_index in
+    incr ref_index;
+    var ^ (string_of_int idx)

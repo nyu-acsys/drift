@@ -318,7 +318,7 @@ let _ =
     end
   else tests in
   List.iter (fun e -> 
-  let el = label e in
+  let el = e |> simplify |> label in
   if !out_put_level < 2 then
     (print_endline "Executing:";
     print_exp stdout el);

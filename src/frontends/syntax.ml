@@ -55,7 +55,7 @@ type value =
   | Integer of int
   | Boolean of bool
   | IntList of int list
-  | Unit of unit
+  | UnitLit
 
 type inputType = Int | Bool | Unit
 
@@ -141,15 +141,15 @@ let type_to_string = function
 
 (** Terms *)
 type term =
-  | TupleLst of (term list) * loc         (* tuple list *)
+  | TupleLst of term list * loc         (* tuple list *)
   | Const of value * loc               (* i (int constant) *)
   | Var of var * loc                   (* x (variable) *)
   | App of term * term * loc           (* t1 t2 (function application) *)
   | UnOp of unop * term * loc          (* uop t (unary operator) *)
   | BinOp of binop * term * term * loc (* t1 bop t2 (binary infix operator) *)
-  | PatMat of term * (patcase list) * loc     (* match t1 with t2 -> t3 | ... *)
+  | PatMat of term * patcase list * loc     (* match t1 with t2 -> t3 | ... *)
   | Ite of term * term * term * loc * asst    (* if t1 then t2 else t3 (conditional) *)
-  | Rec of (term) option * term * term * loc (*lambda and recursive function*)
+  | Rec of (var * loc) option * (var * loc) * term * loc (*lambda and recursive function*)
 and patcase = 
   | Case of term * term
 
@@ -189,7 +189,7 @@ let is_var_x x = function
   | _ -> false
 
 let is_func = function
-  | Rec (_) -> true
+  | Rec _ -> true
   | _ -> false
 
 let is_tuple = function
@@ -216,13 +216,13 @@ let str_of_val = function
         | [hd] -> (string_of_int hd)
         | hd::tl -> (string_of_int hd) ^ ";" ^ (string_of_intlst tl) in
         "[" ^  (string_of_intlst lst) ^ "]"
-  | Unit _ -> "()"
+  | UnitLit -> "()"
 
 let str_of_type = function
 | Integer _ -> "int"
 | Boolean _ -> "bool"
 | IntList _ -> "int list"
-| Unit _ -> "unit"
+| UnitLit -> "unit"
 
 let is_array_set = function
   | Var (v, _) -> if v = "Array.set" then true else false
@@ -255,14 +255,14 @@ let label e =
           let e1', k1 = l k e1 in
           let e2', k2 = l k1 e2 in
           App (e1', e2', string_of_int k2), k2 + 1
-      | Rec (fopt, px, e1, _) ->
+      | Rec (fopt, (x, _), e1, _) ->
           let fopt', k1 =
             fopt |>
-            Opt.map (function (pf) -> let pf', kf' = l k pf in
-              Some (pf'), kf') |>
+            Opt.map (function (f, _) -> let fl', k' = (f, string_of_int k), k + 1 in
+            Some fl', k') |>
             Opt.get_or_else (None, k)
           in
-          let px', kx' = l k1 px in
+          let px', kx' = (x, string_of_int k1), k1 + 1 in
           let e1', k2 = l kx' e1 in
         Rec (fopt', px', e1', string_of_int k2), k2 + 1
       | Ite (e0, e1, e2, _, b) ->
@@ -283,7 +283,7 @@ let label e =
         BinOp (bop, e1', e2', string_of_int k2), k2 + 1
     and lp k = function
       | [] -> [], k
-      | Case(e1, e2) :: tl -> 
+      | Case (e1, e2) :: tl -> 
         let e1', k1 = l k e1 in
         let e2', k2 = l k1 e2 in 
         let e, k3 = Case(e1', e2'), k2 in
@@ -297,9 +297,44 @@ let mk_bool b = Const (Boolean b, "")
 let mk_var x = Var (x, "")
 let mk_app e1 e2 = App (e1, e2, "")
 let mk_pattern_case ep eval = Case (ep, eval)
-let mk_lambda x e = Rec (None, Var (x, ""), e, "")
-let mk_lambdas xs e = List.fold_right (fun x e -> mk_lambda x e) xs e
-let mk_rec f x e = Rec (Some (Var (f, "")), Var (x, ""), e, "")
+
+let fresh_var = fresh_func "x"
+
+let fv e =
+  let rec fv bvs acc = function
+    | Const _ -> acc
+    | Var (x, _) ->
+        if StringSet.mem x bvs
+        then acc
+        else StringSet.add x acc
+    | App (e1, e2, _) 
+    | BinOp (_, e1, e2, _) -> List.fold_left (fv bvs) acc [e1; e2]
+    | UnOp (_, e, _) -> fv bvs acc e
+    | Ite (b, t, e, _, _) -> List.fold_left (fv bvs) acc [b; t; e]
+    | PatMat (t, ps, _) ->
+        let acc1 = fv bvs acc t in
+        List.fold_left (fun acc (Case (p, t)) ->
+          let bvs1 = fv StringSet.empty bvs p in
+          fv bvs1 acc t)
+          acc1 ps
+    | TupleLst (ts, _) ->
+        List.fold_left (fv bvs) acc ts
+    | Rec (f_opt, (x, _), e, _) ->
+        let d = StringSet.of_list (x :: (f_opt |> Opt.map fst |> Opt.to_list)) in
+        fv (StringSet.union bvs d) acc e
+  in
+  fv StringSet.empty StringSet.empty e
+    
+let mk_lambda p e =
+  match p with
+  | Var (x, _) -> Rec (None, (x, ""), e, "")
+  | t ->
+      let x = fresh_var () in
+      let e' = PatMat (Var (x, ""), [mk_pattern_case p e], "") in
+      Rec (None, (x, ""), e', "")
+        
+let mk_lambdas ps e = List.fold_right mk_lambda ps e
+let mk_rec f x e = Rec (Some (f, ""), (x, ""), e, "")
 let mk_ite e0 e1 e2 = Ite (e0, e1, e2, "", construct_asst None)
 let mk_op op e1 e2 = BinOp (op, e1, e2, "")
 let mk_unop uop e1 = UnOp (uop, e1, "")
@@ -309,11 +344,13 @@ let mk_lets defs e =
   List.fold_right (fun (x, def) e -> mk_let_in x def e) defs e
 
 let lam_to_mu f = function
-  | Rec(_, px, e, le) -> Rec (Some (Var (f, "")), px, e, le)
+  | Rec(None, px, e, le) -> Rec (Some (f, ""), px, e, le)
+  | e when not @@ StringSet.mem f (fv e) ->
+      e
   | _ -> raise (Invalid_argument "Invalid function lambda")
 
 let mk_let_rec_in x def e = 
-  mk_app (mk_lambda x e) (lam_to_mu x def)
+  mk_app (mk_lambda (Var (x, "")) e) (lam_to_mu x def)
 
 let pr_ary ppf ary = Array.fold_left (fun a e -> Format.printf "%s " e) () ary
 
@@ -325,17 +362,71 @@ let mk_main_call x params =
 
 let mk_let_main x def params = 
   let x' = if x = "_" then "main" else x in
-  let e = let lst = List.rev params in
+  let e =
+    let lst =
+      List.rev_map (function Var (x, _) -> x | _ -> failwith "parameters of main function can only be variables")
+        params
+    in
     mk_pre_apps lst (mk_var x')
   in
-  mk_app (mk_lambda x e) def
+  mk_app (mk_lambda (Var (x, "")) e) def
 
 let mk_let_main_rec x def params =
   let e = let lst = List.rev params in
     mk_pre_apps lst (mk_var x)
   in
-  mk_app (mk_lambda x e) (lam_to_mu x def)
+  mk_app (mk_lambda (Var (x, "")) e) (lam_to_mu x def)
 
 let mk_pattern_lambda t e = Rec (None, t, e, "")
 
 let mk_pattern_let_in t def e = mk_app (mk_pattern_lambda t e) def
+
+(** Substitute closed term c for free occurrences of x in e (not capture avoiding if c is not closed) *)
+let rec subst x c =
+  let rec s = function
+    | Const _ as e -> e
+    | Var (y, _) as v->
+        if x = y then c else v
+    | App (e1, e2, l) ->
+        App (s e1, s e2, l)
+    | BinOp (bop, e1, e2, l) ->
+        BinOp (bop, s e1, s e2, l)
+    | UnOp (uop, e, l) ->
+        UnOp (uop, s e, l)
+    | TupleLst (ts, l) ->
+        TupleLst (List.map s ts, l)
+    | Ite (b, t, e, l, a) ->
+        Ite (s b, s t, s e, l, a)
+    | Rec (f_opt, (y, yl), e, l) as r ->
+        if x = y || Some x = Opt.map fst f_opt then r
+        else Rec (f_opt, (y, yl), s e, l)
+    | PatMat (t, ps, l) ->
+        let ps' =
+          List.map (function Case (p, t) ->
+            if StringSet.mem x (fv p) then Case (p, t) else Case (p, s t))
+            ps
+        in
+        PatMat (s t, ps', l)
+  in s 
+    
+let rec simplify = function
+  | (Var _ | Const _) as e -> e
+  | App (e1, e2, l) ->
+      (match simplify e1, simplify e2 with
+      | Rec (None, (x, _), e, _), (Const _ as c) ->
+          simplify (subst x c e)
+      | e1', e2' -> App (e1', e2', l))
+  | BinOp (bop, e1, e2, l) ->
+      BinOp (bop, simplify e1, simplify e2, l)
+  | UnOp (uop, e, l) ->
+      UnOp (uop, simplify e, l)
+  | Rec (f_opt, (x, xl), e, l) ->
+      Rec (f_opt, (x, xl), simplify e, l)
+  | TupleLst (ts, l) ->
+      TupleLst (List.map simplify ts, l)
+  | PatMat (e1, ps, l) ->
+      let ps' = List.map (function Case (p, t) -> Case (p, simplify t)) ps in
+      PatMat (simplify e1, ps', l)
+  | Ite (b, t, e, l, a) ->
+      Ite (simplify b, simplify t, simplify e, l, a)
+  

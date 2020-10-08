@@ -5,10 +5,10 @@ let rec bcopy_aux m src des i =
   if i >= m
   then ()
   else
-    let r =
+    begin
       update i m des (src i);
       bcopy_aux m src des (i+1)
-    in r
+    end
 
 let main (n(*-:{v:Int|true}*)) (m(*-:{v:Int|true}*)) =
   let array1 = make_array n in
