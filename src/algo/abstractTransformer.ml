@@ -757,88 +757,6 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             if tl = Bot then m' |> NodeMap.add n t
             else if tr = Top then top_M m' else
             begin
-<<<<<<< HEAD
-                let _, var = cs in
-                let f_nf_opt = Opt.map (fun pf -> 
-                    match pf with
-                    | Var (f, lf) -> f, (construct_vnode env lf cs, true)
-                    | _ -> raise (Invalid_argument "Not implement recursive patterns")) f_opt in
-                let x, nx, env, m' = match px with
-                    | Var (x, lx) ->
-                        let nx = construct_vnode env lx cs in
-                        let env' = env |> VarMap.add x (nx, false) in
-                        let nx = construct_snode x nx in
-                       x, nx, env', m'
-                    | TupleLst (termlst, lt) ->
-                        let nt = construct_enode env lt |> construct_snode sx in
-                        let lt = let lt = find nt m in
-                            if is_tuple_V lt then lt
-                            else 
-                                let u' = List.init (List.length termlst) (fun _ ->
-                            Bot) in Tuple u'
-                        in
-                        let tlst = get_tuple_list_V lt in
-                        let x, env', m', tlst' = List.fold_left2 (fun (var, env, m, llst) e ti -> 
-                            match e with
-                            | Var (x, l') -> 
-                                let nx = construct_vnode env l' cs in
-                                let env1 = env |> VarMap.add x (nx, false) in
-                                let nx = construct_snode sx nx in
-                                let tx = find nx m in
-                                let ti', tx' = prop ti tx in
-                                let m' = m |> NodeMap.add nx tx' in
-                                x, env1, m', ti' :: llst
-                            | _ -> raise (Invalid_argument "Tuple only for variables now")
-                        ) ("", env, m, []) termlst tlst in
-                        let tlst' = List.rev tlst' in
-                        let lt' = Tuple tlst' in
-                        let m'' = m' |> NodeMap. add nt lt' in
-                        x, nt, env', m''
-                    | _ -> raise (Invalid_argument "Not implement function patterns") in
-                let env1 = env |>
-                    (Opt.map (uncurry VarMap.add) f_nf_opt |>
-                    Opt.get_or_else (fun env -> env))
-                in
-                let n1 = construct_enode env1 (loc e1) |> construct_snode x in
-                let tx = find nx m in
-                (* (if x = "src" then
-                begin
-                    Format.printf "\n";
-                    pr_value Format.std_formatter tx;
-                    Format.printf "\n";
-                end
-                ); *)
-                let ae' = if (x <> "_" && is_Relation tx) || is_List tx then 
-                    if only_shape_V tx then ae else (arrow_V x ae tx) else ae in
-                let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x var in
-                let prop_t = Table (construct_table cs (tx, t1)) in
-                (* (if x = "src" || l = "88" then
-                begin
-                    Format.printf "\n<=== Prop lamb ===> %s %s cs: %s\n" (loc px) (loc e1) var;
-                    pr_value Format.std_formatter prop_t;
-                    Format.printf "\n<<~~~~>> %s\n" l;
-                    pr_value Format.std_formatter t;
-                    Format.printf "\n";
-                end
-                ); *)
-                let px_t, t1 = prop_scope env1 env x m prop_t t
-                in
-                (* (if x = "src" || l = "88" then
-                begin
-                    Format.printf "\nRES for prop:\n";
-                    pr_value Format.std_formatter px_t;
-                    Format.printf "\n<<~~~~>>\n";
-                    pr_value Format.std_formatter t1;
-                    Format.printf "\n";
-                end
-                ); *)
-                let nf_t2_tf'_opt =
-                    Opt.map (fun (_, (nf, bf)) ->
-                    let envf, lf, fcs = get_vnode nf in
-                    let nf = construct_snode x nf in
-                    let tf = find nf m in
-                    (* (if true then
-=======
               let _, var = cs in
               let f_nf_opt =
                 Opt.map (fun (f, lf) -> f, (construct_vnode env lf cs, true)) f_opt
@@ -882,7 +800,6 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                   let nf = construct_snode x nf in
                   let tf = find nf m in
                   (* (if true then
->>>>>>> 340097478135d0d04494173e525e2dc548b9be85
                         begin
                             Format.printf "\n<=== Prop um ===> %s\n" l;
                             pr_value Format.std_formatter t;
