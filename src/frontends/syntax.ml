@@ -298,9 +298,19 @@ let mk_var x = Var (x, "")
 let mk_app e1 e2 = App (e1, e2, "")
 let mk_pattern_case ep eval = Case (ep, eval)
 
-let fresh_var = fresh_func "x"
-
-let fv e =
+let fresh_var =
+  let used_names = Hashtbl.create 0 in
+  fun  (name : string) ->
+    let last_index = 
+      Hashtbl.find_opt used_names name |>
+      Opt.get_or_else (-1)
+    in
+    let new_index = last_index + 1 in
+    Hashtbl.replace used_names name new_index;
+    name ^ (string_of_int new_index)
+  
+    
+let fv_acc acc e =
   let rec fv bvs acc = function
     | Const _ -> acc
     | Var (x, _) ->
@@ -323,13 +333,41 @@ let fv e =
         let d = StringSet.of_list (x :: (f_opt |> Opt.map fst |> Opt.to_list)) in
         fv (StringSet.union bvs d) acc e
   in
-  fv StringSet.empty StringSet.empty e
+  fv StringSet.empty acc e
+
+let fv e = fv_acc StringSet.empty e
+    
+let fo e =
+  let inc acc x = StringMap.update x (function Some x -> Some (x + 1) | None -> Some 1) acc in
+  let rec fv bvs acc = function
+    | Const _ -> acc
+    | Var (x, _) ->
+        if StringMap.mem x bvs
+        then acc
+        else inc acc x
+    | App (e1, e2, _) 
+    | BinOp (_, e1, e2, _) -> List.fold_left (fv bvs) acc [e1; e2]
+    | UnOp (_, e, _) -> fv bvs acc e
+    | Ite (b, t, e, _, _) -> List.fold_left (fv bvs) acc [b; t; e]
+    | PatMat (t, ps, _) ->
+        let acc1 = fv bvs acc t in
+        List.fold_left (fun acc (Case (p, t)) ->
+          let bvs1 = fv StringMap.empty bvs p in
+          fv bvs1 acc t)
+          acc1 ps
+    | TupleLst (ts, _) ->
+        List.fold_left (fv bvs) acc ts
+    | Rec (f_opt, (x, _), e, _) ->
+        let bvs1 = List.fold_left inc bvs (x :: (f_opt |> Opt.map fst |> Opt.to_list)) in
+        fv bvs1 acc e
+  in
+  fv StringMap.empty StringMap.empty e
     
 let mk_lambda p e =
   match p with
   | Var (x, _) -> Rec (None, (x, ""), e, "")
   | t ->
-      let x = fresh_var () in
+      let x = fresh_var "x" in
       let e' = PatMat (Var (x, ""), [mk_pattern_case p e], "") in
       Rec (None, (x, ""), e', "")
         
@@ -382,51 +420,94 @@ let mk_pattern_lambda t e = Rec (None, t, e, "")
 let mk_pattern_let_in t def e = mk_app (mk_pattern_lambda t e) def
 
 (** Substitute closed term c for free occurrences of x in e (not capture avoiding if c is not closed) *)
-let rec subst x c =
-  let rec s = function
-    | Const _ as e -> e
-    | Var (y, _) as v->
-        if x = y then c else v
-    | App (e1, e2, l) ->
-        App (s e1, s e2, l)
-    | BinOp (bop, e1, e2, l) ->
-        BinOp (bop, s e1, s e2, l)
-    | UnOp (uop, e, l) ->
-        UnOp (uop, s e, l)
-    | TupleLst (ts, l) ->
-        TupleLst (List.map s ts, l)
-    | Ite (b, t, e, l, a) ->
-        Ite (s b, s t, s e, l, a)
-    | Rec (f_opt, (y, yl), e, l) as r ->
-        if x = y || Some x = Opt.map fst f_opt then r
-        else Rec (f_opt, (y, yl), s e, l)
-    | PatMat (t, ps, l) ->
-        let ps' =
-          List.map (function Case (p, t) ->
-            if StringSet.mem x (fv p) then Case (p, t) else Case (p, s t))
-            ps
-        in
-        PatMat (s t, ps', l)
-  in s 
+let subst sm =
+  let update_sm bvs sm =
+    let sm1 =
+      StringSet.fold StringMap.remove bvs sm
+    in
+    let fv_sm = StringMap.fold (fun _ t acc -> fv_acc acc t) sm1 StringSet.empty in
+    let sm2 =
+      StringSet.fold
+        (fun x sm2 ->
+          if StringSet.mem x fv_sm then
+            let x1 = fresh_var x in
+            StringMap.add x (Var (x1, "")) sm2
+          else sm2)
+        bvs sm1
+    in
+    sm2
+  in
+  let subst_bv sm (x, l) =
+    StringMap.find_opt x sm |>
+    Opt.map (function (Var (x1, _)) -> x1 | _ -> x) |>
+    Opt.get_or_else x, l
+  in
+  let rec subst sm e =
+    let s = subst sm in
+    match e with
+      | Const _ as e -> e
+      | Var (y, _) as v ->
+          StringMap.find_opt y sm |> Opt.get_or_else v
+        | App (e1, e2, l) ->
+            App (s e1, s e2, l)
+        | BinOp (bop, e1, e2, l) ->
+            BinOp (bop, s e1, s e2, l)
+        | UnOp (uop, e, l) ->
+            UnOp (uop, s e, l)
+        | TupleLst (ts, l) ->
+            TupleLst (List.map s ts, l)
+        | Ite (b, t, e, l, a) ->
+            Ite (s b, s t, s e, l, a)
+        | Rec (f_opt, y, e, l) as r ->
+            let bvs = fst y :: (f_opt |> Opt.map fst |> Opt.to_list) |> StringSet.of_list in
+            let sm1 = update_sm bvs sm in
+            if sm1 = StringMap.empty then r else
+            let f_opt1 = f_opt |> Opt.map (subst_bv sm1) in
+            let y1 = subst_bv sm1 y in
+            let e1 = subst sm1 e in
+            Rec (f_opt1, y1, e1, l)
+        | PatMat (t, ps, l) ->
+            let ps1 =
+              List.map (function Case (p, t) as c ->
+                let sm1 = update_sm (fv p) sm in
+                if sm1 = StringMap.empty then c else
+                let p1 = subst sm1 p in
+                let t1 = subst sm1 t in
+                Case (p1, t1))
+                ps
+            in
+            PatMat (s t, ps1, l)
+  in subst sm
     
-let rec simplify = function
+let simplify =
+  let fo x c =
+    fo c |>
+    StringMap.find_opt x |>
+    Opt.get_or_else 0
+  in
+  let rec simp = function
   | (Var _ | Const _) as e -> e
   | App (e1, e2, l) ->
-      (match simplify e1, simplify e2 with
-      | Rec (None, (x, _), e, _), (Const _ as c) ->
-          simplify (subst x c e)
+      (match simp e1, simp e2 with
+      | Rec (None, (x, _), e, _), (Const _ | Var _ as c) ->
+          let a1 = subst (StringMap.singleton x c) e in
+          simp a1
+      | Rec (None, (x, _), e, _), c
+        when StringSet.is_empty @@ fv c && fo x e < 2 ->
+          let a1 = subst (StringMap.singleton x c) e in
+          simp a1
       | e1', e2' -> App (e1', e2', l))
   | BinOp (bop, e1, e2, l) ->
-      BinOp (bop, simplify e1, simplify e2, l)
+      BinOp (bop, simp e1, simp e2, l)
   | UnOp (uop, e, l) ->
-      UnOp (uop, simplify e, l)
+      UnOp (uop, simp e, l)
   | Rec (f_opt, (x, xl), e, l) ->
-      Rec (f_opt, (x, xl), simplify e, l)
+      Rec (f_opt, (x, xl), simp e, l)
   | TupleLst (ts, l) ->
-      TupleLst (List.map simplify ts, l)
+      TupleLst (List.map simp ts, l)
   | PatMat (e1, ps, l) ->
-      let ps' = List.map (function Case (p, t) -> Case (p, simplify t)) ps in
-      PatMat (simplify e1, ps', l)
+      let ps' = List.map (function Case (p, t) -> Case (p, simp t)) ps in
+      PatMat (simp e1, ps', l)
   | Ite (b, t, e, l, a) ->
-      Ite (simplify b, simplify t, simplify e, l, a)
-  
+      Ite (simp b, simp t, simp e, l, a)
+  in simp
