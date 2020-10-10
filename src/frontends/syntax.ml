@@ -492,8 +492,8 @@ let simplify =
       | Rec (None, (x, _), e, _), (Const _ | Var _ as c) ->
           let a1 = subst (StringMap.singleton x c) e in
           simp a1
-      | Rec (None, (x, _), e, _), c
-        when StringSet.is_empty @@ fv c && fo x e < 2 ->
+      | Rec (None, (x, _), e, _), (Rec _ as c)
+        when fo x e < 2 ->
           let a1 = subst (StringMap.singleton x c) e in
           simp a1
       | e1', e2' -> App (e1', e2', l))

@@ -306,7 +306,7 @@ let pair_test_1 = parse_from_string
 f 0" *)
 
 let tests = []
-
+  
 let _ =
   try
     Config.parse;
