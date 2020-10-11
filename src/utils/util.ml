@@ -5,6 +5,11 @@ module StringSet = Set.Make(struct
     type t = string
     let compare = compare
   end)
+
+module StringMap = Map.Make(struct
+    type t = string
+    let compare = compare
+  end)
     
 (** Utility functions on option types *)
 module Opt = struct
