@@ -66,3 +66,28 @@ usage: ./drift2.native [-file <file name>] [-domain <domain name>] [-thold] [-se
   --help      : Display this list of options
 ```
 
+## Guides for Running Experiments 
+The experiment to run DRIFT is working as follows:
+1. We create a shell script to run all experiments. The results we stored is inside a `output` folder.
+2. We collect our data by using a python script. 
+### runit.sh script for benchmark testing: 
+Usage of the shell script `runit.sh` inside the **scripts** folder is:
+```bash
+./runit.sh -set unv -domain Oct [-nar | -dwid 0 | -thold] [-sen]
+-set:     choose benchmark sets. The experiment used 'unv' set.
+-domain:  choose an abstract domain for running.
+-nar:     set this to allow narrowing process. The experiment does not consider this anymore.
+-dwid:    set iteration steps to delay widening. The experiment does not consider this anymore.
+-thold:   allow the tool to use widening with thresholds.
+-sen:     set this to allow 1-context-sensitive.
+```
+When it done, it will automaticallt generate a csv table with results. Please put them into corresponded subfolder inside `result` directory.
+### table.py script for generating latex table:
+Usage of the python script `table.py` inside the **result** folder:
+```bash
+# For experiment one, please run the following command:
+python3 table.py unv > table.out
+# For experiment two, please run the following:
+python3 table.py comp_tools/unv > table.out
+```
+The result will be stored in a `table.out` file.
