@@ -5,4 +5,3 @@ let rec map x =
 
 let main (n:int(*-:{v:Int | true}*)) =
     if n >= 0 then assert(map (map n) = n)
-    else ()

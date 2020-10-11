@@ -8,8 +8,8 @@ let unlock st = assert (st = 1); 0
 let f n st = if n > 0 then lock (st) else st 
 let g n st = if n > 0 then unlock (st) else st 
     
-let main (mn:int(*-:{v:Int | true}*)) = 
-    assert ((g mn (f mn 0)) = 0) 
+let main (n:int(*-:{v:Int | true}*)) = 
+    assert ((g n (f n 0)) = 0) 
 
 (* let _ = 
     for i = 1 to 1000000 do

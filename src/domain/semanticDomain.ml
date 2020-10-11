@@ -183,6 +183,9 @@ module SemanticsDomain =
       | Int _ -> bot_R Plus
       | Bool _ -> bot_R Ge
       | Unit u as a -> a
+    and is_unit_R = function
+      | Unit _ -> true
+      | _ -> false
     (*
       ***************************************
       ** Abstract domain for Execution Map **
@@ -618,7 +621,8 @@ module SemanticsDomain =
       | _ -> raise (Invalid_argument "Should be relation when split if statement")
     and stren_V v ae = match v,ae with
       | Bot, _ -> Bot
-      | Relation r, Relation rae -> Relation (stren_R r rae)
+      | Relation r, Relation rae -> if is_bot_R rae && is_unit_R r then Bot else
+        Relation (stren_R r rae)
       | Ary ary, Relation rae -> Ary (stren_Ary ary rae)
       | Lst lst, Relation rae -> Lst (stren_Lst lst rae)
       | Table t, Relation rae -> Table t

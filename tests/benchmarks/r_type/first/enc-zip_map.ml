@@ -1,6 +1,6 @@
 
 
-let rec loop (lx:unit) = loop lx
+let rec loop (x:unit) = loop x
 let rec zip (x:int) (y:int) =
  if x = 0 then
    if y = 0 then 0
@@ -12,5 +12,4 @@ let rec map (mx:int) =
   if mx = 0 then 0 else 1 + map (mx - 1)
 
 let main (n:int(*-:{v:Int | true}*)) =
-  if n >= 0 then assert(map (zip n n) >= n)
-  else ()
+  assert(map (zip n n) >= n)

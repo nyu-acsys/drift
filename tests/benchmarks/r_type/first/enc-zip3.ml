@@ -1,6 +1,6 @@
 
 
-let rec loop (lx:unit) = loop lx
+let rec loop (x:unit) = loop ()
 
 let rec zip x y =
   if x = 0

@@ -8,5 +8,5 @@ let rec sum n =
   then 0
   else n + sum (n - 1)
 
-let main (mn:int(*-:{v:Int | true}*)) =
-    assert (mn <= sum mn)
+let main (n:int(*-:{v:Int | true}*)) =
+    assert (n <= sum n)

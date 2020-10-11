@@ -10,5 +10,5 @@ let rec sum n =
   else
     n + sum (n - 1)
 
-let main (mn:int(*-:{v:Int | true}*)) =
-    assert (3 * mn - 3 <= sum mn)
+let main (n:int(*-:{v:Int | true}*)) =
+    assert (3 * n - 3 <= sum n)

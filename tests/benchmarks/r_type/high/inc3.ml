@@ -4,9 +4,9 @@ let rec inc3 m src i =
  if i>=m
  then ()
  else
-   let r = 
+   begin
      update i m src ((src i)+1);
      inc3 m src (i+1)
-   in r
+   end
 let main (n(*-:{v:Int|true}*)) =
  if n>0 then inc3 n (make_array n) 0 else ()

@@ -5,8 +5,10 @@ let rec dotprod v1 v2 n i sum =
   if i > n
   then sum
   else
-    let _ = assert (0<=i && i<=n) in
+    begin
+      assert (0<=i && i<=n);
       dotprod v1 v2 n (i+1) (sum + v1 i * v2 i)
+    end
    
 
 let main (i(*-:{v:Int|true}*)) (n(*-:{v:Int|true}*)) =

@@ -4,16 +4,16 @@ USED: PEPM2013 as hors
 *)
 
 
-let c (cq:int) = ()
+let c q = ()
 (* c q -> .  for any q *)
-let b (bx: int -> unit) bq = bx 1
+let b x q = x 1
 (* b q -> q1 for any q *)
-let a (ax: int -> unit) (ay: int -> unit) aq = if aq = 0 then (ax 0; ay 0) else ()
+let a x y q = if q=0 then (x 0; y 0) else assert false
 (* a q0 -> q0 q0 *)
 
-let rec f fn (fx:int -> unit) fq = if fn <= 0 then fx fq else a fx (f (fn - 1) (b fx)) fq
+let rec f n x q = if n <= 0 then x q else a x (f (n-1) (b x)) q
 (* F n x = if n<=0 then x else a x (f (n-1) (b x)) *)
-let s sn sq = f sn c sq
+let s n q = f n c q
 (* S -> F n c *)
 
 let main (n:int(*-:{v:Int | true}*)) =

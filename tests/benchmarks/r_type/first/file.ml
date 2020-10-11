@@ -10,7 +10,7 @@ let opened = 1
 let closed = 2
 let ignore = 3
 let readit rst =
-  if rst = opened then opened else (if rst = ignore then rst else (-1))
+  if rst = opened then opened else (if rst = ignore then rst else (assert false;-1))
 
 let read_ (rx_:bool) rst_ =
   if rx_ then readit rst_ else rst_

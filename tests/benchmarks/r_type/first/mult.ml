@@ -9,5 +9,5 @@ let rec mult n m =
   else
     n + mult n (m - 1)
 
-let main (mn:int(*-:{v:Int | true}*)) =
-    assert (mn <= mult mn mn)
+let main (n:int(*-:{v:Int | true}*)) =
+    assert (n <= mult n n)

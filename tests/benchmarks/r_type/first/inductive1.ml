@@ -11,4 +11,5 @@ let rec loop x i =
     loop (3 - x) (i - 1)
 
 let main (n:int(*-:{v:Int | true}*)) =     
-    assert (loop 3 n >= 3)
+    assert (loop 3 n >= 3);
+  	assert (loop 1 n >= 0)

@@ -10,6 +10,6 @@ let rec rev n =
   then 0
   else append (rev (n - 1)) 1
 
-let main (mn:int(*-:{v:Int | true}*)) (mm:int(*-:{v:Int | true}*)) =
-  if mn >= 0 then assert (rev mn = mn)
-	else ()
+let main (n:int(*-:{v:Int | true}*)) (m:int(*-:{v:Int | true}*)) =
+  assert (rev n = n);
+  assert (append n m = n + m)

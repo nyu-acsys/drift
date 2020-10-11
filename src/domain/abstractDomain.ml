@@ -382,14 +382,9 @@ module AbstractValue =
       in
       Abstract1.minimize_environment man res
       (* res *)
-
     let make_var var = 
       try let _ = int_of_string var in None
       with e -> Some (var |> Var.of_string)
-
-    let uoperator vres op ve cons v =
-      failwith "Not yet implemented"
-    
     let operator vres vl vr op cons v = 
       (* (if !debug then
       begin
@@ -466,6 +461,12 @@ module AbstractValue =
         end); *)
       Abstract1.minimize_environment man res
       (* res *)
+    let uoperator vres ve op cons v =
+      if is_bot v then v else
+      match op with
+      | UMinus -> let v' = operator vres "0" ve Minus cons v in
+         alpha_rename v' ve "cur_v"
+      | Not -> failwith "Not yet implemented"
     let assign vres vl vr op v = 
       let vres = if vres = "" then "cur_v" else vres in
       let var_v = vres |> Var.of_string in

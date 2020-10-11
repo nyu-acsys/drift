@@ -10,5 +10,5 @@ let rec sum n =
   else
     add n (sum (n - 1))
 
-let main (mn:int(*-:{v:Int | true}*)) =
-	assert (mn <= sum mn)
+let main (n:int(*-:{v:Int | true}*)) =
+	assert (n <= sum n)

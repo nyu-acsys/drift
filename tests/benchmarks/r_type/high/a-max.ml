@@ -14,4 +14,3 @@ let main (n(*-:{v:Int|true}*)) (i(*-:{v:Int|true}*)) =
   if n>0 && i>=0 && i<=0 then
     let m = array_max n i (make_array n) (-1) in
     assert (m >= n)
-  else ()

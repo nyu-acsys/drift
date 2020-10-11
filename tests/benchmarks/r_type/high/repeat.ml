@@ -1,15 +1,9 @@
-(*
-USED: PLDI2011 as repeat
-*)
-
-
-let succ sx = sx + 1
-
-let rec repeat (rf: int -> int) rn rs =
-  if rn = 0 then
-    rs
+let rec succ x = x + 1
+let rec repeat f n s =
+  if n = 0 then
+    s
   else
-    rf (repeat rf (rn - 1) rs)
+    f (repeat f (n - 1) s)
 
-let main (n:int(*-:{v:Int | true}*)) =
-	assert (repeat succ n 0 = n)
+let main (n:int(*-:{v:Int | true}*)) = 
+	assert (repeat succ n 0 >= n)

@@ -11,16 +11,16 @@ let rec fact n =
 *)
 
 
-let rec fact fn (exf: int -> int) =
-  if fn <= 0
-  then exf 0
+let rec fact n exn =
+  if n <= 0
+  then exn 0
   else
-    let exn_n tn = if tn = 0 then 1 else exf tn in
-      fn * (fact (fn - 1) exn_n)
+    let exn_n n = if n = 0 then 1 else exn n in
+      n * fact (n-1) exn_n
 
-let ex xn = 1
+let exni n = assert false; 1
 
 let main (n:int(*-:{v:Int | true}*)) =
   if n > 0
-  then assert(fact n ex >= (-1))
+  then (fact n exni; ())
   else ()

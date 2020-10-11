@@ -6,8 +6,8 @@ let ff n = if n >= 0 then () else raise 0 in
 *)
 
 
-let f fn (fk:int -> bool) = if fn >= 0 then true else fk 0
-let g gn = gn = 0
+let f n k = if n >= 0 then () else k 0
+let g n = assert (n = 0)
 
 let main (n:int(*-:{v:Int | true}*)) = 
-	assert (f n g)
+	f n g

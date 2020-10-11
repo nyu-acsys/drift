@@ -299,11 +299,12 @@ f lst1 lst2"
  *)
 
 let pair_test_1 = parse_from_string
-"1, 2" *)
+"1, 2"
 
-(* let equal_test = parse_from_string
-"let rec f i = if i = 2 then i else f (i + 1) in
-f 0" *)
+let unary_minus_test = parse_from_string
+"let a = 3 in
+let b = -a in
+-b" *)
 
 let tests = []
 

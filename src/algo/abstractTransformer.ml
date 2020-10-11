@@ -245,11 +245,11 @@ let iterEnv_v env m v = VarMap.fold (fun var n a ->
     let pre_t = find n !pre_m in
     opt_eq_V pre_t t *)
 
-let rec list_var_item eis sx (cs: (var * loc)) m env nlst = 
+let rec list_var_item eis sx (cs: (var * loc)) m env nlst left_or_right lst_len = 
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     let vlst = find nlst m in
-    match eis with
-    | Var (x, l) -> 
+    match eis, left_or_right with
+    | Var (x, l), true -> 
         let n = construct_vnode env l cs in
         let env1 = env |> VarMap.add x (n, false) in
         let n = construct_snode sx n in
@@ -277,8 +277,23 @@ let rec list_var_item eis sx (cs: (var * loc)) m env nlst =
         end
         ); *)
         let m' = m |> NodeMap.add n t' |> NodeMap.add nlst vlst' in
-        [x], m', env1, 1
-    | TupleLst (termlst, l) -> 
+        m', env1
+    | Var(x, l), false ->
+        let n = construct_vnode env l cs in
+        let env1 = env |> VarMap.add x (n, false) in
+        let n = construct_snode sx n in
+        let lst = find n m |> get_list_length_item_V in
+        let t_new = reduce_len_V lst_len lst vlst in
+        let _, t' = prop t_new (find n m) in
+        let m' = NodeMap.add n t' m in
+        m', env1
+    | Const (c, l), false ->
+        let n = construct_enode env l |> construct_snode sx in
+        let t_new = pattern_empty_lst_V vlst in
+        let _, t' = prop t_new (find n m) in
+        let m' = NodeMap.add n t' m in
+        m', env
+    | TupleLst (termlst, l), true -> 
         let n = construct_enode env l |> construct_snode sx in
         let t = 
             let raw_t = find n m in
@@ -323,14 +338,14 @@ let rec list_var_item eis sx (cs: (var * loc)) m env nlst =
             Format.printf "\n";
         end
         ); *)
-        [], m'', env', 1
-    | BinOp (bop, e1, e2, l) ->
-        let l1, m', env', len = list_var_item e1 sx cs m env nlst in
-        let l2, m'', env'', len' = list_var_item e2 sx cs m' env' nlst in
-        List.append l1 l2, m'', env'', len + len'
-    | UnOp (uop, e1, l) ->
-        let l1, m', env', len = list_var_item e1 sx cs m env nlst in
-        l1, m', env', len
+        m'', env'
+    | BinOp (bop, e1, e2, l), _ ->
+        let m', env' = list_var_item e1 sx cs m env nlst true 0 in
+        let m'', env'' = list_var_item e2 sx cs m' env' nlst false (lst_len + 1) in
+        m'', env''
+    | UnOp (uop, e1, l), true ->
+        let m', env' = list_var_item e1 sx cs m env nlst true 0 in
+        m', env'
     | _ -> raise (Invalid_argument "Pattern should only be either constant, variable, and list cons")
 
 let prop_predef l v0 v = 
@@ -405,15 +420,19 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             if sat_equal_V tx' x then tx' else equal_V (forget_V x tx') x (* M<E(x)>[v=E(x)] *) 
             else tx'
         in 
+        let tx = if eq_V tx (stren_V tx ae) then tx else
+            (stren_V (proj_V tx [x]) ae) in
         let t = let t' = find n m in
             t' in (* M[env*l] *)
-        (* (if x = "src" && l = "62" then
+        (* (if x = "fail" then
         begin
             Format.printf "\n<=== Prop Var %s %b ===> %s\n" x recnb lx;
             Format.printf "cs %s, %s \n" varcs lcs;
             pr_value Format.std_formatter tx;
             Format.printf "\n<<~~~~>> %s\n" l;
             pr_value Format.std_formatter t;
+            Format.printf "\n<<~~~~>> %s\n" l;
+            pr_value Format.std_formatter ae;
             Format.printf "\n";
         end
         ); *)
@@ -614,7 +633,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
     | UnOp (uop, e1, l) ->
         (* (if !debug then
         begin
-            Format.printf "\n<=== Binop ===>\n";
+            Format.printf "\n<=== Unop ===>\n";
             pr_exp true Format.std_formatter term;
             Format.printf "\n";
         end
@@ -770,9 +789,9 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 Opt.get_or_else (fun env -> env))
               in
               let n1 = construct_enode env1 (loc e1) |> construct_snode x in
-              let tx = find nx m in
+              let tx = find nx m |> forget_V x in
               let ae' = if (x <> "_" && is_Relation tx) || is_List tx then 
-                if only_shape_V tx then ae else (arrow_V x ae tx) else ae in
+                if only_shape_V tx then ae else (arrow_V x (forget_V x ae) tx) else ae in
               let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x var in
               let prop_t = Table (construct_table cs (tx, t1)) in
               (* (if !debug then
@@ -937,25 +956,18 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                     Format.printf "\n";
                 end
                ); *)
-                let lst, ml, envl, len = list_var_item el sx cs m env ne in
-                let nr, envr, tr_new =
-                    match er with
-                    | Var(xtl, l'') ->
-                        let x = xtl in
-                        let nr = construct_vnode envl l'' cs in
-                        let envr = envl |> VarMap.add x (nr, false) in
-                        let nr = construct_snode sx nr in
-                        let lst = find nr ml |> get_list_length_item_V in
-                        nr, envr, reduce_len_V len lst te
-                    | Const (c, l'') ->
-                        let nr = construct_enode envl l'' |> construct_snode sx in
-                        nr, envl, pattern_empty_lst_V te
-                    | _ -> raise (Invalid_argument ":: patterns only support [], x::[], x::tl, ...")
-                in
+                let ml, envl = list_var_item el sx cs m env ne true 0 in
+                (* (if !debug then
+                begin
+                    Format.printf "\n<=== Pattern binop ===>\n";
+                    pr_exp true Format.std_formatter er;
+                    Format.printf "\n";
+                end
+                ); *)
+                let mr, envr = list_var_item er sx cs ml envl ne false 1 in
+                let nr = construct_enode envr (loc er) |> construct_snode sx in
                 let n2 = construct_enode envr (loc e2) |> construct_snode sx in
                 let n1 = construct_enode envr l' |> construct_snode sx in
-                let _, tr' = prop tr_new (find nr ml) in
-                let mr = NodeMap.add nr tr' ml in
                 let m1 = step e1 envr sx cs ae assertion is_rec mr in
                 let te, t1 = find ne m1, find n1 m1 in
                 let te, t1 = alpha_rename_Vs te t1 in

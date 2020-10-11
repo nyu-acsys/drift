@@ -15,6 +15,19 @@ let final_call_name = "main"
 
 let universe_name = "umain"
 
+let convert_var_name_apron_not_support s = 
+  if String.contains s '\'' then
+    let lst = String.split_on_char '\'' s in
+    let lst' = List.fold_right (fun s rlst -> 
+      if String.length s = 0 then List.append rlst ["_pm"]
+      else List.append rlst [s; "_pm_"]) lst [] in
+    let restr = 
+      let tempstr = String.concat "" (List.rev lst') in
+      String.sub tempstr 4 (String.length tempstr - 4)
+    in
+    restr
+  else s
+
 %}
 /* declarations */
 /* let final_call_name = function
@@ -65,6 +78,8 @@ The precedences must be listed from low to high.
 %nonassoc below_SEMI
 %nonassoc SEMI
 %nonassoc below_BAR
+%nonassoc THEN
+%nonassoc ELSE
 %left BAR
 
 %start main
@@ -109,7 +124,9 @@ basic_term: /*term@7 := int | bool | [] | var | (term)*/
 | EMPTYLST { Const (IntList [], "") }
 | LSQBR int_list RSQBR { Const (IntList $2, "") }
 | LARYBR int_ary RARYBR { Const (IntList [], "") } /*TODO: Implement this*/
-| IDENT { Var ($1, "") }
+| IDENT { 
+  let res_str = convert_var_name_apron_not_support $1 in 
+  Var (res_str, "") }
 | LPAREN seq_term RPAREN { $2 } /*Parentheses*/
 | BEGIN seq_term END { $2 } /*begin/end blocks*/
 ;
@@ -204,6 +221,11 @@ tuple_term:
 
 %inline if_term_:
 | tuple_term { $1 }
+| IF seq_term THEN term {
+  let loc = None |> construct_asst in
+  let else_term = Const (UnitLit, "") in
+  Ite ($2, $4, else_term, "", loc) 
+}
 | IF seq_term THEN term ELSE term { 
   let loc = None |> construct_asst in
   Ite ($2, $4, $6, "", loc) 
@@ -216,8 +238,9 @@ lambda_term:
 
 let_in_term:
 | LET REC IDENT param_list_opt EQ seq_term IN seq_term {
+  let res_str = convert_var_name_apron_not_support $3 in
   let fn = mk_lambdas $4 $6 in
-  mk_let_rec_in $3 fn $8
+  mk_let_rec_in res_str fn $8
 }
 | LET param_list EQ seq_term IN seq_term {
   let fn = mk_lambdas (List.tl $2) $4 in
@@ -241,7 +264,8 @@ seq_term:
 let_val:
 | LET REC IDENT param_list_opt EQ seq_term {
   let fn = mk_lambdas $4 $6 in
-  true, Var ($3, ""), fn, $4
+  let res_str = convert_var_name_apron_not_support $3 in
+  true, Var (res_str, ""), fn, $4
 }
 | LET param_list EQ seq_term {
   let fn = mk_lambdas (List.tl $2) $4 in
@@ -272,7 +296,9 @@ basic_pattern:
 | MINUS INTCONST { thresholdsSet := ThresholdsSetType.add (-$2) !thresholdsSet; Const (Integer (-$2), "") }
 | BOOLCONST { Const (Boolean $1, "") }
 | EMPTYLST { Const (IntList [], "") }
-| IDENT { Var ($1, "") }
+| IDENT { 
+  let res_str = convert_var_name_apron_not_support $1 in 
+  Var (res_str, "") }
 | LPAREN pattern RPAREN { $2 }
 ;
     

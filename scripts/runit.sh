@@ -58,7 +58,7 @@ else
 fi
 
 DIRS=" DRIFT2 DOrder r_type"
-INS=" first high negative array list" #   
+INS=" first high negative array list termination" #   
 timeout="300"
 OUTPRE="out"
 DATE="gdate"
@@ -71,6 +71,10 @@ cd ../ && ./build.sh clean && ./build.sh
 cd scripts
 
 for dir in ${INS}; do
+    if [ ! -d ${OUTDIR}/${dir} ] 
+    then
+        mkdir -p ${OUTDIR}/${dir}
+    fi
     rm -f ${OUTDIR}/${dir}/* # Remove all outputs from last tests
 done
 

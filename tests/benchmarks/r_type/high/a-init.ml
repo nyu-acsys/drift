@@ -11,5 +11,3 @@ let main (k(*-:{v:Int|true}*)) (n(*-:{v:Int|true}*)) (i(*-:{v:Int|true}*)) =
     let x = init k n (make_array n) in
     if 0 <= i && i < n then
       assert (x i >= 1)
-    else ()
-  else ()
