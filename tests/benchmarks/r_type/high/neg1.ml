@@ -9,7 +9,7 @@ let g (gx:int) (gy:unit) = 2 * gx
 
 let twice f (tx:unit->int) (ty:unit) = f (f tx) ty
 
-let neg nx (ny:unit) = 0 - (nx ())
+let neg nx (ny:unit) = - nx ()
 
 let main (n:int(*-:{v:Int | true}*)) =
 	if n>=0 then
