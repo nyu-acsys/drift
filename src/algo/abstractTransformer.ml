@@ -419,12 +419,12 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             if is_Relation tx' then 
             if sat_equal_V tx' x then tx' else equal_V (forget_V x tx') x (* M<E(x)>[v=E(x)] *) 
             else tx'
-        in 
-        let tx = if eq_V tx (stren_V tx ae) then tx else
+        in
+        let tx = if only_shape_V ae || leq_V (stren_V tx ae) tx then tx else
             (stren_V (proj_V tx [x]) ae) in
         let t = let t' = find n m in
             t' in (* M[env*l] *)
-        (* (if x = "fail" then
+        (* (if !debug then
         begin
             Format.printf "\n<=== Prop Var %s %b ===> %s\n" x recnb lx;
             Format.printf "cs %s, %s \n" varcs lcs;
@@ -447,7 +447,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 else *)
                     prop_scope envx env sx m tx t
         in
-        (* (if x = "src" && l = "62" then
+        (* (if !debug then
         begin
             Format.printf "\nRES for prop:\n";
             pr_value Format.std_formatter tx';
@@ -796,7 +796,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
               let prop_t = Table (construct_table cs (tx, t1)) in
               (* (if !debug then
                  begin
-                 Format.printf "\n<=== Prop lamb ===> %s %s\n" (loc px) (loc e1);
+                 Format.printf "\n<=== Prop lamb ===> %s %s\n" lx (loc e1);
                  pr_value Format.std_formatter prop_t;
                  Format.printf "\n<<~~~~>> %s\n" l;
                  pr_value Format.std_formatter t;
@@ -873,12 +873,28 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             let _, t' = prop tp t in
             m' |> NodeMap.add n t'
     | PatMat (e, patlst, l) ->
+        (* (if !debug then
+        begin
+            Format.printf "\n<=== Pattern Match ===>\n";
+            pr_exp true Format.std_formatter term;
+            Format.printf "\n";
+        end
+        ); *)
         let ne = construct_enode env (loc e) |> construct_snode sx in
         (* let ex = get_var_name e in *)
         let m' = step e env sx cs ae assertion is_rec m in
         let te = find ne m' in
         if te = Bot || only_shape_V te then m' else
         let m'' = List.fold_left (fun m (Case (e1, e2)) -> 
+            (* (if !debug then
+            begin
+                Format.printf "\n<=== Pattern ===>\n";
+                pr_exp true Format.std_formatter e1;
+                Format.printf "\n";
+                pr_exp true Format.std_formatter e2;
+                Format.printf "\n";
+            end
+            ); *)
             match e1 with
             | Const (c, l') ->
                 let m1 = step e1 env sx cs ae assertion is_rec m in
@@ -981,6 +997,41 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 m2 |> NodeMap.add ne te' |> NodeMap.add n1 t1'
                 |> NodeMap.add n2 t2' |> NodeMap.add n t'
                 else raise (Invalid_argument "Pattern only supports list cons")
+            | TupleLst (termlst, l') ->
+                let n1 = construct_enode env l' |> construct_snode sx in
+                let t1 = 
+                    let raw_t1 = find n1 m in
+                    if is_tuple_V raw_t1 then raw_t1
+                    else 
+                        let u' = List.init (List.length termlst) (fun _ ->
+                    Bot) in Tuple u' in
+                let te = find ne m in
+                let te, t1 = alpha_rename_Vs te t1 in
+                let tlst = get_tuple_list_V t1 in
+                let tllst = te |> get_tuple_list_V in
+                let env', m', tlst', tllst' = List.fold_left2 (fun (env, m, li, llst) e (ti, tlsti) -> 
+                    match e with
+                    | Var (x, l') -> 
+                        let nx = construct_vnode env l' cs in
+                        let env1 = env |> VarMap.add x (nx, false) in
+                        let nx = construct_snode sx nx in
+                        let tx = find nx m in
+                        let ti', tx' = prop ti tx in
+                        let tlsti', ti'' = prop tlsti ti in
+                        let m' = m |> NodeMap.add nx tx' in
+                        env1, m', (join_V ti' ti'') :: li, tlsti' :: llst
+                    | _ -> raise (Invalid_argument "Tuple only for variables now")
+                ) (env, m, [], []) termlst (zip_list tlst tllst) in
+                let tlst', tllst' = List.rev tlst', List.rev tllst' in
+                let t1', te' = Tuple tlst', Tuple tllst' in
+                let _, t1' = prop t1' t1 in
+                let te', _ = prop te te' in
+                let m1 = m |> NodeMap.add n1 t1' |> NodeMap.add ne te' in
+                let m2 = step e2 env' sx cs ae assertion is_rec m1 in
+                let n2 = construct_enode env' (loc e2) |> construct_snode sx in
+                let t = find n m2 in let t2 = find n2 m2 in
+                let t2', t' = prop t2 t in
+                m2 |> NodeMap.add n2 t2' |> NodeMap.add n t'
             | _ -> raise (Invalid_argument "Pattern should only be either constant, variable, and list cons")
         ) (NodeMap.add ne te m' |> Hashtbl.copy) patlst in
         m''

@@ -10,6 +10,7 @@ FLAGS="-cflags -g -lflags -g -libs str -pkgs $APRONPKG $DIRS"
 OCAMLBUILD=ocamlbuild
 MENHIR=menhir
 
+eval `opam config env`
 
 ocb()
 {
