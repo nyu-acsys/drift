@@ -54,7 +54,7 @@ or
 usage: ./drift2.native [-file <file name>] [-domain <domain name>] [-thold] [-sen] [-debug] [-bt] [-int]
   -file : Input file specification
   -domain : Abstract domain specification (Oct, Polka_st, Polka_ls)
-  -sen : use 1-context sensitivity
+  -sen : Use 1-context sensitive analysis
   -thold : Use threshold widening
   -out : Output result level
          0: Output map after each step
@@ -68,19 +68,18 @@ usage: ./drift2.native [-file <file name>] [-domain <domain name>] [-thold] [-se
 
 ## Guides for Running Experiments 
 The experiment to run DRIFT is working as follows:
-1. We create a shell script to run all experiments. The results we stored is inside a `output` folder.
+1. We provide a shell script to run all experiments. The results we stored is inside a `output` folder.
 2. We collect our data by using a python script. 
 ### runit.sh script for benchmark testing: 
 Usage of the shell script `runit.sh` inside the **scripts** folder is:
 ```bash
-./runit.sh -set unv -domain Oct [-nar | -dwid 0 | -thold] [-sen]
+./runit.sh -set unv -domain <domain name> [-thold] [-sen]
 -set:     choose benchmark sets. The experiment used 'unv' set.
--domain:  choose an abstract domain for running.
--nar:     set this to allow narrowing process. The experiment does not consider this anymore.
--dwid:    set iteration steps to delay widening. The experiment does not consider this anymore.
--thold:   allow the tool to use widening with thresholds.
--sen:     set this to allow 1-context-sensitive.
+-domain:  Abstract domain specification (Oct, Polka_st, Polka_ls)
+-thold:   Use threshold widening
+-sen:     Use 1-context sensitive analysis
 ```
+
 When it done, it will automaticallt generate a csv table with results. Please put them into corresponded subfolder inside `result` directory.
 ### table.py script for generating latex table:
 Usage of the python script `table.py` inside the **result** folder:
