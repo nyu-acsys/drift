@@ -372,7 +372,11 @@ let mk_lambda p e =
       Rec (None, (x, ""), e', "")
         
 let mk_lambdas ps e = List.fold_right mk_lambda ps e
-let mk_rec f x e = Rec (Some (f, ""), (x, ""), e, "")
+let mk_rec f x e =
+  let f_opt = 
+    if StringSet.mem f (fv e) then Some (f, "") else None
+  in
+  Rec (f_opt, (x, ""), e, "")
 let mk_ite e0 e1 e2 = Ite (e0, e1, e2, "", construct_asst None)
 let mk_op op e1 e2 = BinOp (op, e1, e2, "")
 let mk_unop uop e1 = UnOp (uop, e1, "")
@@ -382,9 +386,9 @@ let mk_lets defs e =
   List.fold_right (fun (x, def) e -> mk_let_in x def e) defs e
 
 let lam_to_mu f = function
-  | Rec(None, px, e, le) -> Rec (Some (f, ""), px, e, le)
   | e when not @@ StringSet.mem f (fv e) ->
       e
+  | Rec(None, px, e, le) -> Rec (Some (f, ""), px, e, le)
   | _ -> raise (Invalid_argument "Invalid function lambda")
 
 let mk_let_rec_in x def e = 
