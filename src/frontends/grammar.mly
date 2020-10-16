@@ -132,7 +132,7 @@ basic_term: /*term@7 := int | bool | [] | var | (term)*/
 ;
 
 const_term:
-| INTCONST { thresholdsSet := ThresholdsSetType.add $1 !thresholdsSet; Const (Integer $1, "") }
+| INTCONST { if abs $1 < 1000 then thresholdsSet := ThresholdsSetType.add $1 !thresholdsSet; Const (Integer $1, "") }
 | BOOLCONST { Const (Boolean $1, "") }
 | LPAREN RPAREN { Const (UnitLit, "") }
 ;
@@ -150,7 +150,7 @@ unary_term:
 | MINUS unary_term {
   match $2 with
   | Const (Integer i, _) ->
-      thresholdsSet := ThresholdsSetType.add (-i) !thresholdsSet;
+      if abs i < 1000 then thresholdsSet := ThresholdsSetType.add (-i) !thresholdsSet;
       Const (Integer (-i), "")
   | _ -> UnOp (UMinus, $2, "") }
 ;
@@ -257,7 +257,7 @@ term:
 
 seq_term:
 | term %prec below_SEMI { $1 }
-| term SEMI seq_term { mk_let_in (Var ("_", "")) $1 $3 }
+| term SEMI seq_term { (*mk_let_in (Var ("_", "")) $1 $3*) BinOp (Seq, $1, $3, "")  }
 ;
 
   
@@ -281,8 +281,8 @@ let_vals:
 | let_val let_vals {
   let rc, p, def, lst = $1 in
   match p, $2 with
-  | Var (("main" | "_") as x, _), Const (UnitLit, "") ->
-      mk_let_main x def lst
+  | Var (("main" | "_"), _), Const (UnitLit, "") ->
+      mk_let_main "main" def lst
   | Var (x, _), _ when rc -> 
       mk_let_rec_in x def $2
   | _ ->
@@ -292,8 +292,8 @@ let_vals:
 ;
 
 basic_pattern:
-| INTCONST { thresholdsSet := ThresholdsSetType.add $1 !thresholdsSet; Const (Integer $1, "") }
-| MINUS INTCONST { thresholdsSet := ThresholdsSetType.add (-$2) !thresholdsSet; Const (Integer (-$2), "") }
+| INTCONST { if abs $1 < 1000 then thresholdsSet := ThresholdsSetType.add $1 !thresholdsSet; Const (Integer $1, "") }
+| MINUS INTCONST { if abs $2 < 1000 then thresholdsSet := ThresholdsSetType.add (-$2) !thresholdsSet; Const (Integer (-$2), "") }
 | BOOLCONST { Const (Boolean $1, "") }
 | EMPTYLST { Const (IntList [], "") }
 | IDENT { 

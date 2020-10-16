@@ -50,7 +50,8 @@ type binop =
   | And   (* && *)
   | Or    (* || *)
   | Cons  (* :: *)
-
+  | Seq   (* ; *)
+      
 type value =
   | Integer of int
   | Boolean of bool
@@ -89,7 +90,8 @@ let string_of_op = function
   | And   (* && *) -> "&&"
   | Or    (* || *) -> "||"
   | Cons  (* :: *) -> "::"
-
+  | Seq   (* ;  *) -> ";"
+        
 let string_of_unop = function
   | UMinus (* - *) -> "-"
   | Not (* not *) -> "not"
@@ -109,6 +111,7 @@ let op_of_string = function
   |  "&&" -> And   (* && *)
   |  "||" -> Or    (* || *)
   |  "::" -> Cons  (* :: *)
+  |  ";" -> Seq (* ; *)
   | s -> raise (Invalid_argument (s^": Invalid operator inside pre-defined var"))
 
 let unop_of_string = function
@@ -165,14 +168,14 @@ let loc = function
   | Rec (_, _, _, l) -> l
 
 let cond_op = function
-  | Plus | Mult | Div | Mod | Modc | Minus | And | Or | Cons -> false
+  | Plus | Mult | Div | Mod | Modc | Minus | And | Or | Cons | Seq -> false
   | Ge | Eq | Ne | Lt | Gt | Le -> true
 
 let bool_op = function
   | And | Or -> true
   | _ -> false
 
-let list_op = function
+let is_list_op = function
   | Cons -> true
   | _ -> false
 
@@ -381,7 +384,12 @@ let mk_ite e0 e1 e2 = Ite (e0, e1, e2, "", construct_asst None)
 let mk_op op e1 e2 = BinOp (op, e1, e2, "")
 let mk_unop uop e1 = UnOp (uop, e1, "")
 
-let mk_let_in x def e = mk_app (mk_lambda x e) def
+let mk_let_in x def e =
+  match x with
+  | Var (x', _) when false && not @@ StringSet.mem x' (fv e) ->
+      BinOp (Seq, def, e, "")
+  | _ -> mk_app (mk_lambda x e) def
+
 let mk_lets defs e =
   List.fold_right (fun (x, def) e -> mk_let_in x def e) defs e
 
@@ -404,20 +412,28 @@ let mk_main_call x params =
 
 let mk_let_main x def params = 
   let x' = if x = "_" then "main" else x in
-  let e =
-    let lst =
-      List.rev_map (function Var (x, _) -> x | _ -> failwith "parameters of main function can only be variables")
-        params
-    in
-    mk_pre_apps lst (mk_var x')
-  in
-  mk_app (mk_lambda (Var (x, "")) e) def
+  match params with
+  | [] -> def
+  | _ ->
+      let e =
+        let lst =
+          List.rev_map (function Var (x, _) -> x | _ -> failwith "parameters of main function can only be variables")
+            params
+        in
+        mk_pre_apps lst (mk_var x')
+      in
+      mk_app (mk_lambda (Var (x', "")) e) def
 
 let mk_let_main_rec x def params =
-  let e = let lst = List.rev params in
-    mk_pre_apps lst (mk_var x)
-  in
-  mk_app (mk_lambda (Var (x, "")) e) (lam_to_mu x def)
+  match params with
+  | [] ->
+      lam_to_mu x def
+  | _ ->
+      let e =
+        let lst = List.rev params in
+        mk_pre_apps lst (mk_var x)
+      in
+      mk_app (mk_lambda (Var (x, "")) e) (lam_to_mu x def)
 
 let mk_pattern_lambda t e = Rec (None, t, e, "")
 
@@ -502,7 +518,9 @@ let simplify =
           simp a1
       | e1', e2' -> App (e1', e2', l))
   | BinOp (bop, e1, e2, l) ->
-      BinOp (bop, simp e1, simp e2, l)
+      (match bop, simp e1 with
+      | Seq, (Const _ | Var _ | Rec _) -> simp e2
+      | _, se1 -> BinOp (bop, se1, simp e2, l))
   | UnOp (uop, e, l) ->
       UnOp (uop, simp e, l)
   | Rec (f_opt, (x, xl), e, l) ->

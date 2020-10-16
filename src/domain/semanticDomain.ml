@@ -129,7 +129,7 @@ module SemanticsDomain =
         | Bool (vt, vf) -> Bool (AbstractValue.operator res l r op 1 vt, AbstractValue.operator res l r (rev_op op) 0 vf)
         | Unit _ -> raise (Invalid_argument "opR: Given a unit type"))
       )
-      | Cons | And | Or -> raise (Invalid_argument ("Invalid operator matched " ^ (string_of_op op)))
+      | Cons | Seq | And | Or -> raise (Invalid_argument ("Invalid operator matched " ^ (string_of_op op)))
     and uop_R res op e cons a = (*cons for flag of linear constraints*)
       match op with
       | UMinus -> (match a with
