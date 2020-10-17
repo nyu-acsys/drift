@@ -32,7 +32,7 @@ let queen size =
     let next = queenArray(row) + 1 in
     if next > size then
       let queenArray = assign row 0 queenArray in
-      if row = 0 then () else loop (row - 1) queenArray
+      if row = 0 then () else loop (row-1) queenArray
     else
       let queenArray = assign row next queenArray in
       if test row queenArray then
