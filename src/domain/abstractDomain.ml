@@ -203,7 +203,9 @@ module AbstractValue =
                 (* check prevar and newvar has the same constraint or not *)
                 (* TODO: If not the same, return bottom *)
                 (* If same, project prevar *)
-                let int_vars_new = Array.fold_left (fun ary x -> if prevar <> Var.to_string x then Array.append ary [|x|] else ary) [||] int_vars in
+                let int_vars_new =
+                  Array.fold_left (fun ary x -> if prevar <> Var.to_string x then Array.append ary [|x|] else ary) [||] int_vars
+                in
                 let env' = Environment.make int_vars_new real_vars in
                 Abstract1.change_environment man v env' false
               end
@@ -222,7 +224,7 @@ module AbstractValue =
           Format.printf "\n";
         end); *)
         Abstract1.minimize_environment man v'
-        (* v' *)
+          (* v' *)
     let forget_var var v =
         (* (if !debug then
           begin
