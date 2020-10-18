@@ -331,7 +331,8 @@ let _ =
       ignore (s el);
       if !out_put_level < 2 then
         print_exp stdout el;
-      print_newline ()) t
+      print_newline ()) t;
+    if !Config.debug then print_measures ()
   with
   | Sys_error s | Failure s -> 
       let bs = if !Config.debug then Printexc.get_backtrace () else "" in

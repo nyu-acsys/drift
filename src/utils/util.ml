@@ -95,3 +95,63 @@ let fresh_func var =
     let idx = !ref_index in
     incr ref_index;
     var ^ (string_of_int idx)
+
+
+
+let measured_time = ref 0.
+let measured_calls = ref 0
+
+(** measure accumulated execution time and number of calls to a particular function *)
+let measure fn arg =
+  let start_time = 
+    let ptime = Unix.times () in
+    ptime.tms_utime
+  in
+  try
+    let res = fn arg in
+    let end_time = 
+      let ptime = Unix.times () in
+      ptime.Unix.tms_utime
+    in
+    measured_time := !measured_time +. (end_time -. start_time);
+    incr measured_calls;
+    res
+  with e ->
+    let end_time = 
+      let ptime = Unix.times () in
+      ptime.Unix.tms_utime
+    in
+    measured_time := !measured_time +. (end_time -. start_time);
+    incr measured_calls;
+    raise e
+
+let measures = Hashtbl.create 10
+
+let measure_call (id: string) fn arg =
+  let get_time () = 
+    let ptime = Unix.times () in
+    ptime.tms_utime
+  in
+  let (calls, time) =
+    if Hashtbl.mem measures id
+    then Hashtbl.find measures id
+    else (0, 0.)
+  in
+  let start_time = get_time () in
+  try
+    let res = fn arg in
+    let end_time = get_time () in
+    Hashtbl.replace measures id (calls + 1, time +. end_time -. start_time);
+    res
+  with e ->
+    let end_time = get_time () in
+    Hashtbl.replace measures id (calls + 1, time +. end_time -. start_time);
+    raise e
+
+let print_measures () =
+  if Hashtbl.length measures > 0 then print_endline "Profiling:";
+  Hashtbl.iter
+    (fun id (calls, time) ->
+      print_endline ("  " ^ id ^ ": " ^ (string_of_int calls) ^ " call(s), " ^ (string_of_float time) ^ " s")
+    )
+    measures
