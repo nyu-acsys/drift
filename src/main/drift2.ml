@@ -299,14 +299,20 @@ f lst1 lst2"
  *)
 
 let pair_test_1 = parse_from_string
-"1, 2" *)
+"1, 2"
 
 let unary_minus_test = parse_from_string
 "let a = 3 in
 let b = -a in
 -b"
 
-let tests = [unary_minus_test]
+let rec_test = parse_from_string
+"let rec f g a = if a = 3 then a else f g (g a) in
+(*let b = g a in f g b*)
+let add x = x + 1 in f add 0"
+ *)
+
+let tests = []
   
 let _ =
   try

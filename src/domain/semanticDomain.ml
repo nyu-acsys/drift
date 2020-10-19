@@ -53,7 +53,7 @@ module SemanticsDomain =
       match a1, a2 with
       | (Int v1), (Int v2) -> Int (AbstractValue.join v1 v2)
       | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> Bool (AbstractValue.join v1t v2t, AbstractValue.join v1f v2f)
-      | Unit _, _ | _, Unit _ -> Unit ()
+      | Unit _, a | a, Unit _ -> a
       | Int v1, Bool (v2t, v2f) | Bool (v2t, v2f) , Int v1
         when AbstractValue.eq v2t AbstractValue.bot &&
           AbstractValue.eq v2f AbstractValue.bot
@@ -107,6 +107,7 @@ module SemanticsDomain =
       | (Int v1), (Int v2) -> Int (AbstractValue.widening v1 v2)
       | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> Bool (AbstractValue.widening v1t v2t, AbstractValue.widening v1f v2f)
       | Unit u1, Unit u2 -> Unit ()
+      | Unit _, a | a, Unit _ -> a
       | _, _ -> raise (Invalid_argument "Widening: Base Type not equal")
     let sat_equal_R a x = match a with
       | Int v -> AbstractValue.sat_cons v x

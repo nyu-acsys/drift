@@ -36,7 +36,7 @@ else:
 "res1-polka_st-thowid", "res1-polka_ls-standard", "res1-polka_ls-thowid" ]
 
 # loc is calculated by cloc 
-sort_lst = {"high":["HO", 8], "first":["FO", 11], "array":["A", 17], "list":["L", 16], "negative":["E", 16]}
+sort_lst = {"high":["HO", 8], "first":["FO", 11], "array":["A", 17], "list":["L", 16], "negative":["E", 16], "termination":["T", 47]}
 unit_lst = ["succ", "total", "avg.", "mean"]
 
 cant_solve_lst = [
@@ -45,9 +45,9 @@ cant_solve_lst = [
 ]
 
 can_solve_domain_dic = { 
-"oct":[{"high":0, "first":0, "array":0, "list":0, "negative":0},{"high":0, "first":0, "array":0, "list":0, "negative":0}], 
-"polka_st":[{"high":0, "first":0, "array":0, "list":0, "negative":0},{"high":0, "first":0, "array":0, "list":0, "negative":0}],
-"polka_ls":[{"high":0, "first":0, "array":0, "list":0, "negative":0},{"high":0, "first":0, "array":0, "list":0, "negative":0}]
+"oct":[{"high":0, "first":0, "array":0, "list":0, "negative":0, "termination":0},{"high":0, "first":0, "array":0, "list":0, "negative":0, "termination":0}], 
+"polka_st":[{"high":0, "first":0, "array":0, "list":0, "negative":0, "termination":0},{"high":0, "first":0, "array":0, "list":0, "negative":0, "termination":0}],
+"polka_ls":[{"high":0, "first":0, "array":0, "list":0, "negative":0, "termination":0},{"high":0, "first":0, "array":0, "list":0, "negative":0, "termination":0}]
 }
 
 def get_domain_idx(domain):
@@ -60,7 +60,8 @@ def get_bench_idx(bench):
     elif bench == "first": return 1
     elif bench == "array": return 2
     elif bench == "list": return 3
-    else: return 4
+    elif bench == "termination": return 4
+    else: return 5
 
 def read_data():
     for file_name in csv_lst:
