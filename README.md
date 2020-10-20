@@ -42,11 +42,11 @@ To produce the native code executable file, run:
 ## Usage
 To test the analysis, run for example:
 ```bash
-./drift.native -file tests/benchmarks/DRIFT2/high/map_2.ml -domain Polka_st -out 2
+./drift.native -file tests/benchmarks/DRIFT/high/map_2.ml -domain Polka_st -out 2
 ```
 or
 ```
-/drift.native -file tests/benchmarks/DRIFT2/high/map_2.ml -domain Oct -sen -thold
+/drift.native -file tests/benchmarks/DRIFT/high/map_2.ml -domain Oct -sen -thold
 ```
 
 ### Options

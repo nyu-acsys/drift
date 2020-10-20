@@ -7,7 +7,7 @@ PROGNAME="r_type"
 SET=$2
 echo "outdir=<$OUTDIR> prog=<$PROG>"
 
-DIRS=" DRIFT2 DOrder r_type"
+DIRS=" DRIFT DOrder r_type"
 INS=" array list first high negative" #  termination
 timeout="300" # timeout set for 5 minutes
 OUTPRE="out"

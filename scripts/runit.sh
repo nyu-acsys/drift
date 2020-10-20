@@ -3,9 +3,9 @@
 # ./runit.sh -set call/unv -domain Oct [-nar | -dwid 0 | -thold] [-sen]
 # Domain for benchmarks: Oct, Polka_st, Polka_ls
 
-OUTDIR="../outputs/DRIFT2"
+OUTDIR="../outputs/DRIFT"
 PROG="../drift.native"
-PROGNAME="DRIFT2"
+PROGNAME="DRIFT"
 SET=$2
 DOMAIN=$4
 if [ $# -gt 1 ]; then
