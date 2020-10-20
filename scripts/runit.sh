@@ -4,7 +4,7 @@
 # Domain for benchmarks: Oct, Polka_st, Polka_ls
 
 OUTDIR="../outputs/DRIFT2"
-PROG="../drift2.native"
+PROG="../drift.native"
 PROGNAME="DRIFT2"
 SET=$2
 DOMAIN=$4

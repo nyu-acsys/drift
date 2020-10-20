@@ -42,16 +42,16 @@ To produce the native code executable file, run:
 ## Usage
 To test the analysis, run for example:
 ```bash
-./drift2.native -file tests/benchmarks/DRIFT2/high/map_2.ml -domain Polka_st -out 2
+./drift.native -file tests/benchmarks/DRIFT2/high/map_2.ml -domain Polka_st -out 2
 ```
 or
 ```
-/drift2.native -file tests/benchmarks/DRIFT2/high/map_2.ml -domain Oct -sen -thold
+/drift.native -file tests/benchmarks/DRIFT2/high/map_2.ml -domain Oct -sen -thold
 ```
 
 ### Options
 ```bash
-usage: ./drift2.native [-file <file name>] [-domain <domain name>] [-thold] [-sen] [-debug] [-bt] [-int]
+usage: ./drift.native [-file <file name>] [-domain <domain name>] [-thold] [-sen] [-debug] [-bt] [-int]
   -file : Input file specification
   -domain : Abstract domain specification (Oct, Polka_st, Polka_ls)
   -sen : Use 1-context sensitive analysis
