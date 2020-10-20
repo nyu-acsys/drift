@@ -44,9 +44,9 @@ module SemanticsDomain =
       | Bool _ -> true
       | _ -> false
     let init_R_c (c:value) = match c with
-      | Boolean true -> Bool (AbstractValue.init_c 1, AbstractValue.bot)
-      | Boolean false -> Bool (AbstractValue.bot, AbstractValue.init_c 0)
-      | Integer i -> Int (AbstractValue.init_c i)
+      | Boolean true -> Bool (AbstractValue.from_int 1, AbstractValue.bot)
+      | Boolean false -> Bool (AbstractValue.bot, AbstractValue.from_int 0)
+      | Integer i -> Int (AbstractValue.from_int i)
       | UnitLit  -> Unit ()
       | IntList lst -> raise (Invalid_argument "This should be cover on the upper level")
     let join_R a1 a2 =
@@ -176,9 +176,9 @@ module SemanticsDomain =
       | Bool (vt, vf) -> AbstractValue.is_bot vf && (AbstractValue.is_bot vt <> true)
       | _ -> raise (Invalid_argument "Expect a bool value")
     let opt_eq_R a1 a2 = is_bot_R a1 = false && is_bot_R a2 = false && eq_R a1 a2
-    let contain_var_R var a = match a with
-      | Int v -> AbstractValue.contain_var var v
-      | Bool (vt, vf) -> AbstractValue.contain_var var vt && AbstractValue.contain_var var vf
+    let contains_var_R var a = match a with
+      | Int v -> AbstractValue.contains_var var v
+      | Bool (vt, vf) -> AbstractValue.contains_var var vt && AbstractValue.contains_var var vf
       | Unit _ -> false
     let bot_shape_R = function
       | Int _ -> bot_R Plus
@@ -619,7 +619,7 @@ module SemanticsDomain =
     and join_Lst lst1 lst2 = 
       let (l1, e1), (rl1,ve1) = lst1 in
       let (l2, e2), (rl2,ve2) = lst2 in
-      let lst1', lst2' = if l1 <> "l" && contain_var_R l1 rl2 then
+      let lst1', lst2' = if l1 <> "l" && contains_var_R l1 rl2 then
         let a, b = alpha_rename_Lsts lst2 lst1 in 
         b, a
         else alpha_rename_Lsts lst1 lst2 in
@@ -653,7 +653,7 @@ module SemanticsDomain =
       let ((l,e) as vars, (rl,ve)) = lst in
       match ropt with
       | Some ((_, e') , rl') -> (match v, ve with
-        | Bot, _ -> if String.sub var 0 2 = "xs" && contain_var_R "zc" rl' then
+        | Bot, _ -> if String.sub var 0 2 = "xs" && contains_var_R "zc" rl' then
            let rl = arrow_R var rl rl' in
            let re' = (op_R "" e "zc" Eq true rl) in
            (vars, (rl, Relation re'))

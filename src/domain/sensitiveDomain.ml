@@ -22,6 +22,9 @@ module MakeHash(Hash: HashType) = struct
   (* let empty : 'a t = Hashtbl.create 1234 *)
   let create (num: int) : 'a t = Hashtbl.create num
   let add key v (m: 'a t) : 'a t = Hashtbl.replace m key v; m
+  let update key fn m =
+    let v' = Hashtbl.find_opt m key |> fn in
+    add key v' m
   let merge f m1 m2 : 'a t = 
     Hashtbl.filter_map_inplace (
     fun key v1 -> match Hashtbl.find_opt m2 key with
