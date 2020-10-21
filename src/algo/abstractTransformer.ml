@@ -89,7 +89,7 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
             in
             let v1o', v2o' = 
               if opt_o then v1ot, v2o else
-              prop (arrow_V z v1ot v2ip) (*(arrow_V z v2o v2i)*) v2o
+              prop (arrow_V z v1ot v2ip) (arrow_V z v2o v2i)
             in
             let v1o' =
               if (is_Array v1i' && is_Array v2i') || (is_List v1i' && is_List v2i') then
@@ -447,10 +447,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
               else equal_V (forget_V x tx') x (* M<E(x)>[v=E(x)] *) 
             else tx'
         in
-        let tx = if only_shape_V ae || leq_V (stren_V tx ae) tx then tx else
-            (stren_V (proj_V tx [x]) ae) in
-        let t = let t' = find n m in
-            t' in (* M[env*l] *)
+        let t = find n m in (* M[env*l] *)
         (* (if !debug then
         begin
             Format.printf "\n<=== Prop Var %s %b ===> %s\n" x recnb lx;
@@ -846,6 +843,13 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
               in
               let n1 = construct_enode env1 (loc e1) |> construct_snode x in
               let tx = find nx m in
+              (if true then
+                 begin
+                 Format.printf "\n<=== Prop lamb ===> %s %s\n" lx (loc e1);
+                 pr_value Format.std_formatter ae;
+                 Format.printf "\n";
+                 end
+                 );
               let ae' = if (x <> "_" && is_Relation tx) || is_List tx then 
                 if only_shape_V tx then ae else (arrow_V x ae tx) else ae in
               let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x var in

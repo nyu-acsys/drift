@@ -18,6 +18,10 @@ if [[ "$OSTYPE" != "darwin"* ]]; then
 fi
 
 for dir in ${INS}; do
+    if [ ! -d ${OUTDIR}/${dir} ] 
+    then
+        mkdir -p ${OUTDIR}/${dir}
+    fi
     rm -f ${OUTDIR}/${dir}/* # Remove all outputs from last tests
 done
 

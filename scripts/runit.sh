@@ -57,7 +57,7 @@ else
     TESTDIR="../tests/benchmarks"
 fi
 
-DIRS=" DRIFT2 DOrder r_type"
+DIRS=" DRIFT DOrder r_type"
 INS=" first high negative array list termination" #   
 timeout="300"
 OUTPRE="out"
