@@ -604,7 +604,7 @@ module ProductDomain(D1 : Domain)(D2: Domain) : Domain =
       D1.from_int c, D2.from_int c
         
     let is_bot (v1, v2) =
-      D1.is_bot v1 && D2.is_bot v2
+      D1.is_bot v1 || D2.is_bot v2
         
     let contains_var x (v1, v2) =
       D1.contains_var x v1 || D2.contains_var x v2
