@@ -126,5 +126,5 @@ fi
 
 csv_name="${csv_name}${DOMAIN}${config}"
 
-echo "Gnerate ${csv_name} table results..."
+echo "Generate ${csv_name} table results..."
 python3 table.py -csv ${csv_name}
