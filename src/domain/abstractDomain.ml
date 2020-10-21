@@ -373,25 +373,25 @@ module BaseDomain(Manager : DomainManager) : Domain =
       let eq = var^" >=" ^ (string_of_int i) in (* v >=  threshold_const *)
       Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
       idx2 := !idx2 + 1;
-      let eq = var^" <" ^ (string_of_int i) in (* v <=  threshold_const *)
+      let eq = var^" <" ^ (string_of_int i) in (* v <  threshold_const *)
       Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
       idx2 := !idx2 + 1;
-      let eq = var^" >" ^ (string_of_int i) in (* v >=  threshold_const *)
+      let eq = var^" >" ^ (string_of_int i) in (* v >  threshold_const *)
       Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
       idx2 := !idx2 + 1;
       i) !thresholdsSet in ()) vars;
       List.iter (fun lst -> 
         let lvar, rvar = List.nth lst 0, List.nth lst 1 in
-        let eq = lvar^" <= "^rvar in (* v <=  threshold_const *)
+        let eq = lvar^" <= "^rvar in (* v1 <= v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;
-        let eq = lvar^" >= "^rvar in (* v >=  threshold_const *)
+        let eq = lvar^" >= "^rvar in (* v1 >= v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;
-        let eq = lvar^" < "^rvar in (* v <=  threshold_const *)
+        let eq = lvar^" < "^rvar in (* v1 < v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;
-        let eq = lvar^" > "^rvar in (* v >=  threshold_const *)
+        let eq = lvar^" > "^rvar in (* v1 > v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;) mult_lst;
         thehold_ary

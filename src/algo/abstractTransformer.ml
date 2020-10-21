@@ -843,13 +843,6 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
               in
               let n1 = construct_enode env1 (loc e1) |> construct_snode x in
               let tx = find nx m in
-              (if true then
-                 begin
-                 Format.printf "\n<=== Prop lamb ===> %s %s\n" lx (loc e1);
-                 pr_value Format.std_formatter ae;
-                 Format.printf "\n";
-                 end
-                 );
               let ae' = if (x <> "_" && is_Relation tx) || is_List tx then 
                 if only_shape_V tx then ae else (arrow_V x ae tx) else ae in
               let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x var in
