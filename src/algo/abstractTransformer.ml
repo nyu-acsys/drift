@@ -460,7 +460,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             pr_value Format.std_formatter tx;
             Format.printf "\n<<~~~~>> %s\n" l;
             pr_value Format.std_formatter t;
-            Format.printf "\n<<~~~~>> %s\n" l;
+            Format.printf "\n<<~~ae~~>> %s\n" l;
             pr_value Format.std_formatter ae;
             Format.printf "\n";
         end
@@ -647,18 +647,50 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 let node_2 = e2 |> loc |> name_of_node in
                 let t' = arrow_V node_1 td t1 in
                 let t'' = arrow_V node_2 t' t2 in
+                (* (if !debug then
+                begin
+                    Format.printf "\n<=== Op binop ===> %s\n" (loc e1);
+                    pr_value Format.std_formatter t';
+                    Format.printf "\n<<~~~~>>\n";
+                    pr_value Format.std_formatter t'';
+                    Format.printf "\n";
+                end
+                ); *)
                 let t''' = op_V node_1 node_2 bop t'' in
+                (* (if !debug then
+                begin
+                    Format.printf "\n<=== RES Op binop ===> \n";
+                    pr_value Format.std_formatter t''';
+                    Format.printf "\n";
+                end
+                ); *)
                 let temp_t = get_env_list env sx m2 |> proj_V t''' in
                 (* if !domain = "Box" then
                    temp_t |> der_V e1 |> der_V e2  (* Deprecated: Solve remaining constraint only for box*)
                    else  *)
                 temp_t
           in
+            (* (if !debug then 
+            begin
+                Format.printf "\n<=== Prop binop ===> %s\n" l;
+                pr_value Format.std_formatter raw_t;
+                Format.printf "\n<<~~~~>> \n";
+                pr_value Format.std_formatter t;
+                Format.printf "\n";
+            end
+            ); *)
             let _, re_t =
               if is_Relation raw_t then raw_t,raw_t else 
               (* let t, raw_t = alpha_rename_Vs t raw_t in *)
               prop raw_t t
             in
+            (* (if !debug then
+                begin
+                    Format.printf "\nRES binop for prop:\n";
+                    pr_value Format.std_formatter re_t;
+                    Format.printf "\n";
+                end
+            ); *)
             let m2, re_t =
               match bop with
               | Cons ->
@@ -732,8 +764,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         if t0 = Bot then m0 else
         if not @@ is_bool_V t0 then m0 |> update n Top else
         begin
-            let { isast = isast; ps = pos } = asst in 
-            (* QUESTION: The prop is monotone and increasing, why don't we say we could earlier determine assertion failed? *)
+            let { isast = isast; ps = pos } = asst in
             if assertion && isast && not (is_bool_bot_V t0) && not (is_bool_false_V t0) then print_loc pos else
             let t_true = meet_V (extrac_bool_V t0 true) ae in (* Meet with ae*)
             let t_false = meet_V (extrac_bool_V t0 false) ae in
@@ -849,7 +880,8 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
               let n1 = construct_enode env1 (loc e1) |> construct_snode x in
               let tx = find nx m in
               let ae' = if (x <> "_" && is_Relation tx) || is_List tx then 
-                if only_shape_V tx then ae else (arrow_V x ae tx) else ae in
+                (* if only_shape_V tx then ae else  *)
+                (arrow_V x ae tx) else ae in
               let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x var in
               let prop_t = Table (construct_table cs (tx, t1)) in
               (* (if !debug then
@@ -858,7 +890,6 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                  pr_value Format.std_formatter prop_t;
                  Format.printf "\n<<~~~~>> %s\n" l;
                  pr_value Format.std_formatter t;
-                 Format.printf "\n";
                  end
                  ); *)
               let px_t, t1 = prop_scope env1 env' x m prop_t t in
@@ -876,7 +907,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                   let envf, lf, fcs = get_vnode nf in
                   let nf = construct_snode x nf in
                   let tf = find nf m in
-                  (* (if true then
+                  (* (if !debug then
                         begin
                             Format.printf "\n<=== Prop um ===> %s\n" l;
                             pr_value Format.std_formatter t;
@@ -884,10 +915,10 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                             pr_value Format.std_formatter tf;
                             Format.printf "\n";
                         end
-                    ); *)
+                  ); *)
                   let t2, tf' = prop_scope env' envf x m t tf in
                   (* let t2, tf' = prop t tf in *)
-                  (* (if true then
+                  (* (if !debug then
                      begin
                      Format.printf "\nRES for prop:\n";
                      pr_value Format.std_formatter t2;
@@ -1175,8 +1206,8 @@ let s e =
           let n = construct_snode "" n in
           (Hashtbl.remove m0' n; false)) envt
   in
-  (*thresholdsSet := !thresholdsSet |> ThresholdsSetType.add 0 
-  |> ThresholdsSetType.add 2 |> ThresholdsSetType.add 4 |> ThresholdsSetType.add (-1) |> ThresholdsSetType.add (-2);*)
+  thresholdsSet := !thresholdsSet |> ThresholdsSetType.add 0 
+  |> ThresholdsSetType.add 2 |> ThresholdsSetType.add 4 |> ThresholdsSetType.add (-1) |> ThresholdsSetType.add (-2);
   (* pre_m := m0'; *)
     let check_str, m =
       let s1, m1 = (fix envt e 0 m0' false) in

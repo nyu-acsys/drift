@@ -850,7 +850,23 @@ module SemanticsDomain =
     let join_M (m1: exec_map_t) (m2: exec_map_t) : exec_map_t =
       NodeMap.union (fun n v1 v2 -> join_V v1 v2) m1 m2
     let wid_M (m1: exec_map_t) (m2: exec_map_t) : exec_map_t =
-      NodeMap.union (fun n v1 v2 -> wid_V v1 v2) m1 m2
+      NodeMap.union (fun n v1 v2 -> 
+        (* ( 
+          let l = get_label_snode n in
+          if !debug then
+          begin
+          Format.printf "\n<=== Wid ===> %s\n" l;
+          f Format.std_formatter v1;
+          Format.printf "\n<<~~~~>> \n";
+          f Format.std_formatter v2;
+          Format.printf "\n";
+          Format.printf "\nRES:\n";
+          f Format.std_formatter res_v;
+          Format.printf "\n";
+          end
+        ); *)
+        wid_V v1 v2
+        ) m1 m2
     let leq_M (m1: exec_map_t) (m2: exec_map_t) : bool =
       NodeMap.for_all (fun n v1 (*untie to node -> value*) -> 
         NodeMap.find_opt n m2 |> Opt.map (fun v2 -> leq_V v1 v2) |>
