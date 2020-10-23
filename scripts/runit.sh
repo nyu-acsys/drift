@@ -59,7 +59,7 @@ fi
 
 DIRS=" DRIFT DOrder r_type"
 INS=" array list first high negative termination " # 
-timeout="1"
+timeout="300"
 OUTPRE="out"
 DATE="gdate"
 if [[ "$OSTYPE" != "darwin"* ]]; then
