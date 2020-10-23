@@ -6,9 +6,14 @@
 import sys, os
 import re
 import csv
+import argparse
 
 testdir = '../outputs/r_type'
-table_file = '../res_rtype.csv'
+parser = argparse.ArgumentParser()
+parser.add_argument('-csv', type=str, help='give an output csv name', required=True)
+args = parser.parse_args()
+
+table_file = '../' + args.csv + '.csv'
 pattern = re.compile(".*ml$")
 attrs = ['subdir', 'file name', 'test class', 'timing (milseconds)', 'res (true/false)']
 
@@ -32,7 +37,7 @@ def read_info_from_file(file_name):
         # state unsafe, but safe OR run forever
         res_data.append('F')
     else:
-        print("File data error: \n")
+        print(file_name+" File data error: \n")
         sys.exit(data)
     _, timing = data[-1].split(":")
     try:
@@ -62,7 +67,7 @@ def read_false_info_from_file(file_name):
     elif unsafe_regexp.search(data[1]): # state unsafe
         res_data.append('T')
     else:
-        print("File data error: \n")
+        print(file_name+" File data error: \n")
         sys.exit(data)
     _, timing = data[-1].split(":")
     try:

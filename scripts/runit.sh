@@ -58,8 +58,8 @@ else
 fi
 
 DIRS=" DRIFT DOrder r_type"
-INS=" first high negative array list termination" #   
-timeout="300"
+INS=" array list first high negative termination " # 
+timeout="1"
 OUTPRE="out"
 DATE="gdate"
 if [[ "$OSTYPE" != "darwin"* ]]; then
@@ -124,7 +124,21 @@ else
     config="-standard"
 fi
 
+if [[ $sen == true ]]; then
+    RESDIR="1-sensitive"
+else
+    RESDIR="non-sensitive"
+fi
+
+if [ $SET = "call" ]; then
+    RESSUBDIR="call"
+else
+    RESSUBDIR="unv"
+fi
+
 csv_name="${csv_name}${DOMAIN}${config}"
 
 echo "Generate ${csv_name} table results..."
 python3 table.py -csv ${csv_name}
+
+mv ../${csv_name}.csv ../result/${RESDIR}/${RESSUBDIR}

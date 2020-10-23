@@ -5,21 +5,35 @@ OUTDIR="../outputs/r_type"
 PROG="../comp_bin/r_type_macos"
 PROGNAME="r_type"
 SET=$2
-echo "outdir=<$OUTDIR> prog=<$PROG>"
-
-DIRS=" DRIFT DOrder r_type"
-INS=" array list first high negative" #  termination
-timeout="300" # timeout set for 5 minutes
-OUTPRE="out"
+SOLVER="z3 -in"
+SOLVERPRINT="\"z3 -in\""
 DATE="gdate"
 if [[ "$OSTYPE" != "darwin"* ]]; then
     DATE="date"
     PROG="../comp_bin/r_type_ubuntu"
 fi
+echo "outdir=<$OUTDIR> prog=<$PROG>"
+
+shift
+shift
+
+if [ $# -eq 1 ]; then
+    if [ $1 = "-hoice" ]; then
+        echo "Use $1";
+        SOLVER="hoice";
+        SOLVERPRINT="hoice";
+    else
+        echo "Use z3";
+    fi
+fi
+
+DIRS=" DRIFT DOrder r_type"
+INS=" array list first high negative termination " # 
+timeout="300" # timeout set for 5 minutes
+OUTPRE="out"
 
 for dir in ${INS}; do
-    if [ ! -d ${OUTDIR}/${dir} ] 
-    then
+    if [ ! -d ${OUTDIR}/${dir} ]; then
         mkdir -p ${OUTDIR}/${dir}
     fi
     rm -f ${OUTDIR}/${dir}/* # Remove all outputs from last tests
@@ -42,9 +56,9 @@ for hdir in ${DIRS}; do
                 if [[ "$OSTYPE" != "darwin"* ]]; then
                     f=${f#*./}
                 fi
-                echo "${PROG} --solver \"z3 -in\" ${TESTDIR}/${hdir}/${dir}/${f}"
+                echo "${PROG} --solver ${SOLVERPRINT} ${TESTDIR}/${hdir}/${dir}/${f}"
                 ts=$(${DATE} +%s%N)
-                timeout ${timeout} ${PROG} --solver "z3 -in" ${TESTDIR}/${hdir}/${dir}/${f} &> ${OUTDIR}/${dir}/${OUTPRE}_${f}
+                timeout ${timeout} ${PROG} --solver "${SOLVER}" ${TESTDIR}/${hdir}/${dir}/${f} &> ${OUTDIR}/${dir}/${OUTPRE}_${f}
                 tt=$((($(${DATE} +%s%N) - $ts)/1000000))
                 st=$(($timeout*1000))
                 if [[ $tt -gt $st ]]; then
@@ -57,5 +71,14 @@ for hdir in ${DIRS}; do
     done
 done
 
-echo "Gnerate table results..."
-python3 r_type_table.py  
+csv_name="res-rtype"
+if [[ $SOLVER == "hoice" ]]; then
+    csv_name="${csv_name}-hoice"
+else
+    csv_name="${csv_name}-z3"
+fi
+
+echo "Generate ${csv_name} table results..."
+python3 r_type_table.py -csv ${csv_name}
+
+mv ../${csv_name}.csv ../result/comp_tools/unv
