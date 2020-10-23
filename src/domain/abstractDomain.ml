@@ -507,9 +507,11 @@ module BaseDomain(Manager : DomainManager) : Domain =
              Abstract1.meet_tcons_array man vt tab
           )
         else (* Int value *)
-          (let expr = vres ^ " = " ^ vl ^ " " ^ temp ^ " " ^ vr in
+          begin
+          let expr = vres ^ " = " ^ vl ^ " " ^ temp ^ " " ^ vr in
           let tab = Parser.tcons1_of_lstring env [expr] in
-          Abstract1.meet_tcons_array man v' tab)
+          Abstract1.meet_tcons_array man v' tab
+          end
       in 
       (*let mk_res =
         Hashtbl.find_opt op_cache (env', vl, vr, op, cons) |>

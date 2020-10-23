@@ -293,7 +293,8 @@ module SemanticsDomain =
           (match v with
           | Table t -> Table (arrow_T forget_V arrow_V var t v')
           | Relation r1 -> if is_bot_R rl2 then Relation (bot_shape_R r1) else
-            let r1' = meet_R r1 rl2 in
+            let r1' = let res = meet_R r1 rl2 in
+            if is_bot_R res then (meet_R (forget_R l2 r1) rl2) else res in
             (match ve2 with
             | Bot -> if String.length var >= 2 && String.sub var 0 2 = "zh" then
                 raise (Invalid_argument "List.hd expects non empty list")

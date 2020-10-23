@@ -472,9 +472,8 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 let tx = if !sensitive then prop_predef l tx0 tx else tx in
                 prop tx t
             else
-                (* if recnb then prop tx t
-                else *)
-                    prop_scope envx env sx m tx t
+                (* if recnb then prop tx t else *)
+                prop_scope envx env sx m tx t
         in
         (* (if !debug then
         begin
@@ -618,8 +617,9 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                  (loc e2) (string_of_value t2));*)
           
           let bop =
-            match bop, e2 with
-            | Mod, Const _ -> Modc
+            match bop, e1, e2 with
+            | Mod, Const _, Const _ -> Mod
+            | Mod, _, Const _ -> Modc
             | _ -> bop
           in
           let t = find n m2 in
@@ -935,6 +935,21 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                  nf_t2_tf'_opt |> Opt.get_or_else (update n t1)) in
               let cs = if is_rec' && x = "_" then cs' else cs in
               let m1' = step e1 env1 x cs ae' assertion is_rec' m1 in
+              let t1 = if x = "_" then find n1 m1' else replace_V (find n1 m1') x var in
+              let prop_t = Table (construct_table cs (tx, t1)) in
+              let px_t, t1 = prop_scope env1 env' x m1' prop_t t in
+              let nf_t2_tf'_opt =
+                Opt.map (fun (_, (nf, bf)) ->
+                  let envf, lf, fcs = get_vnode nf in
+                  let nf = construct_snode x nf in
+                  let tf = find nf m1' in
+                  let t2, tf' = prop_scope env' envf x m1' t tf in
+                  nf, t2, tf') f_nf_opt
+              in
+              let tx', t1' = io_T cs px_t in
+              let m1' = m1' |> update nx tx' |> update n1 (if x = "_" then t1' else replace_V t1' var x) |>
+              (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> update nf tf' |> update n (join_V t1 t2))
+                 nf_t2_tf'_opt |> Opt.get_or_else (update n t1)) in
               join_M m1' m'
             end
         ) t (m |> update n t |> Hashtbl.copy)
@@ -1206,8 +1221,8 @@ let s e =
           let n = construct_snode "" n in
           (Hashtbl.remove m0' n; false)) envt
   in
-  thresholdsSet := !thresholdsSet |> ThresholdsSetType.add 0 
-  |> ThresholdsSetType.add 2 |> ThresholdsSetType.add 4 |> ThresholdsSetType.add (-1) |> ThresholdsSetType.add (-2);
+  (* thresholdsSet := !thresholdsSet |> ThresholdsSetType.add 0 
+  |> ThresholdsSetType.add 2 |> ThresholdsSetType.add 4 |> ThresholdsSetType.add (-1) |> ThresholdsSetType.add (-2); *)
   (* pre_m := m0'; *)
     let check_str, m =
       let s1, m1 = (fix envt e 0 m0' false) in
