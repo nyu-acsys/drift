@@ -407,13 +407,15 @@ let prop_predef l v0 v =
         )
     | _, _ -> v
 
-          
+
+    
 let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assertion: bool) (is_rec: bool) (m:exec_map_t) =
     let n = construct_enode env (loc term) |> construct_snode sx in
-    let update n v m = NodeMap.add n v m (*(function
-      | None -> v
-      | Some v' -> (wid_V v' v))
-        m*)
+    let update widen n v m =
+      (*NodeMap.update n (function
+          | None -> v
+          | Some v' -> if false && widen then wid_V v' v else (*join_V v'*) v) m*)
+        NodeMap.add n v m
     in
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     match term with
@@ -434,7 +436,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             let t' = join_V t ct in
             (stren_V t' ae)
         in
-        m |> update n t' (* {v = c ^ aE}*)
+        m |> update false n t' (* {v = c ^ aE}*)
     | Var (x, l) ->
         (* (if !debug then
         begin
@@ -484,7 +486,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             Format.printf "\n";
         end
         ); *)
-        m |> update nx tx' |> update n (stren_V t' ae) (* t' ^ ae *)
+        m |> update false nx tx' |> update false n (stren_V t' ae) (* t' ^ ae *)
     | App (e1, e2, l) ->
         (* (if !debug then
         begin
@@ -504,20 +506,20 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 init_T (z,z)
               in
               let t1 = Table te in
-              t1, update n1 t1 m0
+              t1, update false n1 t1 m0
           | _ -> t0, m0
         in
         if t1 <> Bot && not @@ is_table t1 then
           (Format.printf "Error at location %s: expected function, but found %s.\n"
              (loc e1) (string_of_value t1);
-           m1 |> update n Top)
+           m1 |> update false n Top)
         else
           let m2 = step e2 env sx cs ae assertion is_rec m1 in
           let n2 = construct_enode env (loc e2) |> construct_snode sx in
           let t2 = find n2 m2 in (* M[env*l2] *)
           (match t1, t2 with
           | Bot, _ | _, Bot -> m2
-          | _, Top -> m2 |> update n Top
+          | _, Top -> m2 |> update false n Top
           | _ ->
               let t = find n m2 in
               let cs =
@@ -561,7 +563,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 io_T cs t0
               in
               let t' = get_env_list env sx m |> proj_V raw_t' in
-              let res_m = m2 |> update n1 t1' |> update n2 t2' |> update n t' in
+              let res_m = m2 |> update false n1 t1' |> update false n2 t2' |> update false n t' in
               (* if is_array_set e1 && only_shape_V t2' = false then
                  let nx = VarMap.find (get_var_name e2) env in
                  let envx, lx,_ = get_vnode nx in
@@ -598,7 +600,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
               let len, t1', m1 = cons_list_items m e1 in
               let t1 = find n1 m1 in
               let t1', _ = prop t1 t1' in
-              m1 |> update n1 t1'
+              m1 |> update false n1 t1'
           | _ -> step e1 env sx cs ae assertion is_rec m
         in
         let m2 = step e2 env sx cs ae assertion is_rec m1 in
@@ -698,10 +700,10 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                   let t1l', re_t' = prop t1l re_t in
                   let t1' = extrac_item_V (get_env_list env sx m2) t1l' in
                   let t2', re_t'' = prop t2 re_t' in
-                  m2 |> update n1 t1' |> update n2 t2', re_t'
+                  m2 |> update false n1 t1' |> update false n2 t2', re_t'
               | Seq ->
                   let t2', re_t' = prop t2 re_t in
-                  m2 |> update n2 t2', re_t' 
+                  m2 |> update false n2 t2', re_t' 
               | _ -> m2, re_t 
             in
             (* (if l = "73" then
@@ -718,7 +720,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 Format.printf "\n";
             end
             ); *)
-            m2 |> update n (stren_V re_t ae)
+            m2 |> update false n (stren_V re_t ae)
         end
     | UnOp (uop, e1, l) ->
         (* (if !debug then
@@ -747,7 +749,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             then raw_t, raw_t
             else prop raw_t t
           in
-          m1 |> update n (stren_V re_t ae)
+          m1 |> update false n (stren_V re_t ae)
     | Ite (e0, e1, e2, l, asst) ->
         (* (if !debug then
         begin
@@ -762,10 +764,11 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             step e0 env sx cs ae assertion is_rec m in
         let t0 = find n0 m0 in
         if t0 = Bot then m0 else
-        if not @@ is_bool_V t0 then m0 |> update n Top else
+        if not @@ is_bool_V t0 then m0 |> update false n Top else
         begin
             let { isast = isast; ps = pos } = asst in
-            if assertion && isast && not (is_bool_bot_V t0) && not (is_bool_false_V t0) then print_loc pos else
+            if assertion && isast && not (is_bool_bot_V t0) && not (is_bool_false_V t0)
+            then print_loc pos else
             let t_true = meet_V (extrac_bool_V t0 true) ae in (* Meet with ae*)
             let t_false = meet_V (extrac_bool_V t0 false) ae in
             (if assertion && isast then 
@@ -832,6 +835,8 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             end
             ); *)
             (* let t'', t' = alpha_rename_Vs t'' t' in *)
+            let t1' = stren_V t1' t_true in
+            let t2' = stren_V t2' t_false in
             let t_n' = join_V (stren_V t' ae) (stren_V t'' ae) in
             (* (if (loc e1) = "63" then
             begin
@@ -840,7 +845,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 Format.printf "\n";
             end
                );  *)
-            let res_m = m2 |> update n1 t1' |> update n2 t2' |> update n t_n' in
+            let res_m = m2 |> update false n1 t1' |> update false n2 t2' |> update false n t_n' in
             res_m
         end
     | Rec (f_opt, (x, lx), e1, l) ->
@@ -862,7 +867,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         let cs' = cs in
         let is_rec' = Opt.exist f_opt || is_rec in
         step_func (fun cs (tl, tr) m' -> 
-            if tl = Bot then m' |> update n t
+            if tl = Bot then m' |> update false n t
             else if tr = Top then top_M m' else
             begin
               let _, var = cs in
@@ -930,9 +935,9 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                   nf, t2, tf') f_nf_opt
               in
               let tx', t1' = io_T cs px_t in
-              let m1 = m |> update nx tx' |> update n1 (if x = "_" then t1' else replace_V t1' var x) |>
-              (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> update nf tf' |> update n (join_V t1 t2))
-                 nf_t2_tf'_opt |> Opt.get_or_else (update n t1)) in
+              let m1 = m |> update is_rec' nx tx' |> update false n1 (if x = "_" then t1' else replace_V t1' var x) |>
+              (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> update true nf tf' |> update false n (join_V t1 t2))
+                 nf_t2_tf'_opt |> Opt.get_or_else (update false n t1)) in
               let cs = if is_rec' && x = "_" then cs' else cs in
               let m1' = step e1 env1 x cs ae' assertion is_rec' m1 in
               (* let t1 = if x = "_" then find n1 m1' else replace_V (find n1 m1') x var in
@@ -952,7 +957,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                  nf_t2_tf'_opt |> Opt.get_or_else (update n t1)) in *)
               join_M m1' m'
             end
-        ) t (m |> update n t |> Hashtbl.copy)
+        ) t (m |> update false n t |> Hashtbl.copy)
     | TupleLst (tlst, l) ->
         (* (if !debug then
         begin
@@ -965,7 +970,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         if List.length tlst = 0 then
             let t' = let ct = init_V_c UnitLit in
             join_V t ct in
-            m |> update n t'
+            m |> update false n t'
         else
             let tp, m' = List.fold_right (fun e (t, m) -> 
                 let m' = step e env sx cs ae assertion is_rec m in
@@ -975,7 +980,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 t', m'
             ) tlst (Tuple [], m) in
             let _, t' = prop tp t in
-            m' |> update n t'
+            m' |> update false n t'
     | PatMat (e, patlst, l) ->
         (* (if !debug then
         begin
@@ -1020,7 +1025,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                         Format.printf "\n";
                     end
                 ); *)
-                let m1 = m1 |> update n1 t1 in
+                let m1 = m1 |> update false n1 t1 in
                 let b =
                     sat_leq_V t1 te 
                 in
@@ -1046,26 +1051,26 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 if not b then 
                     let t, t2 = find n m2, find n2 m2 in
                     let t2', t' = prop t2 t in
-                    m2 |> update n1 t1 |> update n2 t2' |> update n t'
+                    m2 |> update false n1 t1 |> update false n2 t2' |> update false n t'
                 else
                 let te, t, t1, t2 = find ne m2, find n m2, find n1 m2, find n2 m2 in
                 let t1', te' = let te, t1 = alpha_rename_Vs te t1 in 
                     t1, join_V t1 te in
                 let t2', t' = prop t2 t in
-                m2 |> update ne te' |> update n1 t1' 
-                |> update n2 t2' |> update n t'
+                m2 |> update false ne te' |> update false n1 t1' 
+                |> update false n2 t2' |> update false n t'
             | Var (x, l') ->
                 let n1 = construct_vnode env l' (sx,sx) in
                 let env1 = env |> VarMap.add x (n1, false) in
                 let n1 = construct_snode x n1 in
                 let t1 = find n1 m in let te = find ne m in
                 let _, t1' = prop te t1 in
-                let m1 = m |> update n1 t1' in
+                let m1 = m |> update false n1 t1' in
                 let m2 = step e2 env1 sx cs ae assertion is_rec m1 in
                 let n2 = construct_enode env1 (loc e2) |> construct_snode sx in
                 let t = find n m2 in let t2 = find n2 m2 in
                 let t2', t' = prop t2 t in
-                m2 |> update n2 t2' |> update n t'
+                m2 |> update false n2 t2' |> update false n t'
               | BinOp (Cons, el, er, l') ->
                   (* (if true then
                      begin
@@ -1102,8 +1107,8 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                     prop t1 te
                   in
                   let t2', t' = prop t2 t in
-                  m2 |> update ne te' |> update n1 t1'
-                |> update n2 t2' |> update n t'
+                  m2 |> update false ne te' |> update false n1 t1'
+                |> update false n2 t2' |> update false n t'
             | TupleLst (termlst, l') ->
                 let n1 = construct_enode env l' |> construct_snode sx in
                 let t1 = 
@@ -1125,7 +1130,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                         let tx = find nx m in
                         let ti', tx' = prop ti tx in
                         let tlsti', ti'' = prop tlsti ti in
-                        let m' = m |> update nx tx' in
+                        let m' = m |> update false nx tx' in
                         env1, m', (join_V ti' ti'') :: li, tlsti' :: llst
                     | _ -> raise (Invalid_argument "Tuple only for variables now")
                 ) (env, m, [], []) termlst (zip_list tlst tllst) in
@@ -1133,21 +1138,20 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 let t1', te' = Tuple tlst', Tuple tllst' in
                 let _, t1' = prop t1' t1 in
                 let te', _ = prop te te' in
-                let m1 = m |> update n1 t1' |> update ne te' in
+                let m1 = m |> update false n1 t1' |> update false ne te' in
                 let m2 = step e2 env' sx cs ae assertion is_rec m1 in
                 let n2 = construct_enode env' (loc e2) |> construct_snode sx in
                 let t = find n m2 in let t2 = find n2 m2 in
                 let t2', t' = prop t2 t in
-                m2 |> update n2 t2' |> update n t'
+                m2 |> update false n2 t2' |> update false n t'
             | _ -> raise (Invalid_argument "Pattern should only be either constant, variable, or list cons")
-        ) (update ne te m' |> Hashtbl.copy) patlst in
+        ) (update false ne te m' |> Hashtbl.copy) patlst in
         m''
 
 let step x1 x2 x3 x4 x5 x6 x7 = measure_call "step" (step x1 x2 x3 x4 x5 x6 x7)
           
 (** Widening **)
 let widening k (m1:exec_map_t) (m2:exec_map_t): exec_map_t =
-  (*if k < 1 then wid_M m1 m2 else join_M m1 m2*)
   if k > !delay_wid then wid_M m1 m2 else join_M m1 m2
 
 let widening k m = measure_call "widening" (widening k m)
