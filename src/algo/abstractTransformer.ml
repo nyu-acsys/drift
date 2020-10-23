@@ -935,7 +935,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                  nf_t2_tf'_opt |> Opt.get_or_else (update n t1)) in
               let cs = if is_rec' && x = "_" then cs' else cs in
               let m1' = step e1 env1 x cs ae' assertion is_rec' m1 in
-              let t1 = if x = "_" then find n1 m1' else replace_V (find n1 m1') x var in
+              (* let t1 = if x = "_" then find n1 m1' else replace_V (find n1 m1') x var in
               let prop_t = Table (construct_table cs (tx, t1)) in
               let px_t, t1 = prop_scope env1 env' x m1' prop_t t in
               let nf_t2_tf'_opt =
@@ -949,7 +949,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
               let tx', t1' = io_T cs px_t in
               let m1' = m1' |> update nx tx' |> update n1 (if x = "_" then t1' else replace_V t1' var x) |>
               (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> update nf tf' |> update n (join_V t1 t2))
-                 nf_t2_tf'_opt |> Opt.get_or_else (update n t1)) in
+                 nf_t2_tf'_opt |> Opt.get_or_else (update n t1)) in *)
               join_M m1' m'
             end
         ) t (m |> update n t |> Hashtbl.copy)
