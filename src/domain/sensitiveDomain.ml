@@ -172,8 +172,8 @@ module NonSensitive: SensitiveSemanticsType =
     let forget_T f var (t:table_t) = let (z, vi, vo) = t in (z, f var vi, f var vo)
     let arrow_T f1 f2 var (t:table_t) v =
         let (z, vi, vo) = t in
-        (* let v' = f1 z v in *)
-        (z, f2 var vi v, vo)
+        let v' = f1 z v in
+        (z, f2 var vi v, f2 var vo v')
     let wid_T f g (t1:table_t) (t2:table_t) = let t =
         let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
         if z1 = z2 then (z1, f v1i v2i, f v1o v2o) else (*a renaming*)
@@ -285,9 +285,9 @@ module OneSensitive: SensitiveSemanticsType =
     let forget_T f var mt = TableMap.map (fun (vi, vo) -> 
       f var vi, f var vo) mt
     let arrow_T f1 f2 var mt v = TableMap.mapi (fun cs (vi, vo) -> 
-      (* let _, z = cs in *)
-      (* let v' = f1 z v in f2 var vo v' *)
-      f2 var vi v, vo) mt
+      let _, z = cs in
+      let v' = f1 z v in
+      f2 var vi v, f2 var vo v') mt
     let wid_T f g mt1 mt2 =
       TableMap.union (fun cs (v1i, v1o) (v2i, v2o) -> Some (f v1i v2i, f v1o v2o)) mt1 mt2
     let equal_T f g mt var = TableMap.map (fun (vi, vo) -> f vi var, f vo var) mt

@@ -366,12 +366,16 @@ module SemanticsDomain =
         Relation (stren_R r rae)
       | Ary ary, Relation rae -> Ary (stren_Ary ary rae)
       | Lst lst, Relation rae -> Lst (stren_Lst lst rae)
-      | Table t, Relation rae -> Table t
+      | Table t, Relation rae -> Table t (* Table (stren_T stren_V t ae) *)
       | Tuple u, Relation rae -> Tuple (stren_Tuple u ae)
       | Top, _ -> ae
       | _, Bot -> Bot
       | _, Top -> v
       | _,_ -> raise (Invalid_argument "ae should not be a table")
+    and stren_ite_V v ae = match v, ae with
+      | Table t, Relation rae -> 
+        if is_bot_R rae then Table t else Table (stren_T stren_V t ae)
+      | _, _ -> stren_V v ae
     and sat_equal_V v x = match v with
       | Relation r -> sat_equal_R r x
       | _ -> false

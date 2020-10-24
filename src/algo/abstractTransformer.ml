@@ -89,7 +89,7 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
             in
             let v1o', v2o' = 
               if opt_o then v1ot, v2o else
-              prop (arrow_V z v1ot v2ip) (arrow_V z v2o v2i)
+              prop (arrow_V z v1ot v2ip) (arrow_V z v2o v2ip)
             in
             let v1o' =
               if (is_Array v1i' && is_Array v2i') || (is_List v1i' && is_List v2i') then
@@ -101,18 +101,21 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
                 replace_V v e2 e1
                 else v1o'
             in
-            (* if !debug then
+            (* if true then
                 begin
                 (if true then
                 begin
                     Format.printf "\n<=== prop o ===>%s\n" z;
                     pr_value Format.std_formatter v1ot;
                     Format.printf "\n";
+                    Format.printf "\n<--- v2i --->\n";
                     pr_value Format.std_formatter v2i;
                     Format.printf "\n";
-                    pr_value Format.std_formatter (arrow_V z v1ot v2i);
+                    pr_value Format.std_formatter v2ip;
+                    Format.printf "\n";
+                    pr_value Format.std_formatter (arrow_V z v1ot v2ip);
                     Format.printf "\n<<~~~~>>\n";
-                    pr_value Format.std_formatter (arrow_V z v2o v2i);
+                    pr_value Format.std_formatter (arrow_V z v2o v2ip);
                     Format.printf "\n";
                 end
                 );
@@ -455,7 +458,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             else tx'
         in
         let t = find n m in (* M[env*l] *)
-        (* (if !debug then
+        (* (if l = "33" then
         begin
             Format.printf "\n<=== Prop Var %s %b ===> %s\n" x recnb lx;
             Format.printf "cs %s, %s \n" varcs lcs;
@@ -477,7 +480,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 (* if recnb then prop tx t else *)
                 prop_scope envx env sx m tx t
         in
-        (* (if !debug then
+        (* (if l = "33" then
         begin
             Format.printf "\nRES for prop:\n";
             pr_value Format.std_formatter tx';
@@ -532,7 +535,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
               (* let var1, var2 = cs in
                  (Format.printf "\nis_rec? %b\n") is_rec;
                  (Format.printf "\nAPP cs at %s: %s, %s\n") (loc e1) var1 var2; *)
-              (* (if loc e1 = "78" then
+              (* (if loc e1 = "18" then
                 begin
                  Format.printf "\n<=== Prop APP ===> %s\n" (loc e1);
                  pr_value Format.std_formatter t1;
@@ -545,7 +548,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 (* if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then t1, t_temp else *)
                 prop t1 t_temp
               in
-              (* (if loc e1 = "78" then
+              (* (if loc e1 = "18" then
                  begin
                  Format.printf "\nRES for prop:\n";
                  pr_value Format.std_formatter t1';
@@ -773,7 +776,9 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             let t_false = meet_V (extrac_bool_V t0 false) ae in
             (if assertion && isast then 
                 let i, j = AssertionPosMap.find_opt pos !sens |> Opt.get_or_else (0,0) in
-                sens := AssertionPosMap.add pos ((if is_bool_bot_V t0 && is_asst_false e0 = false then i + 1 else i), j + 1) !sens);
+                sens := AssertionPosMap.add pos ((if is_bool_bot_V t0 && 
+                (is_asst_false e0 = false && only_shape_V ae = false) 
+                then i + 1 else i), j + 1) !sens);
             let t = find n m0 in
             let m1 = step e1 env sx cs t_true assertion is_rec m0 in
             let n1 = construct_enode env (loc e1) |> construct_snode sx in
@@ -834,9 +839,31 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 Format.printf "\n";
             end
             ); *)
+            (* (if assertion && isast then
+                begin
+                Format.printf "\n<=== ite ae ===> %s %b\n" l (only_shape_V ae);
+                pr_value Format.std_formatter t_true;
+                Format.printf "\n<----->\n";
+                pr_value Format.std_formatter t1';
+                Format.printf "\n<<~~~~>>\n";
+                pr_value Format.std_formatter t_false;
+                Format.printf "\n<----->\n";
+                pr_value Format.std_formatter t2';
+                Format.printf "\n";
+                end
+            ); *)
             (* let t'', t' = alpha_rename_Vs t'' t' in *)
-            let t1' = stren_V t1' t_true in
-            let t2' = stren_V t2' t_false in
+            let t1' = stren_ite_V t1' t_true in
+            let t2' = stren_ite_V t2' t_false in
+            (* (if true then
+                begin
+                Format.printf "\n<=== RES for ae ===> %s\n" l;
+                pr_value Format.std_formatter t1';
+                Format.printf "\n<<~~~~>>\n";
+                pr_value Format.std_formatter t2';
+                Format.printf "\n";
+                end
+            ); *)
             let t_n' = join_V (stren_V t' ae) (stren_V t'' ae) in
             (* (if (loc e1) = "63" then
             begin
@@ -889,7 +916,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 (arrow_V x ae tx) else ae in
               let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x var in
               let prop_t = Table (construct_table cs (tx, t1)) in
-              (* (if !debug then
+              (* (if l = "18" then
                  begin
                  Format.printf "\n<=== Prop lamb ===> %s %s\n" lx (loc e1);
                  pr_value Format.std_formatter prop_t;
@@ -898,7 +925,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                  end
                  ); *)
               let px_t, t1 = prop_scope env1 env' x m prop_t t in
-              (* (if !debug then
+              (* (if l = "18" then
                  begin
                  Format.printf "\nRES for prop:\n";
                  pr_value Format.std_formatter px_t;
@@ -912,7 +939,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                   let envf, lf, fcs = get_vnode nf in
                   let nf = construct_snode x nf in
                   let tf = find nf m in
-                  (* (if !debug then
+                  (* (if lf = "4" then
                         begin
                             Format.printf "\n<=== Prop um ===> %s\n" l;
                             pr_value Format.std_formatter t;
@@ -923,7 +950,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                   ); *)
                   let t2, tf' = prop_scope env' envf x m t tf in
                   (* let t2, tf' = prop t tf in *)
-                  (* (if !debug then
+                  (* (if lf = "4" then
                      begin
                      Format.printf "\nRES for prop:\n";
                      pr_value Format.std_formatter t2;
@@ -1016,7 +1043,8 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                     else t1 in
                 (* (if true then
                     begin
-                        Format.printf "\n %s\n" (loc e1);
+                        Format.printf "\n Pattern %s\n" (loc e1);
+                        pr_exp true Format.std_formatter e1;
                         pr_value Format.std_formatter t1;
                         Format.printf "\n<<~~~~>> %s\n" (loc e);
                         pr_value Format.std_formatter te;
