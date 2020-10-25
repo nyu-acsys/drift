@@ -145,8 +145,36 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
         let _, ary2'' = alpha_rename_Arys ary2 ary'  in
         (* let _ = alpha_rename_Arys ary1 ary' in *)
         Ary ary1, Ary ary2''
-    | Lst lst1, Lst lst2 -> let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
+    | Lst lst1, Lst lst2 ->
+        (* (if true then
+            begin
+                Format.printf "\n<=== prop list ===>\n";
+                pr_value Format.std_formatter (Lst lst1);
+                Format.printf "\n<<~~~~>>\n";
+                pr_value Format.std_formatter (Lst lst2);
+                Format.printf "\n";
+            end
+        ); *)
+        let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
+        (* (if true then
+            begin
+                Format.printf "\n<=== after rename list ===>\n";
+                pr_value Format.std_formatter (Lst lst1');
+                Format.printf "\n<<~~~~>>\n";
+                pr_value Format.std_formatter (Lst lst2');
+                Format.printf "\n";
+            end
+        ); *)
         let lst1'', lst2'' = prop_Lst prop lst1' lst2' in
+        (* (if true then
+            begin
+                Format.printf "\n<=== res ===>\n";
+                pr_value Format.std_formatter (Lst lst1'');
+                Format.printf "\n<<~~~~>>\n";
+                pr_value Format.std_formatter (Lst lst2'');
+                Format.printf "\n";
+            end
+        ); *)
         let _, lst2'' = alpha_rename_Lsts lst2 lst2'' in
         Lst lst1'', Lst lst2''
     | Ary ary, Bot -> let vars, r = ary in
@@ -439,6 +467,17 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             let t' = join_V t ct in
             (stren_V t' ae)
         in
+        (* (if l = "11" then
+        begin
+            Format.printf "\n<=== Const ===> %s\n" l;
+            pr_value Format.std_formatter t;
+            Format.printf "\n<<~~ae~~>> %s\n" l;
+            pr_value Format.std_formatter ae;
+            Format.printf "\n<<~~ RES ~~>>\n";
+            pr_value Format.std_formatter t';
+            Format.printf "\n";
+        end
+        ); *)
         m |> update false n t' (* {v = c ^ aE}*)
     | Var (x, l) ->
         (* (if !debug then
@@ -458,7 +497,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             else tx'
         in
         let t = find n m in (* M[env*l] *)
-        (* (if l = "33" then
+        (* (if l = "10" || l = "14" then
         begin
             Format.printf "\n<=== Prop Var %s %b ===> %s\n" x recnb lx;
             Format.printf "cs %s, %s \n" varcs lcs;
@@ -480,7 +519,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 (* if recnb then prop tx t else *)
                 prop_scope envx env sx m tx t
         in
-        (* (if l = "33" then
+        (* (if l = "10" || l = "14" then
         begin
             Format.printf "\nRES for prop:\n";
             pr_value Format.std_formatter tx';
@@ -535,7 +574,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
               (* let var1, var2 = cs in
                  (Format.printf "\nis_rec? %b\n") is_rec;
                  (Format.printf "\nAPP cs at %s: %s, %s\n") (loc e1) var1 var2; *)
-              (* (if loc e1 = "18" then
+              (* (if loc e1 = "20" then
                 begin
                  Format.printf "\n<=== Prop APP ===> %s\n" (loc e1);
                  pr_value Format.std_formatter t1;
@@ -548,7 +587,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 (* if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then t1, t_temp else *)
                 prop t1 t_temp
               in
-              (* (if loc e1 = "18" then
+              (* (if loc e1 = "20" then
                  begin
                  Format.printf "\nRES for prop:\n";
                  pr_value Format.std_formatter t1';
@@ -566,7 +605,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 io_T cs t0
               in
               let t' = get_env_list env sx m |> proj_V raw_t' in
-              let res_m = m2 |> update false n1 t1' |> update false n2 t2' |> update false n t' in
+              let res_m = m2 |> update false n1 t1' |> update false n2 t2' |> update false n (stren_V t' ae) in
               (* if is_array_set e1 && only_shape_V t2' = false then
                  let nx = VarMap.find (get_var_name e2) env in
                  let envx, lx,_ = get_vnode nx in
@@ -689,10 +728,12 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
               (* let t, raw_t = alpha_rename_Vs t raw_t in *)
               prop raw_t t
             in
-            (* (if !debug then
+            (* (if l = "18" then
                 begin
                     Format.printf "\nRES binop for prop:\n";
                     pr_value Format.std_formatter re_t;
+                    Format.printf "\n<-- ae -->\n";
+                    pr_value Format.std_formatter ae;
                     Format.printf "\n";
                 end
             ); *)
@@ -839,13 +880,15 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 Format.printf "\n";
             end
             ); *)
-            (* (if assertion && isast then
+            (* (if loc e0 = "10" then
                 begin
                 Format.printf "\n<=== ite ae ===> %s %b\n" l (only_shape_V ae);
+                pr_value Format.std_formatter ae;
+                Format.printf "\n<<~~ then part ~~>>\n";
                 pr_value Format.std_formatter t_true;
                 Format.printf "\n<----->\n";
                 pr_value Format.std_formatter t1';
-                Format.printf "\n<<~~~~>>\n";
+                Format.printf "\n<<~~ else part ~~>>\n";
                 pr_value Format.std_formatter t_false;
                 Format.printf "\n<----->\n";
                 pr_value Format.std_formatter t2';
@@ -855,7 +898,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             (* let t'', t' = alpha_rename_Vs t'' t' in *)
             let t1' = stren_ite_V t1' t_true in
             let t2' = stren_ite_V t2' t_false in
-            (* (if true then
+            (* (if loc e0 = "10" then
                 begin
                 Format.printf "\n<=== RES for ae ===> %s\n" l;
                 pr_value Format.std_formatter t1';
@@ -910,13 +953,13 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 Opt.get_or_else (fun env -> env))
               in
               let n1 = construct_enode env1 (loc e1) |> construct_snode x in
-              let tx = find nx m in
+              let tx = find nx m |> rename_lambda_V in
               let ae' = if (x <> "_" && is_Relation tx) || is_List tx then 
                 (* if only_shape_V tx then ae else  *)
                 (arrow_V x ae tx) else ae in
               let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x var in
               let prop_t = Table (construct_table cs (tx, t1)) in
-              (* (if l = "18" then
+              (* (if l = "20" then
                  begin
                  Format.printf "\n<=== Prop lamb ===> %s %s\n" lx (loc e1);
                  pr_value Format.std_formatter prop_t;
@@ -925,7 +968,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                  end
                  ); *)
               let px_t, t1 = prop_scope env1 env' x m prop_t t in
-              (* (if l = "18" then
+              (* (if l = "20" then
                  begin
                  Format.printf "\nRES for prop:\n";
                  pr_value Format.std_formatter px_t;
@@ -1045,6 +1088,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                     begin
                         Format.printf "\n Pattern %s\n" (loc e1);
                         pr_exp true Format.std_formatter e1;
+                        Format.printf "\n";
                         pr_value Format.std_formatter t1;
                         Format.printf "\n<<~~~~>> %s\n" (loc e);
                         pr_value Format.std_formatter te;
@@ -1055,7 +1099,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 ); *)
                 let m1 = m1 |> update false n1 t1 in
                 let b =
-                    sat_leq_V t1 te 
+                    sat_leq_V t1 te
                 in
                 let n1 = construct_enode env (loc e1) |> construct_snode sx in
                 let n2 = construct_enode env (loc e2) |> construct_snode sx in
@@ -1099,43 +1143,43 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 let t = find n m2 in let t2 = find n2 m2 in
                 let t2', t' = prop t2 t in
                 m2 |> update false n2 t2' |> update false n t'
-              | BinOp (Cons, el, er, l') ->
-                  (* (if true then
-                     begin
-                     Format.printf "\n<=== Prop then ===> %s\n" (loc e1);
-                     pr_value Format.std_formatter t1;
-                     Format.printf "\n<<~~~~>> %s\n" l;
-                     pr_value Format.std_formatter (find n m1);
-                     Format.printf "\n";
-                     end
-                     ); *)
-                  let ml, envl = list_var_item el sx cs m env ne true 0 in
-                  (* (if !debug then
-                     begin
-                     Format.printf "\n<=== Pattern binop ===>\n";
-                     pr_exp true Format.std_formatter er;
-                     Format.printf "\n";
-                     end
-                     ); *)
-                  let mr, envr = list_var_item er sx cs ml envl ne false 1 in
-                  let nr = construct_enode envr (loc er) |> construct_snode sx in
-                  let n2 = construct_enode envr (loc e2) |> construct_snode sx in
-                  let n1 = construct_enode envr l' |> construct_snode sx in
-                  let m1 = step e1 envr sx cs ae assertion is_rec mr in
-                  let te, t1 = find ne m1, find n1 m1 in
-                  let te, t1 = alpha_rename_Vs te t1 in
-                  let ae' =
+            | BinOp (Cons, el, er, l') ->
+                (* (if true then
+                    begin
+                    Format.printf "\n<=== Prop then ===> %s\n" (loc e1);
+                    pr_value Format.std_formatter t1;
+                    Format.printf "\n<<~~~~>> %s\n" l;
+                    pr_value Format.std_formatter (find n m1);
+                    Format.printf "\n";
+                    end
+                    ); *)
+                let ml, envl = list_var_item el sx cs m env ne true 0 in
+                (* (if !debug then
+                    begin
+                    Format.printf "\n<=== Pattern binop ===>\n";
+                    pr_exp true Format.std_formatter er;
+                    Format.printf "\n";
+                    end
+                    ); *)
+                let mr, envr = list_var_item er sx cs ml envl ne false 1 in
+                let nr = construct_enode envr (loc er) |> construct_snode sx in
+                let n2 = construct_enode envr (loc e2) |> construct_snode sx in
+                let n1 = construct_enode envr l' |> construct_snode sx in
+                let m1 = step e1 envr sx cs ae assertion is_rec mr in
+                let te, t1 = find ne m1, find n1 m1 in
+                let te, t1 = alpha_rename_Vs te t1 in
+                let ae' =
                     let ae = arrow_V (loc e) ae t1 in 
                     arrow_V (loc er) ae (find nr m1)
-                  in
-                  let m2 = step e2 envr sx cs ae' assertion is_rec m1 in
-                  let te, t, t1, t2 = find ne m2, find n m2, find n1 m2, find n2 m2 in
-                  let t1', te' =
-                    let te, t1 = alpha_rename_Vs te t1 in 
+                in
+                let m2 = step e2 envr sx cs ae' assertion is_rec m1 in
+                let te, t, t1, t2 = find ne m2, find n m2, find n1 m2, find n2 m2 in
+                let t1', te' =
+                let te, t1 = alpha_rename_Vs te t1 in 
                     prop t1 te
-                  in
-                  let t2', t' = prop t2 t in
-                  m2 |> update false ne te' |> update false n1 t1'
+                in
+                let t2', t' = prop t2 t in
+                m2 |> update false ne te' |> update false n1 t1'
                 |> update false n2 t2' |> update false n t'
             | TupleLst (termlst, l') ->
                 let n1 = construct_enode env l' |> construct_snode sx in
@@ -1253,8 +1297,8 @@ let s e =
           let n = construct_snode "" n in
           (Hashtbl.remove m0' n; false)) envt
   in
-  (* thresholdsSet := !thresholdsSet |> ThresholdsSetType.add 0 
-  |> ThresholdsSetType.add 2 |> ThresholdsSetType.add 4 |> ThresholdsSetType.add (-1) |> ThresholdsSetType.add (-2); *)
+  thresholdsSet := !thresholdsSet |> ThresholdsSetType.add 0 
+  |> ThresholdsSetType.add 2 |> ThresholdsSetType.add 4 |> ThresholdsSetType.add (-1) |> ThresholdsSetType.add (-2);
   (* pre_m := m0'; *)
     let check_str, m =
       let s1, m1 = (fix envt e 0 m0' false) in

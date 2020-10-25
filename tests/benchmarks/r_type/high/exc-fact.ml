@@ -11,7 +11,7 @@ let rec fact n exn =
     let exnp n = if n = 0 then 1 else exn n in
     n * fact (n - 1) exnp
 
-let exni n = (assert false; 0)
+let exni n = assert false
 
 let main (n:int(*-:{v:Int | true}*)) =
     if n > 0 then (fact n exni; ())

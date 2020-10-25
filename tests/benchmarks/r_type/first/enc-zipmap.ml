@@ -8,10 +8,10 @@ let rec zip x y =
     if y = 0 then
       x
     else
-      (assert(false); y)
+      assert(false)
   else
     if y = 0 then
-      (assert(false); x)
+      assert(false)
     else
       1 + zip (x - 1) (y - 1)
 

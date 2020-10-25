@@ -6,5 +6,4 @@ let rec map x = (* x <= 3000 *)
   else 1 + map (x - 1) (* x < 0 && 0 < x <= 3000 *)
 
 let main (n:int(*-:{v:Int | true}*)) =
-    if n >= 0 then assert (map n = n)
-    else ()
+    assert (map n = n)

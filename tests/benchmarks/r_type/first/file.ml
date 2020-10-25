@@ -10,7 +10,7 @@ let opened = 1
 let closed = 2
 let ignore = 3
 let readit rst =
-  if rst = opened then opened else (if rst = ignore then rst else (assert false;-1))
+  if rst = opened then opened else (if rst = ignore then rst else assert false)
 
 let read_ (rx_:bool) rst_ =
   if rx_ then readit rst_ else rst_
@@ -29,4 +29,4 @@ let next nst = if nst = init then opened else ignore
 let g gb3 (gx:bool) gst = if gb3 > 0 then f gx true (next gst) else f gx false gst
 
 let main (b2:int(*-:{v:Int | true}*)) (b3:int(*-:{v:Int | true}*)) =  
-    if b2 > 0 then g b3 true opened else g b3 false init
+    (if b2 > 0 then g b3 true opened else g b3 false init); ()

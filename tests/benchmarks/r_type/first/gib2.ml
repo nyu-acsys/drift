@@ -14,5 +14,5 @@ let rec gib a b n =
   else gib a b (n-1) + gib a b (n-2)
 
 let main (n:int(*-:{v:Int | true}*)) (a:int(*-:{v:Int | true}*)) (b:int(*-:{v:Int | true}*)) =
-	if a >= 0 && b >= 0 && n >= 0 then
-		assert(gib a b n >= 0)
+	if a >= 0 && b >= 0 then
+  		assert (gib a b n >= 0)

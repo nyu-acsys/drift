@@ -502,6 +502,9 @@ module SemanticsDomain =
     and pattern_empty_lst_V = function
       | Lst lst -> Lst (pattern_empty_Lst lst)
       | _ -> raise (Invalid_argument "pattern x::[] should give a list")
+    and rename_lambda_V v = match v with
+      | Lst lst -> Lst (rename_lambda_Lst lst)
+      | _ -> v
     (*
       *******************************
       ** Abstract domain for Array **
@@ -751,6 +754,11 @@ module SemanticsDomain =
       let rl' = alpha_rename_R rl prevar var in
       let ve' = alpha_rename_V ve prevar var in
       (l',e'), (rl',ve')
+    and rename_lambda_Lst lst = let (l,e), (rl,ve) = lst in
+      let varl, vare = fresh_length (), fresh_item () in
+      let rl' = alpha_rename_R rl l varl in
+      let ve' = alpha_rename_V ve e vare in
+      (varl, vare), (rl', ve')
     and replace_Lst lst var x = let ((l,e), (rl,ve)) = lst in
       let l' = if l = var then x else l in
       let e' = if e = var then x else e in
@@ -764,7 +772,9 @@ module SemanticsDomain =
         | l' :: e' :: [] -> if l = l' then fresh_length (), fresh_item() else l', e'
         | _ -> raise (Invalid_argument "construct pattern tl should give [] or [l;e]")
        in
-      let rl' = assign_R l' l (string_of_int len) Minus rl |> op_R "" l' "0" Ge true in
+      let rl' = assign_R l' l (string_of_int len) Minus rl |> op_R "" l' "0" Ge true
+        (* |> op_R l' l "1" Minus true  *)
+      in
       let ve' = 
         match ve with
         | Relation re -> 
@@ -775,6 +785,7 @@ module SemanticsDomain =
       (l',e'), (rl',ve')
     and list_cons_Lst f v lst = let ((l,e), (rl,ve)) = lst in
       if v = Bot || is_bot_R rl then (l,e), (bot_R Plus, Bot) else
+      (* let v = stren_V v (Relation (forget_R l rl)) in *)
       let rl' = assign_R l l "1" Plus rl in
       let ve' = match v, ve with
         | Relation r, Bot ->
@@ -806,10 +817,12 @@ module SemanticsDomain =
       | _, _ -> ve1, join_V ve1 ve2 in
       (vars1, (rl1', ve1')), (vars2, (rl2', ve2'))
     and cons_temp_lst_Lst v ((l,e) as vars, (rl,ve)) = 
-      match v with
+      let ve' = if is_bot_R rl then bot_shape_V ve else 
+      (match v with
       | Relation r -> let re' = alpha_rename_R r "cur_v" e in
-        (vars, (rl, Relation re'))
-      | _ -> (vars, (rl, v))
+        Relation re'
+      | _ -> v)
+      in (vars, (rl, ve'))
     and item_shape_Lst (_, (_, vee)) (vars, (rl, ve)) =
       let ve' = bot_shape_V vee in
       (vars, (rl, ve'))
