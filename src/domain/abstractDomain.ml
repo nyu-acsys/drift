@@ -363,7 +363,7 @@ module BaseDomain(Manager : DomainManager) : Domain =
         ThresholdsSetType.cardinal !thresholdsSet in
       let mult_lst = Util.extract 2 vars in
       let size =
-        (List.length vars) * 4 * tset_size + (List.length mult_lst * 8) in
+        (List.length vars) * 4 * tset_size + (List.length mult_lst * 10) in
       let thehold_ary = Lincons1.array_make env size in
       let idx2 = ref 0 in
       List.iter (fun var -> let _ = ThresholdsSetType.map (fun i -> 
@@ -398,6 +398,12 @@ module BaseDomain(Manager : DomainManager) : Domain =
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;
         let eq = lvar^" >= "^rvar^"+1" in (* v1 >= v2 *)
+        Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
+        idx2 := !idx2 + 1;
+        let eq = "3*"^lvar^" <= "^rvar^"+3" in (* v1 <= v2 *)
+        Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
+        idx2 := !idx2 + 1;
+        let eq = "2*"^lvar^" <= "^rvar^"+1" in (* v1 >= v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;
         let eq = lvar^" < "^rvar in (* v1 < v2 *)

@@ -1297,7 +1297,7 @@ let s e =
           let n = construct_snode "" n in
           (Hashtbl.remove m0' n; false)) envt
   in
-  thresholdsSet := !thresholdsSet |> ThresholdsSetType.add 0 
+  thresholdsSet := !thresholdsSet |> ThresholdsSetType.add 0 |> ThresholdsSetType.add 111 |> ThresholdsSetType.add 101
   |> ThresholdsSetType.add 2 |> ThresholdsSetType.add 4 |> ThresholdsSetType.add (-1) |> ThresholdsSetType.add (-2);
   (* pre_m := m0'; *)
     let check_str, m =
