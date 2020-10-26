@@ -502,8 +502,8 @@ module SemanticsDomain =
     and pattern_empty_lst_V = function
       | Lst lst -> Lst (pattern_empty_Lst lst)
       | _ -> raise (Invalid_argument "pattern x::[] should give a list")
-    and rename_lambda_V v = match v with
-      | Lst lst -> Lst (rename_lambda_Lst lst)
+    and rename_lambda_V v ae = match v, ae with
+      | Lst lst, Relation rae -> Lst (rename_lambda_Lst lst rae)
       | _ -> v
     (*
       *******************************
@@ -606,8 +606,8 @@ module SemanticsDomain =
         |> op_R vare vare (string_of_int max) Le true in
       (varl, vare), (rl, Relation re)
     and init_Lst vars : list_t = let varl, vare = vars in
-      let varl' = if varl = "l" || varl = "l'" then fresh_length () else varl in
-      let vare' = if vare = "e" || vare = "e'" then fresh_item () else vare in
+      let varl' = fresh_length () in
+      let vare' = fresh_item () in
       let vars = varl', vare' in
       vars, (bot_R Plus, Bot)
     and get_len_var_Lst ((varl,_),_) = varl
@@ -754,8 +754,9 @@ module SemanticsDomain =
       let rl' = alpha_rename_R rl prevar var in
       let ve' = alpha_rename_V ve prevar var in
       (l',e'), (rl',ve')
-    and rename_lambda_Lst lst = let (l,e), (rl,ve) = lst in
-      let varl, vare = fresh_length (), fresh_item () in
+    and rename_lambda_Lst lst rae = let (l,e), (rl,ve) = lst in
+      let varl = if contains_var_R l rae then fresh_length () else l in
+      let vare = if contains_var_R e rae then fresh_item () else e in
       let rl' = alpha_rename_R rl l varl in
       let ve' = alpha_rename_V ve e vare in
       (varl, vare), (rl', ve')

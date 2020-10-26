@@ -429,6 +429,7 @@ module BaseDomain(Manager : DomainManager) : Domain =
 
     let widening v1 v2 = 
       if is_bot v2 then v1 else
+      (* if is_bot v1 then v2 else *)
       if eq v1 v2 then v2 else
       let v1', v2' = lc_env v1 v2 in
       let res = 
