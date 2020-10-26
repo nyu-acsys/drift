@@ -953,7 +953,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 Opt.get_or_else (fun env -> env))
               in
               let n1 = construct_enode env1 (loc e1) |> construct_snode x in
-              let tx = find nx m |> rename_lambda_V in
+              let tx = find nx m in
               let ae' = if (x <> "_" && is_Relation tx) || is_List tx then 
                 (* if only_shape_V tx then ae else  *)
                 (arrow_V x ae tx) else ae in
