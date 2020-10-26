@@ -358,12 +358,13 @@ module BaseDomain(Manager : DomainManager) : Domain =
       let ary = Lincons1.array_make env 0 in
       ref ary
 
-    let licons_earray env (vars : string list) = 
+    let licons_earray env (vars : string list) complex = 
       let tset_size = 
         ThresholdsSetType.cardinal !thresholdsSet in
       let mult_lst = Util.extract 2 vars in
       let size =
-        (List.length vars) * 4 * tset_size + (List.length mult_lst * 10) in
+        let second = if complex then 10 else 5 in
+        (List.length vars) * 4 * tset_size + (List.length mult_lst * second) in
       let thehold_ary = Lincons1.array_make env size in
       let idx2 = ref 0 in
       List.iter (fun var -> let _ = ThresholdsSetType.map (fun i -> 
@@ -385,19 +386,20 @@ module BaseDomain(Manager : DomainManager) : Domain =
         let eq = lvar^" <= "^rvar in (* v1 <= v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;
-        let eq = lvar^" <= "^rvar^"+1" in (* v1 <= v2 *)
+        let eq = lvar^" < "^rvar in (* v1 < v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;
-        let eq = lvar^" <= 2*"^rvar in (* v1 <= v2 *)
+        let eq = lvar^" > "^rvar in (* v1 > v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;
         let eq = lvar^" >= "^rvar in (* v1 >= v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;
-        let eq = lvar^" >= 2*"^rvar in (* v1 >= v2 *)
+        let eq = lvar^" >= "^rvar^"+1" in (* v1 >= v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;
-        let eq = lvar^" >= "^rvar^"+1" in (* v1 >= v2 *)
+        if complex then
+        (let eq = lvar^" >= 2*"^rvar in (* v1 >= v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;
         let eq = "3*"^lvar^" <= "^rvar^"+3" in (* v1 <= v2 *)
@@ -406,12 +408,13 @@ module BaseDomain(Manager : DomainManager) : Domain =
         let eq = "2*"^lvar^" <= "^rvar^"+1" in (* v1 >= v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;
-        let eq = lvar^" < "^rvar in (* v1 < v2 *)
+        let eq = lvar^" <= "^rvar^"+1" in (* v1 <= v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;
-        let eq = lvar^" > "^rvar in (* v1 > v2 *)
+        let eq = lvar^" <= 2*"^rvar in (* v1 <= v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
-        idx2 := !idx2 + 1;) mult_lst;
+        idx2 := !idx2 + 1;);
+        ) mult_lst;
         thehold_ary
 
     let generate_threshold_earray env = 
@@ -425,7 +428,8 @@ module BaseDomain(Manager : DomainManager) : Domain =
           (Environment.print Format.std_formatter env;
           licons_earray ary (Some "max"))
         else  *)
-       licons_earray env lst
+      let complex = if Array.length int_vars < 5 then true else false in
+      licons_earray env lst complex
 
     let widening v1 v2 = 
       if is_bot v2 then v1 else
