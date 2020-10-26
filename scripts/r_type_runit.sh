@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # ./r_type_runit.sh -set call/unv
+opam switch 4.03.0
 OUTDIR="../outputs/r_type"
 PROG="../comp_bin/r_type_macos"
 PROGNAME="r_type"
@@ -8,7 +9,7 @@ SET=$2
 SOLVER="z3 -in"
 SOLVERPRINT="\"z3 -in\""
 DATE="gdate"
-if [[ "$OSTYPE" != "darwin"* ]]; then
+if [ "$OSTYPE" != "darwin"* ]; then
     DATE="date"
     PROG="../comp_bin/r_type_ubuntu"
 fi
@@ -49,11 +50,11 @@ echo "Starting benchmarks testing..."
 for hdir in ${DIRS}; do
     for dir in ${INS}; do
         if [ -d "${TESTDIR}/${hdir}/${dir}" ]; then
-            if [ ${dir} = "array" ] && [ ${hdir} != ${PROGNAME} ]; then
+            if [[ ${dir} = "array" && ${hdir} != ${PROGNAME} ]]; then
                 continue
             fi 
             for f in `find ${TESTDIR}/${hdir}/${dir} -iname "*.ml" -type f -execdir echo '{}' ';'`; do
-                if [[ "$OSTYPE" != "darwin"* ]]; then
+                if [ "$OSTYPE" != "darwin"* ]; then
                     f=${f#*./}
                 fi
                 echo "${PROG} --solver ${SOLVERPRINT} ${TESTDIR}/${hdir}/${dir}/${f}"
@@ -61,7 +62,7 @@ for hdir in ${DIRS}; do
                 timeout ${timeout} ${PROG} --solver "${SOLVER}" ${TESTDIR}/${hdir}/${dir}/${f} &> ${OUTDIR}/${dir}/${OUTPRE}_${f}
                 tt=$((($(${DATE} +%s%N) - $ts)/1000000))
                 st=$(($timeout*1000))
-                if [[ $tt -gt $st ]]; then
+                if [ $tt -gt $st ]; then
                     echo "Time: timeout" >> ${OUTDIR}/${dir}/${OUTPRE}_${f}
                 else
                     echo "Time: $tt" >> ${OUTDIR}/${dir}/${OUTPRE}_${f}
@@ -72,7 +73,7 @@ for hdir in ${DIRS}; do
 done
 
 csv_name="res-rtype"
-if [[ $SOLVER == "hoice" ]]; then
+if [ $SOLVER = "hoice" ]; then
     csv_name="${csv_name}-hoice"
 else
     csv_name="${csv_name}-z3"

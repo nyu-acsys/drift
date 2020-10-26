@@ -2,7 +2,7 @@
 
 # ./runit.sh -set call/unv -domain Oct [-nar | -dwid 0 | -thold] [-sen]
 # Domain for benchmarks: Oct, Polka_st, Polka_ls
-
+opam switch 4.08.1
 OUTDIR="../outputs/DRIFT"
 PROG="../drift.native"
 PROGNAME="DRIFT"

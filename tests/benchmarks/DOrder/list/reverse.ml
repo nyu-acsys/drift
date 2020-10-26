@@ -18,6 +18,7 @@ let hd (xs:int list) =
     | x::xs' -> x
 
 let main (n:int(*-:{v:Int | true}*)) = 
-  let xs = make_list n in
-  if n > 0 then assert(hd (reverse xs) > 0)
+  if n > 0 then 
+    let xs = make_list n in
+    assert(hd (reverse xs) > 0)
   else ()
