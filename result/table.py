@@ -10,11 +10,11 @@ parser.add_argument('show_unsolved', nargs='?', default=False)
 args = parser.parse_args()
 
 if exp2_regexp.search(args.folder_name):
-    data_lst = { "res1-polka_ls-thowid": [], "res_rtype": [], 
-         "res_dsolve": [], "res_mochi": []}
-    res_lst = { "res1-polka_ls-thowid": [], "res_rtype": [], 
-         "res_dsolve": [], "res_mochi": []}
-    csv_lst = ["res1-polka_ls-thowid", "res_rtype", "res_dsolve", "res_mochi"]
+    data_lst = { "res1-polka_ls-thowid": [], "res-rtype-z3": [], 
+         "res-dsolve": [], "res-mochi-hoice": []}
+    res_lst = { "res1-polka_ls-thowid": [], "res-rtype-z3": [], 
+         "res-dsolve": [], "res-mochi-hoice": []}
+    csv_lst = ["res1-polka_ls-thowid", "res-rtype-z3", "res-dsolve", "res-mochi-hoice"]
 else:
     data_lst = {"res-oct-standard": [], 
         "res-oct-thowid": [], "res-polka_st-standard": [], "res-polka_st-thowid": [], "res-polka_ls-standard": [], 
@@ -36,7 +36,7 @@ else:
 "res1-polka_st-thowid", "res1-polka_ls-standard", "res1-polka_ls-thowid" ]
 
 # loc is calculated by cloc 
-sort_lst = {"high":["HO", 8], "first":["FO", 11], "array":["A", 17], "list":["L", 16], "negative":["E", 16], "termination":["T", 47]}
+sort_lst = {"high":["HO", 10], "first":["FO", 11], "array":["A", 17], "list":["L", 16], "negative":["E", 16], "termination":["T", 45]}
 unit_lst = ["succ", "total", "avg.", "mean"]
 
 cant_solve_lst = [

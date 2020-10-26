@@ -54,4 +54,4 @@ done
 echo "Gnerate dsolve table results..."
 python3 dsolve_table.py  
 
-mv res_dsolve.csv ../result/comp_tools/unv
+mv res-dsolve.csv ../result/comp_tools/unv

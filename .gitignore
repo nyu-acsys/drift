@@ -22,3 +22,8 @@ out.spl
 *.horsat_out
 *.annot
 missing.txt
+*.quals
+tests/benchmark/*.json
+*.hors
+*.horsat_out
+*.status
