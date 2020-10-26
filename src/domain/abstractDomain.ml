@@ -359,6 +359,8 @@ module BaseDomain(Manager : DomainManager) : Domain =
       ref ary
 
     let licons_earray env (vars : string list) complex = 
+      if complex = false then 
+       thresholdsSet:= !thresholdsSet |> ThresholdsSetType.remove 111 |> ThresholdsSetType.remove 101;
       let tset_size = 
         ThresholdsSetType.cardinal !thresholdsSet in
       let mult_lst = Util.extract 2 vars in
@@ -428,7 +430,7 @@ module BaseDomain(Manager : DomainManager) : Domain =
           (Environment.print Format.std_formatter env;
           licons_earray ary (Some "max"))
         else  *)
-      let complex = if Array.length int_vars < 5 then true else false in
+      let complex = if Array.length int_vars < 10 then true else false in
       licons_earray env lst complex
 
     let widening v1 v2 = 
