@@ -90,3 +90,10 @@ python3 table.py unv > table.out
 python3 table.py comp_tools/unv > table.out
 ```
 The result will be stored in a `table.out` file.
+
+### Generate Tables for POPL paper:
+Inside the `scipts` folder, there is a script `benchs_popl21.sh` to run all experiments.
+```bash
+./benchs_popl21.sh
+```
+TODO: For dsolve, you cannot run it under any other relative paths. The tool should be run it under their own directory.
