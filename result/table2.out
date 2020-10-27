@@ -8,7 +8,7 @@ high	& 60	& 316.18	& 1.77
 
 
 bench | succ(solvethis) | full(timeout) | median | 
-termination	& 79	& 1512.64(1)	& 2.90	
+termination	& 79	& 1497.28(1)	& 0.00	
 
 
 bench | succ(solvethis) | full(timeout) | median | 
@@ -20,7 +20,7 @@ list	& 18(2)	& 26.43	& 1.23
 
 
 bench | succ(solvethis) | full(timeout) | median | 
-negative	& 15	& 17.35	& 0.33	
+negative	& 17	& 32.71	& 0.39	
 
 
 =======end========
@@ -34,7 +34,7 @@ high	& 49	& 9.19(5)	& 0.03
 
 
 bench | succ(solvethis) | full(timeout) | median | 
-termination	& 73	& 13.71	& 0.04	
+termination	& 73	& 13.18	& 0.04	
 
 
 bench | succ(solvethis) | full(timeout) | median | 
@@ -46,33 +46,33 @@ list	& 0	& 0.20	& 0.01
 
 
 bench | succ(solvethis) | full(timeout) | median | 
-negative	& 15	& 0.69	& 0.05	
+negative	& 17	& 1.22	& 0.05	
 
 
 =======end========
 =======res-dsolve========
 bench | succ(solvethis) | full(timeout) | median | 
-first	& 49	& 17.09	& 0.12	
+first	& 49	& 16.27	& 0.12	
 
 
 bench | succ(solvethis) | full(timeout) | median | 
-high	& 41	& 10.64	& 0.28	
+high	& 41	& 9.76	& 0.24	
 
 
 bench | succ(solvethis) | full(timeout) | median | 
-termination	& 81(2)	& 29.45	& 0.06	
+termination	& 30	& 26.26	& 0.45	
 
 
 bench | succ(solvethis) | full(timeout) | median | 
-array	& 8	& 7.32	& 0.79	
+array	& 8	& 7.15	& 0.77	
 
 
 bench | succ(solvethis) | full(timeout) | median | 
-list	& 8	& 6.44	& 0.28	
+list	& 8	& 6.10	& 0.26	
 
 
 bench | succ(solvethis) | full(timeout) | median | 
-negative	& 14	& 8.39	& 0.17	
+negative	& 14	& 8.22	& 0.17	
 
 
 =======end========
@@ -86,7 +86,7 @@ high	& 58	& 276.37(4)	& 15.18
 
 
 bench | succ(solvethis) | full(timeout) | median | 
-termination	& 80	& 42.73	& 0.11	
+termination	& 80	& 41.56	& 0.11	
 
 
 bench | succ(solvethis) | full(timeout) | median | 
@@ -98,7 +98,7 @@ list	& 17	& 455.28(3)	& 19.81
 
 
 bench | succ(solvethis) | full(timeout) | median | 
-negative	& 12	& 94.78(3)	& 43.42	
+negative	& 14	& 95.95(3)	& 43.41	
 
 
 =======end========

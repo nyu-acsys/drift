@@ -22,10 +22,11 @@ def read_info_from_file(file_name):
     invalid_regexp = re.compile(r'Assertionmayfail')
     time_regexp = re.compile(r'Time.*')
     error_regexp = re.compile(r'Fatalerror:.*')
+    error2_regexp = re.compile(r'Error')
     res_data = []
     for i in range(len(data)):
-        if invalid_regexp.search(data[i]) or error_regexp.search(data[i]):
-            if error_regexp.search(data[i]):
+        if invalid_regexp.search(data[i]) or error_regexp.search(data[i]) or error2_regexp.search(data[i]):
+            if error_regexp.search(data[i]) or error2_regexp.search(data[i]):
                 res_data.append('ER')
             else:
                 res_data.append('F')
@@ -57,10 +58,11 @@ def read_false_info_from_file(file_name):
     invalid_regexp = re.compile(r'Assertionmayfail')
     time_regexp = re.compile(r'Time.*')
     error_regexp = re.compile(r'Fatalerror:.*')
+    error2_regexp = re.compile(r'Error')
     res_data = []
     for i in range(len(data)):
-        if invalid_regexp.search(data[i]) or error_regexp.search(data[i]):
-            if error_regexp.search(data[i]):
+        if invalid_regexp.search(data[i]) or error_regexp.search(data[i]) or error2_regexp.search(data[i]):
+            if error_regexp.search(data[i]) or error2_regexp.search(data[i]):
                 res_data.append('ER')
             else:
                 res_data.append('T')

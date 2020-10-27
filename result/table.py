@@ -36,7 +36,7 @@ else:
 "res1-polka_st-thowid", "res1-polka_ls-standard", "res1-polka_ls-thowid" ]
 
 # loc is calculated by cloc 
-sort_lst = {"first":["FO", 11], "high":["HO", 10], "termination":["T", 45], "array":["A", 17], "list":["L", 16], "negative":["E", 16]}
+sort_lst = {"first":["FO", 11], "high":["HO", 10], "termination":["T", 44], "array":["A", 17], "list":["L", 16], "negative":["E", 21]}
 unit_lst = ["succ", "total", "avg.", "mean"]
 
 cant_solve_lst = [
