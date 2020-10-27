@@ -208,7 +208,6 @@ termination,indirectHO01,Pos,0.28,T,Polka_ls
 termination,McCarthy9100,Pos,0.16,T,Polka_ls
 termination,alias_partial03,Pos,0.33,T,Polka_ls
 termination,indirectHO00,Pos,0.26,T,Polka_ls
-termination,x_plus_2_pow_n01,Pos,3.1,F,Polka_ls
 termination,Ackermann05,Pos,0.0,T,Polka_ls
 termination,CE-0CFA03,Pos,5.22,F,Polka_ls
 termination,zip00,Pos,1.1,T,Polka_ls
@@ -217,7 +216,6 @@ termination,CE-1CFA07,Pos,45.11,F,Polka_ls
 termination,Ackermann00,Pos,4.71,T,Polka_ls
 termination,toChurch02,Pos,2.45,T,Polka_ls
 termination,indirect03,Pos,1.25,T,Polka_ls
-termination,CE-Jones_Bohr04,Pos,5.81,F,Polka_ls
 termination,CE-1CFA05,Pos,171.46,T,Polka_ls
 termination,binomial04,Pos,0.0,T,Polka_ls
 termination,Ackermann06,Pos,0.0,T,Polka_ls
@@ -244,6 +242,8 @@ negative,xyz2,Neg,0.25,T,Polka_ls
 negative,indirectHO01,Neg,0.41,T,Polka_ls
 negative,zip00,Neg,1.08,T,Polka_ls
 negative,01_ic3,Neg,0.03,T,Polka_ls
+negative,CE-Jones_Bohr04,Neg,5.81,T,Polka_ls
+negative,x_plus_2_pow_n01,Neg,3.1,T,Polka_ls
 list,simple,Pos,0.33,F,Polka_ls
 list,fold_left,Pos,0.19,F,Polka_ls
 list,nth,Pos,0.09,F,Polka_ls

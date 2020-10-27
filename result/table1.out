@@ -31,33 +31,31 @@ first: polka_ls | 0
 array: polka_ls | 0
 list: polka_ls | 0
 negative: polka_ls | 0
-		& succ	& 33	& 48(1)	& 42	& 55	& 42	& 55	& 42	& 51	& 48	& 60	& 48	& 60	\\
-		& total	& 9.24	& 49.46	& 17.04	& 69.26	& 16.61	& 54.47	& 93.21	& 328.21	& 134.52	& 409.32	& 140.42	& 316.81	\\
-HO (62)	& avg.	& 0.15	& 0.80	& 0.27	& 1.12	& 0.27	& 0.88	& 1.50	& 5.29	& 2.17	& 6.60	& 2.26	& 5.11	\\
-loc: 8	& mean	& 0.67	& 3.29	& 1.16	& 7.33	& 1.21	& 5.30	& 30.61	& 103.78	& 38.59	& 132.31	& 42.02	& 101.55	\\
+-----nonsensitive-----
+oct (46):	 ['first/sum3', 'first/mc91_98', 'first/pldi082_unbounded1', 'first/seq-len', 'first/sum4', 'first/enc-zip', 'first/inductive6-3', 'first/enc-zip4', 'first/mc91_99', 'first/hanoi', 'first/mult_twice', 'first/mc91', 'first/file', 'first/enc-zip_map2', 'first/mult', 'first/sum6', 'first/odd_even', 'first/half', 'first/mc91_95', 'first/enc-zipmap', 'first/lock', 'high/max', 'high/flip_twice_2', 'high/a-max', 'high/neg1', 'high/enc-zip_unzip', 'high/mc91_cps', 'termination/CE-1CFA03', 'termination/CE-1CFA09', 'termination/up_down05', 'termination/CE-1CFA04', 'termination/x_plus_2_pow_n01', 'termination/CE-0CFA03', 'termination/CE-1CFA07', 'termination/CE-Jones_Bohr04', 'termination/McCarthy9103', 'termination/up_down02', 'array/a-mapi', 'array/a-append', 'array/a-init2', 'array/a-init1', 'array/a-map', 'list/simple', 'list/fold_right', 'list/list', 'list/sieve']
+polka_st (46):	 ['first/sum3', 'first/mc91_98', 'first/pldi082_unbounded1', 'first/seq-len', 'first/sum4', 'first/enc-zip', 'first/inductive6-3', 'first/enc-zip4', 'first/mc91_99', 'first/hanoi', 'first/mult_twice', 'first/mc91', 'first/file', 'first/enc-zip_map2', 'first/mult', 'first/sum6', 'first/odd_even', 'first/half', 'first/mc91_95', 'first/enc-zipmap', 'first/lock', 'high/max', 'high/flip_twice_2', 'high/a-max', 'high/neg1', 'high/enc-zip_unzip', 'high/mc91_cps', 'termination/CE-1CFA03', 'termination/CE-1CFA09', 'termination/up_down05', 'termination/CE-1CFA04', 'termination/x_plus_2_pow_n01', 'termination/CE-0CFA03', 'termination/CE-1CFA07', 'termination/CE-Jones_Bohr04', 'termination/McCarthy9103', 'termination/up_down02', 'array/a-mapi', 'array/a-append', 'array/a-init2', 'array/a-init1', 'array/a-map', 'list/simple', 'list/fold_right', 'list/list', 'list/sieve']
+polka_ls (46):	 ['first/sum3', 'first/mc91_98', 'first/pldi082_unbounded1', 'first/seq-len', 'first/sum4', 'first/enc-zip', 'first/inductive6-3', 'first/enc-zip4', 'first/mc91_99', 'first/hanoi', 'first/mult_twice', 'first/mc91', 'first/file', 'first/enc-zip_map2', 'first/mult', 'first/sum6', 'first/odd_even', 'first/half', 'first/mc91_95', 'first/enc-zipmap', 'first/lock', 'high/max', 'high/flip_twice_2', 'high/a-max', 'high/neg1', 'high/enc-zip_unzip', 'high/mc91_cps', 'termination/CE-1CFA03', 'termination/CE-1CFA09', 'termination/up_down05', 'termination/CE-1CFA04', 'termination/x_plus_2_pow_n01', 'termination/CE-0CFA03', 'termination/CE-1CFA07', 'termination/CE-Jones_Bohr04', 'termination/McCarthy9103', 'termination/up_down02', 'array/a-mapi', 'array/a-append', 'array/a-init2', 'array/a-init1', 'array/a-map', 'list/simple', 'list/fold_right', 'list/list', 'list/sieve']
+-----end-----
+-----1-sensitive-----
+oct (22):	 ['first/seq-len', 'first/sum4', 'first/enc-zip', 'first/inductive6-3', 'first/enc-zip4', 'first/hanoi', 'first/mult_twice', 'first/file', 'first/enc-zip_map2', 'first/sum6', 'first/odd_even', 'first/half', 'first/enc-zipmap', 'first/lock', 'high/flip_twice_2', 'high/mc91_cps', 'termination/x_plus_2_pow_n01', 'termination/CE-Jones_Bohr04', 'array/a-init2', 'array/a-init1', 'list/zipunzip', 'list/sieve']
+polka_st (22):	 ['first/seq-len', 'first/sum4', 'first/enc-zip', 'first/inductive6-3', 'first/enc-zip4', 'first/hanoi', 'first/mult_twice', 'first/file', 'first/enc-zip_map2', 'first/sum6', 'first/odd_even', 'first/half', 'first/enc-zipmap', 'first/lock', 'high/flip_twice_2', 'high/mc91_cps', 'termination/x_plus_2_pow_n01', 'termination/CE-Jones_Bohr04', 'array/a-init2', 'array/a-init1', 'list/zipunzip', 'list/sieve']
+polka_ls (22):	 ['first/seq-len', 'first/sum4', 'first/enc-zip', 'first/inductive6-3', 'first/enc-zip4', 'first/hanoi', 'first/mult_twice', 'first/file', 'first/enc-zip_map2', 'first/sum6', 'first/odd_even', 'first/half', 'first/enc-zipmap', 'first/lock', 'high/flip_twice_2', 'high/mc91_cps', 'termination/x_plus_2_pow_n01', 'termination/CE-Jones_Bohr04', 'array/a-init2', 'array/a-init1', 'list/zipunzip', 'list/sieve']
+-----end-----
+FO (73)	& succ	& 25	& 39	& 39	& 51	& 39	& 51	& 33	& 46	& 47	& 58	& 47	& 59	\\
+loc: 11	& total	& 10.40	& 46.94	& 17.37	& 46.42(1)	& 15.82	& 42.88(1)	& 67.38	& 129.80	& 92.37	& 138.00(1)	& 87.27	& 138.33	\\
 \hline
-		& succ	& 25	& 39	& 39	& 51	& 39	& 51	& 33	& 46	& 47	& 58	& 47	& 59	\\
-		& total	& 11.08	& 46.51	& 19.84	& 51.64(1)	& 18.84	& 42.69(1)	& 69.46	& 142.46	& 106.28	& 154.36(1)	& 106.07	& 138.95	\\
-FO (73)	& avg.	& 0.15	& 0.64	& 0.27	& 0.71	& 0.26	& 0.58	& 0.95	& 1.95	& 1.46	& 2.11	& 1.45	& 1.90	\\
-loc: 11	& mean	& 2.52	& 4.79	& 3.67	& 6.41	& 3.54	& 5.24	& 24.53	& 32.63	& 33.09	& 36.81	& 33.84	& 31.24	\\
+HO (62)	& succ	& 33	& 48(1)	& 42	& 55	& 42	& 55	& 42	& 51	& 48	& 60	& 48	& 60	\\
+loc: 10	& total	& 8.53	& 49.97	& 14.97	& 60.67	& 14.03	& 54.71	& 83.56	& 282.57	& 119.10	& 345.03	& 112.05	& 316.18	\\
 \hline
-		& succ	& 6	& 6	& 8	& 8	& 8	& 8	& 8	& 8	& 11	& 11	& 11	& 11	\\
-		& total	& 4.76	& 23.25	& 8.58	& 24.87	& 8.92	& 23.40	& 19.71	& 46.45	& 33.03	& 57.74	& 32.71	& 45.79	\\
-A (13)	& avg.	& 0.37	& 1.79	& 0.66	& 1.91	& 0.69	& 1.80	& 1.52	& 3.57	& 2.54	& 4.44	& 2.52	& 3.52	\\
-loc: 17	& mean	& 0.69	& 3.08	& 1.04	& 3.70	& 1.10	& 3.46	& 3.82	& 7.93	& 5.32	& 10.31	& 5.50	& 7.79	\\
+T (82)	& succ	& 72	& 72	& 72	& 72	& 72	& 72	& 79	& 79	& 78	& 79	& 78	& 79	\\
+loc: 45	& total	& 812.15	& 849.72	& 961.97	& 1005.03	& 891.12	& 933.91	& 1308.28(1)	& 1409.41(1)	& 1482.74(1)	& 1581.87(1)	& 1412.71(1)	& 1512.64(1)	\\
 \hline
-		& succ	& 8(2)	& 14	& 10	& 14	& 10	& 14	& 11	& 18	& 10	& 18	& 10	& 18	\\
-		& total	& 1.75	& 11.90	& 4.53	& 14.14	& 3.97	& 10.99	& 6.11	& 30.50	& 12.93	& 32.53	& 11.59	& 26.34	\\
-L (20)	& avg.	& 0.09	& 0.59	& 0.23	& 0.71	& 0.20	& 0.55	& 0.31	& 1.52	& 0.65	& 1.63	& 0.58	& 1.32	\\
-loc: 16	& mean	& 0.21	& 0.89	& 0.48	& 0.96	& 0.45	& 0.76	& 0.62	& 2.36	& 1.25	& 2.46	& 1.04	& 2.09	\\
+A (13)	& succ	& 6	& 6	& 8	& 8	& 8	& 8	& 8	& 8	& 11	& 11	& 11	& 11	\\
+loc: 17	& total	& 4.30	& 23.43	& 7.66	& 25.04	& 7.19	& 23.38	& 17.99	& 41.66	& 28.07	& 47.77	& 26.84	& 45.94	\\
 \hline
-		& succ	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	\\
-		& total	& 2.24	& 7.77	& 3.63	& 10.59	& 3.61	& 8.32	& 7.25	& 19.08	& 10.54	& 21.64	& 10.02	& 17.33	\\
-E (15)	& avg.	& 0.15	& 0.52	& 0.24	& 0.71	& 0.24	& 0.55	& 0.48	& 1.27	& 0.70	& 1.44	& 0.67	& 1.16	\\
-loc: 16	& mean	& 0.44	& 1.33	& 0.63	& 2.12	& 0.65	& 1.59	& 1.55	& 3.10	& 1.84	& 3.16	& 1.74	& 2.47	\\
+L (20)	& succ	& 8(2)	& 14	& 10	& 14	& 10	& 14	& 11	& 18	& 10	& 18	& 10	& 18	\\
+loc: 16	& total	& 1.62	& 12.02	& 4.00	& 12.52	& 3.45	& 10.97	& 5.73	& 27.01	& 11.46	& 29.01	& 10.32	& 26.43	\\
 \hline
-		& succ	& 72	& 72	& 72	& 72	& 72	& 72	& 79	& 79	& 78	& 79	& 78	& 79	\\
-		& total	& 898.89	& 903.22	& 1131.18	& 1137.18	& 1073.91	& 933.08	& 1416.53(1)	& 1496.91(1)	& 1704.13(1)	& 1775.70(1)	& 1414.86(1)	& 1494.90(1)	\\
-T (82)	& avg.	& 10.96	& 11.01	& 13.79	& 13.87	& 13.10	& 11.38	& 17.27	& 18.26	& 20.78	& 21.65	& 17.25	& 18.23	\\
-loc: 47	& mean	& 109.37	& 107.86	& 105.84	& 101.47	& 99.26	& 84.78	& 101.55	& 100.66	& 88.55	& 90.41	& 76.44	& 78.94	\\
+E (15)	& succ	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	& 15	\\
+loc: 16	& total	& 2.13	& 7.87	& 3.28	& 8.93	& 3.10	& 8.37	& 6.75	& 17.60	& 9.31	& 18.48	& 8.75	& 17.35	\\
 \hline

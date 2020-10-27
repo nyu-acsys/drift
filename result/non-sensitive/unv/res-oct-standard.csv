@@ -208,7 +208,6 @@ termination,indirectHO01,Pos,0.22,T,Oct
 termination,McCarthy9100,Pos,0.07,T,Oct
 termination,alias_partial03,Pos,0.21,T,Oct
 termination,indirectHO00,Pos,0.18,T,Oct
-termination,x_plus_2_pow_n01,Pos,1.74,F,Oct
 termination,Ackermann05,Pos,0.0,T,Oct
 termination,CE-0CFA03,Pos,3.58,F,Oct
 termination,zip00,Pos,0.84,T,Oct
@@ -217,7 +216,6 @@ termination,CE-1CFA07,Pos,31.67,F,Oct
 termination,Ackermann00,Pos,3.5,T,Oct
 termination,toChurch02,Pos,1.86,T,Oct
 termination,indirect03,Pos,0.86,T,Oct
-termination,CE-Jones_Bohr04,Pos,4.17,F,Oct
 termination,CE-1CFA05,Pos,200.11,T,Oct
 termination,binomial04,Pos,0.0,T,Oct
 termination,Ackermann06,Pos,0.0,T,Oct
@@ -244,6 +242,8 @@ negative,xyz2,Neg,0.14,T,Oct
 negative,indirectHO01,Neg,0.29,T,Oct
 negative,zip00,Neg,0.82,T,Oct
 negative,01_ic3,Neg,0.02,T,Oct
+negative,CE-Jones_Bohr04,Neg,4.17,T,Oct
+negative,x_plus_2_pow_n01,Neg,1.74,T,Oct
 list,simple,Pos,0.11,F,Oct
 list,fold_left,Pos,0.11,T,Oct
 list,nth,Pos,0.05,F,Oct
