@@ -96,4 +96,4 @@ Inside the `scipts` folder, there is a script `benchs_popl21.sh` to run all expe
 ```bash
 ./benchs_popl21.sh
 ```
-TODO: For dsolve, you cannot run it under any other relative paths. The tool should be run it under their own directory.
+TODO: For dsolve, you cannot run it under any other relative paths. Please run it under its own directory.
