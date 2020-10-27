@@ -10,5 +10,5 @@ let rec sum n =
   else
     n + sum (n - 1)
 
-let main (mn:int(*-:{v:Int | true}*)) =
-    assert (4 * mn - 6 <= sum mn)
+let main (n:int(*-:{v:Int | true}*)) =
+    assert (4 * n - 6 <= sum n)

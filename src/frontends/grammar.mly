@@ -15,6 +15,19 @@ let final_call_name = "main"
 
 let universe_name = "umain"
 
+let convert_var_name_apron_not_support s = 
+  if String.contains s '\'' then
+    let lst = String.split_on_char '\'' s in
+    let lst' = List.fold_right (fun s rlst -> 
+      if String.length s = 0 then List.append rlst ["_pm"]
+      else List.append rlst [s; "_pm_"]) lst [] in
+    let restr = 
+      let tempstr = String.concat "" (List.rev lst') in
+      String.sub tempstr 4 (String.length tempstr - 4)
+    in
+    restr
+  else s
+
 %}
 /* declarations */
 /* let final_call_name = function
@@ -33,6 +46,7 @@ let universe_name = "umain"
 %token ARROW CONS BAR 
 %token SEMI COLON COMMA LSQBR RSQBR LARYBR RARYBR
 %token IF ELSE THEN FUN LET REC IN ASSERT MATCH WITH
+%token BEGIN END        
 %token TYPE
 %token <Syntax.pre_exp> PRE
 
@@ -64,6 +78,8 @@ The precedences must be listed from low to high.
 %nonassoc below_SEMI
 %nonassoc SEMI
 %nonassoc below_BAR
+%nonassoc THEN
+%nonassoc ELSE
 %left BAR
 
 %start main
@@ -84,28 +100,13 @@ fun_type:
 ;
 
 param_list:
-| IDENT param_list { $1 :: $2 }
-| LPAREN IDENT COLON TYPE RPAREN param_list { $2 :: $6 }
-| LPAREN IDENT COLON TYPE RPAREN fun_type { [$2] }
-| IDENT fun_type { [$1] }
+| basic_pattern param_list_opt { $1 :: $2 }
 ;
 
-param_ref_list:
-| LPAREN IDENT COLON TYPE PRE RPAREN param_ref_list { pre_vars := VarDefMap.add ("pref"^$2) $5 !pre_vars; $2 :: $7 }
-| LPAREN IDENT COLON TYPE PRE RPAREN fun_type { pre_vars := VarDefMap.add ("pref"^$2) $5 !pre_vars; [$2] }
-| LPAREN IDENT PRE RPAREN param_ref_list { pre_vars := VarDefMap.add ("pref"^$2) $3 !pre_vars; $2 :: $5 }
-| LPAREN IDENT PRE RPAREN fun_type { pre_vars := VarDefMap.add ("pref"^$2) $3 !pre_vars; [$2] }
-;
-
-ident_list:
-| IDENT COLON TYPE param_list { $1 :: $4 }
-| IDENT param_list { $1 :: $2 }
-;
-
-ident_ref_list:
-| IDENT param_ref_list { $1 :: $2 }
-;
-
+param_list_opt:
+| param_list { $1 }
+| fun_type { [] }
+  
 int_list:
 | INTCONST { [$1] }
 | INTCONST SEMI { [$1] }
@@ -119,22 +120,39 @@ int_ary:
 ;
 
 basic_term: /*term@7 := int | bool | [] | var | (term)*/
-| INTCONST { thresholdsSet := ThresholdsSetType.add $1 !thresholdsSet; Const (Integer $1, "") }
-| BOOLCONST { Const (Boolean $1, "") }
+| const_term { $1 }
 | EMPTYLST { Const (IntList [], "") }
 | LSQBR int_list RSQBR { Const (IntList $2, "") }
 | LARYBR int_ary RARYBR { Const (IntList [], "") } /*TODO: Implement this*/
-| IDENT { Var ($1, "") }
+| IDENT { 
+  let res_str = convert_var_name_apron_not_support $1 in 
+  Var (res_str, "") }
 | LPAREN seq_term RPAREN { $2 } /*Parentheses*/
-| LPAREN RPAREN { Const (Unit (), "") }
+| BEGIN seq_term END { $2 } /*begin/end blocks*/
 ;
 
+const_term:
+| INTCONST { if abs $1 < 1000 then thresholdsSet := ThresholdsSetType.add $1 !thresholdsSet; Const (Integer $1, "") }
+| BOOLCONST { Const (Boolean $1, "") }
+| LPAREN RPAREN { Const (UnitLit, "") }
+;
+  
 app_term: /* term@6 := term@6 term@7 | term@7 */
 | basic_term { $1 }
 | app_term basic_term { App ($1, $2, "") }
-| ASSERT LPAREN seq_term RPAREN { 
+| ASSERT basic_term { 
   let loc = Some (mklocation $startpos $endpos) |> construct_asst in
-  Ite ($3, Const (Unit (), ""), Const (Unit (), ""), "", loc)}
+  Ite ($2, Const (UnitLit, ""), Const (UnitLit, ""), "", loc)}
+;
+
+unary_term:
+| app_term { $1 }
+| MINUS unary_term {
+  match $2 with
+  | Const (Integer i, _) ->
+      if abs i < 1000 then thresholdsSet := ThresholdsSetType.add (-i) !thresholdsSet;
+      Const (Integer (-i), "")
+  | _ -> UnOp (UMinus, $2, "") }
 ;
 
 mult_op:
@@ -144,8 +162,8 @@ mult_op:
 ;
 
 mult_term: /* term@5 := term@5 mop term@6 */
-| app_term { $1 }
-| mult_term mult_op app_term { BinOp ($2, $1, $3, "") }
+| unary_term { $1 }
+| mult_term mult_op unary_term { BinOp ($2, $1, $3, "") }
 ;
 
 add_op:
@@ -203,6 +221,11 @@ tuple_term:
 
 %inline if_term_:
 | tuple_term { $1 }
+| IF seq_term THEN term {
+  let loc = None |> construct_asst in
+  let else_term = Const (UnitLit, "") in
+  Ite ($2, $4, else_term, "", loc) 
+}
 | IF seq_term THEN term ELSE term { 
   let loc = None |> construct_asst in
   Ite ($2, $4, $6, "", loc) 
@@ -210,39 +233,43 @@ tuple_term:
 ;
 
 lambda_term:
-| FUN IDENT ARROW seq_term { mk_lambda $2 $4 }
+| FUN basic_pattern ARROW seq_term { mk_lambda $2 $4 }
 ;
 
 let_in_term:
-| LET REC ident_list EQ seq_term IN seq_term {
-  let fn = mk_lambdas (List.tl $3) $5 in
-  mk_let_rec_in (List.hd $3) fn $7
+| LET REC IDENT param_list_opt EQ seq_term IN seq_term {
+  let res_str = convert_var_name_apron_not_support $3 in
+  let fn = mk_lambdas $4 $6 in
+  mk_let_rec_in res_str fn $8
 }
-| LET ident_list EQ seq_term IN seq_term {
+| LET param_list EQ seq_term IN seq_term {
   let fn = mk_lambdas (List.tl $2) $4 in
   mk_let_in (List.hd $2) fn $6
 }
-| LET pattern EQ seq_term IN seq_term {
-  mk_pattern_let_in $2 $4 $6
-}
 ;
 
+term:
+| if_term_ { $1 }
+| lambda_term { $1 }
+| let_in_term { $1 }
+| match_term { $1 }
+;
+
+seq_term:
+| term %prec below_SEMI { $1 }
+| term SEMI seq_term { (*mk_let_in (Var ("_", "")) $1 $3*) BinOp (Seq, $1, $3, "")  }
+;
+
+  
 let_val:
-| LET REC ident_list EQ seq_term {
-  let fn = mk_lambdas (List.tl $3) $5 in
-  1, (List.hd $3), fn, []
+| LET REC IDENT param_list_opt EQ seq_term {
+  let fn = mk_lambdas $4 $6 in
+  let res_str = convert_var_name_apron_not_support $3 in
+  true, Var (res_str, ""), fn, $4
 }
-| LET ident_list EQ seq_term {
+| LET param_list EQ seq_term {
   let fn = mk_lambdas (List.tl $2) $4 in
-  0, (List.hd $2), fn, []
-}
-| LET ident_ref_list EQ seq_term {
-  let fn = mk_lambdas (List.tl $2) $4 in
-  0, (List.hd $2), fn, (List.tl $2)
-}
-| LET REC ident_ref_list EQ seq_term {
-  let fn = mk_lambdas (List.tl $3) $5 in
-  1, (List.hd $3), fn, (List.tl $3)
+  false, (List.hd $2), fn, (List.tl $2)
 }
 ;
 
@@ -251,59 +278,58 @@ let main (x(*-: {v: int | true}*)) = x
 <=> let main x = x in main prefx
 */
 let_vals:
-| let_val {
-  let rc, x, def, lst = $1 in
-  if rc = 0 then
-    if x = final_call_name then
-      mk_let_main x def lst
-    else
-      def
-  else
-    if x = final_call_name then
-      mk_let_main x def lst
-    else
-      def
-}
-| LET pattern EQ seq_term {
-  $4
-}
-| LET pattern EQ seq_term let_vals {
-  mk_pattern_let_in $2 $4 $5
-}
-| LET REC pattern EQ seq_term {
-  $5
-}
 | let_val let_vals {
-  let rc, x, def, lst = $1 in
-  if x = final_call_name && lst <> [] then
-    mk_let_main x def lst
-  else if rc = 0 then
-    mk_let_in x def $2
-  else 
-    mk_let_rec_in x def $2
+  let rc, p, def, lst = $1 in
+  match p, $2 with
+  | Var (("main" | "_"), _), Const (UnitLit, "") ->
+      mk_let_main "main" def lst
+  | Var (x, _), _ when rc -> 
+      mk_let_rec_in x def $2
+  | _ ->
+      mk_let_in p def $2
 }
+| /* empty */ { Const (UnitLit, "") }   
 ;
 
-pattern_term: /*pattern_term := int | bool | [] | var | (pattern_term)*/
-| INTCONST { thresholdsSet := ThresholdsSetType.add $1 !thresholdsSet; Const (Integer $1, "") }
+basic_pattern:
+| INTCONST { if abs $1 < 1000 then thresholdsSet := ThresholdsSetType.add $1 !thresholdsSet; Const (Integer $1, "") }
+| MINUS INTCONST { if abs $2 < 1000 then thresholdsSet := ThresholdsSetType.add (-$2) !thresholdsSet; Const (Integer (-$2), "") }
 | BOOLCONST { Const (Boolean $1, "") }
 | EMPTYLST { Const (IntList [], "") }
-| IDENT { Var ($1, "") }
-| IDENT COLON TYPE { Var ($1, "") }
-| LPAREN tuple_pattern RPAREN { TupleLst ($2, "") }
+| IDENT { 
+  let res_str = convert_var_name_apron_not_support $1 in 
+  Var (res_str, "") }
+| LPAREN pattern RPAREN { $2 }
 ;
-
-tuple_pattern:
-| pattern_term COMMA pattern_term { $1 :: [$3] }
-| pattern_term COMMA tuple_pattern { $1 :: $3 }
-;
-
+    
 pattern:
-| pattern_term { $1 }
-| LPAREN pattern RPAREN { $2 } /*Parentheses*/
-| pattern cons_op pattern_term { BinOp ($2, $1, $3, "") }
+| basic_pattern { $1 }
+| basic_pattern COLON TYPE PRE {
+  match $1 with
+  | Var (x, _) ->
+      pre_vars := VarDefMap.add ("pref" ^ x) $4 !pre_vars; $1
+  | _ ->
+      let loc = mklocation (Parsing.rhs_start_pos 1) (Parsing.rhs_end_pos 4) in
+      fail loc "Syntax error" 
+  }
+| basic_pattern PRE {
+  match $1 with
+  | Var (x, _) ->
+      pre_vars := VarDefMap.add ("pref" ^ x) $2 !pre_vars; $1
+  | _ ->
+      let loc =  mklocation (Parsing.rhs_start_pos 1) (Parsing.rhs_end_pos 2) in
+      fail loc "Syntax error" 
+  }
+| basic_pattern COLON TYPE { $1 }
+| tuple_pattern { TupleLst ($1, "") }
+| basic_pattern cons_op pattern { BinOp ($2, $1, $3, "") }
 ;
-
+  
+tuple_pattern:
+| basic_pattern COMMA basic_pattern { $1 :: [$3] }
+| basic_pattern COMMA tuple_pattern { $1 :: $3 }
+;
+  
 pattern_matching:
 | pattern ARROW seq_term { mk_pattern_case $1 $3 }
 ;
@@ -318,17 +344,6 @@ match_term:
 | MATCH seq_term WITH BAR pattern_matchings { PatMat ($2, $5, "") }
 ;
 
-term:
-| if_term_ { $1 }
-| lambda_term { $1 }
-| let_in_term { $1 }
-| match_term { $1 }
-;
-
-seq_term:
-| term %prec below_SEMI { $1 }
-| term SEMI seq_term { mk_let_in "_" $1 $3 }
-;
 
 
 /*

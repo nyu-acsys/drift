@@ -6,15 +6,13 @@ Liquid Haskell: TODO: need to TEST!
 *)
 
 
-let rec m mx (mk:int -> bool): bool =
-  if mx > 100
-  then true && mk (mx - 10)
+let rec m x (k:int -> unit): unit =
+  if x > 100
+  then k (x-10)
   else
-    let f (fr:int) = m fr mk in
-    m (mx + 11) f
+    let f r = m r k in
+    m (x+11) f
 
 let main (n:int(*-:{v:Int | true}*)) =
-	if n <= 101 then
-	    (let k kr = (kr = 91) in
-	    assert (m n k = true))
-	else ()
+	let k r = if n <= 101 then assert (r = 91) in
+  	m n k

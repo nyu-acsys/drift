@@ -13,7 +13,7 @@ let rec loopb bx by bz =
         loopb rx ry rz)
     else bz > (-1)
 
-let main (mm:unit) =
+let main (mm:unit(*-:{v:Unit | unit}*)) =
     let x = 0 in
     let y = 0 in
     let z = 0 in

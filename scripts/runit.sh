@@ -2,10 +2,10 @@
 
 # ./runit.sh -set call/unv -domain Oct [-nar | -dwid 0 | -thold] [-sen]
 # Domain for benchmarks: Oct, Polka_st, Polka_ls
-
-OUTDIR="../outputs/DRIFT2"
-PROG="../drift2.native"
-PROGNAME="DRIFT2"
+opam switch 4.08.1
+OUTDIR="../outputs/DRIFT"
+PROG="../drift.native"
+PROGNAME="DRIFT"
 SET=$2
 DOMAIN=$4
 if [ $# -gt 1 ]; then
@@ -13,7 +13,7 @@ if [ $# -gt 1 ]; then
     DOMAIN=$4
 else
     echo "ERROR!!! The command should be:"
-    echo "./runit.sh -domain <domain_name> [-dwid <delay_steps> | -nar]"
+    echo "./runit.sh -set call/unv -domain <domain_name> [-dwid <delay_steps> | -nar]"
     exit 0
 fi
 shift
@@ -57,8 +57,8 @@ else
     TESTDIR="../tests/benchmarks"
 fi
 
-DIRS=" DRIFT2 DOrder r_type"
-INS=" first high negative array list" #   
+DIRS=" DRIFT DOrder r_type"
+INS=" array list first high negative termination " # 
 timeout="300"
 OUTPRE="out"
 DATE="gdate"
@@ -71,6 +71,10 @@ cd ../ && ./build.sh clean && ./build.sh
 cd scripts
 
 for dir in ${INS}; do
+    if [ ! -d ${OUTDIR}/${dir} ] 
+    then
+        mkdir -p ${OUTDIR}/${dir}
+    fi
     rm -f ${OUTDIR}/${dir}/* # Remove all outputs from last tests
 done
 
@@ -120,7 +124,21 @@ else
     config="-standard"
 fi
 
+if [[ $sen == true ]]; then
+    RESDIR="1-sensitive"
+else
+    RESDIR="non-sensitive"
+fi
+
+if [ $SET = "call" ]; then
+    RESSUBDIR="call"
+else
+    RESSUBDIR="unv"
+fi
+
 csv_name="${csv_name}${DOMAIN}${config}"
 
-echo "Gnerate ${csv_name} table results..."
+echo "Generate ${csv_name} table results..."
 python3 table.py -csv ${csv_name}
+
+mv ../${csv_name}.csv ../result/${RESDIR}/${RESSUBDIR}

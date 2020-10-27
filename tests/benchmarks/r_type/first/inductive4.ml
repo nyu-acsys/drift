@@ -11,4 +11,4 @@ let rec f g x =
 let incr y = y + 1
 
 let main (n:int(*-:{v:Int | true}*)) =   
-    assert(f incr n >= -3)
+    assert(f incr 3 >= -3)

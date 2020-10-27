@@ -6,7 +6,7 @@ let f g x =
   else
     1
 
-let decr dx = dx - 1
+let decr x = x - 1
 	
 let main (n:unit(*-:{v:Unit | unit}*)) = 
 	assert(f decr 3 > 0)

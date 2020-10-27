@@ -10,7 +10,8 @@ open Config
  *******************************
  *)
 type var = string
-let parse_domain = function
+      
+(*let parse_domain = function
   | "Box" -> Box.manager_alloc () |> Obj.magic
   | "Oct" -> Oct.manager_alloc () |> Obj.magic
   | "Polka_st" -> Polka.manager_alloc_strict() |> Obj.magic
@@ -21,78 +22,79 @@ let parse_domain = function
   | "Polka_gd" -> let man_polka = Polka.manager_alloc_strict() in
       let man_pplgrid = Ppl.manager_alloc_grid() in
       PolkaGrid.manager_alloc man_polka man_pplgrid |> PolkaGrid.manager_of_polkagrid |> Obj.magic
-  | _ -> raise (Invalid_argument "Incorrect domain specification")
+  | _ -> raise (Invalid_argument "Incorrect domain specification")*)
 (* Define Abstract Domain Module*)
 
-(* module type AbstractDomainType =
-  sig
-    type 'a t
-    val lc_env: 'a t -> 'a t -> 'a t * 'a t
-    val leq: 'a t -> 'a t -> bool
-    val eq: 'a t -> 'a t -> bool
-    val init_c: int -> 'a t
-    val top: 'a t
-    val bot: 'a t
-    val is_bot: 'a t -> bool
-    val join: 'a t -> 'a t -> 'a t
-    val meet: 'a t -> 'a t -> 'a t
-    val alpha_rename: 'a t -> var -> var -> 'a t
-    val forget_var: var -> 'a t -> 'a t
-    val project_other_vars: 'a t -> var list -> 'a t
-    val equal_var: 'a t -> var -> var -> 'a t
-    val widening: 'a t -> 'a t -> 'a t
-    val operator: var -> var -> var -> binop -> int -> 'a t -> 'a t
-    val print_abs: Format.formatter -> 'a t -> unit
-    val print_env: Format.formatter -> 'a t -> unit
-    val derived: string -> 'a t -> 'a t
-    val licons_ref: Apron.Lincons1.earray ref
-    val licons_earray: var array -> Apron.Lincons1.earray
-    val assign: var -> var -> var -> binop -> 'a t -> 'a t
-    val contain_var: var -> 'a t -> bool
-  end *)
-(* module type AbstractDomainType =
+module type Domain =
   sig
     type t
-    val lc_env: t -> t -> t * t
-    val leq: t -> t -> bool
-    val eq: t -> t -> bool
-    val init_c: int -> t
-    val top: t
-    val bot: t
-    val is_bot: t -> bool
-    val join: t -> t -> t
-    val meet: t -> t -> t
-    val alpha_rename: t -> var -> var -> t
-    val forget_var: var -> t -> t
-    val project_other_vars: t -> var list -> t
-    val equal_var: t -> var -> var -> t
-    val widening: t -> t -> t
-    val operator: var -> var -> var -> binop -> int -> t -> t
-    val print_abs: Format.formatter -> t -> unit
-    val print_env: Format.formatter -> t -> unit
-    val derived: string -> t -> t
-    val licons_ref: Apron.Lincons1.earray ref
-    val licons_earray: var array -> Apron.Lincons1.earray
-    val assign: var -> var -> var -> binop -> t -> t
-    val contain_var: var -> t -> bool
-  end *)
-
-module AbstractValue = 
+    val from_int : int -> t
+    val is_bot : t -> bool
+    val contains_var : string -> t -> bool
+    val leq : t -> t -> bool
+    val eq : t -> t -> bool
+    val join :
+      t -> t -> t
+    val meet :
+      t -> t -> t
+    val alpha_rename :
+      t -> string -> string -> t
+    val forget_var : string -> t -> t
+    val project_other_vars :
+      t -> string list -> t
+    val top : t
+    val bot : t
+    val equal_var :
+      t -> string -> string -> t
+    val widening :
+      t -> t -> t
+    val operator :
+      string ->
+      string ->
+      string ->
+      Syntax.binop -> int -> t -> t
+    val uoperator :
+      string ->
+      string ->
+      Syntax.unop -> int -> t -> t
+    val assign :
+      string ->
+      string ->
+      string -> Syntax.binop -> t -> t
+    val print_abs : Format.formatter -> t -> unit
+    (*val print_env : Format.formatter -> t -> unit*)
+    val derived : string -> t -> t
+    val sat_cons : t -> string -> bool
+  end
+        
+module type DomainManager =
+  sig
+    type t
+    val man : t Apron.Manager.t
+  end
+      
+module BaseDomain(Manager : DomainManager) : Domain = 
   struct
-    let man = !domain |> parse_domain
-    type t = Oct.t Abstract1.t (*Could be parsed constraints or given initial*)
+    open Manager
+    type t = Manager.t Abstract1.t 
+
     let max_size = 150
     let max_length = 15
-    let init_c c = let var_v = "cur_v" |> Var.of_string in
-        let env = Environment.make [|var_v|] [||] in
-        let expr = "cur_v=" ^ (string_of_int c) in
-        let tab = Parser.lincons1_of_lstring env [expr] in
-        (* Creation of abstract value v = c *)
-        Abstract1.of_lincons_array man env tab
+
+    let from_int c =
+      let var_v = "cur_v" |> Var.of_string in
+      let env = Environment.make [|var_v|] [||] in
+      let expr = "cur_v=" ^ (string_of_int c) in
+      let tab = Parser.lincons1_of_lstring env [expr] in
+      (* Creation of abstract value v = c *)
+      Abstract1.of_lincons_array man env tab
+
     let is_bot v = Abstract1.is_bottom man v
-    let contain_var var v = 
+
+    let contains_var var v = 
       let env = Abstract1.env v in
       Environment.mem_var env (Var.of_string var) 
+
     let lc_env v1 v2 = 
       (* let v1, v2 = (Abstract1.minimize_environment man v1), (Abstract1.minimize_environment man v2) in *)
       let env1 = Abstract1.env v1 in
@@ -108,15 +110,20 @@ module AbstractValue =
         Abstract1.change_environment man v1 env false,
         Abstract1.change_environment man v2 env false in
       (v1', v2')
+
     let leq v1 v2 = 
       let v1',v2' = lc_env v1 v2 in
       let res = Abstract1.is_leq man v1' v2' in
       res
+
     let eq v1 v2 = 
       let v1',v2' = lc_env v1 v2 in
       Abstract1.is_eq man v1' v2'
+
     let leq_without_lcenv v1 v2 = Abstract1.is_leq man v1 v2
+
     let eq_without_lcenv v1 v2 = Abstract1.is_eq man v1 v2
+
     let join v1 v2 = 
       let v1',v2' = lc_env v1 v2 in
       if leq_without_lcenv v1' v2' then
@@ -149,6 +156,7 @@ module AbstractValue =
         then delay_wid := 0;
       Abstract1.minimize_environment man res
       (* res *)
+
     let meet v1 v2 =
       let v1',v2' = lc_env v1 v2 in
       if leq_without_lcenv v1' v2' then
@@ -181,6 +189,7 @@ module AbstractValue =
         then delay_wid := 0;
       Abstract1.minimize_environment man res
       (* res *)
+
     let alpha_rename v prevar var =
         (* (if !debug then
         begin
@@ -195,15 +204,17 @@ module AbstractValue =
         if is_bot v then v else
         if prevar = var 
         (* Check previous variable exists or not *)
-          || contain_var prevar v = false then v else
+          || contains_var prevar v = false then v else
         let (int_vars, real_vars) = Environment.vars (Abstract1.env v) in
-        let v' = if contain_var var v then
+        let v' = if contains_var var v then
             (* Check new variable exists or not *) 
               begin
                 (* check prevar and newvar has the same constraint or not *)
                 (* TODO: If not the same, return bottom *)
                 (* If same, project prevar *)
-                let int_vars_new = Array.fold_left (fun ary x -> if prevar <> Var.to_string x then Array.append ary [|x|] else ary) [||] int_vars in
+                let int_vars_new =
+                  Array.fold_left (fun ary x -> if prevar <> Var.to_string x then Array.append ary [|x|] else ary) [||] int_vars
+                in
                 let env' = Environment.make int_vars_new real_vars in
                 Abstract1.change_environment man v env' false
               end
@@ -222,7 +233,8 @@ module AbstractValue =
           Format.printf "\n";
         end); *)
         Abstract1.minimize_environment man v'
-        (* v' *)
+          (* v' *)
+
     let forget_var var v =
         (* (if !debug then
           begin
@@ -234,7 +246,7 @@ module AbstractValue =
           end
         ); *)
         if is_bot v then v else
-        if contain_var var v = false then v else
+        if contains_var var v = false then v else
         let res =  
            begin
             let vari = var |> Var.of_string in
@@ -252,6 +264,7 @@ module AbstractValue =
           Format.printf "\n";
         end); *)
         res
+
     let project_other_vars v vars = 
         if is_bot v then v else
         let env = Abstract1.env v in
@@ -279,23 +292,46 @@ module AbstractValue =
           Format.printf "\n";
         end); *)
         Abstract1.minimize_environment man res
-    let top = let env = Environment.make [||] [||] in
-        Abstract1.top man env |> Obj.magic
-    let bot = let env = Environment.make [||] [||] in
-        Abstract1.bottom man env |> Obj.magic
-    let equal_var v vl vr = 
-        if is_bot v then v else
-        let var_l = vl |> Var.of_string and var_r = vr |> Var.of_string in
+
+    let top =
+      let env = Environment.make [||] [||] in
+      Abstract1.top man env
+
+    let bot =
+      let env = Environment.make [||] [||] in
+      Abstract1.bottom man env
+      
+    let cache = Hashtbl.create 50
+    let one = Coeff.s_of_int 1
+    let zero = Coeff.s_of_int 0
+    let mone = Coeff.s_of_int (-1)
+    
+    let equal_var v vl vr =
+      if is_bot v then v else
+        let var_l = vl |> Var.of_string in
+        let var_r = vr |> Var.of_string in
         let env = Abstract1.env v in
-        let ary = match Environment.mem_var env var_l, Environment.mem_var env var_r with
-          | true, true -> [||]
-          | true, false -> [|var_r|]
-          | false, true -> [|var_l|]
-          | _ -> [|var_l; var_r|]
+        let env', tab =
+          Hashtbl.find_opt cache (env, vl, vr) |>
+          Opt.lazy_get_or_else (fun () ->
+            let ary = match Environment.mem_var env var_l, Environment.mem_var env var_r with
+            | true, true -> [||]
+            | true, false -> [|var_r|]
+            | false, true -> [|var_l|]
+            | _ -> [|var_l; var_r|]
+            in
+            let env' = Environment.add env ary [||] in
+            let tab =
+              let linc = Linexpr1.make env' |> fun e -> Linexpr1.set_list e [(one, var_l); (mone, var_r)] (Some zero); e in
+              let eq = Lincons1.make linc Lincons1.EQ in
+              let ea = Lincons1.array_make env' 1 in
+              Lincons1.array_set ea 0 eq; ea
+            in
+            (*let expr = vl ^ "=" ^ vr in
+            let tab = Parser.tcons1_of_lstring env' [expr] in*)
+            Hashtbl.add cache (env, vl, vr) (env', tab); env', tab)
+            ()
         in
-        let env' = Environment.add env ary [||] in
-        let expr = vl ^ "=" ^ vr in
-        let tab = Parser.tcons1_of_lstring env' [expr] in
         (* Creation of abstract value vl = vr *)
         (* (if !debug then
         begin
@@ -306,7 +342,8 @@ module AbstractValue =
           Format.printf "\n";
         end); *)
         let v' = Abstract1.change_environment man v env' false in
-        let res = Abstract1.meet_tcons_array man v' tab in
+        let res = Abstract1.meet_lincons_array man v' tab in
+        
         (* (if !debug then
         begin
           Format.printf "result: " ;
@@ -314,17 +351,22 @@ module AbstractValue =
           Format.printf "\n";
         end); *)
         Abstract1.minimize_environment man res
-        (* res *)
+          (* res *)
+          
     let licons_ref = 
       let env = Environment.make [||] [||] in
       let ary = Lincons1.array_make env 0 in
       ref ary
-    let licons_earray env (vars : string list) = 
+
+    let licons_earray env (vars : string list) complex = 
+      if complex = false then 
+       thresholdsSet:= !thresholdsSet |> ThresholdsSetType.remove 111 |> ThresholdsSetType.remove 101;
       let tset_size = 
         ThresholdsSetType.cardinal !thresholdsSet in
       let mult_lst = Util.extract 2 vars in
       let size =
-        (List.length vars) * 4 * tset_size + (List.length mult_lst * 4) in
+        let second = if complex then 10 else 5 in
+        (List.length vars) * 4 * tset_size + (List.length mult_lst * second) in
       let thehold_ary = Lincons1.array_make env size in
       let idx2 = ref 0 in
       List.iter (fun var -> let _ = ThresholdsSetType.map (fun i -> 
@@ -334,28 +376,49 @@ module AbstractValue =
       let eq = var^" >=" ^ (string_of_int i) in (* v >=  threshold_const *)
       Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
       idx2 := !idx2 + 1;
-      let eq = var^" <" ^ (string_of_int i) in (* v <=  threshold_const *)
+      let eq = var^" <" ^ (string_of_int i) in (* v <  threshold_const *)
       Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
       idx2 := !idx2 + 1;
-      let eq = var^" >" ^ (string_of_int i) in (* v >=  threshold_const *)
+      let eq = var^" >" ^ (string_of_int i) in (* v >  threshold_const *)
       Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
       idx2 := !idx2 + 1;
       i) !thresholdsSet in ()) vars;
       List.iter (fun lst -> 
         let lvar, rvar = List.nth lst 0, List.nth lst 1 in
-        let eq = lvar^" <= "^rvar in (* v <=  threshold_const *)
+        let eq = lvar^" <= "^rvar in (* v1 <= v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;
-        let eq = lvar^" >= "^rvar in (* v >=  threshold_const *)
+        let eq = lvar^" < "^rvar in (* v1 < v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;
-        let eq = lvar^" < "^rvar in (* v <=  threshold_const *)
+        let eq = lvar^" > "^rvar in (* v1 > v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
         idx2 := !idx2 + 1;
-        let eq = lvar^" > "^rvar in (* v >=  threshold_const *)
+        let eq = lvar^" >= "^rvar in (* v1 >= v2 *)
         Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
-        idx2 := !idx2 + 1;) mult_lst;
+        idx2 := !idx2 + 1;
+        let eq = lvar^" >= "^rvar^"+1" in (* v1 >= v2 *)
+        Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
+        idx2 := !idx2 + 1;
+        if complex then
+        (let eq = lvar^" >= 2*"^rvar in (* v1 >= v2 *)
+        Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
+        idx2 := !idx2 + 1;
+        let eq = "3*"^lvar^" <= "^rvar^"+3" in (* v1 <= v2 *)
+        Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
+        idx2 := !idx2 + 1;
+        let eq = "2*"^lvar^" <= "^rvar^"+1" in (* v1 >= v2 *)
+        Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
+        idx2 := !idx2 + 1;
+        let eq = lvar^" <= "^rvar^"+1" in (* v1 <= v2 *)
+        Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
+        idx2 := !idx2 + 1;
+        let eq = lvar^" <= 2*"^rvar in (* v1 <= v2 *)
+        Lincons1.array_set thehold_ary (!idx2) (Parser.lincons1_of_string env eq); 
+        idx2 := !idx2 + 1;);
+        ) mult_lst;
         thehold_ary
+
     let generate_threshold_earray env = 
       if Environment.size env = 0 then Lincons1.array_make env 0 
       (* else if Environment.mem_var env (Var.of_string "cur_v") then !licons_ref  *)
@@ -367,7 +430,9 @@ module AbstractValue =
           (Environment.print Format.std_formatter env;
           licons_earray ary (Some "max"))
         else  *)
-       licons_earray env lst
+      let complex = if Array.length int_vars < 10 then true else false in
+      licons_earray env lst complex
+
     let widening v1 v2 = 
       if is_bot v2 then v1 else
       if eq v1 v2 then v2 else
@@ -382,10 +447,13 @@ module AbstractValue =
       in
       Abstract1.minimize_environment man res
       (* res *)
+
     let make_var var = 
       try let _ = int_of_string var in None
       with e -> Some (var |> Var.of_string)
-    let operator vres vl vr op cons v = 
+
+    (*let op_cache = Hashtbl.create 100 |> Obj.magic*)
+    let operator vres vl vr op cons v =
       (* (if !debug then
       begin
         Format.printf "\n\nOperator abs\n";
@@ -399,7 +467,8 @@ module AbstractValue =
       | Some var_l, None -> Environment.make [|var_l;|] [||]
       | Some var_l, Some var_r -> Environment.make [|var_l; var_r|] [||]
       | None, None -> Environment.make [||] [||])
-      |> Environment.lce (Environment.make [|var_v|] [||])in
+      |> Environment.lce (Environment.make [|var_v|] [||])
+      in
       (* (if !debug then 
       begin
         Format.printf "Env: ";
@@ -408,50 +477,59 @@ module AbstractValue =
         Format.printf "Before: " ;
         Abstract1.print Format.std_formatter v;
         Format.printf "\n";
-      end); *)
+         end); *)
+      
       let temp = string_of_op op in
       let env_v = Abstract1.env v in
       let env' = Environment.lce env env_v in
       let v' = Abstract1.change_environment man v env' false in
-      let res = 
+      let res =
         if cond_op op = true then
           (
-          let vt = if temp = "!=" then (* '!=' not support by apron, use vl < vr join vl > vr *)
-            begin
-              let expr1 = vl ^ "<" ^ vr in
-              let expr2 = vl ^ ">" ^ vr in
-              let tab = Parser.tcons1_of_lstring env [expr1] in
-              let vlt' = Abstract1.meet_tcons_array man v' tab in
-              let tab = Parser.tcons1_of_lstring env [expr2] in
-              let vgt' = Abstract1.meet_tcons_array man v' tab in
-              Abstract1.join man vlt' vgt'
-            end
-          else
-            begin
-              (* if temp = "<=" then
-                let expr = "min <= max" in
-                let vmin = Var.of_string "min" in
-                let ary = [|Var.of_string "min"; Var.of_string "max"|] in
-                let env = Environment.make ary [||] in
-                let tab = Parser.tcons1_of_lstring env [expr] in
-                Abstract1.meet_tcons_array man v' tab
-              else *)
-              let expr = vl ^ " " ^ temp ^ " " ^ vr in
-              let tab = Parser.tcons1_of_lstring env [expr] in
-              Abstract1.meet_tcons_array man v' tab
-            end
-          in
-          if cons = -1 then vt
-          else (* Bool value *)
-            let exprv = vres ^ " = " ^ (string_of_int cons) in
-            let tab = Parser.tcons1_of_lstring env [exprv] in
-            Abstract1.meet_tcons_array man vt tab
+           let vt =
+             if temp = "!=" then (* '!=' not support by apron, use vl < vr join vl > vr *)
+               begin
+                 let expr1 = vl ^ "<" ^ vr in
+                 let expr2 = vl ^ ">" ^ vr in
+                 let tab1 = Parser.tcons1_of_lstring env [expr1] in
+                 let tab2 = Parser.tcons1_of_lstring env [expr2] in
+                 let vlt' = Abstract1.meet_tcons_array man v' tab1 in
+                 let vgt' = Abstract1.meet_tcons_array man v' tab2 in
+                 Abstract1.join man vlt' vgt'
+               end
+             else
+               begin
+                 (* if temp = "<=" then
+                    let expr = "min <= max" in
+                    let vmin = Var.of_string "min" in
+                    let ary = [|Var.of_string "min"; Var.of_string "max"|] in
+                    let env = Environment.make ary [||] in
+                    let tab = Parser.tcons1_of_lstring env [expr] in
+                    Abstract1.meet_tcons_array man v' tab
+                    else *)
+                 let expr = vl ^ " " ^ temp ^ " " ^ vr in
+                 let tab = Parser.tcons1_of_lstring env [expr] in
+                 Abstract1.meet_tcons_array man v' tab
+               end
+           in
+           if cons = -1 then vt
+           else (* Bool value *)
+             let exprv = vres ^ " = " ^ (string_of_int cons) in
+             let tab = Parser.tcons1_of_lstring env [exprv] in
+             Abstract1.meet_tcons_array man vt tab
           )
         else (* Int value *)
-          (let expr = vres ^ " = " ^ vl ^ " " ^ temp ^ " " ^ vr in
-            let tab = Parser.tcons1_of_lstring env [expr] in
-          Abstract1.meet_tcons_array man v' tab)
+          begin
+          let expr = vres ^ " = " ^ vl ^ " " ^ temp ^ " " ^ vr in
+          let tab = Parser.tcons1_of_lstring env [expr] in
+          Abstract1.meet_tcons_array man v' tab
+          end
+      in 
+      (*let mk_res =
+        Hashtbl.find_opt op_cache (env', vl, vr, op, cons) |>
+        Opt.lazy_get_or_else (fun () -> let f = mk_res_fn () in Hashtbl.add op_cache (env', vl, vr, op, cons) f; f) ()
       in
+      let res = mk_res v' in*)
       (* Creation of abstract value vl op vr *)
       (* (if !debug then
         begin
@@ -460,7 +538,16 @@ module AbstractValue =
           Format.printf "\n";
         end); *)
       Abstract1.minimize_environment man res
-      (* res *)
+        (* res *)
+
+    let operator x1 x2 x3 x4 x5 = measure_call "AbstractValue.operator" (operator x1 x2 x3 x4 x5)
+    let uoperator vres ve op cons v =
+      if is_bot v then v else
+      match op with
+      | UMinus -> let v' = operator vres "0" ve Minus cons v in
+         alpha_rename v' ve "cur_v"
+      | Not -> failwith "Not yet implemented"
+
     let assign vres vl vr op v = 
       let vres = if vres = "" then "cur_v" else vres in
       let var_v = vres |> Var.of_string in
@@ -491,9 +578,12 @@ module AbstractValue =
         end); *)
       Abstract1.minimize_environment man res
       (* res *)
+
     let print_abs ppf v = Abstract1.print ppf v
+
     let print_env ppf v = let env = Abstract1.env v in
         Environment.print ppf env
+
     let derived expr v = 
       (* (if !debug then
       begin
@@ -517,8 +607,9 @@ module AbstractValue =
           Format.printf "\n";
         end); *)
       res
+
     let sat_cons v var =
-      if contain_var var v && contain_var "cur_v" v then
+      if contains_var var v && contains_var "cur_v" v then
         let env = Abstract1.env v in
         let expr = "cur_v = " ^ var in
         let tab = Parser.tcons1_of_string env expr in
@@ -526,6 +617,107 @@ module AbstractValue =
       else false
   end
 
+(*module BaseManager : DomainManager =
+  struct
+    type t = Oct.t
+    let man = !domain |> parse_domain
+  end*)
+
+module ProductDomain(D1 : Domain)(D2: Domain) : Domain =
+  struct
+    type t = D1.t * D2.t
+    let from_int c =
+      D1.from_int c, D2.from_int c
+        
+    let is_bot (v1, v2) =
+      D1.is_bot v1 || D2.is_bot v2
+        
+    let contains_var x (v1, v2) =
+      D1.contains_var x v1 || D2.contains_var x v2
+        
+    let leq (v11, v12) (v21, v22) =
+      D1.leq v11 v21 && D2.leq v12 v22
+        
+    let eq (v11, v12) (v21, v22) =
+      D1.eq v11 v21 && D2.leq v12 v22
+        
+    let join (v11, v12) (v21, v22) =
+      D1.join v11 v21, D2.join v12 v22
+        
+    let meet (v11, v12) (v21, v22) =
+      D1.meet v11 v21, D2.meet v12 v22
+
+    let alpha_rename (v1, v2) x y =
+      D1.alpha_rename v1 x y, D2.alpha_rename v2 x y
+
+    let forget_var x (v1, v2) =
+      D1.forget_var x v1, D2.forget_var x v2
+        
+    let project_other_vars (v1, v2) xs =
+      D1.project_other_vars v1 xs, D2.project_other_vars v2 xs
+
+    let top = D1.top, D2.top
+    let bot = D1.bot, D2.bot
+
+    let equal_var (v1, v2) x y =
+      D1.equal_var v1 x y, D2.equal_var v2 x y
+
+    let widening (v11, v12) (v21, v22) =
+      D1.widening v11 v21, D2.widening v12 v22
+
+    let operator vres vl vr op cons (v1, v2) =
+      D1.operator vres vl vr op cons v1,
+      D2.operator vres vl vr op cons v2
+
+    let uoperator vres ve op cons (v1, v2) =
+      D1.uoperator vres ve op cons v1,
+      D2.uoperator vres ve op cons v2
+
+    let assign vres vl vr op (v1, v2) =
+      D1.assign vres vl vr op v1,
+      D2.assign vres vl vr op v2
+
+    let print_abs ppf (v1, v2) =
+      D1.print_abs ppf v1;
+      Format.print_string " && ";
+      D2.print_abs ppf v2
+        
+    let derived expr (v1, v2) =
+      D1.derived expr v1,
+      D2.derived expr v2
+        
+    let sat_cons (v1, v2) var =
+      D1.sat_cons v1 var ||
+      D2.sat_cons v2 var
+  end
+
+    
+module OctDomain = BaseDomain(struct
+  type t = Oct.t
+  let man = Oct.manager_alloc ()
+end)
+
+module PolkaStrictDomain = BaseDomain(struct
+  type t = Polka.strict Polka.t
+  let man = Polka.manager_alloc_strict ()
+end)
+                                
+module PolkaLooseDomain = BaseDomain(struct
+  type t = Polka.loose Polka.t
+  let man = Polka.manager_alloc_loose ()
+end)
+
+module OctPolkaDomain = ProductDomain(OctDomain)(PolkaLooseDomain)
+    
+let abstractValue = match !domain with
+| "Oct" -> (module OctDomain : Domain)
+| "Polka_st" -> (module PolkaStrictDomain : Domain)
+| "Polka_ls" -> (module PolkaLooseDomain : Domain)
+| "OctPolka" -> (module OctPolkaDomain : Domain)
+| _ -> failwith ("unsupported abstract domain " ^ !domain)
+       
+module AbstractValue = (val (abstractValue) : Domain)
+    
 (* Domain Specification
 module BoxManager: ManagerType =
   struct

@@ -1,0 +1,104 @@
+=======res1-polka_ls-thowid========
+bench | succ(solvethis) | full(timeout) | median | 
+first	& 59(5)	& 138.33	& 0.26	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+high	& 60	& 316.18	& 1.77	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+termination	& 79	& 1497.28(1)	& 0.00	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+array	& 11	& 45.94	& 3.70	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+list	& 18(2)	& 26.43	& 1.23	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+negative	& 17	& 32.71	& 0.39	
+
+
+=======end========
+=======res-rtype-z3========
+bench | succ(solvethis) | full(timeout) | median | 
+first	& 44	& 5.78(15)	& 0.06	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+high	& 49	& 9.19(5)	& 0.03	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+termination	& 73	& 13.18	& 0.04	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+array	& 5(1)	& 0.84(1)	& 0.07	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+list	& 0	& 0.20	& 0.01	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+negative	& 17	& 1.22	& 0.05	
+
+
+=======end========
+=======res-dsolve========
+bench | succ(solvethis) | full(timeout) | median | 
+first	& 49	& 16.27	& 0.12	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+high	& 41	& 9.76	& 0.24	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+termination	& 30	& 26.26	& 0.45	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+array	& 8	& 7.15	& 0.77	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+list	& 8	& 6.10	& 0.26	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+negative	& 14	& 8.22	& 0.17	
+
+
+=======end========
+=======res-mochi-hoice========
+bench | succ(solvethis) | full(timeout) | median | 
+first	& 62	& 332.39(9)	& 21.50	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+high	& 58	& 276.37(4)	& 15.18	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+termination	& 80	& 41.56	& 0.11	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+array	& 9(1)	& 2.44	& 0.10	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+list	& 17	& 455.28(3)	& 19.81	
+
+
+bench | succ(solvethis) | full(timeout) | median | 
+negative	& 14	& 95.95(3)	& 43.41	
+
+
+=======end========

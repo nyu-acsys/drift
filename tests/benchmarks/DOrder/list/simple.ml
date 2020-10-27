@@ -20,6 +20,31 @@ let main (u:unit(*-:{v:Unit | unit}*)) =
 	assert(List.length ys = List.length xs)
 
 (*
+((lambda mapfilter^0.
+    ((lambda pos^1.
+        ((lambda main^2. (main^3 prefu^4)^5)^6
+          (lambda u^7.
+             ((lambda xs^8.
+                 ((lambda ys^9.
+                     (((List.length^10 ys^11)^12 =
+                         (List.length^13 xs^14)^15)^16
+                       ? ()^17 : ()^18)^19)^20
+                   ((mapfilter^21 pos^22)^23 xs^24)^25)^26)^27
+               [1;2;1]^28)^29)^30)^31)^32
+      (lambda y^33. ((0^34 < y^35)^36 ? (y^37 :: []^38)^39 : []^40)^41)^42)^43)^44
+  (mu mapfilter^45 f^46.
+     (lambda l^47.
+        (match l^48 with []^49 -> []^50 |
+          (h^51 :: t^52)^53 ->
+            ((lambda r^54.
+                ((lambda x^55.
+                    (match x^56 with []^57 -> r^58 |
+                      (z^59 :: e^60)^61 -> (z^62 :: r^63)^64)^65)^66
+                  (f^67 h^68)^69)^70)^71
+              ((mapfilter^72 f^73)^74 t^75)^76)^77)^78)^79)^80)^81
+*)
+
+(*
     let licons_earray env (vars : string list) = 
       let mult_lst = Util.extract 2 vars in
       let mult_const_lst = Util.arrange (ThresholdsSetType.elements !thresholdsSet) in

@@ -42,19 +42,19 @@ To produce the native code executable file, run:
 ## Usage
 To test the analysis, run for example:
 ```bash
-./drift2.native -file tests/benchmarks/DRIFT2/high/map_2.ml -domain Polka_st -out 2
+./drift.native -file tests/benchmarks/DRIFT/high/map_2.ml -domain Polka_st -out 2
 ```
 or
 ```
-/drift2.native -file tests/benchmarks/DRIFT2/high/map_2.ml -domain Oct -sen -thold
+/drift.native -file tests/benchmarks/DRIFT/high/map_2.ml -domain Oct -sen -thold
 ```
 
 ### Options
 ```bash
-usage: ./drift2.native [-file <file name>] [-domain <domain name>] [-thold] [-sen] [-debug] [-bt] [-int]
+usage: ./drift.native [-file <file name>] [-domain <domain name>] [-thold] [-sen] [-debug] [-bt] [-int]
   -file : Input file specification
   -domain : Abstract domain specification (Oct, Polka_st, Polka_ls)
-  -sen : use 1-context sensitivity
+  -sen : Use 1-context sensitive analysis
   -thold : Use threshold widening
   -out : Output result level
          0: Output map after each step
@@ -66,3 +66,34 @@ usage: ./drift2.native [-file <file name>] [-domain <domain name>] [-thold] [-se
   --help      : Display this list of options
 ```
 
+## Guides for Running Experiments 
+The experiment to run DRIFT is working as follows:
+1. We provide a shell script to run all experiments. The results we stored is inside a `output` folder.
+2. We collect our data by using a python script. 
+### runit.sh script for benchmark testing: 
+Usage of the shell script `runit.sh` inside the **scripts** folder is:
+```bash
+./runit.sh -set unv -domain <domain name> [-thold] [-sen]
+-set:     choose benchmark sets. The experiment used 'unv' set.
+-domain:  Abstract domain specification (Oct, Polka_st, Polka_ls)
+-thold:   Use threshold widening
+-sen:     Use 1-context sensitive analysis
+```
+
+When it done, it will automaticallt generate a csv table with results. Please put them into corresponded subfolder inside `result` directory.
+### table.py script for generating latex table:
+Usage of the python script `table.py` inside the **result** folder:
+```bash
+# For experiment one, please run the following command:
+python3 table.py unv > table.out
+# For experiment two, please run the following:
+python3 table.py comp_tools/unv > table.out
+```
+The result will be stored in a `table.out` file.
+
+### Generate Tables for POPL paper:
+Inside the `scipts` folder, there is a script `benchs_popl21.sh` to run all experiments.
+```bash
+./benchs_popl21.sh
+```
+TODO: For dsolve, you cannot run it under any other relative paths. Please run it under its own directory.

@@ -4,29 +4,22 @@ USED: PEPM2013 as r-file
 KEYWORD: resource
 *)
 
-let rec loop (x:unit) = loop ()
+let rec loop x : unit = loop ()
 let init = 0
 let opened = 1
 let closed = 2
 let ignore = 3
-let readit rst =
-  if rst = opened then opened else (if rst = ignore then rst else (-1))
-
-let read_ (rx_:bool) rst_ =
-  if rx_ then readit rst_ else rst_
-
-let closeit cst =
-  if cst = opened then closed else (if cst = ignore then cst else (loop (); 0))
-
-let close_ (cx_:bool) cst_ =
-  if cx_ then closeit cst_ else cst_
-
-let rec f (fx:bool) (fy:bool) fst =
-  close_ fy (close_ fx fst); f fx fy (read_ fy (read_ fx fst))
-
-let next nst = if nst = init then opened else ignore
-
-let g gb3 (gx:bool) gst = if gb3 > 0 then f gx true (next gst) else f gx false gst
-
+let readit st =
+  if st = opened then opened else (if st = ignore then st else assert false)
+let read_ x st =
+  if x then readit st else st
+let closeit st =
+  if st = opened then closed else (if st = ignore then st else (loop (); 0))
+let close_ x st =
+  if x then closeit st else st
+let rec f x y st : unit =
+  close_ y (close_ x st); f x y (read_ y (read_ x st))
+let next st = if st=init then opened else ignore
+let g b3 x st = if b3 > 0 then f x true (next st) else f x false st
 let main (b2:int(*-:{v:Int | true}*)) (b3:int(*-:{v:Int | true}*)) =  
-    if b2 > 0 then g b3 true opened else g b3 false init
+  (if b2 > 0 then g b3 true opened else g b3 false init); ()

@@ -3,9 +3,9 @@ USED: PLDI2011 as apply
 *)
 
 
-let apply (f: int -> bool) x = f x
-let g (y:int) (z:int) = (y = z)
-let rec k i n = if i >= n then true else (apply (g n) n && k (i+1) n)
+let apply f x = f x
+let g y z = assert (y=z)
+let rec k n = apply (g n) n; k(n+1)
 
-let main (mn:int(*-:{v:Int | true}*)) = 
-    assert(k 0 mn = true)
+let main (n:int(*-:{v:Int | true}*)) = 
+    k 0

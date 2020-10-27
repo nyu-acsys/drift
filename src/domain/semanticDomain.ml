@@ -12,13 +12,6 @@ open SenSemantics
 
 let name_of_node lb = ("z" ^ lb)
 
-let fresh_func var =
-  let ref_index = ref 0 in
-  fun () ->
-    let idx = !ref_index in
-    incr ref_index;
-    var ^ (string_of_int idx)
-
 let fresh_length = fresh_func "l"
 
 let fresh_item = fresh_func "e"
@@ -32,32 +25,35 @@ module SemanticsDomain =
     ** Abstract domain for Relation **
     **********************************
     *)
-    let rec alpha_rename_R (a:relation_t) prevar var :relation_t = match a with
+    let alpha_rename_R (a:relation_t) prevar var :relation_t = match a with
       | Int v -> Int (AbstractValue.alpha_rename v prevar var)
       | Bool (vt, vf) -> Bool ((AbstractValue.alpha_rename vt prevar var), (AbstractValue.alpha_rename vf prevar var))
       | Unit _ -> a
-    and top_R = function
+    let top_R = function
       | Plus | Mult | Div | Mod | Modc | Minus -> (Int AbstractValue.top)
       | Ge | Eq | Ne | Lt | Gt | Le | And | Or -> (Bool (AbstractValue.top, AbstractValue.top))
       | _ -> raise (Invalid_argument "top_R should use a relational type operator")
-    and bot_R = function
+    let utop_R = function
+      | UMinus -> (Int AbstractValue.top)
+      | Not -> (Bool (AbstractValue.top, AbstractValue.top))
+    let bot_R = function
       | Plus | Mult | Div | Mod | Modc | Minus -> (Int AbstractValue.bot)
       | Ge | Eq | Ne | Lt | Gt | Le | And | Or -> (Bool (AbstractValue.bot, AbstractValue.bot))
       | _ -> raise (Invalid_argument "bot_R should use a relational type operator")
-    and is_bool_R a = match a with
+    let is_bool_R a = match a with
       | Bool _ -> true
       | _ -> false
-    and init_R_c (c:value) = match c with
-      | Boolean true -> Bool (AbstractValue.init_c 1, AbstractValue.bot)
-      | Boolean false -> Bool (AbstractValue.bot, AbstractValue.init_c 0)
-      | Integer i -> Int (AbstractValue.init_c i)
-      | Unit u -> Unit u
+    let init_R_c (c:value) = match c with
+      | Boolean true -> Bool (AbstractValue.from_int 1, AbstractValue.bot)
+      | Boolean false -> Bool (AbstractValue.bot, AbstractValue.from_int 0)
+      | Integer i -> Int (AbstractValue.from_int i)
+      | UnitLit  -> Unit ()
       | IntList lst -> raise (Invalid_argument "This should be cover on the upper level")
-    and join_R a1 a2 =
+    let join_R a1 a2 =
       match a1, a2 with
       | (Int v1), (Int v2) -> Int (AbstractValue.join v1 v2)
       | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> Bool (AbstractValue.join v1t v2t, AbstractValue.join v1f v2f)
-      | Unit _, _ | _, Unit _ -> Unit ()
+      | Unit _, a | a, Unit _ -> a
       | Int v1, Bool (v2t, v2f) | Bool (v2t, v2f) , Int v1
         when AbstractValue.eq v2t AbstractValue.bot &&
           AbstractValue.eq v2f AbstractValue.bot
@@ -67,25 +63,25 @@ module SemanticsDomain =
         -> Bool (v2t, v2f)          
       | _, _ ->          
           raise (Invalid_argument "Join: Base Type not equal")
-    and meet_R a1 a2 =
+    let meet_R a1 a2 =
       match a1, a2 with
       | (Int v1), (Int v2) -> Int  (AbstractValue.meet v1 v2)
       | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> Bool (AbstractValue.meet v1t v2t, AbstractValue.meet v1f v2f)
       | Unit _, _ | _, Unit _ -> Unit ()
       | _, _ -> raise (Invalid_argument "Meet: Base Type not equal")
-    and leq_R a1 a2 =
+    let leq_R a1 a2 =
       match a1, a2 with
       | (Int v1), (Int v2) -> AbstractValue.leq v1 v2
       | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> AbstractValue.leq v1t v2t && AbstractValue.leq v1f v2f
       | Unit u1, Unit u2 -> true
       | _, _ -> false
-    and eq_R a1 a2 =
+    let eq_R a1 a2 =
       match a1, a2 with
       | (Int v1), (Int v2) -> AbstractValue.eq v1 v2
       | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> AbstractValue.eq v1t v2t && AbstractValue.eq v1f v2f
       | Unit u1, Unit u2 -> true
       | _, _ -> false
-    and arrow_R var a1 a2 = 
+    let arrow_R var a1 a2 = 
       let a2' = alpha_rename_R a2 "cur_v" var in
       match a1, a2' with
       | Int _, Int _ -> meet_R a1 a2'
@@ -97,26 +93,27 @@ module SemanticsDomain =
         Int (AbstractValue.join (AbstractValue.meet v vt) (AbstractValue.meet v vf))
       | Bool _ , Int v -> meet_R a1 (Bool (v, v))
       | _, _ -> a1
-    and forget_R var a = match a with
+    let forget_R var a = match a with
       | Int v -> Int (AbstractValue.forget_var var v)
       | Bool (vt, vf) -> Bool (AbstractValue.forget_var var vt, AbstractValue.forget_var var vf)
       | Unit _ -> a
-    and equal_R a var = let eq_a = match a with
+    let equal_R a var = let eq_a = match a with
       | Int v -> Int (AbstractValue.equal_var v "cur_v" var)
       | Bool (vt, vf) -> Bool ((AbstractValue.equal_var vt "cur_v" var), (AbstractValue.equal_var vf "cur_v" var))
       | Unit _ -> a
       in
       eq_a
-    and wid_R a1 a2 = match a1, a2 with
+    let wid_R a1 a2 = match a1, a2 with
       | (Int v1), (Int v2) -> Int (AbstractValue.widening v1 v2)
       | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> Bool (AbstractValue.widening v1t v2t, AbstractValue.widening v1f v2f)
       | Unit u1, Unit u2 -> Unit ()
+      | Unit _, a | a, Unit _ -> a
       | _, _ -> raise (Invalid_argument "Widening: Base Type not equal")
-    and sat_equal_R a x = match a with
+    let sat_equal_R a x = match a with
       | Int v -> AbstractValue.sat_cons v x
       | Bool (vt, vf) -> AbstractValue.sat_cons vt x && AbstractValue.sat_cons vf x
       | _ -> false
-    and op_R res l r op cons a = (*cons for flag of linear constraints*)
+    let op_R res l r op cons a = (*cons for flag of linear constraints*)
       match op with
       | Plus | Mult | Div | Mod | Modc | Minus -> (match a with
         | Int v -> Int (AbstractValue.operator res l r op (-1) v)
@@ -133,313 +130,69 @@ module SemanticsDomain =
         | Bool (vt, vf) -> Bool (AbstractValue.operator res l r op 1 vt, AbstractValue.operator res l r (rev_op op) 0 vf)
         | Unit _ -> raise (Invalid_argument "opR: Given a unit type"))
       )
-      | Cons | And | Or -> raise (Invalid_argument ("Invalid operator matched " ^ (string_of_op op)))
-    and assign_R res l r op = function 
+      | Cons | Seq | And | Or -> raise (Invalid_argument ("Invalid operator matched " ^ (string_of_op op)))
+    let uop_R res op e cons a = (*cons for flag of linear constraints*)
+      match op with
+      | UMinus -> (match a with
+        | Int v -> Int (AbstractValue.uoperator res e op (-1) v)
+        | _ -> raise (Invalid_argument "uop_R: Given a unit type"))
+      | Not -> failwith "unary negation not yet implemented"
+    let assign_R res l r op = function 
       | Int v -> Int (AbstractValue.assign res l r op v)
       | _ -> raise (Invalid_argument "Assign boolean does not support")
-    and bool_op_R op a1 a2 = match a1, a2 with
+    let bool_op_R op a1 a2 = match a1, a2 with
       | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> if string_of_op op = "&&" then
         Bool (AbstractValue.meet v1t v2t, AbstractValue.join v1f v2f)
       else
         Bool (AbstractValue.join v1t v2t, AbstractValue.meet v1f v2f)
       | _, _ -> raise (Invalid_argument "&& or || operation: Base Type should be bool")
-    and replace_R a var x = alpha_rename_R a var x
-    and extrac_bool_R v b = match v,b with
+    let replace_R a var x = alpha_rename_R a var x
+    let extrac_bool_R v b = match v,b with
       | Bool (vt, _), true -> Int vt |> forget_R "cur_v"
       | Bool (_, vf), false -> Int vf |> forget_R "cur_v"
       | _,_ -> raise (Invalid_argument "Extract abstract value for condition, expect bool one")
-    and stren_R a ae = 
+    let stren_R a ae = 
       match a, ae with
       | Int v, Int vae -> Int (AbstractValue.meet v vae)
       | Bool (vt, vf), Int vae -> Bool (AbstractValue.meet vt vae, AbstractValue.meet vf vae)
       | Unit _, Int vae -> a
       | _, _ -> raise (Invalid_argument "ae should be {v:Int}")
-    and der_R exp a = match a with
+    let der_R exp a = match a with
       | Bool (vt, vf) -> Bool (AbstractValue.derived exp vt, AbstractValue.derived exp vf)
       | Int v -> Int (AbstractValue.derived exp v)
       | Unit _ -> a
-    and proj_R a vars = match a with
+    let proj_R a vars = match a with
       | Int v -> Int (AbstractValue.project_other_vars v vars)
       | Bool (vt, vf) -> Bool (AbstractValue.project_other_vars vt vars, AbstractValue.project_other_vars vf vars)
       | Unit _ -> a
-    and is_bot_R a = match a with
+    let is_bot_R a = match a with
       | Int v -> AbstractValue.is_bot v
       | Bool (vt, vf) -> AbstractValue.is_bot vt && AbstractValue.is_bot vf
       | Unit _ -> false
-    and is_bool_false_R a = match a with
-      | Bool (vt, vf) -> AbstractValue.is_bot vf
+    let is_bool_bot_R a = match a with
+      | Bool (vt, vf) -> AbstractValue.is_bot vf && AbstractValue.is_bot vt
       | _ -> raise (Invalid_argument "Expect a bool value")
-    and opt_eq_R a1 a2 = is_bot_R a1 = false && is_bot_R a2 = false && eq_R a1 a2
-    and contain_var_R var a = match a with
-      | Int v -> AbstractValue.contain_var var v
-      | Bool (vt, vf) -> AbstractValue.contain_var var vt && AbstractValue.contain_var var vf
+    let is_bool_false_R a = match a with
+      | Bool (vt, vf) -> AbstractValue.is_bot vf && (AbstractValue.is_bot vt <> true)
+      | _ -> raise (Invalid_argument "Expect a bool value")
+    let opt_eq_R a1 a2 = is_bot_R a1 = false && is_bot_R a2 = false && eq_R a1 a2
+    let contains_var_R var a = match a with
+      | Int v -> AbstractValue.contains_var var v
+      | Bool (vt, vf) -> AbstractValue.contains_var var vt && AbstractValue.contains_var var vf
       | Unit _ -> false
-    and bot_shape_R = function
+    let bot_shape_R = function
       | Int _ -> bot_R Plus
       | Bool _ -> bot_R Ge
       | Unit u as a -> a
-    (*
-      ***************************************
-      ** Abstract domain for Execution Map **
-      ***************************************
-      *)
-      and meet_M (m1: exec_map_t) (m2: exec_map_t) : exec_map_t =
-        NodeMap.merge (fun n v1 v2 -> Some (meet_V v1 v2)) m1 m2
-      and join_M (m1: exec_map_t) (m2: exec_map_t) : exec_map_t =
-        NodeMap.union (fun n v1 v2 -> join_V v1 v2) m1 m2
-      and wid_M (m1: exec_map_t) (m2: exec_map_t) : exec_map_t =
-        NodeMap.union (fun n v1 v2 -> wid_V v1 v2) m1 m2
-      and leq_M (m1: exec_map_t) (m2: exec_map_t) : bool =
-        NodeMap.for_all (fun n v1 (*untie to node -> value*) -> 
-        NodeMap.find_opt n m2 |> Opt.map (fun v2 -> leq_V v1 v2) |>
-        Opt.get_or_else (v1 = Bot)) m1
-      and eq_PM (m1:exec_map_t) (m2:exec_map_t) =
-        NodeMap.for_all (fun n v1 (*untie to node -> value*) ->
-        NodeMap.find_opt n m2 |> Opt.map (
-          fun v2 -> 
-          let l = get_label_snode n in
-          if eq_V v1 v2 then true else 
-            raise (Pre_Def_Change ("Predefined node changed at " ^ l))
-          )
-        |> Opt.get_or_else (v1 = v1)) m1
-      and top_M m = NodeMap.map (fun a -> Top) m
-      and array_M env m = 
-        let n_make = construct_vnode env "Array.make" ("", "") in
-        let s_make = construct_snode "" n_make in
-        let t_make = (* make *)
-          (* make |-> zm: {v:int | v >= 0} -> ex: {v:int | top} -> 
-            {v: Int Array (l, e) | len: [| l=zm; zm>=0; |] item: [| l=zm; zm>=0; e = ex; |]} *)
-          let var_l = "zm" in
-          let rl = top_R Plus |> op_R "" "cur_v" "0" Ge true in
-          let var_e = "ex" in
-          let rm = top_R Plus in (*TODO: Make poly*)
-          (* let ilen = op_R "i" "0" Ge true llen |> op_R "i" "l" Lt true in
-          let rlen = op_R "x" var_e Eq true ilen in  *)
-          let ary = 
-            let l, e = "l", "e" in
-            let rl = arrow_R var_l rm rl |> op_R "" l var_l Eq true in
-            let re = arrow_R var_l rm rl |> op_R "" l var_l Eq true |> op_R "" e var_e Eq true in
-            (l, e), (rl, re)
-          in
-          let t = 
-            let t' = Table (construct_table (var_e, var_e) (Relation rm, Ary ary)) in
-            Table (construct_table (var_l, var_l) (Relation rl, t')) in
-          t
-        in
-        let n_len = construct_vnode env  "Array.length" ("", "") in
-        let s_len = construct_snode "" n_len in
-        let t_len = (* len *)
-          (* len |-> zl: { v: Int Array (l, e) | len: [| l>=0; |] item: [| true; |] } 
-            -> { v: Int | [| v=l |] } *)
-          let var_l = "zl" in
-          let var_len = "l" in
-          (* let var_i = "i" in *)
-          let ary = 
-            let l, e = "l", "e" in
-            let rl = top_R Plus |> op_R "" var_len "0" Ge true in
-            let re = top_R Plus in
-            (l, e), (rl, re)
-          in
-          (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
-          let rlen = equal_R (top_R Plus) "l" in
-          Table (construct_table (var_l, var_l) (Ary ary, Relation rlen))
-        in
-        let n_get = construct_vnode env "Array.get" ("", "") in
-        let s_get = construct_snode "" n_get in
-        let t_get = (* get *)
-          (* get |-> zg: { v: Int Array (l, e) | l: [| l>=0; |] e: [| true; |] } 
-            -> zi: {v: int | 0 <= v < l} -> {v: int | v = e; }  *)
-          let var_l = "zg" in
-          let var_len = "l" in
-          (* let var_i = "i" in *)
-          let ary = 
-            let l, e = "l", "e" in
-            let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" var_len in
-            let re = top_R Plus in
-            (l, e), (rl, re)
-          in
-          (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
-          let rm = top_R Plus |> op_R "" "cur_v" "0" Ge true |> op_R "" "cur_v" var_len Lt true in
-          let rr = top_R Plus |> op_R "" "cur_v" "e" Eq true in 
-          let var_zi = "zi" in
-          let t = 
-            let t' = Table (construct_table (var_zi, var_zi) (Relation rm, Relation rr)) in
-            Table (construct_table (var_l, var_l) (Ary ary, t')) in
-          t
-        in
-        let n_set = construct_vnode env "Array.set" ("", "") in
-        let s_set = construct_snode "" n_set in
-        let t_set = (* set *)
-          (* set |-> zs: { v: Int Array (l, e) | len: [| l>=0; |] item: [| true; |] } -> 
-            zi: {v: int | 0 <= v < l} -> ex: {v: int | top } -> unit *)
-          let var_l = "zs" in
-          let var_len = "l" in
-          (* let var_i = "i" in *)
-          let ary = 
-            let l, e = "l", "e" in
-            let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" var_len in
-            let re = top_R Plus in
-            (l, e), (rl, re)
-          in
-          (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
-          let rm = top_R Plus |> op_R "" "cur_v" "0" Ge true |> op_R "" "cur_v" var_len Lt true in
-          let var_e = "ex" in
-          let var_zi = "zi" in
-          let rri = top_R Plus in
-          let rrr = [] in
-          let t = 
-            let t' = Table (construct_table (var_e, var_e) (Relation rri, Tuple rrr)) in
-            let t'' = Table (construct_table (var_zi, var_zi) (Relation rm, t')) in
-            Table (construct_table (var_l, var_l) (Ary ary, t'')) in
-          t
-        in
-        let m' = 
-          m |> NodeMap.add s_make t_make |> NodeMap.add s_len t_len |> NodeMap.add s_get t_get
-          |> NodeMap.add s_set t_set
-        in
-        let env' = 
-          env |> VarMap.add "Array.make" (n_make, false) |> VarMap.add "Array.length" (n_len, false) |> VarMap.add "Array.get" (n_get, false)
-          |> VarMap.add "Array.set" (n_set, false)
-        in
-        pre_def_func := List.append !pre_def_func ["Array.make"; "Array.length"; "Array.get"; "Array.set"];
-        env', m'
-      and list_M env m = 
-        let n_len = construct_vnode env  "List.length" ("", "") in
-        let s_len = construct_snode "" n_len in
-        let t_len = (* len *)
-          (* len |-> zl: { v: 'a List (l, e) | len: [| l>=0; |] item: true } 
-            -> { v: Int | [| v=l |] } *)
-          let var_l = "zl" in
-          let var_len = "l" in
-          (* let var_i = "i" in *)
-          let list = 
-            let l, e = "l", "e" in
-            let rl = top_R Plus |> op_R "" var_len "0" Ge true in
-            let ve = Top in
-            (l, e), (rl, ve)
-          in
-          (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
-          let rlen = equal_R (top_R Plus) "l" in
-          Table (construct_table (var_l, var_l) (Lst list, Relation rlen))
-        in
-        let n_hd = construct_vnode env "List.hd" ("", "") in
-        let s_hd = construct_snode "" n_hd in
-        let t_hd = (* hd *)
-          (* hd |-> zh: { v: 'a List (l, e) | l: [| l>=0; |] e: true } 
-            -> true  *)
-          let var_h = "zh" in
-          (* let var_i = "i" in *)
-          let list = 
-            let l, e = "l", "e" in
-            let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" l in
-            let ve = Top in
-            (l, e), (rl, ve)
-          in
-          let tr = Top in
-          let t =
-            Table (construct_table (var_h, var_h) (Lst list, tr)) in
-          t
-        in
-        let n_tl = construct_vnode env "List.tl" ("", "") in
-        let s_tl = construct_snode "" n_tl in
-        let t_tl = (* tl *)
-          (* tl |-> zt: { v: Int List (l, e) | l: [| l>=0; |] e: true } -> 
-            { v: Int List (l1, e1) | l1: [| l1=l-1; |] e1: e } *)
-          let var_t = "zt" in
-          let var_len, var_e = "l", "e" in
-          (* let var_i = "i" in *)
-          let list1 = 
-            let l, e = "l", "e" in
-            let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" l in
-            let ve = Top in
-            (l, e), (rl, ve)
-          in
-          let list2 = 
-            let l, e = "l'", "e'" in
-            let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" l |> op_R l var_len "1" Minus true in
-            (* let re = replace_R (rl |> op_R "" "cur_v" var_e Eq true) "cur_v" e in *)
-            let ve = Top in
-            (l, e), (rl, ve)
-          in
-          let t =
-            Table (construct_table (var_t, var_t) (Lst list1, Lst list2)) in
-          t
-        in
-        let n_cons = construct_vnode env "List.cons" ("", "") in
-        let s_cons = construct_snode "" n_cons in
-        let t_cons = (* cons *)
-          (* cons |-> zc: true -> xs: { v: Int List (l, e) | l: [| l>=0; |] e: true } -> 
-            { v: Int List (l1, e1) | l': [| l1=l+1; |] e': e ⊔ zc |] }
-            *)
-          let var_c = "zc" in
-          let ve = Top in
-          let var_len, var_e = "l", "e" in
-          (* let var_i = "i" in *)
-          let list1 = 
-            let l, e = "l", "e" in
-            let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" l in
-            let ve = Top in
-            (l, e), (rl, ve)
-          in
-          let var_l = "xs" in
-          let list2 = 
-            let l, e = "l'", "e'" in
-            let rl = replace_R (top_R Plus |> op_R "" "cur_v" "1" Ge true) "cur_v" l |> op_R l var_len "1" Plus true in
-            let ve = Top in
-            (l, e), (rl, ve)
-          in
-          let t =
-            let t' = Table (construct_table (var_l,var_l) (Lst list1, Lst list2)) in
-            Table (construct_table (var_c, var_c) (ve, t')) in
-          t
-        in
-        let m' = 
-          m |> NodeMap.add s_hd t_hd |> NodeMap.add s_len t_len |> NodeMap.add s_tl t_tl
-          |> NodeMap.add s_cons t_cons
-        in
-        let env' = 
-          env |> VarMap.add "List.hd" (n_hd, false) |> VarMap.add "List.length" (n_len, false) |> VarMap.add "List.tl" (n_tl, false)
-          |> VarMap.add "List.cons" (n_cons, false)
-        in
-        pre_def_func := List.append !pre_def_func ["List.hd"; "List.length"; "List.tl"; "List.cons"];
-        env', m'
-      and pref_M env m = 
-        let m', env' =
-          if VarDefMap.is_empty !pre_vars then
-            m, env
-          else 
-            VarDefMap.fold (fun var (domain: pre_exp) (m, env) -> 
-              let n_var = construct_vnode env var ("", "") in
-              let s_var = construct_snode "" n_var in
-              let t_var = match domain with
-                | {name = n; dtype = Int; left = l; op = bop; right = r} -> 
-                  let rm = if l = "true" then 
-                     (top_R Plus)
-                  else top_R Plus |> op_R "" l r bop true
-                  in Relation rm
-                | {name = n; dtype = Bool; left = l; op = bop; right = r} -> 
-                  let rm = if l = "true" then init_R_c (Boolean true)
-                    else if l = "false" then
-                      init_R_c (Boolean false)
-                    else
-                      top_R Plus |> op_R "" l r bop true
-                  in
-                  Relation (rm)
-                | {name = n; dtype = Unit; left = l; op = _; right = r} ->
-                  if l = "unit" then Tuple []
-                  else raise (Invalid_argument"Expected unit predicate as {v: Unit | unit }")
-              in
-              let env' = env |> VarMap.add var (n_var, false) in
-              let m' = m |> NodeMap.add s_var t_var in
-              m', env'
-            ) !pre_vars (m, env)
-        in env', m'
+    let is_unit_R = function
+      | Unit _ -> true
+      | _ -> false
       (*
       ********************************
       ** Abstract domain for Values **
       ********************************
       *)
-      and alpha_rename_V v prevar var = match v with
+    let rec alpha_rename_V v prevar var = match v with
         | Relation r -> Relation (alpha_rename_R r prevar var)
         | Table t -> Table (alpha_rename_T alpha_rename_V t prevar var)
         | Ary ary -> Ary (alpha_rename_Ary ary prevar var)
@@ -481,6 +234,15 @@ module SemanticsDomain =
         | Lst lst1, Lst lst2 -> leq_Lst lst1 lst2
         | Tuple u1, Tuple u2 -> leq_Tuple u1 u2
         | _, _ -> false
+      and sat_leq_V (v1:value_t) (v2:value_t) :bool = match v1, v2 with
+        | Bot, _ -> true
+        | _, Top -> true
+        | Relation r1, Relation r2 -> leq_R r1 r2
+        | Table t1, Table t2 -> leq_T leq_V t1 t2
+        | Ary ary1, Ary ary2 -> leq_Ary ary1 ary2
+        | Lst lst1, Lst lst2 -> sat_leq_Lst lst1 lst2
+        | Tuple u1, Tuple u2 -> leq_Tuple u1 u2
+        | _, _ -> false
       and eq_V (v1:value_t) (v2:value_t) :bool = match v1, v2 with
         | Bot, Bot -> true
         | Top, Top -> true
@@ -506,12 +268,7 @@ module SemanticsDomain =
         | Lst _ -> true
         | _ -> false
       and arrow_V var (v:value_t) (v':value_t) = match v' with
-        | Bot -> Bot
-        | Top -> (match v' with
-          | Relation r' -> v'
-          | Table t' -> v'
-          | _ -> v)
-        | Table _ -> v
+        | Bot | Top | Table _ -> v
         | Relation r2 -> (match v with
             | Table t -> Table (arrow_T forget_V arrow_V var t v')
             | Relation r1 -> Relation (arrow_R var r1 r2)
@@ -535,14 +292,15 @@ module SemanticsDomain =
         | Lst lst2 -> let ((l2,e2) as vars, (rl2, ve2)) = lst2 in
           (match v with
           | Table t -> Table (arrow_T forget_V arrow_V var t v')
-          | Relation r1 ->
-            let r1' = meet_R r1 rl2 in
+          | Relation r1 -> if is_bot_R rl2 then Relation (bot_shape_R r1) else
+            let r1' = let res = meet_R r1 rl2 in
+            if is_bot_R res then (meet_R (forget_R l2 r1) rl2) else res in
             (match ve2 with
             | Bot -> if String.length var >= 2 && String.sub var 0 2 = "zh" then
                 raise (Invalid_argument "List.hd expects non empty list")
               else Relation r1' 
             | Relation re2 -> if is_bot_R re2 then Relation r1'
-              else Relation (meet_R r1' re2)
+              else Relation (meet_R r1' (proj_R re2 [e2]))
             | Tuple ue -> Relation r1'
             | _ -> arrow_V var (Relation r1') ve2)
           | Ary ary -> (match ve2 with
@@ -579,6 +337,10 @@ module SemanticsDomain =
         | Bot | Top -> Top
         | Relation r -> Relation (op_R "" sl sr op false r)
         | _ -> raise (Invalid_argument "Should be a relation type when using op_V")
+      and uop_V op s v = match v with
+        | Bot | Top -> Top
+        | Relation r -> Relation (uop_R "" op s false r)
+        | _ -> raise (Invalid_argument "Should be a relation type when using uop_V")
       and bool_op_V op v1 v2 = match v1, v2 with
         | Bot, Relation _ -> if string_of_op op = "&&" then Bot else v2
         | Top, Relation _ -> if string_of_op op = "&&" then v2 else Top
@@ -600,15 +362,20 @@ module SemanticsDomain =
       | _ -> raise (Invalid_argument "Should be relation when split if statement")
     and stren_V v ae = match v,ae with
       | Bot, _ -> Bot
-      | Relation r, Relation rae -> Relation (stren_R r rae)
+      | Relation r, Relation rae -> if is_bot_R rae && is_unit_R r then Bot else
+        Relation (stren_R r rae)
       | Ary ary, Relation rae -> Ary (stren_Ary ary rae)
       | Lst lst, Relation rae -> Lst (stren_Lst lst rae)
-      | Table t, Relation rae -> Table t
+      | Table t, Relation rae -> Table t (* Table (stren_T stren_V t ae) *)
       | Tuple u, Relation rae -> Tuple (stren_Tuple u ae)
       | Top, _ -> ae
       | _, Bot -> Bot
       | _, Top -> v
       | _,_ -> raise (Invalid_argument "ae should not be a table")
+    and stren_ite_V v ae = match v, ae with
+      | Table t, Relation rae -> 
+        if is_bot_R rae then Table t else Table (stren_T stren_V t ae)
+      | _, _ -> stren_V v ae
     and sat_equal_V v x = match v with
       | Relation r -> sat_equal_R r x
       | _ -> false
@@ -654,6 +421,9 @@ module SemanticsDomain =
       | Ary ary1, Ary ary2 -> eq_Ary ary1 ary2
       | Unit u1, Unit u2 -> true
       | _, _ -> false  *)
+    and is_bool_bot_V = function
+      | Relation r -> is_bool_bot_R r
+      | _ -> true
     and is_bool_false_V = function
       | Relation r -> is_bool_false_R r
       | _ -> true
@@ -732,6 +502,9 @@ module SemanticsDomain =
     and pattern_empty_lst_V = function
       | Lst lst -> Lst (pattern_empty_Lst lst)
       | _ -> raise (Invalid_argument "pattern x::[] should give a list")
+    and rename_lambda_V v = match v with
+      | Lst lst -> Lst (rename_lambda_Lst lst)
+      | _ -> v
     (*
       *******************************
       ** Abstract domain for Array **
@@ -854,7 +627,7 @@ module SemanticsDomain =
     and join_Lst lst1 lst2 = 
       let (l1, e1), (rl1,ve1) = lst1 in
       let (l2, e2), (rl2,ve2) = lst2 in
-      let lst1', lst2' = if l1 <> "l" && contain_var_R l1 rl2 then
+      let lst1', lst2' = if l1 <> "l" && contains_var_R l1 rl2 then
         let a, b = alpha_rename_Lsts lst2 lst1 in 
         b, a
         else alpha_rename_Lsts lst1 lst2 in
@@ -868,6 +641,14 @@ module SemanticsDomain =
       let (l1,e1), (rl1,ve1) = lst1 in let (l2,e2), (rl2,ve2) = lst2 in
       let scop_check = l1 = l2 && e1 = e2 in
       if scop_check then leq_R rl1 rl2 && leq_V ve1 ve2 else false
+    and sat_leq_Lst lst1 lst2 = 
+      let (l1,e1), (rl1,ve1) = lst1 in let (l2,e2), (rl2,ve2) = lst2 in
+      let scop_check = l1 = l2 && e1 = e2 in
+      if scop_check then 
+        let rl1 = proj_R rl1 [l1] in
+        let rl2 = proj_R rl2 [l2] in
+        leq_R rl1 rl2 && leq_V ve1 ve2
+      else false
     and eq_Lst lst1 lst2 =
       let (l1,e1), (rl1,ve1) = lst1 in let (l2,e2), (rl2,ve2) = lst2 in
       let scop_check = l1 = l2 && e1 = e2 in
@@ -880,7 +661,7 @@ module SemanticsDomain =
       let ((l,e) as vars, (rl,ve)) = lst in
       match ropt with
       | Some ((_, e') , rl') -> (match v, ve with
-        | Bot, _ -> if String.sub var 0 2 = "xs" && contain_var_R "zc" rl' then
+        | Bot, _ -> if String.sub var 0 2 = "xs" && contains_var_R "zc" rl' then
            let rl = arrow_R var rl rl' in
            let re' = (op_R "" e "zc" Eq true rl) in
            (vars, (rl, Relation re'))
@@ -973,6 +754,11 @@ module SemanticsDomain =
       let rl' = alpha_rename_R rl prevar var in
       let ve' = alpha_rename_V ve prevar var in
       (l',e'), (rl',ve')
+    and rename_lambda_Lst lst = let (l,e), (rl,ve) = lst in
+      let varl, vare = fresh_length (), fresh_item () in
+      let rl' = alpha_rename_R rl l varl in
+      let ve' = alpha_rename_V ve e vare in
+      (varl, vare), (rl', ve')
     and replace_Lst lst var x = let ((l,e), (rl,ve)) = lst in
       let l' = if l = var then x else l in
       let e' = if e = var then x else e in
@@ -986,16 +772,20 @@ module SemanticsDomain =
         | l' :: e' :: [] -> if l = l' then fresh_length (), fresh_item() else l', e'
         | _ -> raise (Invalid_argument "construct pattern tl should give [] or [l;e]")
        in
-      let rl' = assign_R l' l (string_of_int len) Minus rl |> op_R "" l' "0" Ge true in
+      let rl' = assign_R l' l (string_of_int len) Minus rl |> op_R "" l' "0" Ge true
+        (* |> op_R l' l "1" Minus true  *)
+      in
       let ve' = 
         match ve with
         | Relation re -> 
-          let r' = assign_R l' l (string_of_int len) Minus re |> op_R "" l' "0" Ge true in
+          let r' = (meet_R (forget_R l re) rl') in
           Relation (alpha_rename_R r' e e')
         | _ -> ve
       in
       (l',e'), (rl',ve')
     and list_cons_Lst f v lst = let ((l,e), (rl,ve)) = lst in
+      if v = Bot || is_bot_R rl then (l,e), (bot_R Plus, Bot) else
+      (* let v = stren_V v (Relation (forget_R l rl)) in *)
       let rl' = assign_R l l "1" Plus rl in
       let ve' = match v, ve with
         | Relation r, Bot ->
@@ -1012,7 +802,7 @@ module SemanticsDomain =
       (l,e), (rl',ve')
     and get_list_length_item_Lst ((l,e), _) = [l;e]
     and only_shape_Lst ((l,e), (rl,ve)) = 
-      is_bot_R rl && is_Bot_V ve
+      is_bot_R rl && ve = Bot
     and prop_Lst prop ((l1,e1) as vars1, (rl1,ve1)) ((l2,e2) as vars2, (rl2,ve2)) =
       let rl1', rl2' = rl1, join_R rl1 rl2 in
       let ve1', ve2' = match ve1, ve2 with
@@ -1027,10 +817,12 @@ module SemanticsDomain =
       | _, _ -> ve1, join_V ve1 ve2 in
       (vars1, (rl1', ve1')), (vars2, (rl2', ve2'))
     and cons_temp_lst_Lst v ((l,e) as vars, (rl,ve)) = 
-      match v with
+      let ve' = if is_bot_R rl then bot_shape_V ve else 
+      (match v with
       | Relation r -> let re' = alpha_rename_R r "cur_v" e in
-        (vars, (rl, Relation re'))
-      | _ -> (vars, (rl, v))
+        Relation re'
+      | _ -> v)
+      in (vars, (rl, ve'))
     and item_shape_Lst (_, (_, vee)) (vars, (rl, ve)) =
       let ve' = bot_shape_V vee in
       (vars, (rl, ve'))
@@ -1065,4 +857,277 @@ module SemanticsDomain =
       List.map (fun v -> bot_shape_V v) u
     and get_tuple_list u = 
       u
+
+    (*
+      ***************************************
+      ** Abstract domain for Execution Map **
+      ***************************************
+      *)
+    let meet_M (m1: exec_map_t) (m2: exec_map_t) : exec_map_t =
+      NodeMap.merge (fun n v1 v2 -> Some (meet_V v1 v2)) m1 m2
+    let join_M (m1: exec_map_t) (m2: exec_map_t) : exec_map_t =
+      NodeMap.union (fun n v1 v2 -> join_V v1 v2) m1 m2
+    let wid_M (m1: exec_map_t) (m2: exec_map_t) : exec_map_t =
+      NodeMap.union (fun n v1 v2 -> 
+        (* ( 
+          let l = get_label_snode n in
+          if !debug then
+          begin
+          Format.printf "\n<=== Wid ===> %s\n" l;
+          f Format.std_formatter v1;
+          Format.printf "\n<<~~~~>> \n";
+          f Format.std_formatter v2;
+          Format.printf "\n";
+          Format.printf "\nRES:\n";
+          f Format.std_formatter res_v;
+          Format.printf "\n";
+          end
+        ); *)
+        wid_V v1 v2
+        ) m1 m2
+    let leq_M (m1: exec_map_t) (m2: exec_map_t) : bool =
+      NodeMap.for_all (fun n v1 (*untie to node -> value*) -> 
+        NodeMap.find_opt n m2 |> Opt.map (fun v2 -> leq_V v1 v2) |>
+        Opt.get_or_else (v1 = Bot)) m1
+    let eq_PM (m1:exec_map_t) (m2:exec_map_t) =
+      NodeMap.for_all (fun n v1 (*untie to node -> value*) ->
+        NodeMap.find_opt n m2 |> Opt.map (
+        fun v2 -> 
+          let l = get_label_snode n in
+          if eq_V v1 v2 then true else 
+          raise (Pre_Def_Change ("Predefined node changed at " ^ l))
+         )
+      |> Opt.get_or_else (v1 = v1)) m1
+    let top_M m = NodeMap.map (fun a -> Top) m
+    let array_M env m = 
+      let n_make = construct_vnode env "Array.make" ("", "") in
+      let s_make = construct_snode "" n_make in
+      let t_make = (* make *)
+        (* make |-> zm: {v:int | v >= 0} -> ex: {v:int | top} -> 
+           {v: Int Array (l, e) | len: [| l=zm; zm>=0; |] item: [| l=zm; zm>=0; e = ex; |]} *)
+        let var_l = "zm" in
+        let rl = top_R Plus |> op_R "" "cur_v" "0" Ge true in
+        let var_e = "ex" in
+        let rm = top_R Plus in (*TODO: Make poly*)
+        (* let ilen = op_R "i" "0" Ge true llen |> op_R "i" "l" Lt true in
+           let rlen = op_R "x" var_e Eq true ilen in  *)
+        let ary = 
+          let l, e = "l", "e" in
+          let rl = arrow_R var_l rm rl |> op_R "" l var_l Eq true in
+          let re = arrow_R var_l rm rl |> op_R "" l var_l Eq true |> op_R "" e var_e Eq true in
+          (l, e), (rl, re)
+        in
+        let t = 
+          let t' = Table (construct_table (var_e, var_e) (Relation rm, Ary ary)) in
+          Table (construct_table (var_l, var_l) (Relation rl, t')) in
+        t
+      in
+      let n_len = construct_vnode env  "Array.length" ("", "") in
+      let s_len = construct_snode "" n_len in
+      let t_len = (* len *)
+        (* len |-> zl: { v: Int Array (l, e) | len: [| l>=0; |] item: [| true; |] } 
+           -> { v: Int | [| v=l |] } *)
+        let var_l = "zl" in
+        let var_len = "l" in
+        (* let var_i = "i" in *)
+        let ary = 
+          let l, e = "l", "e" in
+          let rl = top_R Plus |> op_R "" var_len "0" Ge true in
+          let re = top_R Plus in
+          (l, e), (rl, re)
+          in
+        (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
+        let rlen = equal_R (top_R Plus) "l" in
+        Table (construct_table (var_l, var_l) (Ary ary, Relation rlen))
+      in
+      let n_get = construct_vnode env "Array.get" ("", "") in
+      let s_get = construct_snode "" n_get in
+      let t_get = (* get *)
+        (* get |-> zg: { v: Int Array (l, e) | l: [| l>=0; |] e: [| true; |] } 
+            -> zi: {v: int | 0 <= v < l} -> {v: int | v = e; }  *)
+        let var_l = "zg" in
+        let var_len = "l" in
+        (* let var_i = "i" in *)
+        let ary = 
+          let l, e = "l", "e" in
+          let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" var_len in
+          let re = top_R Plus in
+          (l, e), (rl, re)
+        in
+        (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
+        let rm = top_R Plus |> op_R "" "cur_v" "0" Ge true |> op_R "" "cur_v" var_len Lt true in
+        let rr = top_R Plus |> op_R "" "cur_v" "e" Eq true in 
+        let var_zi = "zi" in
+        let t = 
+          let t' = Table (construct_table (var_zi, var_zi) (Relation rm, Relation rr)) in
+          Table (construct_table (var_l, var_l) (Ary ary, t')) in
+        t
+      in
+      let n_set = construct_vnode env "Array.set" ("", "") in
+      let s_set = construct_snode "" n_set in
+      let t_set = (* set *)
+        (* set |-> zs: { v: Int Array (l, e) | len: [| l>=0; |] item: [| true; |] } -> 
+           zi: {v: int | 0 <= v < l} -> ex: {v: int | top } -> unit *)
+        let var_l = "zs" in
+        let var_len = "l" in
+        (* let var_i = "i" in *)
+        let ary = 
+          let l, e = "l", "e" in
+          let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" var_len in
+          let re = top_R Plus in
+          (l, e), (rl, re)
+        in
+        (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
+        let rm = top_R Plus |> op_R "" "cur_v" "0" Ge true |> op_R "" "cur_v" var_len Lt true in
+        let var_e = "ex" in
+        let var_zi = "zi" in
+        let rri = top_R Plus in
+        let rrr = [] in
+        let t = 
+          let t' = Table (construct_table (var_e, var_e) (Relation rri, Tuple rrr)) in
+          let t'' = Table (construct_table (var_zi, var_zi) (Relation rm, t')) in
+          Table (construct_table (var_l, var_l) (Ary ary, t'')) in
+        t
+      in
+      let m' = 
+        m |> NodeMap.add s_make t_make |> NodeMap.add s_len t_len |> NodeMap.add s_get t_get
+      |> NodeMap.add s_set t_set
+      in
+      let env' = 
+        env |> VarMap.add "Array.make" (n_make, false) |> VarMap.add "Array.length" (n_len, false) |> VarMap.add "Array.get" (n_get, false)
+      |> VarMap.add "Array.set" (n_set, false)
+      in
+      pre_def_func := List.append !pre_def_func ["Array.make"; "Array.length"; "Array.get"; "Array.set"];
+      env', m'
+    let list_M env m = 
+      let n_len = construct_vnode env  "List.length" ("", "") in
+      let s_len = construct_snode "" n_len in
+      let t_len = (* len *)
+        (* len |-> zl: { v: 'a List (l, e) | len: [| l>=0; |] item: true } 
+           -> { v: Int | [| v=l |] } *)
+        let var_l = "zl" in
+        let var_len = "l" in
+        (* let var_i = "i" in *)
+        let list = 
+          let l, e = "l", "e" in
+          let rl = top_R Plus |> op_R "" var_len "0" Ge true in
+          let ve = Top in
+          (l, e), (rl, ve)
+        in
+        (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
+        let rlen = equal_R (top_R Plus) "l" in
+        Table (construct_table (var_l, var_l) (Lst list, Relation rlen))
+      in
+      let n_hd = construct_vnode env "List.hd" ("", "") in
+      let s_hd = construct_snode "" n_hd in
+      let t_hd = (* hd *)
+        (* hd |-> zh: { v: 'a List (l, e) | l: [| l>=0; |] e: true } 
+           -> true  *)
+        let var_h = "zh" in
+        (* let var_i = "i" in *)
+        let list = 
+          let l, e = "l", "e" in
+          let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" l in
+          let ve = Top in
+          (l, e), (rl, ve)
+        in
+        let tr = Top in
+        let t =
+          Table (construct_table (var_h, var_h) (Lst list, tr)) in
+        t
+      in
+      let n_tl = construct_vnode env "List.tl" ("", "") in
+      let s_tl = construct_snode "" n_tl in
+      let t_tl = (* tl *)
+        (* tl |-> zt: { v: Int List (l, e) | l: [| l>=0; |] e: true } -> 
+           { v: Int List (l1, e1) | l1: [| l1=l-1; |] e1: e } *)
+        let var_t = "zt" in
+        let var_len, var_e = "l", "e" in
+        (* let var_i = "i" in *)
+        let list1 = 
+          let l, e = "l", "e" in
+          let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" l in
+          let ve = Top in
+          (l, e), (rl, ve)
+        in
+        let list2 = 
+          let l, e = "l'", "e'" in
+          let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" l |> op_R l var_len "1" Minus true in
+          (* let re = replace_R (rl |> op_R "" "cur_v" var_e Eq true) "cur_v" e in *)
+          let ve = Top in
+          (l, e), (rl, ve)
+        in
+        let t =
+          Table (construct_table (var_t, var_t) (Lst list1, Lst list2)) in
+        t
+      in
+      let n_cons = construct_vnode env "List.cons" ("", "") in
+      let s_cons = construct_snode "" n_cons in
+      let t_cons = (* cons *)
+        (* cons |-> zc: true -> xs: { v: Int List (l, e) | l: [| l>=0; |] e: true } -> 
+           { v: Int List (l1, e1) | l': [| l1=l+1; |] e': e ⊔ zc |] }
+         *)
+        let var_c = "zc" in
+        let ve = Top in
+        let var_len, var_e = "l", "e" in
+        (* let var_i = "i" in *)
+        let list1 = 
+          let l, e = "l", "e" in
+          let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" l in
+          let ve = Top in
+          (l, e), (rl, ve)
+        in
+        let var_l = "xs" in
+        let list2 = 
+          let l, e = "l'", "e'" in
+          let rl = replace_R (top_R Plus |> op_R "" "cur_v" "1" Ge true) "cur_v" l |> op_R l var_len "1" Plus true in
+          let ve = Top in
+          (l, e), (rl, ve)
+        in
+        let t =
+          let t' = Table (construct_table (var_l,var_l) (Lst list1, Lst list2)) in
+          Table (construct_table (var_c, var_c) (ve, t')) in
+        t
+      in
+      let m' = 
+        m |> NodeMap.add s_hd t_hd |> NodeMap.add s_len t_len |> NodeMap.add s_tl t_tl
+      |> NodeMap.add s_cons t_cons
+      in
+      let env' = 
+        env |> VarMap.add "List.hd" (n_hd, false) |> VarMap.add "List.length" (n_len, false) |> VarMap.add "List.tl" (n_tl, false)
+      |> VarMap.add "List.cons" (n_cons, false)
+      in
+      pre_def_func := List.append !pre_def_func ["List.hd"; "List.length"; "List.tl"; "List.cons"];
+      env', m'
+    let pref_M env m = 
+      let m', env' =
+        if VarDefMap.is_empty !pre_vars then
+          m, env
+        else 
+          VarDefMap.fold (fun var (domain: pre_exp) (m, env) -> 
+            let n_var = construct_vnode env var ("", "") in
+            let s_var = construct_snode "" n_var in
+            let t_var = match domain with
+            | {name = n; dtype = Int; left = l; op = bop; right = r} -> 
+                let rm = if l = "true" then 
+                  (top_R Plus)
+                else top_R Plus |> op_R "" l r bop true
+                in Relation rm
+            | {name = n; dtype = Bool; left = l; op = bop; right = r} -> 
+                let rm = if l = "true" then init_R_c (Boolean true)
+                else if l = "false" then
+                  init_R_c (Boolean false)
+                else
+                  top_R Plus |> op_R "" l r bop true
+                in
+                Relation (rm)
+            | {name = n; dtype = Unit; left = l; op = _; right = r} ->
+                if l = "unit" then Tuple []
+                else raise (Invalid_argument"Expected unit predicate as {v: Unit | unit }")
+            in
+            let env' = env |> VarMap.add var (n_var, false) in
+            let m' = m |> NodeMap.add s_var t_var in
+            m', env') !pre_vars (m, env)
+      in env', m'
+
   end

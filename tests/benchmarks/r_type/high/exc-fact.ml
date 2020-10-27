@@ -4,15 +4,14 @@ USED: PEPM2013 as e-fact
 *)
 
 
-let rec fact fn (exnx: int -> int) =
-  if fn <= 0 then
-    exnx 0
+let rec fact n exn =
+  if n <= 0 then
+    exn 0
   else
-    let exn1 k = if k = 0 then 1 else exnx k in
-    fn * fact (fn - 1) exn1
+    let exnp n = if n = 0 then 1 else exn n in
+    n * fact (n - 1) exnp
 
-let ex en = 0 - 1
+let exni n = assert false
 
 let main (n:int(*-:{v:Int | true}*)) =
-    if n > 0 then assert(fact n ex >= (0 - 1))
-	else ()
+    if n > 0 then (fact n exni; ())

@@ -10,11 +10,11 @@ parser.add_argument('show_unsolved', nargs='?', default=False)
 args = parser.parse_args()
 
 if exp2_regexp.search(args.folder_name):
-    data_lst = { "res1-polka_ls-thowid": [], "res_rtype": [], 
-         "res_dsolve": [], "res_mochi": []}
-    res_lst = { "res1-polka_ls-thowid": [], "res_rtype": [], 
-         "res_dsolve": [], "res_mochi": []}
-    csv_lst = ["res1-polka_ls-thowid", "res_rtype", "res_dsolve", "res_mochi"]
+    data_lst = { "res1-polka_ls-thowid": [], "res-rtype-z3": [], 
+         "res-dsolve": [], "res-mochi-hoice": []}
+    res_lst = { "res1-polka_ls-thowid": [], "res-rtype-z3": [], 
+         "res-dsolve": [], "res-mochi-hoice": []}
+    csv_lst = ["res1-polka_ls-thowid", "res-rtype-z3", "res-dsolve", "res-mochi-hoice"]
 else:
     data_lst = {"res-oct-standard": [], 
         "res-oct-thowid": [], "res-polka_st-standard": [], "res-polka_st-thowid": [], "res-polka_ls-standard": [], 
@@ -36,7 +36,7 @@ else:
 "res1-polka_st-thowid", "res1-polka_ls-standard", "res1-polka_ls-thowid" ]
 
 # loc is calculated by cloc 
-sort_lst = {"high":["HO", 8], "first":["FO", 11], "array":["A", 17], "list":["L", 16], "negative":["E", 16]}
+sort_lst = {"first":["FO", 11], "high":["HO", 10], "termination":["T", 44], "array":["A", 17], "list":["L", 16], "negative":["E", 21]}
 unit_lst = ["succ", "total", "avg.", "mean"]
 
 cant_solve_lst = [
@@ -45,9 +45,9 @@ cant_solve_lst = [
 ]
 
 can_solve_domain_dic = { 
-"oct":[{"high":0, "first":0, "array":0, "list":0, "negative":0},{"high":0, "first":0, "array":0, "list":0, "negative":0}], 
-"polka_st":[{"high":0, "first":0, "array":0, "list":0, "negative":0},{"high":0, "first":0, "array":0, "list":0, "negative":0}],
-"polka_ls":[{"high":0, "first":0, "array":0, "list":0, "negative":0},{"high":0, "first":0, "array":0, "list":0, "negative":0}]
+"oct":[{"first":0, "high":0, "termination":0, "array":0, "list":0, "negative":0},{"first":0, "high":0, "termination":0, "array":0, "list":0, "negative":0}], 
+"polka_st":[{"first":0, "high":0, "termination":0, "array":0, "list":0, "negative":0},{"first":0, "high":0, "termination":0, "array":0, "list":0, "negative":0}],
+"polka_ls":[{"first":0, "high":0, "termination":0, "array":0, "list":0, "negative":0},{"first":0, "high":0, "termination":0, "array":0, "list":0, "negative":0}]
 }
 
 def get_domain_idx(domain):
@@ -60,7 +60,8 @@ def get_bench_idx(bench):
     elif bench == "first": return 1
     elif bench == "array": return 2
     elif bench == "list": return 3
-    else: return 4
+    elif bench == "termination": return 4
+    else: return 5
 
 def read_data():
     for file_name in csv_lst:
@@ -149,6 +150,9 @@ def common_not_solved(file_name, bench, idx, test_name):
         cant_solve_lst[idx][domain_name].append(test_name)
 
 def cal_res():
+    idx = 0
+    total_time_1 = 0.0
+    total_time_2 = 0.0
     for file in csv_lst:
         for dic in data_lst[file]:
             full_time = 0.0
@@ -156,13 +160,16 @@ def cal_res():
             mean_time = 0.0
             total_count = 0
             succ_count = 0
+            median_time = 0.0
             max_time = 0.0
             min_time = 600.0
             solve_by_this = 0
             timeout_count = 0
+            sort_timing_lst = []
             for i in range(0, len(dic["data"])):
                 d = dic["data"][i]
                 if isinstance(d[1], float):
+                    sort_timing_lst.append(d[1])
                     if d[2] == 'T':
                         solve_by_this += cal_solve(d, file, dic['bench'], i)
                         succ_count += 1
@@ -175,14 +182,23 @@ def cal_res():
                     full_time += d[1]
                 else: timeout_count += 1
                 total_count += 1
+            sorted(sort_timing_lst)
+            # 0,1,2,3
+            l = len(sort_timing_lst)
+            median_time = sort_timing_lst[(l - 1) // 2] if l % 2 != 0 \
+                else round((sort_timing_lst[l // 2] + sort_timing_lst[l // 2 - 1]) / 2 , 2)
             mean_time = round((max_time + min_time) / 2, 2)
             full_time = round(full_time, 2)
             avg_time = round(full_time / total_count, 2)
             bench_name = dic['bench']
             new_dic = {'bench': "", "data": []}
             new_dic['bench'] = bench_name
-            new_dic["data"] = [succ_count, full_time, avg_time, mean_time, solve_by_this, total_count, timeout_count]
+            new_dic["data"] = [succ_count, full_time, median_time, avg_time, mean_time, solve_by_this, total_count, timeout_count]
             res_lst[file].append(new_dic)
+            if idx < 6: total_time_1 += full_time
+            else: total_time_2 += full_time
+        idx += 1
+    # print(total_time_2 / total_time_1)
 
 def print_for_table2():
     for csv in csv_lst:
@@ -191,11 +207,12 @@ def print_for_table2():
             bench_name = dic['bench']
             succ_count = dic["data"][0]
             full_time = dic["data"][1]
-            avg_time = dic["data"][2]
-            mean_time = dic["data"][3]
-            solve_by_this = dic["data"][4]
-            timeout_count = dic["data"][6]
-            print("bench | succ(solvethis) | full(timeout) | avg | mean | ")
+            median_time = dic["data"][2]
+            avg_time = dic["data"][3]
+            mean_time = dic["data"][4]
+            solve_by_this = dic["data"][5]
+            timeout_count = dic["data"][7]
+            print("bench | succ(solvethis) | full(timeout) | median | ")
             print(f'{bench_name}\t',end='&')
             if solve_by_this == 0:
                 print(f' {succ_count}\t',end='&')
@@ -205,21 +222,22 @@ def print_for_table2():
                 print(f' {full_time:.2f}\t',end='&')
             else:
                 print(f' {full_time:.2f}({timeout_count})\t',end='&')
-            print(f' {avg_time:.2f}\t', end='&')
-            print(f' {mean_time:.2f}\t')
+            print(f' {median_time:.2f}\t')
+            # print(f' {avg_time:.2f}\t', end='&')
+            # print(f' {mean_time:.2f}\t')
             print("\n")
         print(f'=======end========')
 
 def print_for_table1():
     for bench, conf in sort_lst.items():
-        for row in range(4):
-            if row == 2:
+        for row in range(2):
+            if row == 0:
                 test_nums = 0
                 for dic in res_lst[csv_lst[0]]:
                     if dic['bench'] == bench:
-                        test_nums = dic['data'][5]
+                        test_nums = dic['data'][6]
                 print(f'{conf[0]} ({test_nums})\t', end = '&')
-            elif row == 3: print(f'loc: {conf[1]}\t', end = '&')
+            elif row == 1: print(f'loc: {conf[1]}\t', end = '&')
             else: print("\t\t", end = '&')
             print(" "+unit_lst[row], end = '\t')
             for csv in csv_lst:
@@ -227,11 +245,11 @@ def print_for_table1():
                     if dic['bench'] == bench:
                         d = dic["data"][row]
                         if row == 0:
-                            dp = dic["data"][4]
+                            dp = dic["data"][5]
                             if dp == 0: print(f'& {d}', end = '\t')
                             else: print(f'& {d}({dp})', end = '\t')
                         elif row == 1:
-                            dp = dic["data"][6]
+                            dp = dic["data"][7]
                             if dp == 0: print(f'& {d:.2f}', end = '\t')
                             else: print(f'& {d:.2f}({dp})', end = '\t')
                         elif isinstance(d, float):

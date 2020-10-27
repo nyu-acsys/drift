@@ -9,5 +9,4 @@ let rec f x =
     x
 
 let main (n:int(*-:{v:Int | true}*)) =   
-    if n >= 2 then assert(f n >= 0)
-    else ()
+    assert(f 3 >= 0)
