@@ -21,12 +21,10 @@ c[M] = {v: int | v = c && n1 >= 2}
     Using v = 1 be true once inside vt and v = 1 be false inside vf
 *)
 
-type stage =
+type stage_t =
   | Widening
   | Narrowing
   
-let process = ref "Wid"
-
 module AssertionPosMap =  Map.Make(struct
   type t = Syntax.pos
   let compare = compare
@@ -1234,11 +1232,15 @@ let narrowing (m1:exec_map_t) (m2:exec_map_t): exec_map_t =
   meet_M m1 m2 
 
 (** Fixpoint loop *)
-let rec fix env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_map_t =
+let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_map_t =
   (if !out_put_level = 0 then
     begin
-        Format.printf "%s step %d\n" !process k;
-        print_exec_map m;
+      let process = match stage with
+      | Widening -> "Wid"
+      | Narrowing -> "Nar"
+      in
+      Format.printf "%s step %d\n" process k;
+      print_exec_map m;
     end);
   (* if k > 40 then exit 0 else *)
   let ae = VarMap.fold (fun var (n, b) ae ->
@@ -1250,13 +1252,13 @@ let rec fix env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_map_t 
     ) env (Relation (top_R Plus)) in
   let m_t = Hashtbl.copy m in
   let m' = step e env "" ("","") ae assertion false m_t in
-  if k < 0 then if k = -1 then "", m' else fix env e (k+1) m' assertion else
+  if k < 0 then if k = -1 then "", m' else fix stage env e (k+1) m' assertion else
   (* if k > 2 then Hashtbl.reset !pre_m;
   pre_m := m; *)
   (* Format.printf "\nFinish step %d\n" k;
   flush stdout; *)
-  let m'' = if !process = "Wid" then widening k m m' else narrowing m m' in
-  let comp = if !process = "Wid" then leq_M m'' m else leq_M m m'' in
+  let m'' = if stage = Widening then widening k m m' else narrowing m m' in
+  let comp = if stage = Widening then leq_M m'' m else leq_M m m'' in
   if comp then
       begin
       if assertion || !narrow then 
@@ -1266,11 +1268,11 @@ let rec fix env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_map_t 
         s, m 
       else 
         begin
-        try fix env e k m true (* Final step to check assertions *)
+        try fix stage env e k m true (* Final step to check assertions *)
         with Input_Assert_failure s -> s, m 
         end
       end
-  else (fix env e (k+1) m'' assertion) (*Hashtbl.reset m; *)
+  else (fix stage env e (k+1) m'' assertion) (*Hashtbl.reset m; *)
 
       
 (** Semantic function *)
@@ -1301,14 +1303,13 @@ let s e =
   |> ThresholdsSetType.add 2 |> ThresholdsSetType.add 4 |> ThresholdsSetType.add (-1) |> ThresholdsSetType.add (-2);
   (* pre_m := m0'; *)
     let check_str, m =
-      let s1, m1 = (fix envt e 0 m0' false) in
+      let s1, m1 = (fix Widening envt e 0 m0' false) in
         if !narrow then
             begin
-            process := "Nar";
             narrow := false;
             (*let _, m1 = fix envt e (-10) m1 false in (* step^10(fixw) <= fixw *)*)
             let m1 = m1 |> reset in
-            let s2, m2 = fix envt e 0 m1 false in
+            let s2, m2 = fix Narrowing envt e 0 m1 false in
             if eq_PM m0 m2 then s2, m2 
             else exit 0
             end
