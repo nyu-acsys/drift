@@ -803,14 +803,14 @@ module SemanticsDomain =
     and get_list_length_item_Lst ((l,e), _) = [l;e]
     and only_shape_Lst ((l,e), (rl,ve)) = 
       is_bot_R rl && ve = Bot
-    and prop_Lst prop ((l1,e1) as vars1, (rl1,ve1)) ((l2,e2) as vars2, (rl2,ve2)) =
+    and prop_Lst prop ((l1,e1) as vars1, (rl1,ve1)) ((l2,e2) as vars2, (rl2,ve2)) vslst =
       let rl1', rl2' = rl1, join_R rl1 rl2 in
       let ve1', ve2' = match ve1, ve2 with
       | _, Bot | Bot, _ -> ve1, ve1
       | Relation re1, Relation re2 -> ve1, Relation (join_R re1 re2)
-      | Table te1, Table te2 -> prop ve1 ve2
+      | Table te1, Table te2 -> prop ve1 ve2 vslst
       | Lst lst1, Lst lst2 -> let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
-        let lst1'', lst2'' = prop_Lst prop lst1' lst2' in
+        let lst1'', lst2'' = prop_Lst prop lst1' lst2' vslst in
         let _, lst2'' = alpha_rename_Lsts lst2 lst2'' in
         Lst lst1'', Lst lst2''
       | Ary ary1, Ary ary2 -> Ary ary1, Ary (join_Ary ary1 ary2)

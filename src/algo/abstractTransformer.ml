@@ -53,15 +53,20 @@ let equal_V e = measure_call "equal_V" (equal_V e)
 let proj_V e = measure_call "proj_V" (proj_V e)
 let sat_equal_V e = measure_call "sat_equal_V" (sat_equal_V e)
 
-    
-let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 with
+let opt_V vslst v = (* vslst is used for storing the strengthening components *)
+    match vslst with
+    | [] -> v
+    | _ -> List.fold_right (fun (z, v') v -> arrow_V z v v') vslst v
+
+let rec prop (v1: value_t) (v2: value_t) (vslst: (var * value_t) list): (value_t * value_t) = 
+    let v1', v2' = match v1, v2 with
     | Top, Bot | Table _, Top -> Top, Top
     | Table t, Bot ->
         let t' = init_T (dx_T v1) in
         v1, Table t'
-    | Relation r1, Relation r2 ->
-        if leq_R r1 r2 then v1, v2 else
-        Relation r1, Relation (join_R r1 r2)
+    | Relation r1, Bot | Relation r1, Relation _ ->
+        let v1' = opt_V vslst v1 in
+        Relation r1 |> join_V v1, join_V v1' v2
     | Table t1, Table t2 ->
         let prop_table_entry cs (v1i, v1o) (v2i, v2o) =
           let _, z = cs in
@@ -81,7 +86,7 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
             || (v1i <> Bot && v2i <> Bot && eq_V v2i v1i) in
             let v2i', v1i' = 
               if opt_i then v2i, v1i else 
-              prop v2i v1i 
+              prop v2i v1i vslst
             in
             let opt_o = false
                 (*Optimization 2: If those two are the same, ignore the prop step*)
@@ -89,8 +94,9 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
             in
             let v1o', v2o' = 
               if opt_o then v1ot, v2o else
-              prop (arrow_V z v1ot v2ip) (arrow_V z v2o v2ip)
-            in
+              let v2ip' = opt_V vslst v2ip in
+              prop v1ot v2o ((z, v2ip') :: vslst)
+            in 
             let v1o' =
               if (is_Array v1i' && is_Array v2i') || (is_List v1i' && is_List v2i') then
                 let l1 = get_len_var_V v1i' in
@@ -130,7 +136,8 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
                 );
               end; *)
             let v1o', v2o' = 
-              if opt_o then v1o', v2o' else (join_V v1o v1o', join_V v2o v2o')
+              (* if opt_o then v1o', v2o' else (join_V v1o v1o', join_V v2o v2o') *)
+              v1o', v2o'
             in
             v1i', v2i', v1o', v2o'
           in
@@ -140,7 +147,11 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
           prop_table prop_table_entry alpha_rename_V t1 t2
         in
         Table t1', Table t2'
-    | Ary ary1, Ary ary2 -> let ary1', ary2' = alpha_rename_Arys ary1 ary2 in
+    | Ary ary1, Ary ary2 -> 
+        let ary1' = match opt_V vslst v1 with
+        | Ary ary -> ary
+        | _ -> failwith "Expect return array" in
+        let ary1', ary2' = alpha_rename_Arys ary1' ary2 in
         let ary' = (join_Ary ary1' ary2') in
         let _, ary2'' = alpha_rename_Arys ary2 ary'  in
         (* let _ = alpha_rename_Arys ary1 ary' in *)
@@ -155,7 +166,10 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
                 Format.printf "\n";
             end
         ); *)
-        let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
+        let lst1' = match opt_V vslst v1 with
+        | Lst lst -> lst
+        | _ -> failwith "Expect return list" in
+        let lst1', lst2' = alpha_rename_Lsts lst1' lst2 in
         (* (if true then
             begin
                 Format.printf "\n<=== after rename list ===>\n";
@@ -165,7 +179,7 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
                 Format.printf "\n";
             end
         ); *)
-        let lst1'', lst2'' = prop_Lst prop lst1' lst2' in
+        let lst1'', lst2'' = prop_Lst prop lst1' lst2' vslst in
         (* (if true then
             begin
                 Format.printf "\n<=== res ===>\n";
@@ -177,7 +191,8 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
         ); *)
         let _, lst2'' = alpha_rename_Lsts lst2 lst2'' in
         Lst lst1'', Lst lst2''
-    | Ary ary, Bot -> let vars, r = ary in
+    | Ary ary, Bot -> 
+        let vars, r = ary in
         let ary' = init_Ary vars in
         v1, Ary ary'
     | Lst lst, Bot -> let vars, r = lst in
@@ -190,14 +205,22 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
         raise (Invalid_argument "Prop tuples should have the same form")
         else
             let u1', u2' = List.fold_right2 (fun v1 v2 (u1', u2') -> 
-                let v1', v2' = prop v1 v2 in
+                let v1', v2' = prop v1 v2 vslst in
                 (v1'::u1', v2'::u2')
             ) u1 u2 ([],[]) in
             Tuple u1', Tuple u2'
-    | _, _ -> if leq_V v1 v2 then v1, v2 else v1, join_V v1 v2
+    | _, _ -> if leq_V v1 v2 then v1, v2 else 
+        let v1' = opt_V vslst v1 in
+        v1, join_V v1' v2
+    in
+    match v1', v2' with
+    | Table _, _ -> v1', v2'
+    | Relation _, Relation _ -> v1', v2'
+    | _, _ -> v1' |> opt_V vslst  |> join_V v1', v1' |> opt_V vslst  |> join_V v2'
 
 let prop p = measure_call "prop" (prop p)
 
+let prop v1 v2 = prop v1 v2 []
         
 (* let lc_env env1 env2 = 
     Array.fold_left (fun a id -> if Array.mem id a then a else Array.append a [|id|] ) env2 env1 *)
