@@ -7,7 +7,7 @@ import sys, os
 import re
 import csv
 
-testdir = '../outputs/dsolve'
+testdir = 'outputs/dsolve'
 table_file = 'res-dsolve.csv'
 pattern = re.compile(".*ml$")
 attrs = ['subdir', 'file name', 'test class', 'timing (seconds)', 'res (true/false)']
