@@ -212,7 +212,7 @@ def print_for_table2():
             mean_time = dic["data"][4]
             solve_by_this = dic["data"][5]
             timeout_count = dic["data"][7]
-            print("bench | succ(solvethis) | full(timeout) | median | ")
+            print("bench | succ(solvethis) | full(timeout) | average | median | ")
             print(f'{bench_name}\t',end='&')
             if solve_by_this == 0:
                 print(f' {succ_count}\t',end='&')
@@ -222,8 +222,8 @@ def print_for_table2():
                 print(f' {full_time:.2f}\t',end='&')
             else:
                 print(f' {full_time:.2f}({timeout_count})\t',end='&')
+            print(f' {avg_time:.2f}\t', end='&')
             print(f' {median_time:.2f}\t')
-            # print(f' {avg_time:.2f}\t', end='&')
             # print(f' {mean_time:.2f}\t')
             print("\n")
         print(f'=======end========')
