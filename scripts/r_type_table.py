@@ -31,7 +31,7 @@ def read_info_from_file(file_name):
     timeout_regexp = re.compile(r'timeout')
     if safe_regexp.search(data[0]): # safe
         res_data.append('T')
-    elif error_regexp.search(data[0]) and timeout_regexp.search(data[-1]) == None: # Error
+    elif (error_regexp.search(data[0]) or error_regexp.search(data[1])) and timeout_regexp.search(data[-1]) == None: # Error
         res_data.append('ER')
     elif timeout_regexp.search(data[-1]) or unsafe_regexp.search(data[1]): 
         # state unsafe, but safe OR run forever
@@ -62,7 +62,7 @@ def read_false_info_from_file(file_name):
     if safe_regexp.search(data[0]) or timeout_regexp.search(data[-1]): 
         # state safe, but unsafe, OR run forever
         res_data.append('F')
-    elif error_regexp.search(data[0]): # Error
+    elif error_regexp.search(data[0]) or error_regexp.search(data[1]): # Error
         res_data.append('ER')
     elif unsafe_regexp.search(data[1]): # state unsafe
         res_data.append('T')

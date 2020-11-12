@@ -2,7 +2,8 @@
 
 echo "Please build the other tool before ruuning"
 
-echo "Please also check z3 version... (Result for paper used 4.7.1)"
+echo "Please also check z3 version..."
+echo "For MoCHi & r_type, we used 4.7.1"
 
 echo "Start benchmark running..."
 

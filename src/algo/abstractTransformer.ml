@@ -56,10 +56,10 @@ let sat_equal_V e = measure_call "sat_equal_V" (sat_equal_V e)
 let opt_V vslst v = (* vslst is used for storing the strengthening components *)
     match vslst with
     | [] -> v
-    | _ -> List.fold_right (fun (z, v') v -> arrow_V z v v') vslst v
+    | _ -> List.fold_left (fun v (z, v') -> arrow_V z v v') v vslst
 
 let rec prop (v1: value_t) (v2: value_t) (vslst: (var * value_t) list): (value_t * value_t) =
-    let v1', v2' = match v1, v2 with
+    match v1, v2 with
     | Top, Bot | Table _, Top -> Top, Top
     | Table t, Bot ->
         let t' = init_T (dx_T v1) in
@@ -91,7 +91,7 @@ let rec prop (v1: value_t) (v2: value_t) (vslst: (var * value_t) list): (value_t
           let v1i', v2i', v1o', v2o' = 
             let opt_i = false 
                 (*Optimization 1: If those two are the same, ignore the prop step*)
-            (* || (v1i <> Bot && v2i <> Bot && eq_V v2i v1i)  *)
+            || (v1i <> Bot && v2i <> Bot && eq_V v2i v1i) 
             in
             (* (if z = "z59" || z = "z61" then
             begin
@@ -112,12 +112,13 @@ let rec prop (v1: value_t) (v2: value_t) (vslst: (var * value_t) list): (value_t
             in
             let opt_o = false
                 (*Optimization 2: If those two are the same, ignore the prop step*)
-            (* || (v2o <> Bot && v1o <> Bot && eq_V v1ot v2o) *)
+                || (v2o <> Bot && v1o <> Bot && eq_V v1ot v2o)
             in
             let v1o', v2o' = 
               if opt_o then v1ot, v2o else
-              let v2ip' = opt_V vslst v2ip in
-              let vslst' = ((z, v2ip') :: vslst) in
+              (* let v2ip' = (* simulate strengthening recursively *)
+                opt_V vslst v2ip in *)
+              let vslst' = ((z, v2ip) :: vslst) in
               prop v1ot v2o vslst'
             in 
             let v1o' =
@@ -217,12 +218,7 @@ let rec prop (v1: value_t) (v2: value_t) (vslst: (var * value_t) list): (value_t
             Tuple u1', Tuple u2'
     | _, _ -> if leq_V v1 v2 then v1, v2 else 
         let v1' = opt_V vslst v1 in
-        v1, join_V v1' v2
-    in v1', v2'
-    (* match v1', v2' with
-    | Table _, _ -> v1', v2'
-    | Relation _, Relation _ -> v1', v2'
-    | _, _ -> v1' |> opt_V vslst  |> join_V v1', v1' |> opt_V vslst  |> join_V v2' *)
+        v1, join_V v1 v2
 
 let prop p = measure_call "prop" (prop p)
 
