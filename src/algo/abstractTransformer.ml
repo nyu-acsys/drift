@@ -58,16 +58,24 @@ let opt_V vslst v = (* vslst is used for storing the strengthening components *)
     | [] -> v
     | _ -> List.fold_right (fun (z, v') v -> arrow_V z v v') vslst v
 
-let rec prop (v1: value_t) (v2: value_t) (vslst: (var * value_t) list): (value_t * value_t) = 
+let rec prop (v1: value_t) (v2: value_t) (vslst: (var * value_t) list): (value_t * value_t) =
     let v1', v2' = match v1, v2 with
     | Top, Bot | Table _, Top -> Top, Top
     | Table t, Bot ->
         let t' = init_T (dx_T v1) in
         v1, Table t'
-    | Relation r1, Bot | Relation r1, Relation _ ->
+    | Relation r1, Bot ->
         let v1' = opt_V vslst v1 in
-        Relation r1 |> join_V v1, join_V v1' v2
+        v1, v1'
+    | Relation r1, Relation r2 ->
+        if leq_R r1 r2 then v1, v2 else
+        let v1' = opt_V vslst v1 in
+        v1, join_V v1' v2
     | Table t1, Table t2 ->
+        let prop_empty_table cs (v2i, v2o) = 
+            let v2i' = opt_V vslst v2i in
+            (v2i', Bot), (v2i, v2o)
+        in
         let prop_table_entry cs (v1i, v1o) (v2i, v2o) =
           let _, z = cs in
           let v1ot, v2ip = 
@@ -83,19 +91,34 @@ let rec prop (v1: value_t) (v2: value_t) (vslst: (var * value_t) list): (value_t
           let v1i', v2i', v1o', v2o' = 
             let opt_i = false 
                 (*Optimization 1: If those two are the same, ignore the prop step*)
-            || (v1i <> Bot && v2i <> Bot && eq_V v2i v1i) in
+            (* || (v1i <> Bot && v2i <> Bot && eq_V v2i v1i)  *)
+            in
+            (* (if z = "z59" || z = "z61" then
+            begin
+                Format.printf "\n<=== prop o ===>%s\n" z;
+                pr_value Format.std_formatter v1ot;
+                Format.printf "\n<--- v2i --->\n";
+                pr_value Format.std_formatter v2ip;
+                Format.printf "\n %d\n" (List.length vslst);
+                pr_value Format.std_formatter (opt_V vslst v2ip);
+                Format.printf "\n<<~~~~>>\n";
+                pr_value Format.std_formatter v2o;
+                Format.printf "\n";
+            end
+            ); *)
             let v2i', v1i' = 
               if opt_i then v2i, v1i else 
               prop v2i v1i vslst
             in
             let opt_o = false
                 (*Optimization 2: If those two are the same, ignore the prop step*)
-            || (v2o <> Bot && v1o <> Bot && eq_V v1ot v2o)
+            (* || (v2o <> Bot && v1o <> Bot && eq_V v1ot v2o) *)
             in
             let v1o', v2o' = 
               if opt_o then v1ot, v2o else
               let v2ip' = opt_V vslst v2ip in
-              prop v1ot v2o ((z, v2ip') :: vslst)
+              let vslst' = ((z, v2ip') :: vslst) in
+              prop v1ot v2o vslst'
             in 
             let v1o' =
               if (is_Array v1i' && is_Array v2i') || (is_List v1i' && is_List v2i') then
@@ -107,34 +130,14 @@ let rec prop (v1: value_t) (v2: value_t) (vslst: (var * value_t) list): (value_t
                 replace_V v e2 e1
                 else v1o'
             in
-            (* if true then
-                begin
-                (if true then
-                begin
-                    Format.printf "\n<=== prop o ===>%s\n" z;
-                    pr_value Format.std_formatter v1ot;
-                    Format.printf "\n";
-                    Format.printf "\n<--- v2i --->\n";
-                    pr_value Format.std_formatter v2i;
-                    Format.printf "\n";
-                    pr_value Format.std_formatter v2ip;
-                    Format.printf "\n";
-                    pr_value Format.std_formatter (arrow_V z v1ot v2ip);
-                    Format.printf "\n<<~~~~>>\n";
-                    pr_value Format.std_formatter (arrow_V z v2o v2ip);
-                    Format.printf "\n";
-                end
-                );
-                (if true then
-                begin
-                    Format.printf "\n<=== res ===>%s\n" z;
-                    pr_value Format.std_formatter v1o';
-                    Format.printf "\n<<~~~~>>\n";
-                    pr_value Format.std_formatter v2o';
-                    Format.printf "\n";
-                end
-                );
-              end; *)
+            (* if z = "z59" || z = "z61" then
+            begin
+                Format.printf "\n<=== res ===>%s\n" z;
+                pr_value Format.std_formatter v1o';
+                Format.printf "\n<<~~~~>>\n";
+                pr_value Format.std_formatter v2o';
+                Format.printf "\n";
+            end; *)
             let v1o', v2o' = 
               (* if opt_o then v1o', v2o' else (join_V v1o v1o', join_V v2o v2o') *)
               v1o', v2o'
@@ -144,7 +147,7 @@ let rec prop (v1: value_t) (v2: value_t) (vslst: (var * value_t) list): (value_t
           (v1i', v1o'), (v2i', v2o') 
         in
         let t1', t2' =
-          prop_table prop_table_entry alpha_rename_V t1 t2
+          prop_table prop_table_entry prop_empty_table alpha_rename_V t1 t2
         in
         Table t1', Table t2'
     | Ary ary1, Ary ary2 -> 
@@ -166,10 +169,13 @@ let rec prop (v1: value_t) (v2: value_t) (vslst: (var * value_t) list): (value_t
                 Format.printf "\n";
             end
         ); *)
-        let lst1' = match opt_V vslst v1 with
+        (* let lst1' = match opt_V vslst v1 with
         | Lst lst -> lst
         | _ -> failwith "Expect return list" in
-        let lst1', lst2' = alpha_rename_Lsts lst1' lst2 in
+        let lst2' = match opt_V vslst v2 with
+        | Lst lst -> lst
+        | _ -> failwith "Expect return list" in *)
+        let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
         (* (if true then
             begin
                 Format.printf "\n<=== after rename list ===>\n";
@@ -179,7 +185,7 @@ let rec prop (v1: value_t) (v2: value_t) (vslst: (var * value_t) list): (value_t
                 Format.printf "\n";
             end
         ); *)
-        let lst1'', lst2'' = prop_Lst prop lst1' lst2' vslst in
+        let lst1'', lst2'' = prop_Lst prop opt_V lst1' lst2' vslst in
         (* (if true then
             begin
                 Format.printf "\n<=== res ===>\n";
@@ -212,11 +218,11 @@ let rec prop (v1: value_t) (v2: value_t) (vslst: (var * value_t) list): (value_t
     | _, _ -> if leq_V v1 v2 then v1, v2 else 
         let v1' = opt_V vslst v1 in
         v1, join_V v1' v2
-    in
-    match v1', v2' with
+    in v1', v2'
+    (* match v1', v2' with
     | Table _, _ -> v1', v2'
     | Relation _, Relation _ -> v1', v2'
-    | _, _ -> v1' |> opt_V vslst  |> join_V v1', v1' |> opt_V vslst  |> join_V v2'
+    | _, _ -> v1' |> opt_V vslst  |> join_V v1', v1' |> opt_V vslst  |> join_V v2' *)
 
 let prop p = measure_call "prop" (prop p)
 

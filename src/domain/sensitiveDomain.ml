@@ -124,7 +124,7 @@ module type SensitiveSemanticsType =
     val print_node: node_t -> Format.formatter -> (Format.formatter -> (string * (node_t * bool)) list -> unit) -> unit
     val print_table: table_t -> Format.formatter -> (Format.formatter -> value_t -> unit) -> unit
     val compare_node: (string -> string -> int) -> node_s_t -> node_s_t -> int
-    val prop_table: ((var * loc) -> value_t * value_t -> value_t * value_t -> (value_t * value_t) * (value_t * value_t)) -> (value_t -> string -> string -> value_t) -> table_t -> table_t -> table_t * table_t
+    val prop_table: ((var * loc) -> value_t * value_t -> value_t * value_t -> (value_t * value_t) * (value_t * value_t)) -> ((var * loc) -> value_t * value_t -> (value_t * value_t) * (value_t * value_t)) -> (value_t -> string -> string -> value_t) -> table_t -> table_t -> table_t * table_t
     val step_func: ((var * loc) -> value_t * value_t -> 'a -> 'a) -> value_t -> 'a -> 'a
     val get_full_table_T: table_t -> (var * loc) * (value_t * value_t)
     val get_table_by_cs_T: (var * loc) -> table_t -> (value_t * value_t)
@@ -219,7 +219,7 @@ module NonSensitive: SensitiveSemanticsType =
       let SN (_, e1) = n1 in
       let SN (_, e2) = n2 in
       comp e1 e2
-    let prop_table f g (t1:table_t) (t2:table_t) = 
+    let prop_table f k g (t1:table_t) (t2:table_t) = 
       let alpha_rename t1 t2 = let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
         if z1 = z2 then t1, t2
         else (*a renaming*)
@@ -362,10 +362,10 @@ module OneSensitive: SensitiveSemanticsType =
       | SVN ((_, var1), e1), SVN ((_, var2), e2) -> 
         if comp e1 e2 = 0 then
           String.compare var1 var2 else comp e1 e2
-    let prop_table f g t1 t2 = 
+    let prop_table f k g t1 t2 = 
       let t = TableMap.merge (fun cs vio1 vio2 ->
         match vio1, vio2 with
-         | None, Some (v2i, v2o) -> Some ((v2i, Bot), (v2i, v2o))
+         | None, Some (v2i, v2o) -> Some (k cs (v2i, v2o))
          | Some (v1i, v1o), None -> Some ((v1i, v1o), (Bot, Bot))
          | Some (v1i, v1o), Some (v2i, v2o) -> 
             let t1', t2' = f cs (v1i, v1o) (v2i, v2o) in
