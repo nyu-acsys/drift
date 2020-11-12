@@ -8,6 +8,7 @@ echo "Start benchmark running..."
 
 TOOLS=" dsolve mochi r_type " #
 SOLVER=" z3 hoice "
+TESTDIR="../tests/benchmarks"
 
 echo "<<----Start experiment 1---->>..."
 DOMAIN=" Oct Polka_st Polka_ls "
@@ -32,6 +33,10 @@ echo "cp ../result/1-sensitive/unv/res1-polka_ls-thowid.csv ../result/comp_tools
 cp ../result/1-sensitive/unv/res1-polka_ls-thowid.csv ../result/comp_tools/unv/
 
 for tool in ${TOOLS}; do
+	echo "Clean benchmarks..."
+	pushd ${TESTDIR}
+	find . -type f -not -name '*.ml' -delete
+	popd
     echo "Start running for ${tool}"
     if [[ $tool = "mochi" || $tool = "r_type" ]]; then
     	for solver in ${SOLVER}; do
