@@ -58,7 +58,7 @@ for hdir in ${DIRS}; do
     done
 done
 
-echo "Gnerate dsolve table results..."
+echo "Generate dsolve table results..."
 python3 dsolve_table.py  
 
 mv res-dsolve.csv ${DRIFTDIR}/result/comp_tools/unv

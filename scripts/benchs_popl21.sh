@@ -1,10 +1,10 @@
 #!/bin/bash
 
-echo "Please build the other tool before ruuning"
+echo "Please note that you will need to build the other tools before ruuning this script."
 
-echo "Please also check z3 version... (Result for paper used 4.7.1)"
+echo "Please also check the z3 version... (The results reported in the paper used v. 4.7.1)"
 
-echo "Start benchmark running..."
+echo "Starting experiments..."
 
 TOOLS=" dsolve mochi r_type " #
 SOLVER=" z3 hoice "
@@ -15,9 +15,9 @@ DOMAIN=" Oct Polka_st Polka_ls "
 SEN=""
 for i in $(seq 2 $END); do
     if [ $i = 1 ]; then
-        echo "Result for context insensitive..."
+        echo "Result for context insensitive analyses..."
     else
-        echo "Result for one context sensitive..."
+        echo "Result for 1-context sensitive analyses..."
         SEN="-sen"
     fi
     for domain in ${DOMAIN}; do
@@ -37,7 +37,7 @@ for tool in ${TOOLS}; do
     pushd ${TESTDIR}
     find . -type f -not -name '*.ml' -delete
     popd
-    echo "Start running for ${tool}"
+    echo "Running ${tool}"
     if [[ $tool = "mochi" || $tool = "r_type" ]]; then
         for solver in ${SOLVER}; do
             echo "./${tool}_runit.sh -set unv -${solver}"
@@ -56,5 +56,5 @@ python3 table.py unv > table1.out
 echo "python3 table.py comp_tools/unv > table2.out"
 python3 table.py comp_tools/unv > table2.out
 
-echo "Please check results (table1.out and table2.out) on the result folder:"
+echo "Please check the files table1.out and table2.out in the result directory:"
 pwd
