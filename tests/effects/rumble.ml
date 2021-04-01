@@ -3,7 +3,7 @@
 
 let rec print (x:int) :unit = event "Print";print x
 and rumble x y =
-(*  event "Rumble"; *) 
+  event "Rumble"; 
   if x<y then
     if Random.int(0)>0 then
        rumble (x+1) y
@@ -15,6 +15,12 @@ let main() =
   let b = Random.int(0) in
     print (rumble a (rumble a b))
 
+(*
+    ADAPTED: Rumble* Print*
+*)
+
+
+(* ORIGINAL: *)
 (* Property to be checked: event Print happens eventually in any infinite computation *)
 (* The definition of "print" above has been modified from the original one 
    to turn "Print eventually happens" into "Print happens infinitely often" *)
