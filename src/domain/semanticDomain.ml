@@ -4,6 +4,8 @@ open Util
 open SensitiveDomain
 open SenSemantics
 
+module K = Kat
+
 (*
 **********************************
 ** Abstract Data Flow Semantics **
@@ -289,7 +291,7 @@ module SemanticsDomain =
           | Ary ary -> Ary (arrow_Ary var ary re2 (Some rl2))
           | Lst lst -> Lst (arrow_Lst var lst (Relation re2) (Some (vars, rl2)))
           | _ -> v)
-        | Lst lst2 -> let ((l2,e2) as vars, (rl2, ve2)) = lst2 in
+        | Lst lst2 -> let ((l2,e2) as vars, (rl2, ve2, kexpr)) = lst2 in
           (match v with
           | Table t -> Table (arrow_T forget_V arrow_V var t v')
           | Relation r1 -> if is_bot_R rl2 then Relation (bot_shape_R r1) else
@@ -454,7 +456,7 @@ module SemanticsDomain =
       | v, Lst lst -> Lst (list_cons_Lst f v lst)
       | _,_ -> raise (Invalid_argument "List construct should be item :: lst")
     and alpha_rename_Vs v1 v2 = match v1, v2 with
-      | Lst (((l1,e1), (rl1,ve1)) as lst1), Lst (((l2,e2), (rl2,ve2)) as lst2) ->
+      | Lst (((l1,e1), (rl1,ve1,kexp1)) as lst1), Lst (((l2,e2), (rl2,ve2,kexp2)) as lst2) ->
         if l1 = l2 && e1 = e2 then Lst lst1, Lst lst2 else
         let lst2 = 
           ((l2,e2), (rl2 |> forget_R l1 |> forget_R e1,
@@ -594,7 +596,7 @@ module SemanticsDomain =
     *)
     and init_Lst_c (): list_t = let varl, vare = fresh_length (), fresh_item () in
       let r1 = top_R Plus |> op_R varl varl "0" Eq true in
-      (varl, vare), (r1, Bot)
+      (varl, vare), (r1, Bot, K.one)
     and const_Lst lst = 
       let varl, vare = fresh_length (), fresh_item () in
       let min, max = List.fold_left (fun (min, max) item -> 
@@ -604,19 +606,19 @@ module SemanticsDomain =
       let rl = top_R Plus |> op_R varl varl (string_of_int (List.length lst)) Eq true in
       let re = rl |> op_R vare vare (string_of_int min) Ge true 
         |> op_R vare vare (string_of_int max) Le true in
-      (varl, vare), (rl, Relation re)
+      (varl, vare), (rl, Relation re, K.one)
     and init_Lst vars : list_t = let varl, vare = vars in
       let varl' = if varl = "l" || varl = "l'" then fresh_length () else varl in
       let vare' = if vare = "e" || vare = "e'" then fresh_item () else vare in
       let vars = varl', vare' in
-      vars, (bot_R Plus, Bot)
+      vars, (bot_R Plus, Bot, K.one)
     and get_len_var_Lst ((varl,_),_) = varl
     and get_item_var_Lst ((_,vare),_) = vare
-    and pattern_empty_Lst ((l,e) as vars, (_, ve)) = 
+    and pattern_empty_Lst ((l,e) as vars, (_, ve, ke)) = 
       let rl' = top_R Plus |> op_R l l "0" Eq true in
       let ve' = bot_shape_V ve in
-      vars, (rl', ve')
-    and extrac_item_Lst vars ((_,vare), (_, ve)) =
+      vars, (rl', ve', K.one)
+    and extrac_item_Lst vars ((_,vare), (_, ve, ke)) =
       (* let vars' = vare :: vars in *)
       let ve' = match ve with
       | Relation re -> alpha_rename_V ve vare "cur_v"
@@ -624,25 +626,40 @@ module SemanticsDomain =
         (* alpha_rename_R (proj_R re vars' |> forget_R "cur_v") vare "cur_v"  *)
       in
       ve'
-    and join_Lst lst1 lst2 = 
-      let (l1, e1), (rl1,ve1) = lst1 in
-      let (l2, e2), (rl2,ve2) = lst2 in
+    and alpha_rename_Lst (lst:list_t) prevar var = let (l,e), (rl,ve, ke) = lst in
+      let l' = if l = prevar then var else l in
+      let e' = if e = prevar then var else e in
+      let rl' = alpha_rename_R rl prevar var in
+      let ve' = alpha_rename_V ve prevar var in
+      (l',e'), (rl',ve', K.one)
+    and alpha_rename_Lsts (lst1:list_t) (lst2:list_t) = 
+      let (l1,e1), (rl1,ve1,ke1) = lst1 in let (l2,e2), (rl2,ve2,ke2) = lst2 in
+      let lst2' = match l1 = l2, e1 = e2 with
+        | true, true -> lst2
+        | false, true -> alpha_rename_Lst lst2 l2 l1
+        | true, false -> alpha_rename_Lst lst2 e2 e1
+        | false, false -> let lst2 = alpha_rename_Lst lst2 l2 l1 in alpha_rename_Lst lst2 e2 e1
+      in
+      lst1, lst2'
+    and join_Lst (lst1:list_t) (lst2:list_t) = 
+      let (l1, e1), (rl1,ve1,ke1) = lst1 in
+      let (l2, e2), (rl2,ve2,ke2) = lst2 in
       let lst1', lst2' = if l1 <> "l" && contains_var_R l1 rl2 then
         let a, b = alpha_rename_Lsts lst2 lst1 in 
         b, a
         else alpha_rename_Lsts lst1 lst2 in
-      let (l1, e1) as vars1, (rl1,ve1) = lst1' in let (l2, e2) as vars2, (rl2,ve2) = lst2' in
-      vars1, (join_R rl1 rl2, join_V ve1 ve2)
+      let (l1, e1) as vars1, (rl1,ve1,ke1) = lst1' in let (l2, e2) as vars2, (rl2,ve2,ke2) = lst2' in
+      vars1, (join_R rl1 rl2, join_V ve1 ve2, K.one)
     and meet_Lst lst1 lst2 = 
       let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
-      let vars1, (rl1,ve1) = lst1' in let vars2, (rl2,ve2) = lst2' in
-      vars1, (meet_R rl1 rl2, meet_V ve1 ve2)
+      let vars1, (rl1,ve1,ke1) = lst1' in let vars2, (rl2,ve2,ke2) = lst2' in
+      vars1, (meet_R rl1 rl2, meet_V ve1 ve2, K.one)
     and leq_Lst lst1 lst2 = 
-      let (l1,e1), (rl1,ve1) = lst1 in let (l2,e2), (rl2,ve2) = lst2 in
+      let (l1,e1), (rl1,ve1,ke1) = lst1 in let (l2,e2), (rl2,ve2,ke2) = lst2 in
       let scop_check = l1 = l2 && e1 = e2 in
       if scop_check then leq_R rl1 rl2 && leq_V ve1 ve2 else false
     and sat_leq_Lst lst1 lst2 = 
-      let (l1,e1), (rl1,ve1) = lst1 in let (l2,e2), (rl2,ve2) = lst2 in
+      let (l1,e1), (rl1,ve1,ke1) = lst1 in let (l2,e2), (rl2,ve2,ke2) = lst2 in
       let scop_check = l1 = l2 && e1 = e2 in
       if scop_check then 
         let rl1 = proj_R rl1 [l1] in
@@ -650,23 +667,23 @@ module SemanticsDomain =
         leq_R rl1 rl2 && leq_V ve1 ve2
       else false
     and eq_Lst lst1 lst2 =
-      let (l1,e1), (rl1,ve1) = lst1 in let (l2,e2), (rl2,ve2) = lst2 in
+      let (l1,e1), (rl1,ve1,ke1) = lst1 in let (l2,e2), (rl2,ve2,ke2) = lst2 in
       let scop_check = l1 = l2 && e1 = e2 in
       if scop_check then eq_R rl1 rl2 && eq_V ve1 ve2 else false
     and wid_Lst lst1 lst2 =
       let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
-      let vars1, (rl1,ve1) = lst1' in let vars2, (rl2,ve2) = lst2' in
-      vars1, (wid_R rl1 rl2,wid_V ve1 ve2)
+      let vars1, (rl1,ve1,ke1) = lst1' in let vars2, (rl2,ve2,ke2) = lst2' in
+      vars1, (wid_R rl1 rl2,wid_V ve1 ve2, K.one)
     and arrow_Lst var lst v ropt = 
-      let ((l,e) as vars, (rl,ve)) = lst in
+      let ((l,e) as vars, (rl,ve,ke)) = lst in
       match ropt with
       | Some ((_, e') , rl') -> (match v, ve with
         | Bot, _ -> if String.sub var 0 2 = "xs" && contains_var_R "zc" rl' then
            let rl = arrow_R var rl rl' in
            let re' = (op_R "" e "zc" Eq true rl) in
-           (vars, (rl, Relation re'))
+           (vars, (rl, Relation re', K.one))
           else let rl = arrow_R var rl rl' in
-           (vars, (rl, ve))
+           (vars, (rl, ve, K.one))
         | Relation r, Relation re ->
           if String.sub var 0 2 = "xs" then
             let rl = arrow_R var rl rl' in
@@ -679,15 +696,15 @@ module SemanticsDomain =
                 let r'' = arrow_R var re r |> (op_R "" e "zc" Eq true) in
                 join_R r' r''
             in
-            (vars, (rl, Relation re'))
+            (vars, (rl, Relation re', K.one))
           else if String.sub var 0 2 = "zt" then
             let rl = arrow_R var rl rl' in
             let re' = arrow_R var re r |> (op_R "" e e' Eq true) in
-            (vars, (rl, Relation re'))
+            (vars, (rl, Relation re', K.one))
           else 
             let rl' = forget_R l rl' |> forget_R e in
             let r' = forget_R l r |> forget_R e in
-          (vars, (arrow_R var rl rl', Relation (arrow_R var re r')))
+          (vars, (arrow_R var rl rl', Relation (arrow_R var re r'), K.one))
         | Relation r, _ -> 
           if String.sub var 0 2 = "xs" then
            let rl = arrow_R var rl rl' in
@@ -696,11 +713,11 @@ module SemanticsDomain =
             let r'' = (op_R "" e "zc" Eq true rl) in
             join_R r' r''
            in
-           (vars, (rl, Relation re'))
+           (vars, (rl, Relation re'), K.one)
           else 
             let rl = arrow_R var rl rl' in
             let ve' = arrow_V var ve v in
-            (vars, (rl, ve'))
+            (vars, (rl, ve'), K.one)
         | _, _ -> 
           if String.sub var 0 2 = "xs" then
             let rl = arrow_R var rl rl' in
@@ -731,41 +748,26 @@ module SemanticsDomain =
         | Relation r, _ -> let r' = forget_R l r in
           (vars, (arrow_R var rl r',arrow_V var ve v))
         | _, _ -> vars, (rl,arrow_V var ve v)
-    and forget_Lst var lst = let (vars, (rl,ve)) = lst in
-      (vars, (forget_R var rl, forget_V var ve))
-    and stren_Lst lst ae = let ((l,e) as vars, (rl,ve)) = lst in
+    and forget_Lst var lst = let (vars, (rl,ve,ke)) = lst in
+      (vars, (forget_R var rl, forget_V var ve, K.one))
+    and stren_Lst lst ae = let ((l,e) as vars, (rl,ve,ke)) = lst in
       let ae' = (forget_R e ae |> forget_R l) in
-      (vars, (stren_R rl ae', stren_V ve (Relation ae')))
-    and proj_Lst lst vars = let ((l,e), (rl,ve)) = lst in
+      (vars, (stren_R rl ae', stren_V ve (Relation ae'), K.one))
+    and proj_Lst lst vars = let ((l,e), (rl,ve,ke)) = lst in
       let vars' = e :: l :: vars in
-      ((l,e), (proj_R rl vars', proj_V ve vars'))
-    and alpha_rename_Lsts lst1 lst2 = 
-      let (l1,e1), _ = lst1 in let (l2,e2), _ = lst2 in
-      let lst2' = match l1 = l2, e1 = e2 with
-        | true, true -> lst2
-        | false, true -> alpha_rename_Lst lst2 l2 l1
-        | true, false -> alpha_rename_Lst lst2 e2 e1
-        | false, false -> let lst2 = alpha_rename_Lst lst2 l2 l1 in alpha_rename_Lst lst2 e2 e1
-      in
-      lst1, lst2'
-    and alpha_rename_Lst lst prevar var = let (l,e), (rl,ve) = lst in
-      let l' = if l = prevar then var else l in
-      let e' = if e = prevar then var else e in
-      let rl' = alpha_rename_R rl prevar var in
-      let ve' = alpha_rename_V ve prevar var in
-      (l',e'), (rl',ve')
-    and rename_lambda_Lst lst = let (l,e), (rl,ve) = lst in
+      ((l,e), (proj_R rl vars', proj_V ve vars', K.one))
+    and rename_lambda_Lst lst = let (l,e), (rl,ve, ke) = lst in
       let varl, vare = fresh_length (), fresh_item () in
       let rl' = alpha_rename_R rl l varl in
       let ve' = alpha_rename_V ve e vare in
-      (varl, vare), (rl', ve')
-    and replace_Lst lst var x = let ((l,e), (rl,ve)) = lst in
+      (varl, vare), (rl', ve', K.one)
+    and replace_Lst lst var x = let ((l,e), (rl,ve,ke)) = lst in
       let l' = if l = var then x else l in
       let e' = if e = var then x else e in
       let rl' = replace_R rl var x in
       let ve' = replace_V ve var x in
-      (l',e'), (rl',ve')
-    and reduce_len_Lst len le_lst lst = let ((l,e), (rl,ve)) = lst in
+      (l',e'), (rl',ve', K.one)
+    and reduce_len_Lst len le_lst lst = let ((l,e), (rl,ve,ke)) = lst in
       let l', e' = 
         match le_lst with
         | [] -> fresh_length (), fresh_item()
@@ -782,9 +784,9 @@ module SemanticsDomain =
           Relation (alpha_rename_R r' e e')
         | _ -> ve
       in
-      (l',e'), (rl',ve')
-    and list_cons_Lst f v lst = let ((l,e), (rl,ve)) = lst in
-      if v = Bot || is_bot_R rl then (l,e), (bot_R Plus, Bot) else
+      (l',e'), (rl',ve', K.one)
+    and list_cons_Lst f v lst = let ((l,e), (rl,ve, kexpr)) = lst in
+      if v = Bot || is_bot_R rl then (l,e), (bot_R Plus, Bot, K.one) else
       (* let v = stren_V v (Relation (forget_R l rl)) in *)
       let rl' = assign_R l l "1" Plus rl in
       let ve' = match v, ve with
@@ -799,11 +801,11 @@ module SemanticsDomain =
              Bot) in Tuple u'
         | _ -> join_V v ve
       in
-      (l,e), (rl',ve')
+      (l,e), (rl',ve', K.one)
     and get_list_length_item_Lst ((l,e), _) = [l;e]
     and only_shape_Lst ((l,e), (rl,ve)) = 
       is_bot_R rl && ve = Bot
-    and prop_Lst prop ((l1,e1) as vars1, (rl1,ve1)) ((l2,e2) as vars2, (rl2,ve2)) =
+    and prop_Lst prop ((l1,e1) as vars1, (rl1,ve1,ke1)) ((l2,e2) as vars2, (rl2,ve2,ke2)) =
       let rl1', rl2' = rl1, join_R rl1 rl2 in
       let ve1', ve2' = match ve1, ve2 with
       | _, Bot | Bot, _ -> ve1, ve1
@@ -815,19 +817,19 @@ module SemanticsDomain =
         Lst lst1'', Lst lst2''
       | Ary ary1, Ary ary2 -> Ary ary1, Ary (join_Ary ary1 ary2)
       | _, _ -> ve1, join_V ve1 ve2 in
-      (vars1, (rl1', ve1')), (vars2, (rl2', ve2'))
-    and cons_temp_lst_Lst v ((l,e) as vars, (rl,ve)) = 
+      (vars1, (rl1', ve1', K.one)), (vars2, (rl2', ve2', K.one))
+    and cons_temp_lst_Lst v ((l,e) as vars, (rl,ve,ke)) = 
       let ve' = if is_bot_R rl then bot_shape_V ve else 
       (match v with
       | Relation r -> let re' = alpha_rename_R r "cur_v" e in
         Relation re'
       | _ -> v)
-      in (vars, (rl, ve'))
-    and item_shape_Lst (_, (_, vee)) (vars, (rl, ve)) =
+      in (vars, (rl, ve', K.one))
+    and item_shape_Lst (_, (_, vee)) (vars, (rl, ve, ke)) =
       let ve' = bot_shape_V vee in
-      (vars, (rl, ve'))
+      (vars, (rl, ve', K.one))
     and bot_shape_Lst (vars, (rl, ve)) = 
-      (vars, (rl, bot_shape_V ve))
+      (vars, (rl, bot_shape_V ve, K.one))
     (*
       *******************************
       ** Abstract domain for Tuple **

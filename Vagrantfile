@@ -70,5 +70,6 @@ Vagrant.configure("2") do |config|
     opam install -y menhir
     opam install -y conf-ppl
     opam install -y apron
+    opam install -y symkat
   SHELL
 end
