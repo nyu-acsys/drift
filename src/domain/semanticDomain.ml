@@ -460,7 +460,7 @@ module SemanticsDomain =
         if l1 = l2 && e1 = e2 then Lst lst1, Lst lst2 else
         let lst2 = 
           ((l2,e2), (rl2 |> forget_R l1 |> forget_R e1,
-          ve2 |> forget_V l1 |> forget_V e1)) in
+          ve2 |> forget_V l1 |> forget_V e1, kexp2)) in
         let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
         Lst lst1', Lst lst2'
       | Ary ary1, Ary ary2 -> let ary1', ary2' =  alpha_rename_Arys ary1 ary2 in
@@ -713,11 +713,11 @@ module SemanticsDomain =
             let r'' = (op_R "" e "zc" Eq true rl) in
             join_R r' r''
            in
-           (vars, (rl, Relation re'), K.one)
+           (vars, (rl, Relation re', K.one))
           else 
             let rl = arrow_R var rl rl' in
             let ve' = arrow_V var ve v in
-            (vars, (rl, ve'), K.one)
+            (vars, (rl, ve', K.one))
         | _, _ -> 
           if String.sub var 0 2 = "xs" then
             let rl = arrow_R var rl rl' in
@@ -730,24 +730,24 @@ module SemanticsDomain =
                 let v'' = arrow_V var ve v in
                 join_V v' v''
             in
-            (vars, (rl,  ve'))
+            (vars, (rl,  ve', K.one))
           else if String.sub var 0 2 = "zt" then
             let rl = arrow_R var rl rl' in
             let ve' = v in
-            (vars, (rl, ve'))
+            (vars, (rl, ve', K.one))
           else 
             let rl' = forget_R l rl' |> forget_R e in
             let v' = forget_V l v |> forget_V e in
-          (vars, (arrow_R var rl rl', arrow_V var ve v'))
+          (vars, (arrow_R var rl rl', arrow_V var ve v', K.one))
       )
       | None -> 
         match v, ve with
         | Relation r, Relation re ->
         let r' = forget_R l r |> forget_R e in
-        (vars, (arrow_R var rl r', Relation (arrow_R var re r')))
+        (vars, (arrow_R var rl r', Relation (arrow_R var re r'), K.one))
         | Relation r, _ -> let r' = forget_R l r in
-          (vars, (arrow_R var rl r',arrow_V var ve v))
-        | _, _ -> vars, (rl,arrow_V var ve v)
+          (vars, (arrow_R var rl r',arrow_V var ve v, K.one))
+        | _, _ -> vars, (rl,arrow_V var ve v, K.one)
     and forget_Lst var lst = let (vars, (rl,ve,ke)) = lst in
       (vars, (forget_R var rl, forget_V var ve, K.one))
     and stren_Lst lst ae = let ((l,e) as vars, (rl,ve,ke)) = lst in
@@ -803,7 +803,7 @@ module SemanticsDomain =
       in
       (l,e), (rl',ve', K.one)
     and get_list_length_item_Lst ((l,e), _) = [l;e]
-    and only_shape_Lst ((l,e), (rl,ve)) = 
+    and only_shape_Lst ((l,e), (rl,ve,ke)) = 
       is_bot_R rl && ve = Bot
     and prop_Lst prop ((l1,e1) as vars1, (rl1,ve1,ke1)) ((l2,e2) as vars2, (rl2,ve2,ke2)) =
       let rl1', rl2' = rl1, join_R rl1 rl2 in
@@ -825,10 +825,10 @@ module SemanticsDomain =
         Relation re'
       | _ -> v)
       in (vars, (rl, ve', K.one))
-    and item_shape_Lst (_, (_, vee)) (vars, (rl, ve, ke)) =
+    and item_shape_Lst (_, (_, vee, _)) (vars, (rl, ve, ke)) =
       let ve' = bot_shape_V vee in
       (vars, (rl, ve', K.one))
-    and bot_shape_Lst (vars, (rl, ve)) = 
+    and bot_shape_Lst (vars, (rl, ve, ke)) = 
       (vars, (rl, bot_shape_V ve, K.one))
     (*
       *******************************
@@ -1014,7 +1014,7 @@ module SemanticsDomain =
           let l, e = "l", "e" in
           let rl = top_R Plus |> op_R "" var_len "0" Ge true in
           let ve = Top in
-          (l, e), (rl, ve)
+          (l, e), (rl, ve, K.one)
         in
         (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
         let rlen = equal_R (top_R Plus) "l" in
@@ -1031,7 +1031,7 @@ module SemanticsDomain =
           let l, e = "l", "e" in
           let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" l in
           let ve = Top in
-          (l, e), (rl, ve)
+          (l, e), (rl, ve, K.one)
         in
         let tr = Top in
         let t =
@@ -1050,14 +1050,14 @@ module SemanticsDomain =
           let l, e = "l", "e" in
           let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" l in
           let ve = Top in
-          (l, e), (rl, ve)
+          (l, e), (rl, ve, K.one)
         in
         let list2 = 
           let l, e = "l'", "e'" in
           let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" l |> op_R l var_len "1" Minus true in
           (* let re = replace_R (rl |> op_R "" "cur_v" var_e Eq true) "cur_v" e in *)
           let ve = Top in
-          (l, e), (rl, ve)
+          (l, e), (rl, ve, K.one)
         in
         let t =
           Table (construct_table (var_t, var_t) (Lst list1, Lst list2)) in
@@ -1077,14 +1077,14 @@ module SemanticsDomain =
           let l, e = "l", "e" in
           let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" l in
           let ve = Top in
-          (l, e), (rl, ve)
+          (l, e), (rl, ve, K.one)
         in
         let var_l = "xs" in
         let list2 = 
           let l, e = "l'", "e'" in
           let rl = replace_R (top_R Plus |> op_R "" "cur_v" "1" Ge true) "cur_v" l |> op_R l var_len "1" Plus true in
           let ve = Top in
-          (l, e), (rl, ve)
+          (l, e), (rl, ve, K.one)
         in
         let t =
           let t' = Table (construct_table (var_l,var_l) (Lst list1, Lst list2)) in

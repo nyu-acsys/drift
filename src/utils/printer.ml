@@ -133,7 +133,7 @@ let rec pr_value ppf v = match v with
   | Ary ary -> pr_ary ppf ary
   | Lst lst -> pr_lst ppf lst
 and pr_lst ppf lst =
-    let (l,e), (rl, ve) = lst in
+    let (l,e), (rl, ve, ke) = lst in
     Format.fprintf ppf "@[<1>{@ cur_v:@ %s List (%s, %s)@ |@ len:@ %a,@ item:@ %a@ }@]" (shape_value ve) l e pr_agg_val rl pr_value ve
 and pr_tuple ppf u = 
   if List.length u = 0 then Format.fprintf ppf "@[<1>Unit@]"
