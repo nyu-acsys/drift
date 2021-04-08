@@ -3,6 +3,7 @@ open Syntax
 open Util
 open SensitiveDomain
 open SenSemantics
+open KatDomain
 
 module K = Kat
 
@@ -617,7 +618,7 @@ module SemanticsDomain =
     and pattern_empty_Lst ((l,e) as vars, (_, ve, ke)) = 
       let rl' = top_R Plus |> op_R l l "0" Eq true in
       let ve' = bot_shape_V ve in
-      vars, (rl', ve', K.one)
+      vars, (rl', ve', ke)
     and extrac_item_Lst vars ((_,vare), (_, ve, ke)) =
       (* let vars' = vare :: vars in *)
       let ve' = match ve with
@@ -631,7 +632,7 @@ module SemanticsDomain =
       let e' = if e = prevar then var else e in
       let rl' = alpha_rename_R rl prevar var in
       let ve' = alpha_rename_V ve prevar var in
-      (l',e'), (rl',ve', K.one)
+      (l',e'), (rl',ve', ke)
     and alpha_rename_Lsts (lst1:list_t) (lst2:list_t) = 
       let (l1,e1), (rl1,ve1,ke1) = lst1 in let (l2,e2), (rl2,ve2,ke2) = lst2 in
       let lst2' = match l1 = l2, e1 = e2 with
@@ -649,31 +650,31 @@ module SemanticsDomain =
         b, a
         else alpha_rename_Lsts lst1 lst2 in
       let (l1, e1) as vars1, (rl1,ve1,ke1) = lst1' in let (l2, e2) as vars2, (rl2,ve2,ke2) = lst2' in
-      vars1, (join_R rl1 rl2, join_V ve1 ve2, K.one)
+      vars1, (join_R rl1 rl2, join_V ve1 ve2, kd_join ke1 ke2)
     and meet_Lst lst1 lst2 = 
       let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
       let vars1, (rl1,ve1,ke1) = lst1' in let vars2, (rl2,ve2,ke2) = lst2' in
-      vars1, (meet_R rl1 rl2, meet_V ve1 ve2, K.one)
+      vars1, (meet_R rl1 rl2, meet_V ve1 ve2, kd_meet ke1 ke2)
     and leq_Lst lst1 lst2 = 
       let (l1,e1), (rl1,ve1,ke1) = lst1 in let (l2,e2), (rl2,ve2,ke2) = lst2 in
       let scop_check = l1 = l2 && e1 = e2 in
-      if scop_check then leq_R rl1 rl2 && leq_V ve1 ve2 else false
+      if scop_check then leq_R rl1 rl2 && leq_V ve1 ve2 && (kd_leq ke1 ke2) else false
     and sat_leq_Lst lst1 lst2 = 
       let (l1,e1), (rl1,ve1,ke1) = lst1 in let (l2,e2), (rl2,ve2,ke2) = lst2 in
       let scop_check = l1 = l2 && e1 = e2 in
       if scop_check then 
         let rl1 = proj_R rl1 [l1] in
         let rl2 = proj_R rl2 [l2] in
-        leq_R rl1 rl2 && leq_V ve1 ve2
+        leq_R rl1 rl2 && leq_V ve1 ve2 && (kd_leq ke1 ke2)
       else false
     and eq_Lst lst1 lst2 =
       let (l1,e1), (rl1,ve1,ke1) = lst1 in let (l2,e2), (rl2,ve2,ke2) = lst2 in
       let scop_check = l1 = l2 && e1 = e2 in
-      if scop_check then eq_R rl1 rl2 && eq_V ve1 ve2 else false
+      if scop_check then eq_R rl1 rl2 && eq_V ve1 ve2 && (kd_eq ke1 ke2) else false
     and wid_Lst lst1 lst2 =
       let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
       let vars1, (rl1,ve1,ke1) = lst1' in let vars2, (rl2,ve2,ke2) = lst2' in
-      vars1, (wid_R rl1 rl2,wid_V ve1 ve2, K.one)
+      vars1, (wid_R rl1 rl2,wid_V ve1 ve2, kd_widen ke1 ke2)
     and arrow_Lst var lst v ropt = 
       let ((l,e) as vars, (rl,ve,ke)) = lst in
       match ropt with
@@ -752,21 +753,21 @@ module SemanticsDomain =
       (vars, (forget_R var rl, forget_V var ve, K.one))
     and stren_Lst lst ae = let ((l,e) as vars, (rl,ve,ke)) = lst in
       let ae' = (forget_R e ae |> forget_R l) in
-      (vars, (stren_R rl ae', stren_V ve (Relation ae'), K.one))
+      (vars, (stren_R rl ae', stren_V ve (Relation ae'), kd_stren ke))
     and proj_Lst lst vars = let ((l,e), (rl,ve,ke)) = lst in
       let vars' = e :: l :: vars in
-      ((l,e), (proj_R rl vars', proj_V ve vars', K.one))
+      ((l,e), (proj_R rl vars', proj_V ve vars', kd_proj ke))
     and rename_lambda_Lst lst = let (l,e), (rl,ve, ke) = lst in
       let varl, vare = fresh_length (), fresh_item () in
       let rl' = alpha_rename_R rl l varl in
       let ve' = alpha_rename_V ve e vare in
-      (varl, vare), (rl', ve', K.one)
+      (varl, vare), (rl', ve', kd_rename ke)
     and replace_Lst lst var x = let ((l,e), (rl,ve,ke)) = lst in
       let l' = if l = var then x else l in
       let e' = if e = var then x else e in
       let rl' = replace_R rl var x in
       let ve' = replace_V ve var x in
-      (l',e'), (rl',ve', K.one)
+      (l',e'), (rl',ve', kd_replace ke)
     and reduce_len_Lst len le_lst lst = let ((l,e), (rl,ve,ke)) = lst in
       let l', e' = 
         match le_lst with
@@ -784,8 +785,8 @@ module SemanticsDomain =
           Relation (alpha_rename_R r' e e')
         | _ -> ve
       in
-      (l',e'), (rl',ve', K.one)
-    and list_cons_Lst f v lst = let ((l,e), (rl,ve, kexpr)) = lst in
+      (l',e'), (rl',ve', kd_reduce_len ke)
+    and list_cons_Lst f v lst = let ((l,e), (rl,ve, ke)) = lst in
       if v = Bot || is_bot_R rl then (l,e), (bot_R Plus, Bot, K.one) else
       (* let v = stren_V v (Relation (forget_R l rl)) in *)
       let rl' = assign_R l l "1" Plus rl in
@@ -801,7 +802,7 @@ module SemanticsDomain =
              Bot) in Tuple u'
         | _ -> join_V v ve
       in
-      (l,e), (rl',ve', K.one)
+      (l,e), (rl',ve', kd_list_cons ke v)
     and get_list_length_item_Lst ((l,e), _) = [l;e]
     and only_shape_Lst ((l,e), (rl,ve,ke)) = 
       is_bot_R rl && ve = Bot
