@@ -18,8 +18,22 @@ let main() =
     explore t f
 
 (*
-    ADAPTED: (Explore)* . Done
- *)
+   ADAPTED: Explore* . Done*
+   Abstraction: q0 --explore--> q1 --done--> q2
+      q0 Explore q1
+      q1 Explore q1
+      q1 Done q2
+      q2 Done q2
+
+   ADT: list tracks events seen so far
+     refinement type based on automata
+
+     events : { {Explore,Done} list | q0 --explore--> q1 --done--> q2 }
+
+      Explore; E; E; E) • E
+      Explore* • Explore = Explore*
+
+      *)
 
 
 (* ORIGINAL: *)
