@@ -1,3 +1,11 @@
+let ev d = ()
+
+let ev =
+  let s = ref 0 in
+  fun d -> begin 
+    s := s - d; assert( ???? ) (* budget of help is dependent *)
+  end
+
 let rec help data:uint[] i:uint totalSupply:uint =
   if i<data.length then 
   if (i<data.length) begin
@@ -14,4 +22,4 @@ let rec help data:uint[] i:uint totalSupply:uint =
 let fill(uint[] data) =
   if ((msg.sender != owner)||(Sealed)) 
     begin ev 1; throw; end
-  ev 1; help data 0 
+  else begin ev 1; help data 0 end 
