@@ -3,6 +3,8 @@ open Syntax
 open Util
 open Config
 
+module K = Kat
+
 let int_of_bool b = if b then 1 else 0
 
 type stack_t = var * loc
@@ -66,7 +68,7 @@ module TempVarMap =  Map.Make(struct
 module VarMap = struct
   include TempVarMap
   let find key m = try TempVarMap.find key m 
-    with Not_found -> raise (Key_not_found (key^" is not Found in VarMap"))
+    with Not_found -> raise (Key_not_found ("key is not Found in VarMap"))
 end
 
 module TempENodeMap = Map.Make(struct
@@ -78,7 +80,7 @@ module TableMap = struct
   include TempENodeMap
   let find cs m = let _, key = cs in
     try TempENodeMap.find cs m 
-    with Not_found -> raise (Key_not_found (key^" is not Found in TableMap"))
+    with Not_found -> raise (Key_not_found ("key is not Found in TableMap"))
   let compare = compare
 end
 
@@ -96,7 +98,7 @@ module type SensitiveSemanticsType =
       | Ary of array_t
       | Lst of list_t
       | Tuple of tuple_t
-    and list_t = (var * var) * (relation_t * value_t)
+    and list_t = (var * var) * (relation_t * value_t * K.expr' )
     and tuple_t = value_t list
     val init_T: (var * loc) -> table_t
     val alpha_rename_T: (value_t -> string -> string -> value_t) -> table_t -> string -> string -> table_t
@@ -147,7 +149,7 @@ module NonSensitive: SensitiveSemanticsType =
       | Lst of list_t
       | Tuple of tuple_t
     and table_t = var * value_t * value_t
-    and list_t = (var * var) * (relation_t * value_t)
+    and list_t = (var * var) * (relation_t * value_t * K.expr')
     and tuple_t = value_t list
     type call_site = None (* Not used *)
     let init_T (var, _) = var, Bot, Bot
@@ -263,7 +265,7 @@ module OneSensitive: SensitiveSemanticsType =
       | Lst of list_t
       | Tuple of tuple_t
     and table_t = (value_t * value_t) TableMap.t
-    and list_t = (var * var) * (relation_t * value_t)
+    and list_t = (var * var) * (relation_t * value_t * K.expr')
     and tuple_t = value_t list
     let init_T var = TableMap.empty
     let alpha_rename_T f (mt:table_t) (prevar:string) (var:string) = TableMap.map (fun (vi, vo) -> 
