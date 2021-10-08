@@ -1,21 +1,19 @@
-let ev d = ()
+let ev d _s = 
+  if d > 0 then (true, (snd _s))
+  else (fst _s, true)
 
-let ev =
-  let pos = ref false in
-  let neg = ref true in
-  fun d -> begin 
-    if d > 0 then (pos := true; assert (neg == false))
-    else          (neg := true; assert (pos == false))
-
-let rec order d c =
+(* infer that return value (e,o) is not both true *)
+let rec order d c _s0 =
   if(d>0) then begin
-    if ( d % 2 == 0 ) then 
-      ev c
-    else
-      ev (-c);
-    order (d - 2) (c * d)
-  end    
+    let _s1 = (
+        if ( d % 2 == 0 ) then 
+          ev c _s0
+        else
+          ev (-c) _s0) in
+    order (d - 2) (c * d) _s1
+  end else _s0
 
-let main d:Nat c:Nat = order d c
+let main d:Nat c:Nat = 
+  order d c (false,false)
 
-(* Property both c and -c cannot happen *)
+(* assume c!=0. Property both c and -c cannot happen *)
