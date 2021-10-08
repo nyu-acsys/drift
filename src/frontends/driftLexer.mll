@@ -1,8 +1,8 @@
 (** Grammar rules for lexer of MiniML *)
 {
 open Util
-open Syntax
-open Grammar
+open DriftSyntax
+open DriftGrammar
 open Lexing
 
 let keyword_table = Hashtbl.create 32

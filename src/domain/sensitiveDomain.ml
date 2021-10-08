@@ -1,5 +1,5 @@
 open AbstractDomain
-open Syntax
+open DriftSyntax
 open Util
 open Config
 

@@ -1,6 +1,6 @@
 open Kat
 open AbstractDomain
-open Syntax
+open DriftSyntax
 open Util
 open SensitiveDomain
 open SenSemantics

@@ -1,6 +1,6 @@
 
 open Apron
-open Syntax
+open DriftSyntax
 open Util
 open Config
 
@@ -52,15 +52,15 @@ module type Domain =
       string ->
       string ->
       string ->
-      Syntax.binop -> int -> t -> t
+      DriftSyntax.binop -> int -> t -> t
     val uoperator :
       string ->
       string ->
-      Syntax.unop -> int -> t -> t
+      DriftSyntax.unop -> int -> t -> t
     val assign :
       string ->
       string ->
-      string -> Syntax.binop -> t -> t
+      string -> DriftSyntax.binop -> t -> t
     val print_abs : Format.formatter -> t -> unit
     (*val print_env : Format.formatter -> t -> unit*)
     val derived : string -> t -> t

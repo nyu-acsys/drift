@@ -3,7 +3,7 @@
 (** {0} Grammar rules for parser of Mini-OCaml *)
 
 open Util
-open Syntax
+open DriftSyntax
 open Lexing
 
 let mklocation s e = {
@@ -48,7 +48,7 @@ let convert_var_name_apron_not_support s =
 %token IF ELSE THEN FUN LET REC IN ASSERT MATCH WITH
 %token BEGIN END        
 %token TYPE
-%token <Syntax.pre_exp> PRE
+%token <DriftSyntax.pre_exp> PRE
 
 /* 
 This block comment is Copyright (©) 1996-present, Institut National de Recherche en Informatique et en Automatique. 
@@ -83,7 +83,7 @@ The precedences must be listed from low to high.
 %left BAR
 
 %start main
-%type <Syntax.term> main
+%type <DriftSyntax.term> main
 %% /* rules */
 
 main:

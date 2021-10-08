@@ -1,5 +1,5 @@
 open AbstractDomain
-open Syntax
+open DriftSyntax
 open SemanticDomain
 open SemanticsDomain
 open SensitiveDomain
@@ -26,7 +26,7 @@ type stage_t =
   | Narrowing
   
 module AssertionPosMap =  Map.Make(struct
-  type t = Syntax.pos
+  type t = DriftSyntax.pos
   let compare = compare
   end)
 

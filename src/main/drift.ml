@@ -1,10 +1,10 @@
 open AbstractDomain
 open SemanticDomain
 open AbstractTransformer
-open Syntax
+open DriftSyntax
 open Config
 open Util
-open Parser
+open DriftParser
 open Printer
 
 let x = "x"

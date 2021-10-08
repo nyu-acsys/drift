@@ -1,4 +1,4 @@
-open Syntax
+open DriftSyntax
 open AbstractDomain
 open SemanticDomain
 open SemanticsDomain
