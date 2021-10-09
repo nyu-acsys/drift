@@ -55,4 +55,4 @@ let parse_options options =
     raise (Invalid_argument msg)
 
 
-let parse = Arg.parse cmd_options_spec (fun x -> raise (Arg.Bad ("Bad argument : " ^ x))) usage;
+let parse () = Arg.parse cmd_options_spec (fun x -> raise (Arg.Bad ("Bad argument : " ^ x))) usage;
