@@ -5,9 +5,6 @@ open Util
 open SensitiveDomain
 open SenSemantics
 
-
-module SK = Symkat
-
 (* Only track sequences of events (integers) *)
 
 let kd_leq ke1 ke2 : bool = failwith "todo"
