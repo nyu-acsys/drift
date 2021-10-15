@@ -6,7 +6,7 @@ DIRS="-Is src/utils,src/domain,src/main,src/algo,src/frontends"
 TARGET="src/main/drift "
 APRONPKG="apron,apron.boxD,apron.boxMPFR,apron.boxMPQ,apron.octD,apron.octMPQ,apron.polkaMPQ,apron.polkaRll,\
 apron.ppl,apron.t1pD,apron.t1pMPFR,apron.t1pMPQ,apron.polkaGrid"
-FLAGS="-cflags -g,-rectypes -lflags -g -libs str -pkgs $APRONPKG,symkat $DIRS"
+FLAGS="-cflags -g,-rectypes -lflags -g -pkgs $APRONPKG,symkat,batteries $DIRS"
 OCAMLBUILD=ocamlbuild
 MENHIR=menhir
 
@@ -28,6 +28,7 @@ case $action in
     clean)  ocb -clean;;
     native) ocb ${TARGET//" "/".native "} ;;
     byte)   ocb ${TARGET//" "/".byte "} ;;
+    byte-debug)   ocb ${TARGET//" "/".d.byte "} ;;
     all)    ocb ${TARGET//" "/".native "} ${TARGET//" "/".byte "} ;;
     prof)   ocb ${TARGET//" "/".p.native "} ;;
     *)      echo "Unknown action $action";;
