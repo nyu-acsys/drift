@@ -5,4 +5,4 @@ PKG apron
 PKG apron.octMPQ
 PKG symkat
 
-FLG -rectypes
+FLG -rectypes -short-paths
