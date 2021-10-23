@@ -4,3 +4,5 @@ B _build/**
 PKG apron
 PKG apron.octMPQ
 PKG symkat
+
+FLG -rectypes
