@@ -34,10 +34,11 @@ type asst_map_t = (int * int) AssertionPosMap.t
 
 let sens : asst_map_t ref = ref AssertionPosMap.empty
 
+(** Initialize the environment with pre-defined functions *)
 let env0, m0 = 
-    let enva, ma = array_M VarMap.empty (NodeMap.create 500) in
-    let envb, mb = list_M enva ma in
-    envb, mb
+    (VarMap.empty, NodeMap.create 500)
+    |> uncurry array_M
+    |> uncurry list_M
 
 (* Create a fresh variable name *)
 let fresh_z= fresh_func "z"

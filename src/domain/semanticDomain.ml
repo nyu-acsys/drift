@@ -997,8 +997,11 @@ module SemanticsDomain =
       |> NodeMap.add s_set t_set
       in
       let env' = 
-        env |> VarMap.add "Array.make" (n_make, false) |> VarMap.add "Array.length" (n_len, false) |> VarMap.add "Array.get" (n_get, false)
-      |> VarMap.add "Array.set" (n_set, false)
+        env
+        |> VarMap.add "Array.make" (n_make, false) 
+        |> VarMap.add "Array.length" (n_len, false) 
+        |> VarMap.add "Array.get" (n_get, false)
+        |> VarMap.add "Array.set" (n_set, false)
       in
       pre_def_func := List.append !pre_def_func ["Array.make"; "Array.length"; "Array.get"; "Array.set"];
       env', m'
@@ -1093,12 +1096,18 @@ module SemanticsDomain =
         t
       in
       let m' = 
-        m |> NodeMap.add s_hd t_hd |> NodeMap.add s_len t_len |> NodeMap.add s_tl t_tl
-      |> NodeMap.add s_cons t_cons
+        m
+        |> NodeMap.add s_hd t_hd
+        |> NodeMap.add s_len t_len 
+        |> NodeMap.add s_tl t_tl
+        |> NodeMap.add s_cons t_cons
       in
       let env' = 
-        env |> VarMap.add "List.hd" (n_hd, false) |> VarMap.add "List.length" (n_len, false) |> VarMap.add "List.tl" (n_tl, false)
-      |> VarMap.add "List.cons" (n_cons, false)
+        env
+        |> VarMap.add "List.hd" (n_hd, false)
+        |> VarMap.add "List.length" (n_len, false)
+        |> VarMap.add "List.tl" (n_tl, false)
+        |> VarMap.add "List.cons" (n_cons, false)
       in
       pre_def_func := List.append !pre_def_func ["List.hd"; "List.length"; "List.tl"; "List.cons"];
       env', m'
