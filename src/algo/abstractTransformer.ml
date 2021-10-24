@@ -39,6 +39,7 @@ let env0, m0 =
     (VarMap.empty, NodeMap.create 500)
     |> uncurry array_M
     |> uncurry list_M
+    |> uncurry nondet_M
 
 (* Create a fresh variable name *)
 let fresh_z= fresh_func "z"
