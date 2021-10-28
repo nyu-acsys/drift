@@ -47,7 +47,7 @@ let convert_var_name_apron_not_support s =
 %token SEMI COLON COMMA LSQBR RSQBR LARYBR RARYBR
 %token IF ELSE THEN FUN LET REC IN ASSERT MATCH WITH
 %token BEGIN END        
-%token TYPE
+%token <string> TYPE
 %token <DriftSyntax.pre_exp> PRE
 
 /* 
@@ -304,23 +304,48 @@ basic_pattern:
     
 pattern:
 | basic_pattern { $1 }
-| basic_pattern COLON TYPE PRE {
+| basic_pattern COLON TYPE {
   match $1 with
   | Var (x, _) ->
-      pre_vars := VarDefMap.add ("pref" ^ x) $4 !pre_vars; $1
+      let dtype = string_to_type $3 in
+      let t =
+        match dtype with
+        | Unit -> "unit"
+        | _ -> "true"
+      in
+      let pre_exp = init_ref "v" dtype t "=" t in
+      pre_vars := VarDefMap.add ("pref" ^ x) pre_exp !pre_vars;
+      $1
   | _ ->
-      let loc = mklocation (Parsing.rhs_start_pos 1) (Parsing.rhs_end_pos 4) in
-      fail loc "Syntax error" 
-  }
+      let loc =  mklocation $symbolstartpos $endpos in
+      fail loc "Syntax error: trying to assign type to non-variable" 
+}
 | basic_pattern PRE {
   match $1 with
   | Var (x, _) ->
-      pre_vars := VarDefMap.add ("pref" ^ x) $2 !pre_vars; $1
+      pre_vars := VarDefMap.add ("pref" ^ x) $2 !pre_vars;
+      $1
   | _ ->
-      let loc =  mklocation (Parsing.rhs_start_pos 1) (Parsing.rhs_end_pos 2) in
-      fail loc "Syntax error" 
-  }
-| basic_pattern COLON TYPE { $1 }
+      let loc =  mklocation $symbolstartpos $endpos in
+      fail loc "Syntax error: trying to assign type to non-variable" 
+}
+| basic_pattern COLON TYPE PRE {
+  match $1 with
+  | Var (x, _) ->
+      let ocaml_type = $3 in
+      let drift_base_type = type_to_string $4.dtype in
+      if (ocaml_type <> drift_base_type) then
+        let loc =  mklocation $symbolstartpos $endpos in
+        fail loc (
+          "Type mismatch between ocaml type '" ^ ocaml_type
+          ^ "' and drift base type '" ^ drift_base_type ^ "'")
+      else
+        pre_vars := VarDefMap.add ("pref" ^ x) $4 !pre_vars;
+        $1
+  | _ ->
+      let loc =  mklocation $symbolstartpos $endpos in
+      fail loc "Syntax error: trying to assign type to non-variable" 
+}
 | tuple_pattern { TupleLst ($1, "") }
 | basic_pattern cons_op pattern { BinOp ($2, $1, $3, "") }
 ;

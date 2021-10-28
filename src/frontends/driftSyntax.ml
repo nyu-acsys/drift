@@ -135,7 +135,7 @@ let string_to_type = function
   | "bool" -> Bool
   | "int" -> Int
   | "unit" -> Unit
-  | _ -> raise (Invalid_argument "User-specified base type should be one of `bool`, `int`, or `unit`")
+  | other -> raise (Invalid_argument ("Invalid base type '" ^ other ^ "'. Should be one of `bool`, `int`, or `unit`"))
 
 let type_to_string = function
   | Bool -> "bool"

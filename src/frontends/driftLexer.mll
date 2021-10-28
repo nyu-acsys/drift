@@ -89,7 +89,7 @@ rule token = parse
 | '+' { PLUS }
 | '-' { MINUS }
 | '/' { DIV }
-| types {TYPE}
+| types as t { TYPE (t) }
 | '*' { TIMES }
 | '(' { LPAREN }
 | ')' { RPAREN }
