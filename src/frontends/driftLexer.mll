@@ -51,17 +51,17 @@ rule token = parse
   [' ' '\t'] { token lexbuf }
 | '\n' { Lexing.new_line lexbuf; token lexbuf }
 | "(*" { comments 0 lexbuf }
-| "(*-:{"("v"as v)":"white_space("Unit"as d)white_space"|"white_space("unit" as t)white_space"}*)"  
+| "(*-:{"("v"as v)":"white_space("unit"as d)white_space"|"white_space("unit" as t)white_space"}*)"
 {
   let vk = init_ref ("cur_"^ Char.escaped v) (string_to_type d) t "=" t in 
   PRE (vk)
 }
-| "(*-:{"("v"as v)":"white_space(("Bool"|"Int")as d)white_space"|"white_space(bool_str as t)white_space"}*)"  
+| "(*-:{"("v"as v)":"white_space(("bool"|"int")as d)white_space"|"white_space(bool_str as t)white_space"}*)"
 { 
   let vk = init_ref ("cur_"^ Char.escaped v) (string_to_type d) t "=" t in 
   PRE (vk) 
 }
-| "(*-:{"("v"as v)":"white_space(("Bool"|"Int")as d)white_space"|"white_space("v" as l)white_space(bin_op_str as bop)white_space((ident|digits) as r)white_space"}*)"  
+| "(*-:{"("v"as v)":"white_space(("bool"|"int")as d)white_space"|"white_space("v" as l)white_space(bin_op_str as bop)white_space((ident|digits) as r)white_space"}*)"
 { 
   let r' = try string_of_int (int_of_string r)
     with _ -> "pref"^r in

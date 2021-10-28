@@ -132,15 +132,15 @@ let init_ref n d l o r = {name = n; dtype = d; left = l; op=op_of_string o; righ
 let pre_vars: pre_exp VarDefMap.t ref = ref VarDefMap.empty
 
 let string_to_type = function
-  | "Bool" -> Bool
-  | "Int" -> Int
-  | "Unit" -> Unit
-  | _ -> raise (Invalid_argument "Predefined type should contain either Int or Bool")
+  | "bool" -> Bool
+  | "int" -> Int
+  | "unit" -> Unit
+  | _ -> raise (Invalid_argument "User-specified base type should be one of `bool`, `int`, or `unit`")
 
 let type_to_string = function
-  | Bool -> "Bool"
-  | Int -> "Int"
-  | Unit -> "Unit"
+  | Bool -> "bool"
+  | Int -> "int"
+  | Unit -> "unit"
 
 (** Terms *)
 type term =
