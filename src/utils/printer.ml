@@ -7,9 +7,9 @@ open SenSemantics
 
 (** Pretty printing *)
 let pr_relation ppf = function
-  | Bool (vt, vf) -> Format.fprintf ppf "@[<1>{@ cur_v:@ Bool@ |@ TRUE:@ %a,@ FALSE:@ %a@ }@]"  AbstractValue.print_abs vt AbstractValue.print_abs vf
-  | Int v -> Format.fprintf ppf "@[<1>{@ cur_v:@ Int@ |@ %a@ }@]" AbstractValue.print_abs v
-  | Unit u -> Format.fprintf ppf "@[<1>Unit@]"
+  | Bool (vt, vf) -> Format.fprintf ppf "@[<1>{@ cur_v:@ bool@ |@ TRUE:@ %a,@ FALSE:@ %a@ }@]"  AbstractValue.print_abs vt AbstractValue.print_abs vf
+  | Int v -> Format.fprintf ppf "@[<1>{@ cur_v:@ int@ |@ %a@ }@]" AbstractValue.print_abs v
+  | Unit u -> Format.fprintf ppf "@[<1>unit@]"
 
 let pr_label pl ppf l = if pl then Format.fprintf ppf "^%s" l else ()
 
@@ -98,7 +98,7 @@ let string_of_node n = pr_node Format.str_formatter n; Format.flush_str_formatte
 let pr_agg_val ppf a = match a with
   | Bool (vt, vf) -> Format.fprintf ppf "@[<1>@ TRUE:@ %a,@ FALSE:@ %a@ @]"  AbstractValue.print_abs vt AbstractValue.print_abs vf
   | Int v -> Format.fprintf ppf "@[<1>@ %a@ @]" AbstractValue.print_abs v
-  | Unit u -> Format.fprintf ppf "@[<1>Unit@]"
+  | Unit u -> Format.fprintf ppf "@[<1>unit@]"
 
 
 let pr_ary ppf ary = 
@@ -109,12 +109,12 @@ let rec shape_value = function
   | Bot -> "Bot"
   | Top -> "Top"
   | Relation r -> (match r with
-    | Int _ -> "Int"
-    | Bool _ -> "Bool"
-    | Unit _ -> "Unit")
+    | Int _ -> "int"
+    | Bool _ -> "bool"
+    | Unit _ -> "unit")
   | Table t -> let (_, (vi,vo)) = get_full_table_T t in 
     (shape_value vi)^"->"^(shape_value vo)
-  | Tuple u -> if List.length u = 0 then "Unit"
+  | Tuple u -> if List.length u = 0 then "unit"
     else 
       let rec shape_tuple = function
       | [] -> ""
@@ -136,7 +136,7 @@ and pr_lst ppf lst =
     let (l,e), (rl, ve, ke) = lst in
     Format.fprintf ppf "@[<1>{@ cur_v:@ %s List (%s, %s)@ |@ len:@ %a,@ item:@ %a@ }@]" (shape_value ve) l e pr_agg_val rl pr_value ve
 and pr_tuple ppf u = 
-  if List.length u = 0 then Format.fprintf ppf "@[<1>Unit@]"
+  if List.length u = 0 then Format.fprintf ppf "@[<1>unit@]"
   else 
     let rec print_list ppf = function
     | [] -> ()
