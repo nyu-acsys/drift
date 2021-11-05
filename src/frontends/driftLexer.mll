@@ -34,8 +34,7 @@ let lexical_error lexbuf msg =
 
 let white_space = [' ']*
 let basic_type = "int" | "bool" | "unit"
-let rm_type_sig = ([^')''(''=']|'('[^')''(''=''*']+')')* 
-let types = "int" rm_type_sig | "bool" rm_type_sig  | "unit" rm_type_sig | "(int->int)" rm_type_sig
+let types = "int" | "bool" | "unit"
 let digitchar = ['0'-'9']
 let idchar = ['A'-'Z''a'-'z''_']
 let primechar = [''']
