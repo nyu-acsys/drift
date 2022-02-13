@@ -28,6 +28,7 @@ type var = string
 module type Domain =
   sig
     type t
+    val name : string
     val from_int : int -> t
     val is_bot : t -> bool
     val contains_var : string -> t -> bool
@@ -71,12 +72,14 @@ module type DomainManager =
   sig
     type t
     val man : t Apron.Manager.t
+    val name : string
   end
       
 module BaseDomain(Manager : DomainManager) : Domain = 
   struct
     open Manager
-    type t = Manager.t Abstract1.t 
+    type t = Manager.t Abstract1.t
+    let name = Manager.name
 
     let max_size = 150
     let max_length = 15
@@ -626,6 +629,7 @@ module BaseDomain(Manager : DomainManager) : Domain =
 module ProductDomain(D1 : Domain)(D2: Domain) : Domain =
   struct
     type t = D1.t * D2.t
+    let name = D1.name ^ " * " ^ D2.name
     let from_int c =
       D1.from_int c, D2.from_int c
         
@@ -695,16 +699,19 @@ module ProductDomain(D1 : Domain)(D2: Domain) : Domain =
 module OctDomain = BaseDomain(struct
   type t = Oct.t
   let man = Oct.manager_alloc ()
+  let name = "Octagon"
 end)
 
 module PolkaStrictDomain = BaseDomain(struct
   type t = Polka.strict Polka.t
   let man = Polka.manager_alloc_strict ()
+  let name = "PolkaStrict"
 end)
                                 
 module PolkaLooseDomain = BaseDomain(struct
   type t = Polka.loose Polka.t
   let man = Polka.manager_alloc_loose ()
+  let name = "PolkaLoose"
 end)
 
 module OctPolkaDomain = ProductDomain(OctDomain)(PolkaLooseDomain)
