@@ -1,3 +1,10 @@
+let flip f x y = f y x
+
+let compose f g x = f (g x)
+
+let const f x y = f y
+
+let id x = x
 
 let uncurry f (x, y) = f x y
 
@@ -10,7 +17,17 @@ module StringMap = Map.Make(struct
     type t = string
     let compare = compare
   end)
-    
+
+module IntSet = Set.Make(struct
+    type t = int
+    let compare = compare
+  end)
+
+module IntMap = Map.Make(struct
+    type t = int
+    let compare = compare
+  end)
+
 (** Utility functions on option types *)
 module Opt = struct
   let to_list = function

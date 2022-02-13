@@ -3,6 +3,7 @@ open Apron
 open DriftSyntax
 open Util
 open Config
+open Format
 
 (*
  *******************************
@@ -11,18 +12,6 @@ open Config
  *)
 type var = string
       
-(*let parse_domain = function
-  | "Box" -> Box.manager_alloc () |> Obj.magic
-  | "Oct" -> Oct.manager_alloc () |> Obj.magic
-  | "Polka_st" -> Polka.manager_alloc_strict() |> Obj.magic
-  | "Polka_ls" -> Polka.manager_alloc_loose () |> Obj.magic
-  | "Polka_eq" -> Polka.manager_alloc_equalities() |> Polka.manager_of_polka_equalities |> Obj.magic
-  | "Ppl_st" -> Ppl.manager_alloc_strict() |> Ppl.manager_of_ppl_strict |> Obj.magic
-  | "Ppl_gd" ->  Ppl.manager_alloc_grid() |> Ppl.manager_of_ppl_grid |> Obj.magic
-  | "Polka_gd" -> let man_polka = Polka.manager_alloc_strict() in
-      let man_pplgrid = Ppl.manager_alloc_grid() in
-      PolkaGrid.manager_alloc man_polka man_pplgrid |> PolkaGrid.manager_of_polkagrid |> Obj.magic
-  | _ -> raise (Invalid_argument "Incorrect domain specification")*)
 (* Define Abstract Domain Module*)
 
 module type Domain =
@@ -75,7 +64,7 @@ module type DomainManager =
     val name : string
   end
       
-module BaseDomain(Manager : DomainManager) : Domain = 
+module BaseDomain(Manager : DomainManager) : Domain =
   struct
     open Manager
     type t = Manager.t Abstract1.t
@@ -83,7 +72,6 @@ module BaseDomain(Manager : DomainManager) : Domain =
 
     let max_size = 150
     let max_length = 15
-
     let from_int c =
       let var_v = "cur_v" |> Var.of_string in
       let env = Environment.make [|var_v|] [||] in
@@ -330,32 +318,12 @@ module BaseDomain(Manager : DomainManager) : Domain =
               let ea = Lincons1.array_make env' 1 in
               Lincons1.array_set ea 0 eq; ea
             in
-            (*let expr = vl ^ "=" ^ vr in
-            let tab = Parser.tcons1_of_lstring env' [expr] in*)
-            Hashtbl.add cache (env, vl, vr) (env', tab); env', tab)
-            ()
+            Hashtbl.add cache (env, vl, vr) (env', tab); env', tab) ()
         in
-        (* Creation of abstract value vl = vr *)
-        (* (if !debug then
-        begin
-          Format.printf "\n\n = operation \n";
-          Format.printf "%s \n" expr;
-          Format.printf "Before: " ;
-          Abstract1.print Format.std_formatter v;
-          Format.printf "\n";
-        end); *)
         let v' = Abstract1.change_environment man v env' false in
         let res = Abstract1.meet_lincons_array man v' tab in
-        
-        (* (if !debug then
-        begin
-          Format.printf "result: " ;
-          Abstract1.print Format.std_formatter res;
-          Format.printf "\n";
-        end); *)
         Abstract1.minimize_environment man res
-          (* res *)
-          
+
     let licons_ref = 
       let env = Environment.make [||] [||] in
       let ary = Lincons1.array_make env 0 in
@@ -695,6 +663,136 @@ module ProductDomain(D1 : Domain)(D2: Domain) : Domain =
       D2.sat_cons v2 var
   end
 
+module FiniteValueDomain: Domain = struct
+  (** values of all vars we're tracking, all vars we're tracking                      *)
+  (** (fvm, tracked) where fvm = FiniteValueMap                                       *)
+  (** domain(fvm) <= domain(tracked). Items missing from fvm (but present in tracked) *)
+  (** are considered to be top (i.e. (-inf,inf))                                      *)
+  type t = { fvm: IntSet.t StringMap.t; tracked: StringSet.t }
+  let name = "FiniteValue"
+  let from_int c = { fvm = StringMap.singleton "cur_v" (IntSet.singleton c); tracked = StringSet.singleton "cur_v" }
+  let is_bot v = StringMap.exists (fun _ vals -> IntSet.is_empty vals) v.fvm
+  let contains_var var v = StringSet.mem var v.tracked
+
+  let leq v1 v2 =
+    let pointwise_leq var =
+      match (StringMap.find_opt var v1.fvm, StringMap.find_opt var v2.fvm) with
+      | _, None -> true
+      | None , Some _ -> false
+      | Some vals1, Some vals2 -> IntSet.subset vals1 vals2
+    (* the comparison HAS to be over the v2 since missing elements are considered top.                            *)
+    (* as an example: { } <= { a -> {1,2} } = false. This wouldn't be the case if the comparison was made over v1 *)
+    in StringSet.for_all pointwise_leq v2.tracked
+
+  let eq v1 v2 = StringMap.equal (=) v1.fvm v2.fvm
+
+  let join v1 v2 =
+    let fvm =
+      StringMap.merge (fun _var vals1 vals2 -> match vals1, vals2 with
+      | _, None -> None
+      | None, _ -> None
+      | Some x, Some y -> Some (IntSet.union x y)
+      ) v1.fvm v2.fvm
+    in
+    let tracked = StringSet.union v1.tracked v2.tracked in
+    { fvm; tracked }
+
+  let meet v1 v2 =
+    let fvm =
+      StringMap.merge (fun _var vals1 vals2 -> match vals1, vals2 with
+      | None, None -> None
+      | Some x, None -> Some x
+      | None, Some y -> Some y
+      | Some x, Some y -> Some (IntSet.inter x y)
+      ) v1.fvm v2.fvm
+    in
+    let tracked = StringSet.union v1.tracked v2.tracked in
+    { fvm; tracked }
+
+  let alpha_rename v old_var new_var =
+    let tracked = v.tracked |> StringSet.remove old_var |> StringSet.add new_var in
+    let fvm = match StringMap.find_opt old_var v.fvm with
+    | None -> v.fvm
+    | Some vs -> v.fvm |> StringMap.remove old_var |> StringMap.add new_var vs
+    in
+    { fvm; tracked }
+
+  let forget_var var v = { fvm = StringMap.remove var v.fvm; tracked = StringSet.remove var v.tracked }
+
+  let project_other_vars v vars =
+    let fvm =
+      vars
+      |> List.to_seq
+      |> Seq.filter_map (fun var -> StringMap.find_opt var v.fvm |> Opt.map (fun vals -> (var, vals)))
+      |> StringMap.of_seq
+    in
+    let tracked = StringSet.of_list vars in
+    { fvm; tracked }
+
+  let top = { fvm = StringMap.empty; tracked = StringSet.empty }
+  let bot = { fvm = StringMap.singleton "cur_v" IntSet.empty; tracked = StringSet.singleton "cur_v" }
+
+  (* add the constraint: var1 = var2 *)
+  let equal_var v var1 var2 =
+    let fvm = match StringMap.find_opt var1 v.fvm, StringMap.find_opt var2 v.fvm with
+    | None, None -> v.fvm
+    | Some vals1, None -> StringMap.add var2 vals1 v.fvm
+    | None, Some vals2 -> StringMap.add var1 vals2 v.fvm
+    | Some vals1, Some vals2 ->
+      let vals = IntSet.inter vals1 vals2 in
+      v.fvm |> StringMap.add var1 vals |> StringMap.add var2 vals
+    in
+    let tracked = v.tracked |> StringSet.add var1 |> StringSet.add var2 in
+    { fvm; tracked }
+
+  (* TODO *)
+  let widening old_v new_v = new_v (* join old & new, replace by top every var whose values exceed max_cardinality *)
+  let operator result_var left_var right_var binop cons v = v (* take a look at BaseDomain
+    looks like `cons` indicates whether this is a true or false case of a boolean (1, 0 respectively) or if neither, then -1
+  *)
+
+  let uoperator result_var var unop cons v = v
+  let assign result_var left_var right_var binop v = v
+
+  let print_abs ppf v = begin
+    pp_print_string ppf "{";
+    pp_print_space ppf ();
+
+    flip StringSet.iter v.tracked (fun var ->
+        pp_print_string ppf var;
+        pp_print_string ppf " ->";
+        pp_print_space ppf ();
+        match StringMap.find_opt var v.fvm with
+        | None ->
+          pp_print_string ppf "top";
+          pp_print_space ppf ();
+        | Some vals -> begin
+            pp_print_string ppf "{";
+            pp_open_box ppf 6;
+            flip IntSet.iter vals (fun val_ -> pp_print_space ppf (); pp_print_int ppf val_);
+            pp_print_space ppf ();
+            pp_close_box ppf ();
+            pp_print_string ppf "}";
+        end;
+        pp_print_custom_break ppf ~fits:(";", 1, "") ~breaks:("",0,"");
+    );
+
+    Format.pp_print_string ppf "}";
+  end
+
+  (* maybe rework interface? string expr -> term ; TODO check how this is being used *)
+  (* 'derived' is only ever called (by der_R, it's only caller) with exprs of the form 'v1 = v2' *)
+  (* so probably only do the interface for this much *)
+  let derived expr v = failwith "todo"
+
+  (* can constraints on `var` be satisfied (assuming cur_v = var here) *)
+  let sat_cons v var =
+    let var_sat_cons var =
+      StringMap.find_opt var v.fvm
+      |> Option.fold ~none:true ~some:(fun vals -> not @@ IntSet.is_empty vals)
+    in
+    (var_sat_cons var && var_sat_cons "cur_v")
+end
     
 module OctDomain = BaseDomain(struct
   type t = Oct.t
@@ -715,88 +813,13 @@ module PolkaLooseDomain = BaseDomain(struct
 end)
 
 module OctPolkaDomain = ProductDomain(OctDomain)(PolkaLooseDomain)
-    
+
 let abstractValue = match !domain with
 | "Oct" -> (module OctDomain : Domain)
 | "Polka_st" -> (module PolkaStrictDomain : Domain)
 | "Polka_ls" -> (module PolkaLooseDomain : Domain)
 | "OctPolka" -> (module OctPolkaDomain : Domain)
+| "FinVal" -> (module FiniteValueDomain : Domain)
 | _ -> failwith ("unsupported abstract domain " ^ !domain)
-       
+
 module AbstractValue = (val (abstractValue) : Domain)
-    
-(* Domain Specification
-module BoxManager: ManagerType =
-  struct
-    type t = Box.t
-    let man = Box.manager_alloc ()
-  end
-
-module OctManager: ManagerType =
-  struct
-    type t = Oct.t
-    let man = Oct.manager_alloc ()
-  end
-
-module PolkaStManager: ManagerType =
-  struct 
-    (* 
-      Convex polyhedra are defined by the conjunction of a set of linear constraints of the form 
-      a_0*x_0 + ... + a_n*x_n + b >= 0 or a_0*x_0 + ... + a_n*x_n + b > 0 
-      where a_0, ..., a_n, b, c are constants and x_0, ..., x_n variables.
-    *)
-    type t = Elina_poly.strict
-    let man = Elina_poly.manager_alloc_strict() |> Elina_poly.manager_of_elina_poly_strict
-  end
-
-module PolkaEqManager: ManagerType =
-  struct
-    (* 
-      Linear equalities are conjunctions of linear equalities of the form a_0*x_0 + ... + a_n*x_n + b = 0.
-    *)
-    type t = Polka.equalities
-    let man = Polka.manager_alloc_equalities() |> Polka.manager_of_polka_equalities
-  end
-
-module PolkaLsManager: ManagerType =
-  struct
-    (* 
-      Loose polyhedra cannot have strict inequality constraints like x>0. 
-      They are algorithmically more efficient (less generators, simpler normalization). 
-    *)
-    type t = Elina_poly.loose
-    let man = Elina_poly.manager_alloc_loose () |> Elina_poly.manager_of_elina_poly_loose
-  end
-
-module PplGridManager: ManagerType =
-  struct
-    (* 
-      Linear congruences
-    *)
-    type t = Ppl.grid
-    let man = Ppl.manager_alloc_grid() |> Ppl.manager_of_ppl_grid
-  end
-
-module PplStrictManager: ManagerType =
-  struct
-    (* 
-      wrapper around the Parma Polyhedra
-    *)
-    type t = Ppl.strict
-    let man = Ppl.manager_alloc_strict() |> Ppl.manager_of_ppl_strict
-  end
-
-module PolkaGridManager: ManagerType =
-  struct
-    (* 
-      Reduced product of NewPolka polyhedra (strict) and PPL grids
-    *)
-    type t = (Polka.strict) PolkaGrid.t
-    let man = let man_polka = Polka.manager_alloc_strict() in
-      let man_pplgrid = Ppl.manager_alloc_grid() in
-      PolkaGrid.manager_alloc man_polka man_pplgrid |> PolkaGrid.manager_of_polkagrid
-  end
-
-
-
-module AbstractValue = (val (!domain |> parse_domain)) *)
