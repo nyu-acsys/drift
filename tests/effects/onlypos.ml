@@ -1,7 +1,5 @@
 let ev d _s = 
-   _s * d
-
-let nondet (i:int) = (i * i * i * 500) mod 199
+   if _s < 0 then _s else _s * d
 
 (* repeated positive values *)
 let rec only_pos d _s0 =
