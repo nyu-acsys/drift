@@ -316,7 +316,7 @@ let tests = []
   
 let _ =
   try
-    Config.parse ();
+    Config.parse;
     Printexc.record_backtrace !Config.bt;
     let t = if !Config.parse_file then 
       begin
