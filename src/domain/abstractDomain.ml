@@ -517,7 +517,6 @@ module BaseDomain(Manager : DomainManager) : Domain =
       match op with
       | UMinus -> let v' = operator vres "0" ve Minus cons v in
          alpha_rename v' ve "cur_v"
-      | Not -> failwith "Not yet implemented"
 
     let assign vres vl vr op v = 
       let vres = if vres = "" then "cur_v" else vres in

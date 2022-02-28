@@ -38,7 +38,6 @@ module SemanticsDomain =
       | _ -> raise (Invalid_argument "top_R should use a relational type operator")
     let utop_R = function
       | UMinus -> (Int AbstractValue.top)
-      | Not -> (Bool (AbstractValue.top, AbstractValue.top))
     let bot_R = function
       | Plus | Mult | Div | Mod | Modc | Minus -> (Int AbstractValue.bot)
       | Ge | Eq | Ne | Lt | Gt | Le | And | Or -> (Bool (AbstractValue.bot, AbstractValue.bot))
@@ -139,8 +138,7 @@ module SemanticsDomain =
       | UMinus -> (match a with
         | Int v -> Int (AbstractValue.uoperator res e op (-1) v)
         | _ -> raise (Invalid_argument "uop_R: Given a unit type"))
-      | Not -> failwith "unary negation not yet implemented"
-    let assign_R res l r op = function 
+    let assign_R res l r op = function
       | Int v -> Int (AbstractValue.assign res l r op v)
       | _ -> raise (Invalid_argument "Assign boolean does not support")
     let bool_op_R op a1 a2 = match a1, a2 with

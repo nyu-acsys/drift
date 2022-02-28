@@ -31,8 +31,7 @@ exception Main_not_found of string
 (** Unary operators *)
 type unop =
   | UMinus (* - *)
-  | Not (* not *)
-    
+
 (** Binary infix operators *)
 type binop =
   | Plus  (* + *)
@@ -94,8 +93,7 @@ let string_of_op = function
         
 let string_of_unop = function
   | UMinus (* - *) -> "-"
-  | Not (* not *) -> "not"
-        
+
 let op_of_string = function
   |  "+" -> Plus  (* + *) 
   | ">=" -> Ge    (* >= *) 
@@ -116,7 +114,6 @@ let op_of_string = function
 
 let unop_of_string = function
   | "-" -> UMinus
-  | "not" -> Not
   | s -> raise (Invalid_argument (s^": Invalid unary operator inside pre-defined var"))
         
 let is_mod = function
