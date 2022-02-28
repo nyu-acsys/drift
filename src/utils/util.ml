@@ -8,6 +8,7 @@ let id x = x
 
 let uncurry f (x, y) = f x y
 
+
 module StringSet = Set.Make(struct
     type t = string
     let compare = compare
@@ -22,6 +23,12 @@ module IntSet = Set.Make(struct
     type t = int
     let compare = compare
   end)
+
+let set_union_with (merge_func: int -> int -> int) (left: IntSet.t) (right: IntSet.t) : IntSet.t =
+  IntSet.fold
+    (fun l result -> IntSet.union result (IntSet.map (merge_func l) right))
+    left
+    IntSet.empty
 
 module IntMap = Map.Make(struct
     type t = int

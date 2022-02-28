@@ -668,20 +668,46 @@ module FiniteValueDomain: Domain = struct
   (** (fvm, tracked) where fvm = FiniteValueMap                                       *)
   (** domain(fvm) <= domain(tracked). Items missing from fvm (but present in tracked) *)
   (** are considered to be top (i.e. (-inf,inf))                                      *)
+
   type t = { fvm: IntSet.t StringMap.t; tracked: StringSet.t }
   let name = "FiniteValue"
   let from_int c = { fvm = StringMap.singleton "cur_v" (IntSet.singleton c); tracked = StringSet.singleton "cur_v" }
   let is_bot v = StringMap.exists (fun _ vals -> IntSet.is_empty vals) v.fvm
   let contains_var var v = StringSet.mem var v.tracked
 
+  let max_cardinality = 32
+
+  let print_abs ppf v = begin
+    fprintf ppf "@[{";
+    pp_print_list
+      ~pp_sep:(fun ppf () -> pp_print_custom_break ~fits:(";", 1, "") ~breaks:("",0,"") ppf)
+      (fun ppf var ->
+         fprintf ppf "%s =@ " var;
+         match StringMap.find_opt var v.fvm with
+         | None ->
+           pp_print_string ppf "top"
+         | Some vals ->
+           fprintf ppf "@[<hov 2>[";
+           pp_print_list
+             ~pp_sep:(fun ppf () -> pp_print_custom_break ~fits:(",",1,"") ~breaks:("",0,"") ppf)
+             pp_print_int
+             ppf
+             (IntSet.elements vals);
+           fprintf ppf "]@]";
+          )
+      ppf
+      (StringSet.elements v.tracked);
+    fprintf ppf "}@]";
+  end
+
   let leq v1 v2 =
     let pointwise_leq var =
       match (StringMap.find_opt var v1.fvm, StringMap.find_opt var v2.fvm) with
-      | _, None -> true
-      | None , Some _ -> false
+      | _         , None       -> true
+      | None      , Some _     -> false
       | Some vals1, Some vals2 -> IntSet.subset vals1 vals2
-    (* the comparison HAS to be over the v2 since missing elements are considered top.                            *)
-    (* as an example: { } <= { a -> {1,2} } = false. This wouldn't be the case if the comparison was made over v1 *)
+    (* the comparison HAS to be over the v2 since missing elements are considered top.                             *)
+    (* as an example: ({ } <= { a = {1,2} }) = false. This wouldn't be the case if the comparison was made over v1 *)
     in StringSet.for_all pointwise_leq v2.tracked
 
   let eq v1 v2 = StringMap.equal (=) v1.fvm v2.fvm
@@ -745,45 +771,83 @@ module FiniteValueDomain: Domain = struct
     let tracked = v.tracked |> StringSet.add var1 |> StringSet.add var2 in
     { fvm; tracked }
 
-  (* TODO *)
-  let widening old_v new_v = new_v (* join old & new, replace by top every var whose values exceed max_cardinality *)
-  let operator result_var left_var right_var binop cons v = v (* take a look at BaseDomain
+  (* join old & new, replace by top every var whose values exceed max_cardinality *)
+  let widening old_v new_v =
+    let {fvm; tracked} = join old_v new_v in
+    let fvm' =
+      StringMap.filter
+        (fun _var vals -> IntSet.cardinal vals <= max_cardinality)
+        fvm
+    in
+    {fvm = fvm'; tracked}
+
+  (*
+    take a look at BaseDomain
     looks like `cons` indicates whether this is a true or false case of a boolean (1, 0 respectively) or if neither, then -1
   *)
+  let operator result_var left_var right_var binop cons dom =
+    let result_var = if result_var = "" then "cur_v" else result_var in
+    let left_vals_opt = StringMap.find_opt left_var dom.fvm in
+    let right_vals_opt = StringMap.find_opt right_var dom.fvm in
+    let result_vals_opt = match left_vals_opt, right_vals_opt with
+    (* if either is top, then the result is top *)
+    | None, _ | _, None -> None
+    | Some left_vals, Some right_vals ->
+      let int_of_bool b = if b then 1 else 0 in
+      let merge_vals l r = match binop with
+        | Plus       -> l + r
+        | Minus      -> l - r
+        | Mult       -> l * r
+        | Div        -> l / r
+        | Mod | Modc -> l mod r
+        | Eq         -> int_of_bool (l = r)
+        | Ne         -> int_of_bool (l <> r)
+        | Lt         -> int_of_bool (l < r)
+        | Gt         -> int_of_bool (l > r)
+        | Le         -> int_of_bool (l <= r)
+        | Ge         -> int_of_bool (l >= r)
+        | And        -> l * r (* @Check: should we do something special (eg. return bot) if `l` or `r` are not 0 or 1 *)
+        | Or         -> l + r
+        | Cons       -> failwith "unsupported"
+        | Seq        -> failwith "unsupported"
+      in
+      Some (set_union_with merge_vals left_vals right_vals)
+    in
+    let fvm' =
+      match result_vals_opt with
+      | Some result_vals ->
+        if result_var = "cur_v" then
+          (* @Check
+             It makes sense to me to overwrite the values if we're evaluating the current expression. Is this okay?
+             - ketan
+          *)
+          StringMap.add result_var result_vals dom.fvm
+        else
+          StringMap.update
+            result_var
+            (fun old_vals -> Some (Option.fold ~none:result_vals ~some:(IntSet.union result_vals) old_vals)) dom.fvm
+      | None ->
+        dom.fvm
+    in
+    let tracked' = StringSet.add result_var dom.tracked in
+    let dom' = { fvm = fvm'; tracked = tracked' } in
+    (* if !debug then *)
+    (*   Format.printf "OPERATOR: (expr: [%s]@ :=@ [%s] [%s] [%s])@ [cons: %d]@ @[<hov 2>[dom: %a]@]@ @[<hov 2>[result: %a]@]@.---@." *)
+    (*     result_var *)
+    (*     left_var (string_of_op binop) right_var *)
+    (*     cons *)
+    (*     print_abs dom *)
+    (*     print_abs dom'; *)
+    dom'
 
-  let uoperator result_var var unop cons v = v
-  let assign result_var left_var right_var binop v = v
+  let uoperator result_var var unop cons v = failwith "TODO"
 
-  let print_abs ppf v = begin
-    pp_print_string ppf "{";
-    pp_print_space ppf ();
-
-    flip StringSet.iter v.tracked (fun var ->
-        pp_print_string ppf var;
-        pp_print_string ppf " ->";
-        pp_print_space ppf ();
-        match StringMap.find_opt var v.fvm with
-        | None ->
-          pp_print_string ppf "top";
-          pp_print_space ppf ();
-        | Some vals -> begin
-            pp_print_string ppf "{";
-            pp_open_box ppf 6;
-            flip IntSet.iter vals (fun val_ -> pp_print_space ppf (); pp_print_int ppf val_);
-            pp_print_space ppf ();
-            pp_close_box ppf ();
-            pp_print_string ppf "}";
-        end;
-        pp_print_custom_break ppf ~fits:(";", 1, "") ~breaks:("",0,"");
-    );
-
-    Format.pp_print_string ppf "}";
-  end
+  let assign result_var left_var right_var binop v = failwith "TODO"
 
   (* maybe rework interface? string expr -> term ; TODO check how this is being used *)
   (* 'derived' is only ever called (by der_R, it's only caller) with exprs of the form 'v1 = v2' *)
   (* so probably only do the interface for this much *)
-  let derived expr v = failwith "todo"
+  let derived expr v = failwith "TODO"
 
   (* can constraints on `var` be satisfied (assuming cur_v = var here) *)
   let sat_cons v var =
