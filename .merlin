@@ -4,5 +4,6 @@ B _build/**
 PKG apron
 PKG apron.octMPQ
 PKG symkat
+PKG ocolor
 
 FLG -rectypes -short-paths

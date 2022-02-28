@@ -11,7 +11,7 @@ let pr_relation ppf = function
   | Int v -> Format.fprintf ppf "@[<1>{@ cur_v:@ int@ |@ %a@ }@]" AbstractValue.print_abs v
   | Unit u -> Format.fprintf ppf "@[<1>unit@]"
 
-let pr_label pl ppf l = if pl then Format.fprintf ppf "^%s" l else ()
+let pr_label pl ppf l = if pl then Format.fprintf ppf "@{<gray24>^%s@}" l else ()
 
 let pr_const ppf value = Format.fprintf ppf "%s" (str_of_val value)
 
@@ -81,7 +81,10 @@ and pr_pm pl ppf = function
 and pr_pattern pl ppf (Case (e1, e2)) = 
   Format.fprintf ppf "@[<2>%a@ ->@ %a@]" (pr_exp pl) e1 (pr_exp pl) e2
 
-let print_exp out_ch e = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" (pr_exp true) e
+let print_exp out_ch e =
+  let fmt = Format.formatter_of_out_channel out_ch in
+  if !Config.color then Ocolor_format.prettify_formatter fmt;
+  Format.fprintf fmt "%a@?" (pr_exp true) e
 
 let loc_of_node n = get_label_snode n
 
