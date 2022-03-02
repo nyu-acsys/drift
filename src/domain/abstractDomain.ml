@@ -792,7 +792,6 @@ module FiniteValueDomain: Domain = struct
     (* if either is top, then the result is top *)
     | None, _ | _, None -> None
     | Some left_vals, Some right_vals ->
-      let int_of_bool b = if b then 1 else 0 in
       let merge_vals l r = match binop with
         | Plus       -> l + r
         | Minus      -> l - r

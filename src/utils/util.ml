@@ -179,3 +179,5 @@ let print_measures () =
       print_endline ("  " ^ id ^ ": " ^ (string_of_int calls) ^ " call(s), " ^ (string_of_float time) ^ " s")
     )
     measures
+
+let int_of_bool b = if b then 1 else 0

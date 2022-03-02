@@ -5,8 +5,6 @@ open Config
 
 module K = Kat
 
-let int_of_bool b = if b then 1 else 0
-
 type stack_t = var * loc
 type relation_t = Int of AbstractValue.t 
   | Bool of AbstractValue.t * AbstractValue.t
