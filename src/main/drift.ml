@@ -31,6 +31,7 @@ let _ =
     else tests in
     List.iter (fun e -> 
       let el = e |> simplify |> label in
+      (* let el = e |> label in *)
       if !out_put_level < 2 then
         (print_endline "Executing:";
          print_exp stdout el);
@@ -38,7 +39,7 @@ let _ =
       print_endline ("Domain specification: " ^ AbstractValue.name);
       print_endline "\n";
       (* exit 0; *)
-      ignore (s el);
+      ignore (semantics el);
       if !out_put_level < 2 then
         print_exp stdout el;
       print_newline ()) t;
