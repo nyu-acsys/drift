@@ -1,5 +1,12 @@
 (* An Accumulating Automaton *)
 
+(*
+type acc_aut_state = 
+  | Q0 
+  | Q1 of int
+  | Q2 of bool * int
+*)
+
 module type AccAut =
   sig
     type acc_t
@@ -24,6 +31,7 @@ module LastAA = AccAut(struct
     mk_lambda (Var("d",l)) (
        mk_lambda (Var("acc",l)) (
            (* AccAut Transition function here: *)
+           (* let ev d (q,acc) = (q0,d) *)
            TupleLst [LastQ0;Const(Boolean(true),l);Var("d",l)] (* todo - make "d" from acc_t *)
        )
     )
