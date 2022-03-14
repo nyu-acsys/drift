@@ -1,6 +1,18 @@
 (* An Accumulating Automaton *)
 
 (*
+User:
+   Q = {q0,...,}
+   fun d q acc -> (acc,q')
+
+2. Translations (--adt  --int)
+    a. ADT encoding? Q0 | Q1...
+    b. list of int: 0 | 1 | ...
+
+3. output: problem.ml
+    a. Mochi?
+    b. Drift specialized abstract domain. finite value domain product with poly?
+
 type acc_aut_state = 
   | Q0 
   | Q1 of int
