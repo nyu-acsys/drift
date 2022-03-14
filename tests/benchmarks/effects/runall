@@ -1,0 +1,38 @@
+#!/usr/bin/perl
+
+my $MOCHIDIR = '/tools/ejk/MoCHi/';
+my $DRIFTDIR = '/tools/ejk/drift';
+my $BENCHDIR = $DRIFTDIR.'/tests/benchmarks/effects';
+#my @BENCHES = qw/3states.ml/;
+opendir my $dir, $BENCHDIR or die "Cannot open directory: $!";
+my @BENCHES = readdir $dir;
+closedir $dir;
+my $res;
+foreach my $b (@BENCHES) {
+    next unless $b =~ /foo-nondet\.ml$/;
+    push @done_benches, $b;
+    print "Benchmark: $b\n";
+    chdir($MOCHIDIR);
+    my $cmd = qq(./src/mochi.exe $BENCHDIR/$b);
+    print "CMD: $cmd\n";
+    #next;
+    my $out = qx{$cmd};
+    print "OUT: $out\n";
+    $res->{$b}->{mochi}->{result} = ($out =~ /Safe\!/ ? 'safe' : ($out =~ /Unsafe\!/ ? 'unsafe' : 'unknown'));
+    $res->{$b}->{mochi}->{time} = ($out =~ /total: (\d+\.\d+) / ? $1 : 'unparsed');
+}
+
+use Data::Dumper;
+print Dumper($res);
+
+print "\n\nBenchmark      & Mochi result & Mochi time & Drift result & Drift time\\\\\n";
+foreach my $b (@done_benches) {
+    printf("%-20s & %s & %03.1f s & %s & %03.1f \\\\\n",
+       $b, 
+       $res->{$b}->{mochi}->{result},
+       $res->{$b}->{mochi}->{time},
+       "todo",
+       0
+    );
+}
+print "\n";
