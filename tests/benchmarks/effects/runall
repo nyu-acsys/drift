@@ -7,19 +7,32 @@ my $BENCHDIR = $DRIFTDIR.'/tests/benchmarks/effects';
 opendir my $dir, $BENCHDIR or die "Cannot open directory: $!";
 my @BENCHES = readdir $dir;
 closedir $dir;
+
+sub execute {
+    my ($cmd) = @_;
+    print "CMD: $cmd\n";
+    my $out = qx{$cmd};
+    print "OUT: $out\n";
+    return $out;
+}
+
+
 my $res;
 foreach my $b (@BENCHES) {
     next unless $b =~ /foo-nondet\.ml$/;
     push @done_benches, $b;
     print "Benchmark: $b\n";
     chdir($MOCHIDIR);
-    my $cmd = qq(./src/mochi.exe $BENCHDIR/$b);
-    print "CMD: $cmd\n";
-    #next;
-    my $out = qx{$cmd};
-    print "OUT: $out\n";
+    my $out = execute qq(./src/mochi.exe $BENCHDIR/$b);
     $res->{$b}->{mochi}->{result} = ($out =~ /Safe\!/ ? 'safe' : ($out =~ /Unsafe\!/ ? 'unsafe' : 'unknown'));
     $res->{$b}->{mochi}->{time} = ($out =~ /total: (\d+\.\d+) / ? $1 : 'unparsed');
+
+    # Drift
+    chdir($DRIFTDIR);
+    $out = execute qq(./drift.native -file $BENCHDIR/$b -domain FinVal);
+    $res->{$b}->{drift}->{result} = ($out =~ /The program is safe/ ? 'safe' :
+                                          ($out =~ /The program may not be safe/ ? 'unsafe' :
+                                          'unparsed'));
 }
 
 use Data::Dumper;
