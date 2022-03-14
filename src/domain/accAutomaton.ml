@@ -10,8 +10,10 @@ User:
     b. list of int: 0 | 1 | ...
 
 3. output: problem.ml
-    a. Mochi?
-    b. Drift specialized abstract domain. finite value domain product with poly?
+    a. Mochi with --adt
+    b. Mochi with --int
+    c. Drift with --int
+        specialized abstract domain. finite value domain product with poly?
 
 type acc_aut_state = 
   | Q0 
