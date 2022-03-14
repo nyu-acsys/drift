@@ -123,13 +123,20 @@ module SemanticsDomain =
       | Ge | Eq | Ne | Lt | Gt | Le -> (if cons then
         (match a with
         | Int v -> Int (AbstractValue.operator res l r op (-1) v)
-        | Bool (vt, vf) -> Bool (AbstractValue.operator res l r op 1 vt, AbstractValue.operator res l r (rev_op op) 0 vf)
+        | Bool (vt, vf) ->
+          let tt, tf = (AbstractValue.operator res l r op 1 vt, AbstractValue.operator res l r (rev_op op) 0 vf) in
+          (* Format.printf "@[tt = @[%a@] tf = @[%a@]@." AbstractValue.print_abs tt AbstractValue.print_abs tf; *)
+          Bool (tt,tf)
+
         | Unit _ -> raise (Invalid_argument "opR: Given a unit type")
         )
         else
         (match a with
         | Int v -> Bool (AbstractValue.operator res l r op 1 v, AbstractValue.operator res l r (rev_op op) 0 v)
-        | Bool (vt, vf) -> Bool (AbstractValue.operator res l r op 1 vt, AbstractValue.operator res l r (rev_op op) 0 vf)
+        | Bool (vt, vf) ->
+          let tt, tf = (AbstractValue.operator res l r op 1 vt, AbstractValue.operator res l r (rev_op op) 0 vf) in
+          (* Format.printf "@[tt = @[%a@] tf = @[%a@]@." AbstractValue.print_abs tt AbstractValue.print_abs tf; *)
+          Bool (tt,tf)
         | Unit _ -> raise (Invalid_argument "opR: Given a unit type"))
       )
       | Cons | Seq | And | Or -> raise (Invalid_argument ("Invalid operator matched " ^ (string_of_op op)))

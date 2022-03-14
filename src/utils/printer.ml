@@ -128,8 +128,8 @@ let rec shape_value = function
   | Lst _ -> "List"
 
 let rec pr_value ppf v = match v with
-  | Bot -> Format.fprintf ppf "_|_"
-  | Top -> Format.fprintf ppf "T"
+  | Bot -> Format.fprintf ppf "⊥"
+  | Top -> Format.fprintf ppf "⊤"
   | Relation r -> pr_relation ppf r
   | Table t -> print_table t ppf pr_value
   | Tuple u -> pr_tuple ppf u

@@ -678,24 +678,27 @@ module FiniteValueDomain: Domain = struct
 
   let print_abs ppf v = begin
     fprintf ppf "@[{";
-    pp_print_list
-      ~pp_sep:(fun ppf () -> pp_print_custom_break ~fits:(";", 1, "") ~breaks:("",0,"") ppf)
-      (fun ppf var ->
-         fprintf ppf "%s =@ " var;
-         match StringMap.find_opt var v.fvm with
-         | None ->
-           pp_print_string ppf "top"
-         | Some vals ->
-           fprintf ppf "@[<hov 2>[";
-           pp_print_list
-             ~pp_sep:(fun ppf () -> pp_print_custom_break ~fits:(",",1,"") ~breaks:("",0,"") ppf)
-             pp_print_int
-             ppf
-             (IntSet.elements vals);
-           fprintf ppf "]@]";
-          )
-      ppf
-      (StringSet.elements v.tracked);
+    if StringSet.is_empty v.tracked then
+      pp_print_string ppf "empty-top"
+    else
+      pp_print_list
+        ~pp_sep:(fun ppf () -> pp_print_custom_break ~fits:(";", 1, "") ~breaks:("",0,"") ppf)
+        (fun ppf var ->
+          fprintf ppf "%s =@ " var;
+          match StringMap.find_opt var v.fvm with
+          | None ->
+            pp_print_string ppf "top"
+          | Some vals ->
+            fprintf ppf "@[<hov 2>[";
+            pp_print_list
+              ~pp_sep:(fun ppf () -> pp_print_custom_break ~fits:(",",1,"") ~breaks:("",0,"") ppf)
+              pp_print_int
+              ppf
+              (IntSet.elements vals);
+            fprintf ppf "]@]";
+            )
+        ppf
+        (StringSet.elements v.tracked);
     fprintf ppf "}@]";
   end
 
@@ -704,14 +707,16 @@ module FiniteValueDomain: Domain = struct
       match (StringMap.find_opt var v1.fvm, StringMap.find_opt var v2.fvm) with
       | _         , None       -> true
       | None      , Some _     -> false
-      | Some vals1, Some vals2 -> IntSet.subset vals1 vals2
+      | Some vals1, Some vals2 -> IntSet.subset vals1 vals2 || IntSet.equal vals1 vals2
     (* the comparison HAS to be over the v2 since missing elements are considered top.                             *)
     (* as an example: ({ } <= { a = {1,2} }) = false. This wouldn't be the case if the comparison was made over v1 *)
     in StringSet.for_all pointwise_leq v2.tracked
 
-  let eq v1 v2 = StringMap.equal (=) v1.fvm v2.fvm
+  let eq v1 v2 = StringMap.equal (IntSet.equal) v1.fvm v2.fvm
 
   let join v1 v2 =
+    if leq v1 v2 then v2 else
+    if leq v2 v1 then v1 else
     let fvm =
       StringMap.merge (fun _var vals1 vals2 -> match vals1, vals2 with
       | _, None -> None
@@ -723,6 +728,8 @@ module FiniteValueDomain: Domain = struct
     { fvm; tracked }
 
   let meet v1 v2 =
+    if leq v1 v2 then v1 else
+    if leq v2 v1 then v2 else
     let fvm =
       StringMap.merge (fun _var vals1 vals2 -> match vals1, vals2 with
       | None, None -> None
@@ -735,6 +742,7 @@ module FiniteValueDomain: Domain = struct
     { fvm; tracked }
 
   let alpha_rename v old_var new_var =
+    if is_bot v || old_var = new_var || not (contains_var old_var v) then v else
     let tracked = v.tracked |> StringSet.remove old_var |> StringSet.add new_var in
     let fvm = match StringMap.find_opt old_var v.fvm with
     | None -> v.fvm
@@ -745,6 +753,8 @@ module FiniteValueDomain: Domain = struct
   let forget_var var v = { fvm = StringMap.remove var v.fvm; tracked = StringSet.remove var v.tracked }
 
   let project_other_vars v vars =
+    let vars = "cur_v" :: vars in
+    if StringSet.equal (StringSet.of_list vars) v.tracked then v else
     let fvm =
       vars
       |> List.to_seq
@@ -759,6 +769,7 @@ module FiniteValueDomain: Domain = struct
 
   (* add the constraint: var1 = var2 *)
   let equal_var v var1 var2 =
+    if is_bot v then v else
     let fvm = match StringMap.find_opt var1 v.fvm, StringMap.find_opt var2 v.fvm with
     | None, None -> v.fvm
     | Some vals1, None -> StringMap.add var2 vals1 v.fvm
@@ -792,7 +803,8 @@ module FiniteValueDomain: Domain = struct
     (* if either is top, then the result is top *)
     | None, _ | _, None -> None
     | Some left_vals, Some right_vals ->
-      let merge_vals l r = match binop with
+      let merge_vals l r =
+        let result = match binop with
         | Plus       -> l + r
         | Minus      -> l - r
         | Mult       -> l * r
@@ -808,6 +820,8 @@ module FiniteValueDomain: Domain = struct
         | Or         -> l + r
         | Cons       -> failwith "unsupported"
         | Seq        -> failwith "unsupported"
+        in
+        result
       in
       Some (set_union_with merge_vals left_vals right_vals)
     in
@@ -829,13 +843,13 @@ module FiniteValueDomain: Domain = struct
     in
     let tracked' = StringSet.add result_var dom.tracked in
     let dom' = { fvm = fvm'; tracked = tracked' } in
-    (* if !debug then *)
-    (*   Format.printf "OPERATOR: (expr: [%s]@ :=@ [%s] [%s] [%s])@ [cons: %d]@ @[<hov 2>[dom: %a]@]@ @[<hov 2>[result: %a]@]@.---@." *)
-    (*     result_var *)
-    (*     left_var (string_of_op binop) right_var *)
-    (*     cons *)
-    (*     print_abs dom *)
-    (*     print_abs dom'; *)
+    if !debug then
+      Format.printf "OPERATOR: (expr: [%s]@ :=@ [%s] [%s] [%s])@ [cons: %d]@ @[<hov 2>[dom: %a]@]@ @[<hov 2>[result: %a]@]@.---@."
+        result_var
+        left_var (string_of_op binop) right_var
+        cons
+        print_abs dom
+        print_abs dom';
     dom'
 
   let uoperator result_var var unop cons v = failwith "TODO"

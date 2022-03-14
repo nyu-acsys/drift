@@ -7,6 +7,7 @@ open SenSemantics
 open Printer
 open Util
 open Config
+open Format
 (*
 ** c[M] is a single base refinement type that pulls in all the environment dependencies from M
 M = n1 |-> {v: int | v >= 2}, n2 |-> z:{v: int | v >= 0} -> {v: int | v = z}, n3 |-> {v: bool | v = true}
@@ -48,6 +49,15 @@ let arrow_V x1 x2 = measure_call "arrow_V" (arrow_V x1 x2)
 let forget_V x = measure_call "forget_V" (forget_V x)
 let stren_V x = measure_call "stren_V" (stren_V x)
 let join_V e = measure_call "join_V" (join_V e)
+(* let join_V v1 v2 = *)
+(*   let vf = measure_call "join_V" (join_V v1) v2 in *)
+(*   printf *)
+(*     "---@.join_V:@ @[<hov 0>@[<hov 2>v1 =@ @[<hov 2>%a@]@]@;<4>@[<hov 2>v2 =@ @[<hov 2>%a@]@]@;<4>@[<hov 2>result = @[<hov 2>%a@]@]@]@." *)
+(*     pr_value v1 *)
+(*     pr_value v2 *)
+(*     pr_value vf; *)
+(*   vf *)
+
 let meet_V e = measure_call "meet_V" (meet_V e)
 let equal_V e = measure_call "equal_V" (equal_V e)
 let proj_V e = measure_call "proj_V" (proj_V e)
@@ -617,13 +627,13 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
               res_m
           )
     | BinOp (bop, e1, e2, l) ->
-        (* (if !debug then
+        (if !debug then
         begin
             Format.printf "\n<=== Binop ===>\n";
             pr_exp true Format.std_formatter term;
             Format.printf "\n";
         end
-        ); *)
+        );
         let n1 = construct_enode env (loc e1) |> construct_snode sx in
         let m1 =
           match bop with
@@ -807,6 +817,9 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             (* if optmization m n0 find then m else  *)
             step e0 env sx cs ae assertion is_rec m in
         let t0 = find n0 m0 in
+        if !debug then begin
+          printf "t0 = @[%a@]@." pr_value t0;
+        end;
         if t0 = Bot then m0 else
         if not @@ is_bool_V t0 then m0 |> update false n Top else
         begin
@@ -815,6 +828,9 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             then print_loc pos else
             let t_true = meet_V (extrac_bool_V t0 true) ae in (* Meet with ae*)
             let t_false = meet_V (extrac_bool_V t0 false) ae in
+            if !debug then begin
+              printf "t_true = @[%a@]@ t_false = @[%a@]@." pr_value t_true pr_value t_false;
+            end;
             (if assertion && isast then 
                 let i, j = AssertionPosMap.find_opt pos !sens |> Opt.get_or_else (0,0) in
                 sens := AssertionPosMap.add pos ((if is_bool_bot_V t0 && 
@@ -1278,7 +1294,7 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
 
       
 (** Semantic function *)
-let s e =
+let semantics e =
     (* (if !debug then
     begin
         Format.printf "%% Pre vals: %%\n";
