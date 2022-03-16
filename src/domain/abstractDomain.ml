@@ -587,12 +587,6 @@ module BaseDomain(Manager : DomainManager) : Domain =
       else false
   end
 
-(*module BaseManager : DomainManager =
-  struct
-    type t = Oct.t
-    let man = !domain |> parse_domain
-  end*)
-
 module ProductDomain(D1 : Domain)(D2: Domain) : Domain =
   struct
     type t = D1.t * D2.t
@@ -663,194 +657,228 @@ module ProductDomain(D1 : Domain)(D2: Domain) : Domain =
   end
 
 module FiniteValueDomain: Domain = struct
-  (** values of all vars we're tracking, all vars we're tracking                      *)
-  (** (fvm, tracked) where fvm = FiniteValueMap                                       *)
-  (** domain(fvm) <= domain(tracked). Items missing from fvm (but present in tracked) *)
-  (** are considered to be top (i.e. (-inf,inf))                                      *)
+  (** This domain tracks sets of values of all the variables we've seen.
+    *
+    * The domain is either [Bot], or [Vals {fvm, tracked}] where [tracked] is a set
+    * of all tracked variables and [fvm] (finite value map) is a mapping (some
+    * or all) tracked variables to sets of values. The values that [fvm] doesn't
+    * hold (but are in [tracked]) are considered unbounded (so, in the range
+    * (-inf, inf)).
+    *
+    * One invariant is that no variable in [Vals {fvm}] is mapped to an empty
+    * set, since this indicates a bottom value (and we don't want to have
+    * multliple representations for bottom).
+    *)
+  type t =
+    | Vals of { fvm: IntSet.t StringMap.t; tracked: StringSet.t }
+    | Bot
 
-  type t = { fvm: IntSet.t StringMap.t; tracked: StringSet.t }
   let name = "FiniteValue"
-  let from_int c = { fvm = StringMap.singleton "cur_v" (IntSet.singleton c); tracked = StringSet.singleton "cur_v" }
-  let is_bot v = StringMap.exists (fun _ vals -> IntSet.is_empty vals) v.fvm
-  let contains_var var v = StringSet.mem var v.tracked
+  let from_int c = Vals { fvm = StringMap.singleton "cur_v" (IntSet.singleton c); tracked = StringSet.singleton "cur_v" }
+  let is_bot v = (v = Bot)
+  let contains_var var = function
+    | Vals v -> StringSet.mem var v.tracked
+    | Bot -> false
 
   let max_cardinality = 32
 
-  let print_abs ppf v = begin
-    fprintf ppf "@[{";
-    if StringSet.is_empty v.tracked then
-      pp_print_string ppf "empty-top"
-    else
-      pp_print_list
-        ~pp_sep:(fun ppf () -> pp_print_custom_break ~fits:(";", 1, "") ~breaks:("",0,"") ppf)
-        (fun ppf var ->
-          fprintf ppf "%s =@ " var;
-          match StringMap.find_opt var v.fvm with
-          | None ->
-            pp_print_string ppf "top"
-          | Some vals ->
-            fprintf ppf "@[<hov 2>[";
-            pp_print_list
-              ~pp_sep:(fun ppf () -> pp_print_custom_break ~fits:(",",1,"") ~breaks:("",0,"") ppf)
-              pp_print_int
-              ppf
-              (IntSet.elements vals);
-            fprintf ppf "]@]";
-            )
-        ppf
-        (StringSet.elements v.tracked);
-    fprintf ppf "}@]";
-  end
+  let print_abs ppf = function
+    | Bot -> fprintf ppf "@[bot@]"
+    | Vals v -> begin
+      fprintf ppf "@[{";
+      if StringSet.is_empty v.tracked then
+        pp_print_string ppf "empty-top"
+      else
+        pp_print_list
+          ~pp_sep:(fun ppf () -> pp_print_custom_break ~fits:(";", 1, "") ~breaks:("",0,"") ppf)
+          (fun ppf var ->
+            fprintf ppf "%s =@ " var;
+            match StringMap.find_opt var v.fvm with
+            | None ->
+              pp_print_string ppf "top"
+            | Some vals ->
+              fprintf ppf "@[<hov 2>[";
+              pp_print_list
+                ~pp_sep:(fun ppf () -> pp_print_custom_break ~fits:(",",1,"") ~breaks:("",0,"") ppf)
+                pp_print_int
+                ppf
+                (IntSet.elements vals);
+              fprintf ppf "]@]";
+              )
+          ppf
+          (StringSet.elements v.tracked);
+      fprintf ppf "}@]";
+    end
 
-  let leq v1 v2 =
-    let pointwise_leq var =
-      match (StringMap.find_opt var v1.fvm, StringMap.find_opt var v2.fvm) with
-      | _         , None       -> true
-      | None      , Some _     -> false
-      | Some vals1, Some vals2 -> IntSet.subset vals1 vals2 || IntSet.equal vals1 vals2
-    (* the comparison HAS to be over the v2 since missing elements are considered top.                             *)
-    (* as an example: ({ } <= { a = {1,2} }) = false. This wouldn't be the case if the comparison was made over v1 *)
-    in StringSet.for_all pointwise_leq v2.tracked
+  let leq v1 v2 = match (v1, v2) with
+    | Bot, _ -> true
+    | Vals _, Bot -> false
+    | Vals v1, Vals v2 ->
+      let pointwise_leq var =
+        match (StringMap.find_opt var v1.fvm, StringMap.find_opt var v2.fvm) with
+        | _         , None       -> true
+        | None      , Some _     -> false
+        | Some vals1, Some vals2 -> IntSet.subset vals1 vals2 || IntSet.equal vals1 vals2
+      (* the comparison HAS to be over the v2 since missing elements are considered top.                             *)
+      (* as an example: ({ } <= { a = {1,2} }) = false. This wouldn't be the case if the comparison was made over v1 *)
+      in StringSet.for_all pointwise_leq v2.tracked
 
-  let eq v1 v2 = StringMap.equal (IntSet.equal) v1.fvm v2.fvm
+  let eq v1 v2 = match (v1, v2) with
+    | Bot, Bot -> true
+    | Vals v1, Vals v2 -> StringMap.equal (IntSet.equal) v1.fvm v2.fvm
+    | _, _ -> false
 
-  let join v1 v2 =
-    if leq v1 v2 then v2 else
-    if leq v2 v1 then v1 else
-    let fvm =
-      StringMap.merge (fun _var vals1 vals2 -> match vals1, vals2 with
-      | _, None -> None
-      | None, _ -> None
-      | Some x, Some y -> Some (IntSet.union x y)
-      ) v1.fvm v2.fvm
-    in
-    let tracked = StringSet.union v1.tracked v2.tracked in
-    { fvm; tracked }
+  let join v1 v2 = match v1, v2 with
+    | Bot, _ -> v2
+    | _, Bot -> v1
+    | Vals v1', Vals v2' ->
+      if leq v1 v2 then v2 else
+      if leq v2 v1 then v1 else
+      let fvm =
+        StringMap.merge (fun _var vals1 vals2 -> match vals1, vals2 with
+        | _, None -> None
+        | None, _ -> None
+        | Some x, Some y -> Some (IntSet.union x y)
+        ) v1'.fvm v2'.fvm
+      in
+      let tracked = StringSet.union v1'.tracked v2'.tracked in
+      Vals { fvm; tracked }
 
-  let meet v1 v2 =
-    if leq v1 v2 then v1 else
-    if leq v2 v1 then v2 else
-    let fvm =
-      StringMap.merge (fun _var vals1 vals2 -> match vals1, vals2 with
-      | None, None -> None
-      | Some x, None -> Some x
-      | None, Some y -> Some y
-      | Some x, Some y -> Some (IntSet.inter x y)
-      ) v1.fvm v2.fvm
-    in
-    let tracked = StringSet.union v1.tracked v2.tracked in
-    { fvm; tracked }
+  let meet v1 v2 = match v1, v2 with
+    | _, Bot | Bot, _ -> Bot
+    | Vals v1', Vals v2' ->
+      if leq v1 v2 then v1 else
+      if leq v2 v1 then v2 else
+      let fvm =
+        StringMap.merge (fun _var vals1 vals2 -> match vals1, vals2 with
+        | None, None -> None
+        | Some x, None -> Some x
+        | None, Some y -> Some y
+        | Some x, Some y -> Some (IntSet.inter x y)
+        ) v1'.fvm v2'.fvm
+      in
+      if StringMap.exists (fun _ vals -> IntSet.is_empty vals) fvm then Bot else
+      let tracked = StringSet.union v1'.tracked v2'.tracked in
+      Vals { fvm; tracked }
 
-  let alpha_rename v old_var new_var =
-    if is_bot v || old_var = new_var || not (contains_var old_var v) then v else
-    let tracked = v.tracked |> StringSet.remove old_var |> StringSet.add new_var in
-    let fvm = match StringMap.find_opt old_var v.fvm with
-    | None -> v.fvm
-    | Some vs -> v.fvm |> StringMap.remove old_var |> StringMap.add new_var vs
-    in
-    { fvm; tracked }
+  let alpha_rename v old_var new_var = match v with
+    | Bot -> v
+    | Vals v ->
+      if old_var = new_var || not (contains_var old_var v) then v else
+      let tracked = v.tracked |> StringSet.remove old_var |> StringSet.add new_var in
+      let fvm = match StringMap.find_opt old_var v.fvm with
+      | None -> v.fvm
+      | Some vs -> v.fvm |> StringMap.remove old_var |> StringMap.add new_var vs
+      in
+      Vals { fvm; tracked }
 
-  let forget_var var v = { fvm = StringMap.remove var v.fvm; tracked = StringSet.remove var v.tracked }
+  let forget_var var v = match v with
+    | Bot -> v
+    | Vals v -> Vals { fvm = StringMap.remove var v.fvm; tracked = StringSet.remove var v.tracked }
 
   let project_other_vars v vars =
     let vars = "cur_v" :: vars in
-    if StringSet.equal (StringSet.of_list vars) v.tracked then v else
-    let fvm =
-      vars
-      |> List.to_seq
-      |> Seq.filter_map (fun var -> StringMap.find_opt var v.fvm |> Opt.map (fun vals -> (var, vals)))
-      |> StringMap.of_seq
-    in
-    let tracked = StringSet.of_list vars in
-    { fvm; tracked }
+    match v with
+    | Bot -> v
+    | Vals v ->
+      if StringSet.equal (StringSet.of_list vars) v.tracked then v else
+      let fvm =
+        vars
+        |> List.to_seq
+        |> Seq.filter_map (fun var -> StringMap.find_opt var v.fvm |> Opt.map (fun vals -> (var, vals)))
+        |> StringMap.of_seq
+      in
+      let tracked = StringSet.of_list vars in
+      Vals { fvm; tracked }
 
-  let top = { fvm = StringMap.empty; tracked = StringSet.empty }
-  let bot = { fvm = StringMap.singleton "cur_v" IntSet.empty; tracked = StringSet.singleton "cur_v" }
+  let top = Vals { fvm = StringMap.empty; tracked = StringSet.empty }
+  let bot = Bot
 
-  (* add the constraint: var1 = var2 *)
-  let equal_var v var1 var2 =
-    if is_bot v then v else
-    let fvm = match StringMap.find_opt var1 v.fvm, StringMap.find_opt var2 v.fvm with
-    | None, None -> v.fvm
-    | Some vals1, None -> StringMap.add var2 vals1 v.fvm
-    | None, Some vals2 -> StringMap.add var1 vals2 v.fvm
-    | Some vals1, Some vals2 ->
-      let vals = IntSet.inter vals1 vals2 in
-      v.fvm |> StringMap.add var1 vals |> StringMap.add var2 vals
-    in
-    let tracked = v.tracked |> StringSet.add var1 |> StringSet.add var2 in
-    { fvm; tracked }
+  (** add the constraint: var1 = var2 *)
+  let equal_var v var1 var2 = match v with
+    | Bot -> v
+    | Vals v ->
+      let tracked = v.tracked |> StringSet.add var1 |> StringSet.add var2 in
+      match StringMap.find_opt var1 v.fvm, StringMap.find_opt var2 v.fvm with
+      | None, None -> Vals v
+      | Some vals1, None -> Vals { fvm = StringMap.add var2 vals1 v.fvm; tracked }
+      | None, Some vals2 -> Vals { fvm = StringMap.add var1 vals2 v.fvm; tracked }
+      | Some vals1, Some vals2 ->
+        let vals = IntSet.inter vals1 vals2 in
+        if IntSet.is_empty vals then Bot else
+        Vals { fvm = v.fvm |> StringMap.add var1 vals |> StringMap.add var2 vals; tracked }
 
   (* join old & new, replace by top every var whose values exceed max_cardinality *)
   let widening old_v new_v =
-    let {fvm; tracked} = join old_v new_v in
-    let fvm' =
-      StringMap.filter
-        (fun _var vals -> IntSet.cardinal vals <= max_cardinality)
-        fvm
-    in
-    {fvm = fvm'; tracked}
+    let v = join old_v new_v in
+    match v with
+    | Bot -> Bot
+    | Vals {fvm; tracked} ->
+      let fvm = StringMap.filter (fun _ vals -> IntSet.cardinal vals <= max_cardinality) fvm in
+      Vals { fvm; tracked }
 
   (*
     take a look at BaseDomain
     looks like `cons` indicates whether this is a true or false case of a boolean (1, 0 respectively) or if neither, then -1
   *)
-  let operator result_var left_var right_var binop cons dom =
-    let result_var = if result_var = "" then "cur_v" else result_var in
-    let left_vals_opt = StringMap.find_opt left_var dom.fvm in
-    let right_vals_opt = StringMap.find_opt right_var dom.fvm in
-    let result_vals_opt = match left_vals_opt, right_vals_opt with
-    (* if either is top, then the result is top *)
-    | None, _ | _, None -> None
-    | Some left_vals, Some right_vals ->
-      let merge_vals l r =
-        let result = match binop with
-        | Plus       -> l + r
-        | Minus      -> l - r
-        | Mult       -> l * r
-        | Div        -> l / r
-        | Mod | Modc -> l mod r
-        | Eq         -> int_of_bool (l = r)
-        | Ne         -> int_of_bool (l <> r)
-        | Lt         -> int_of_bool (l < r)
-        | Gt         -> int_of_bool (l > r)
-        | Le         -> int_of_bool (l <= r)
-        | Ge         -> int_of_bool (l >= r)
-        | And        -> l * r (* @Check: should we do something special (eg. return bot) if `l` or `r` are not 0 or 1 *)
-        | Or         -> l + r
-        | Cons       -> failwith "unsupported"
-        | Seq        -> failwith "unsupported"
+  let operator result_var left_var right_var binop cons dom = match dom with
+    | Bot -> dom
+    | Vals v ->
+      let result_var = if result_var = "" then "cur_v" else result_var in
+      let left_vals_opt = StringMap.find_opt left_var v.fvm in
+      let right_vals_opt = StringMap.find_opt right_var v.fvm in
+      let result_vals_opt = match left_vals_opt, right_vals_opt with
+      (* if either is top, then the result is top *)
+      | None, _ | _, None -> None
+      | Some left_vals, Some right_vals ->
+        let merge_vals l r =
+          let result = match binop with
+          | Plus       -> l + r
+          | Minus      -> l - r
+          | Mult       -> l * r
+          | Div        -> l / r
+          | Mod | Modc -> l mod r
+          | Eq         -> int_of_bool (l = r)
+          | Ne         -> int_of_bool (l <> r)
+          | Lt         -> int_of_bool (l < r)
+          | Gt         -> int_of_bool (l > r)
+          | Le         -> int_of_bool (l <= r)
+          | Ge         -> int_of_bool (l >= r)
+          | And        -> l * r (* @Check: should we do something special (eg. return bot) if `l` or `r` are not 0 or 1 *)
+          | Or         -> l + r
+          | Cons       -> failwith "unsupported"
+          | Seq        -> failwith "unsupported"
+          in
+          result
         in
-        result
+        Some (set_union_with merge_vals left_vals right_vals)
       in
-      Some (set_union_with merge_vals left_vals right_vals)
-    in
-    let fvm' =
-      match result_vals_opt with
-      | Some result_vals ->
-        if result_var = "cur_v" then
-          (* @Check
-             It makes sense to me to overwrite the values if we're evaluating the current expression. Is this okay?
-             - ketan
-          *)
-          StringMap.add result_var result_vals dom.fvm
-        else
-          StringMap.update
-            result_var
-            (fun old_vals -> Some (Option.fold ~none:result_vals ~some:(IntSet.union result_vals) old_vals)) dom.fvm
-      | None ->
-        dom.fvm
-    in
-    let tracked' = StringSet.add result_var dom.tracked in
-    let dom' = { fvm = fvm'; tracked = tracked' } in
-    if !debug then
-      Format.printf "OPERATOR: (expr: [%s]@ :=@ [%s] [%s] [%s])@ [cons: %d]@ @[<hov 2>[dom: %a]@]@ @[<hov 2>[result: %a]@]@.---@."
-        result_var
-        left_var (string_of_op binop) right_var
-        cons
-        print_abs dom
-        print_abs dom';
-    dom'
+      let fvm' =
+        match result_vals_opt with
+        | Some result_vals ->
+          if result_var = "cur_v" then
+            (* @Check
+              It makes sense to me to overwrite the values if we're evaluating the current expression. Is this okay?
+              - ketan
+            *)
+            StringMap.add result_var result_vals v.fvm
+          else
+            StringMap.update
+              result_var
+              (fun old_vals -> Some (Option.fold ~none:result_vals ~some:(IntSet.union result_vals) old_vals)) v.fvm
+        | None ->
+          v.fvm
+      in
+      let tracked' = StringSet.add result_var v.tracked in
+      let dom' = Vals { fvm = fvm'; tracked = tracked' } in
+      if !debug then
+        Format.printf "OPERATOR: (expr: [%s]@ :=@ [%s] [%s] [%s])@ [cons: %d]@ @[<hov 2>[dom: %a]@]@ @[<hov 2>[result: %a]@]@.---@."
+          result_var
+          left_var (string_of_op binop) right_var
+          cons
+          print_abs dom
+          print_abs dom';
+      dom'
 
   let uoperator result_var var unop cons v = failwith "TODO"
 
@@ -862,12 +890,14 @@ module FiniteValueDomain: Domain = struct
   let derived expr v = failwith "TODO"
 
   (* can constraints on `var` be satisfied (assuming cur_v = var here) *)
-  let sat_cons v var =
-    let var_sat_cons var =
-      StringMap.find_opt var v.fvm
-      |> Option.fold ~none:true ~some:(fun vals -> not @@ IntSet.is_empty vals)
-    in
-    (var_sat_cons var && var_sat_cons "cur_v")
+  let sat_cons v var = match v with
+    | Bot -> false
+    | Vals v ->
+      let var_sat_cons var =
+        StringMap.find_opt var v.fvm
+        |> Option.fold ~none:true ~some:(fun vals -> not @@ IntSet.is_empty vals)
+      in
+      var_sat_cons var && var_sat_cons "cur_v"
 end
     
 module OctDomain = BaseDomain(struct
