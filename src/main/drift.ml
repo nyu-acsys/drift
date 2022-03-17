@@ -29,9 +29,15 @@ let _ =
         [parse_from_file !Config.file]
       end
     else tests in
-    List.iter (fun e -> 
-      let el = e |> simplify |> label in
-      (* let el = e |> label in *)
+    List.iter (fun e ->
+      let el =
+        e
+        |> (if not !Config.no_simplify then
+              DriftSyntax.simplify
+            else
+              Fun.id)
+        |> label
+      in
       if !out_put_level < 2 then
         (print_endline "Executing:";
          print_exp stdout el);
