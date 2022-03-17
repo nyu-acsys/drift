@@ -118,13 +118,13 @@ module SemanticsDomain =
     let op_R res l r op cons a = (*cons for flag of linear constraints*)
       match op with
       | Plus | Mult | Div | Mod | Modc | Minus -> (match a with
-        | Int v -> Int (AbstractValue.operator res l r op (-1) v)
+        | Int v -> Int (AbstractValue.operator res l r op NoBranch v)
         | _ -> raise (Invalid_argument "opR: Given a unit type"))
       | Ge | Eq | Ne | Lt | Gt | Le -> (if cons then
         (match a with
-        | Int v -> Int (AbstractValue.operator res l r op (-1) v)
+        | Int v -> Int (AbstractValue.operator res l r op NoBranch v)
         | Bool (vt, vf) ->
-          let tt, tf = (AbstractValue.operator res l r op 1 vt, AbstractValue.operator res l r (rev_op op) 0 vf) in
+          let tt, tf = (AbstractValue.operator res l r op (Branch true) vt, AbstractValue.operator res l r (rev_op op) (Branch false) vf) in
           (* Format.printf "@[tt = @[%a@] tf = @[%a@]@." AbstractValue.print_abs tt AbstractValue.print_abs tf; *)
           Bool (tt,tf)
 
@@ -132,9 +132,9 @@ module SemanticsDomain =
         )
         else
         (match a with
-        | Int v -> Bool (AbstractValue.operator res l r op 1 v, AbstractValue.operator res l r (rev_op op) 0 v)
+        | Int v -> Bool (AbstractValue.operator res l r op (Branch true) v, AbstractValue.operator res l r (rev_op op) (Branch false) v)
         | Bool (vt, vf) ->
-          let tt, tf = (AbstractValue.operator res l r op 1 vt, AbstractValue.operator res l r (rev_op op) 0 vf) in
+          let tt, tf = (AbstractValue.operator res l r op (Branch true) vt, AbstractValue.operator res l r (rev_op op) (Branch false) vf) in
           (* Format.printf "@[tt = @[%a@] tf = @[%a@]@." AbstractValue.print_abs tt AbstractValue.print_abs tf; *)
           Bool (tt,tf)
         | Unit _ -> raise (Invalid_argument "opR: Given a unit type"))
@@ -143,7 +143,7 @@ module SemanticsDomain =
     let uop_R res op e cons a = (*cons for flag of linear constraints*)
       match op with
       | UMinus -> (match a with
-        | Int v -> Int (AbstractValue.uoperator res e op (-1) v)
+        | Int v -> Int (AbstractValue.uoperator res e op NoBranch v)
         | _ -> raise (Invalid_argument "uop_R: Given a unit type"))
     let assign_R res l r op = function
       | Int v -> Int (AbstractValue.assign res l r op v)

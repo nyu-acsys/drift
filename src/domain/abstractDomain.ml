@@ -1,4 +1,3 @@
-
 open Apron
 open DriftSyntax
 open Util
@@ -11,7 +10,18 @@ open Format
  *******************************
  *)
 type var = string
-      
+
+(* For linear constraints. Which branch of a boolean condition are we in? *)
+type bool_branch =
+  | NoBranch
+  | Branch of bool
+
+let pr_branch ppf branch =
+  Format.pp_print_string ppf (match branch with
+  | NoBranch -> "NoBranch"
+  | Branch bool -> "Branch " ^ string_of_bool bool
+  )
+
 (* Define Abstract Domain Module*)
 
 module type Domain =
@@ -42,11 +52,11 @@ module type Domain =
       string ->
       string ->
       string ->
-      DriftSyntax.binop -> int -> t -> t
+      DriftSyntax.binop -> bool_branch -> t -> t
     val uoperator :
       string ->
       string ->
-      DriftSyntax.unop -> int -> t -> t
+      DriftSyntax.unop -> bool_branch -> t -> t
     val assign :
       string ->
       string ->
@@ -483,9 +493,10 @@ module BaseDomain(Manager : DomainManager) : Domain =
                  Abstract1.meet_tcons_array man v' tab
                end
            in
-           if cons = -1 then vt
-           else (* Bool value *)
-             let exprv = vres ^ " = " ^ (string_of_int cons) in
+           match cons with
+           | NoBranch -> vt
+           | Branch branch ->
+             let exprv = vres ^ " = " ^ (string_of_int (int_of_bool branch)) in
              let tab = Parser.tcons1_of_lstring env [exprv] in
              Abstract1.meet_tcons_array man vt tab
           )
@@ -817,11 +828,7 @@ module FiniteValueDomain: Domain = struct
       let fvm = StringMap.filter (fun _ vals -> IntSet.cardinal vals <= max_cardinality) fvm in
       Vals { fvm; tracked }
 
-  (*
-    take a look at BaseDomain
-    looks like `cons` indicates whether this is a true or false case of a boolean (1, 0 respectively) or if neither, then -1
-  *)
-  let operator result_var left_var right_var binop cons dom = match dom with
+  let operator result_var left_var right_var binop branch dom = match dom with
     | Bot -> dom
     | Vals v ->
       let result_var = if result_var = "" then "cur_v" else result_var in
@@ -873,15 +880,15 @@ module FiniteValueDomain: Domain = struct
       let tracked' = StringSet.add result_var v.tracked in
       let dom' = Vals { fvm = fvm'; tracked = tracked' } in
       if !debug then
-        Format.printf "OPERATOR: (expr: [%s]@ :=@ [%s] [%s] [%s])@ [cons: %d]@ @[<hov 2>[dom: %a]@]@ @[<hov 2>[result: %a]@]@.---@."
+        Format.printf "OPERATOR: (expr: [%s]@ :=@ [%s] [%s] [%s])@ [branch: %a]@ @[<hov 2>[dom: %a]@]@ @[<hov 2>[result: %a]@]@.---@."
           result_var
           left_var (string_of_op binop) right_var
-          cons
+          pr_branch branch
           print_abs dom
           print_abs dom';
       dom'
 
-  let uoperator result_var var unop cons v = failwith "TODO"
+  let uoperator result_var var unop branch v = failwith "TODO"
 
   let assign result_var left_var right_var binop v = failwith "TODO"
 
