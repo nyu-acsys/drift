@@ -838,14 +838,15 @@ module FiniteValueDomain: Domain = struct
           | Mult       -> l * r
           | Div        -> l / r
           | Mod | Modc -> l mod r
+          (* cond operators *)
           | Eq         -> int_of_bool (l = r)
           | Ne         -> int_of_bool (l <> r)
           | Lt         -> int_of_bool (l < r)
           | Gt         -> int_of_bool (l > r)
           | Le         -> int_of_bool (l <= r)
           | Ge         -> int_of_bool (l >= r)
-          | And        -> l * r (* @Check: should we do something special (eg. return bot) if `l` or `r` are not 0 or 1 *)
-          | Or         -> l + r
+          | And        -> failwith "unsupported"
+          | Or         -> failwith "unsupported"
           | Cons       -> failwith "unsupported"
           | Seq        -> failwith "unsupported"
           in
