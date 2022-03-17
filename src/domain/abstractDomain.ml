@@ -763,12 +763,12 @@ module FiniteValueDomain: Domain = struct
 
   let alpha_rename v old_var new_var = match v with
     | Bot -> v
-    | Vals v ->
+    | Vals v' ->
       if old_var = new_var || not (contains_var old_var v) then v else
-      let tracked = v.tracked |> StringSet.remove old_var |> StringSet.add new_var in
-      let fvm = match StringMap.find_opt old_var v.fvm with
-      | None -> v.fvm
-      | Some vs -> v.fvm |> StringMap.remove old_var |> StringMap.add new_var vs
+      let tracked = v'.tracked |> StringSet.remove old_var |> StringSet.add new_var in
+      let fvm = match StringMap.find_opt old_var v'.fvm with
+      | None -> v'.fvm
+      | Some vs -> v'.fvm |> StringMap.remove old_var |> StringMap.add new_var vs
       in
       Vals { fvm; tracked }
 
@@ -780,12 +780,12 @@ module FiniteValueDomain: Domain = struct
     let vars = "cur_v" :: vars in
     match v with
     | Bot -> v
-    | Vals v ->
-      if StringSet.equal (StringSet.of_list vars) v.tracked then v else
+    | Vals v' ->
+      if StringSet.equal (StringSet.of_list vars) v'.tracked then v else
       let fvm =
         vars
         |> List.to_seq
-        |> Seq.filter_map (fun var -> StringMap.find_opt var v.fvm |> Opt.map (fun vals -> (var, vals)))
+        |> Seq.filter_map (fun var -> StringMap.find_opt var v'.fvm |> Opt.map (fun vals -> (var, vals)))
         |> StringMap.of_seq
       in
       let tracked = StringSet.of_list vars in
