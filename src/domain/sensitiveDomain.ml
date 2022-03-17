@@ -99,20 +99,20 @@ module type SensitiveSemanticsType =
     and list_t = (var * var) * (relation_t * value_t * K.expr' )
     and tuple_t = value_t list
     val init_T: (var * loc) -> table_t
-    val alpha_rename_T: (value_t -> string -> string -> value_t) -> table_t -> string -> string -> table_t
-    val join_T: (value_t -> value_t -> value_t) -> (value_t -> string -> string -> value_t) -> table_t -> table_t -> table_t
-    val meet_T: (value_t -> value_t -> value_t) -> (value_t -> string -> string -> value_t) -> table_t -> table_t -> table_t
+    val alpha_rename_T: (value_t -> var -> var -> value_t) -> table_t -> var -> var -> table_t
+    val join_T: (value_t -> value_t -> value_t) -> (value_t -> var -> var -> value_t) -> table_t -> table_t -> table_t
+    val meet_T: (value_t -> value_t -> value_t) -> (value_t -> var -> var -> value_t) -> table_t -> table_t -> table_t
     val leq_T: (value_t -> value_t -> bool) -> table_t -> table_t -> bool
     val eq_T: (value_t -> value_t -> bool) -> table_t -> table_t -> bool
     val forget_T: (var -> value_t -> value_t) -> var -> table_t -> table_t
     val arrow_T: (var -> value_t -> value_t) -> (var -> value_t -> value_t -> value_t) -> var -> table_t -> value_t -> table_t
-    val wid_T: (value_t -> value_t -> value_t) -> (value_t -> string -> string -> value_t) -> table_t -> table_t -> table_t
-    val equal_T: (value_t -> var -> value_t) -> (value_t -> string -> string -> value_t) -> table_t -> var -> table_t
+    val wid_T: (value_t -> value_t -> value_t) -> (value_t -> var -> var -> value_t) -> table_t -> table_t -> table_t
+    val equal_T: (value_t -> var -> value_t) -> (value_t -> var -> var -> value_t) -> table_t -> var -> table_t
     val replace_T: (value_t -> var -> var -> value_t) -> table_t -> var -> var -> table_t
     val stren_T: (value_t -> value_t -> value_t) -> table_t -> value_t -> table_t
-    val proj_T: (value_t -> string list -> value_t) -> (value_t -> string list) -> table_t -> string list -> table_t
+    val proj_T: (value_t -> var list -> value_t) -> (value_t -> var list) -> table_t -> var list -> table_t
     val bot_shape_T: (value_t -> value_t) -> table_t -> table_t
-    val get_label_snode: node_s_t -> string
+    val get_label_snode: node_s_t -> var
     val construct_vnode: env_t -> loc -> (var * loc) -> node_t
     val construct_enode: env_t -> loc -> node_t
     val construct_snode: var -> node_t -> node_s_t
@@ -121,10 +121,10 @@ module type SensitiveSemanticsType =
     val get_vnode: node_t -> env_t * loc * (var * loc)
     val dx_T: value_t -> (var * loc)
     val get_table_T: value_t -> table_t
-    val print_node: node_t -> Format.formatter -> (Format.formatter -> (string * (node_t * bool)) list -> unit) -> unit
+    val print_node: node_t -> Format.formatter -> (Format.formatter -> (var * (node_t * bool)) list -> unit) -> unit
     val print_table: table_t -> Format.formatter -> (Format.formatter -> value_t -> unit) -> unit
-    val compare_node: (string -> string -> int) -> node_s_t -> node_s_t -> int
-    val prop_table: ((var * loc) -> value_t * value_t -> value_t * value_t -> (value_t * value_t) * (value_t * value_t)) -> (value_t -> string -> string -> value_t) -> table_t -> table_t -> table_t * table_t
+    val compare_node: (var -> var -> int) -> node_s_t -> node_s_t -> int
+    val prop_table: ((var * loc) -> value_t * value_t -> value_t * value_t -> (value_t * value_t) * (value_t * value_t)) -> (value_t -> var -> var -> value_t) -> table_t -> table_t -> table_t * table_t
     val step_func: ((var * loc) -> value_t * value_t -> 'a -> 'a) -> value_t -> 'a -> 'a
     val get_full_table_T: table_t -> (var * loc) * (value_t * value_t)
     val get_table_by_cs_T: (var * loc) -> table_t -> (value_t * value_t)
@@ -151,7 +151,7 @@ module NonSensitive: SensitiveSemanticsType =
     and tuple_t = value_t list
     type call_site = None (* Not used *)
     let init_T (var, _) = var, Bot, Bot
-    let alpha_rename_T (f: value_t -> string -> string -> value_t) (t:table_t) (prevar:string) (var:string) :table_t = 
+    let alpha_rename_T (f: value_t -> var -> var -> value_t) (t:table_t) (prevar:var) (var:var) :table_t =
       let (z, vi, vo) = t in
         (z, f vi prevar var, f vo prevar var)
     let join_T f g (t1:table_t) (t2:table_t) = let t =
@@ -266,7 +266,7 @@ module OneSensitive: SensitiveSemanticsType =
     and list_t = (var * var) * (relation_t * value_t * K.expr')
     and tuple_t = value_t list
     let init_T var = TableMap.empty
-    let alpha_rename_T f (mt:table_t) (prevar:string) (var:string) = TableMap.map (fun (vi, vo) -> 
+    let alpha_rename_T f (mt:table_t) (prevar:var) (var:var) = TableMap.map (fun (vi, vo) ->
       f vi prevar var, f vo prevar var) mt
     let join_T f g mt1 mt2 =
       TableMap.union (fun cs (v1i, v1o) (v2i, v2o) -> Some (f v1i v2i, f v1o v2o)) mt1 mt2
@@ -408,58 +408,3 @@ module NodeMap = struct
 end
 
 type exec_map_t = SenSemantics.value_t NodeMap.t
-
-
-(* module type SensitiveSemanticsType =
-  sig
-    type node_t
-    type node_s_t
-    type table_t
-    type value_t = | Bot
-      | Top
-      | Relation of relation_t
-      | Table of table_t
-      | Ary of array_t
-      | Unit of unit
-    val init_T: var -> table_t
-    val alpha_rename_T: (value_t -> string -> string -> value_t) -> table_t -> string -> string -> table_t
-    val join_T: (value_t -> value_t -> value_t) -> table_t -> table_t -> table_t
-    val meet_T: (value_t -> value_t -> value_t) -> table_t -> table_t -> table_t
-    val leq_T: (value_t -> value_t -> bool) -> table_t -> table_t -> bool
-    val eq_T: (value_t -> value_t -> bool) -> table_t -> table_t -> bool
-    val forget_T: (var -> value_t -> value_t) -> var -> table_t -> table_t
-    val arrow_T: (var -> value_t -> value_t) -> (var -> value_t -> value_t -> value_t) -> var -> table_t -> value_t -> table_t
-    val wid_T: (value_t -> value_t -> value_t) -> table_t -> table_t -> table_t
-    val equal_T: (value_t -> var -> value_t) -> table_t -> var -> table_t
-    val replace_T: (value_t -> var -> var -> value_t) -> table_t -> var -> var -> table_t
-    val stren_T: (value_t -> value_t -> value_t) -> table_t -> value_t -> table_t
-    val proj_T: (value_t -> string array -> value_t) -> table_t -> string array -> table_t
-    val get_label_T: node_s_t -> string
-  end *)
-
-(* module MakeTableSemantics (Man: SenManagerType): SensitiveSemanticsType = 
-  struct
-  type node_t = Man.node
-  type node_s_t = Man.node_s
-  type table_t = Man.table
-  type value_t = | Bot
-      | Top
-      | Relation of relation_t
-      | Table of table_t
-      | Ary of array_t
-      | Unit of unit
-  let init_T var = Man.init var
-  let alpha_rename_T f t prevar var = Man.alpha_rename f t prevar var 
-  let join_T f t1 t2 =  Man.join f t1 t2
-  let meet_T f t1 t2 = Man.meet f t1 t2
-  let leq_T f t1 t2 = Man.leq f t1 t2
-  let eq_T f t1 t2 = Man.eq f t1 t2
-  let forget_T f var t = Man.forget f var t
-  let arrow_T f1 f2 var t v = Man.arrow f1 f2 var t v
-  let wid_T f t1 t2 = Man.wid f t1 t2
-  let equal_T f t var = Man.equal f t var
-  let replace_T f t var x = Man.replace f t var x
-  let stren_T f t ae = Man.stren f t ae
-  let proj_T f t vars = Man.proj f t vars
-  let get_label_T n = Man.get_label n
-  end *)

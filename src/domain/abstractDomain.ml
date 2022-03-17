@@ -30,7 +30,7 @@ module type Domain =
     val name : string
     val from_int : int -> t
     val is_bot : t -> bool
-    val contains_var : string -> t -> bool
+    val contains_var : var -> t -> bool
     val leq : t -> t -> bool
     val eq : t -> t -> bool
     val join :
@@ -38,33 +38,33 @@ module type Domain =
     val meet :
       t -> t -> t
     val alpha_rename :
-      t -> string -> string -> t
-    val forget_var : string -> t -> t
+      t -> var -> var -> t
+    val forget_var : var -> t -> t
     val project_other_vars :
-      t -> string list -> t
+      t -> var list -> t
     val top : t
     val bot : t
     val equal_var :
-      t -> string -> string -> t
+      t -> var -> var -> t
     val widening :
       t -> t -> t
     val operator :
-      string ->
-      string ->
-      string ->
+      var ->
+      var ->
+      var ->
       DriftSyntax.binop -> bool_branch -> t -> t
     val uoperator :
-      string ->
-      string ->
+      var ->
+      var ->
       DriftSyntax.unop -> bool_branch -> t -> t
     val assign :
-      string ->
-      string ->
-      string -> DriftSyntax.binop -> t -> t
+      var ->
+      var ->
+      var -> DriftSyntax.binop -> t -> t
     val print_abs : Format.formatter -> t -> unit
     (*val print_env : Format.formatter -> t -> unit*)
-    val derived : string -> t -> t
-    val sat_cons : t -> string -> bool
+    val derived : var -> t -> t
+    val sat_cons : t -> var -> bool
   end
         
 module type DomainManager =
@@ -339,7 +339,7 @@ module BaseDomain(Manager : DomainManager) : Domain =
       let ary = Lincons1.array_make env 0 in
       ref ary
 
-    let licons_earray env (vars : string list) complex = 
+    let licons_earray env (vars : var list) complex =
       if complex = false then 
        thresholdsSet:= !thresholdsSet |> ThresholdsSetType.remove 111 |> ThresholdsSetType.remove 101;
       let tset_size = 
