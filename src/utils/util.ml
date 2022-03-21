@@ -91,6 +91,10 @@ module Opt = struct
   let exist = function
     | None -> false
     | Some _ -> true
+
+  let map2 f x y = match x, y with
+    | Some x', Some y' -> Some (f x' y')
+    | _, _ -> None
 end
 
 let rec zip_list xs ys =

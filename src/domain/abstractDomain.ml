@@ -826,6 +826,21 @@ module FiniteValueDomain: Domain = struct
       let fvm = StringMap.filter (fun _ vals -> IntSet.cardinal vals <= max_cardinality) fvm in
       Vals { fvm; tracked }
 
+  let eval_binop binop l r = match binop with
+    | Plus       -> l + r
+    | Minus      -> l - r
+    | Mult       -> l * r
+    | Div        -> l / r (* TODO: Handle r = 0 *)
+    | Mod | Modc -> l mod r
+    | Eq         -> int_of_bool (l = r)
+    | Ne         -> int_of_bool (l <> r)
+    | Lt         -> int_of_bool (l < r)
+    | Gt         -> int_of_bool (l > r)
+    | Le         -> int_of_bool (l <= r)
+    | Ge         -> int_of_bool (l >= r)
+    | Cons       -> failwith "unsupported"
+    | Seq        -> failwith "unsupported"
+
   let operator result_var left_var right_var binop branch dom = match dom with
     | Bot -> dom
     | Vals v ->
@@ -838,25 +853,7 @@ module FiniteValueDomain: Domain = struct
         let result_vals_opt = match left_vals_opt, right_vals_opt with
           | None, _ | _, None -> None
           | Some left_vals, Some right_vals ->
-            let merge_vals l r =
-              let result = match binop with
-                | Plus       -> l + r
-                | Minus      -> l - r
-                | Mult       -> l * r
-                | Div        -> l / r (* TODO: Handle r = 0 *)
-                | Mod | Modc -> l mod r
-                | Eq         -> int_of_bool (l = r)
-                | Ne         -> int_of_bool (l <> r)
-                | Lt         -> int_of_bool (l < r)
-                | Gt         -> int_of_bool (l > r)
-                | Le         -> int_of_bool (l <= r)
-                | Ge         -> int_of_bool (l >= r)
-                | Cons       -> failwith "unsupported"
-                | Seq        -> failwith "unsupported"
-              in
-              result
-            in
-            Some (set_union_with merge_vals left_vals right_vals)
+            Some (set_union_with (eval_binop binop) left_vals right_vals)
         in
         let fvm = match result_vals_opt with
           | Some result_vals when IntSet.cardinal result_vals <= max_cardinality ->
@@ -922,6 +919,19 @@ module FiniteValueDomain: Domain = struct
       | UMinus, Branch _ ->
         failwith "Can't evaluate an int in a constraint context"
 
+  let assign result_var left_var right_var binop dom = match dom with
+    | Bot -> dom
+    | Vals v ->
+      let result_var = if result_var = "" then "cur_v" else result_var in
+      let result_vals_opt = Opt.map2 (set_union_with (eval_binop binop)) (StringMap.find_opt left_var v.fvm) (StringMap.find_opt right_var v.fvm) in
+      let fvm = match result_vals_opt with
+        | Some result_vals when IntSet.cardinal result_vals <= max_cardinality ->
+          StringMap.add result_var result_vals v.fvm
+        | _ ->
+          StringMap.remove result_var v.fvm
+      in
+      let tracked = StringSet.add result_var v.tracked in
+      Vals { fvm; tracked }
 
   (* maybe rework interface? string expr -> term ; TODO check how this is being used *)
   (* 'derived' is only ever called (by der_R, it's only caller) with exprs of the form 'v1 = v2' *)
