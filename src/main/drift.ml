@@ -326,6 +326,13 @@ let _ =
       end
     else tests in
     List.iter (fun e -> 
+    (* 1. see if there is a -prop to parse accumulation automaton 
+       2. parse the property program
+         let prop_prog = ...
+      3. Now construct the product
+        e = (product e prop_e) 
+    *)
+      
       let el = e |> simplify |> label in
       if !out_put_level < 2 then
         (print_endline "Executing:";
