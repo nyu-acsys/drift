@@ -62,8 +62,6 @@ module type Domain =
       var ->
       var -> DriftSyntax.binop -> t -> t
     val print_abs : Format.formatter -> t -> unit
-    (*val print_env : Format.formatter -> t -> unit*)
-    val derived : var -> t -> t
     val sat_cons : t -> var -> bool
   end
         
@@ -565,30 +563,6 @@ module BaseDomain(Manager : DomainManager) : Domain =
     let print_env ppf v = let env = Abstract1.env v in
         Environment.print ppf env
 
-    let derived expr v = 
-      (* (if !debug then
-      begin
-        Format.printf "\n\nStrengthen derived\n";
-        Format.printf "%s \n" expr;
-        Format.printf "Before: " ;
-        Abstract1.print Format.std_formatter v;
-        Format.printf "\n";
-      end); *)
-      let res = try 
-        let env = Abstract1.env v in
-        let tab = Parser.tcons1_of_lstring env [expr] in
-        Abstract1.meet_tcons_array man v tab 
-        with
-        _ -> v
-      in
-      (* (if !debug then
-        begin
-          Format.printf "result: " ;
-          Abstract1.print Format.std_formatter res;
-          Format.printf "\n";
-        end); *)
-      res
-
     let sat_cons v var =
       if contains_var var v && contains_var "cur_v" v then
         let env = Abstract1.env v in
@@ -657,11 +631,7 @@ module ProductDomain(D1 : Domain)(D2: Domain) : Domain =
       D1.print_abs ppf v1;
       Format.print_string " && ";
       D2.print_abs ppf v2
-        
-    let derived expr (v1, v2) =
-      D1.derived expr v1,
-      D2.derived expr v2
-        
+
     let sat_cons (v1, v2) var =
       D1.sat_cons v1 var ||
       D2.sat_cons v2 var
@@ -932,11 +902,6 @@ module FiniteValueDomain: Domain = struct
       in
       let tracked = StringSet.add result_var v.tracked in
       Vals { fvm; tracked }
-
-  (* maybe rework interface? string expr -> term ; TODO check how this is being used *)
-  (* 'derived' is only ever called (by der_R, it's only caller) with exprs of the form 'v1 = v2' *)
-  (* so probably only do the interface for this much *)
-  let derived expr v = failwith "TODO"
 
   (* can constraints on `var` be satisfied (assuming cur_v = var here) *)
   let sat_cons v var = match v with

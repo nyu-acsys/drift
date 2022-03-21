@@ -165,10 +165,6 @@ module SemanticsDomain =
       | Bool (vt, vf), Int vae -> Bool (AbstractValue.meet vt vae, AbstractValue.meet vf vae)
       | Unit _, Int vae -> a
       | _, _ -> raise (Invalid_argument "ae should be {v:Int}")
-    let der_R exp a = match a with
-      | Bool (vt, vf) -> Bool (AbstractValue.derived exp vt, AbstractValue.derived exp vf)
-      | Int v -> Int (AbstractValue.derived exp v)
-      | Unit _ -> a
     let proj_R a vars = match a with
       | Int v -> Int (AbstractValue.project_other_vars v vars)
       | Bool (vt, vf) -> Bool (AbstractValue.project_other_vars vt vars, AbstractValue.project_other_vars vf vars)
@@ -387,23 +383,6 @@ module SemanticsDomain =
     and sat_equal_V v x = match v with
       | Relation r -> sat_equal_R r x
       | _ -> false
-    (* and der_V term v = match term, v with
-      | _, Top | _, Bot -> v
-      | Const (c,l), Relation r -> 
-        let r' = (match c with
-          | Integer i -> der_R ((string_of_int i) ^ "=" ^ (name_of_node l)) r
-          | Boolean b -> r (*TODO:this case*))
-        in
-        Relation r'
-      | Var (x, l), Relation r -> Relation (der_R (x ^ "=" ^ (name_of_node l)) r)
-      | App (e1, e2, l), Relation r -> v |> der_V e1 |> der_V e2
-      | Rec (f_opt, x, lx, e1, l), Table t -> v (*TODO:this case*)
-      | Ite (e1, e2, e3, l, _), Relation r -> v |> der_V e1 |> der_V e2 |> der_V e3
-      | BinOp (bop, e1, e2, l), Relation r -> 
-        let expr = ((e1 |> loc |> name_of_node)^(string_of_op bop)^(e2 |> loc |> name_of_node) ^ "=" ^ (name_of_node l)) in
-        let v' = Relation (der_R expr r) in
-        v' |> der_V e1 |> der_V e2
-      | _, _ -> raise (Invalid_argument "derived values match incorrectly") *)
     and proj_V v vars =
       match v with
       | Relation r -> Relation (proj_R r vars)
@@ -420,15 +399,6 @@ module SemanticsDomain =
       | Ary ary -> get_item_var_Ary ary
       | Lst lst -> get_item_var_Lst lst
       | _ -> raise (Invalid_argument "get item dep variable unsucessful")
-    (* and opt_eq_V v1 v2 = match v1, v2 with
-      | Bot, _ | _, Bot -> false
-      | _, Top -> true
-      | Relation r1, Relation r2 -> is_bot_R r1 = false && is_bot_R r2 = false && eq_R r1 r2
-      | Table (z1, v1i, v1o), Table (z2, v2i, v2o) ->
-          z1 = z2 && opt_eq_V v1i v2i && opt_eq_V v1o v2o
-      | Ary ary1, Ary ary2 -> eq_Ary ary1 ary2
-      | Unit u1, Unit u2 -> true
-      | _, _ -> false  *)
     and is_bool_bot_V = function
       | Relation r -> is_bool_bot_R r
       | _ -> true
