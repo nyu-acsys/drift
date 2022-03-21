@@ -696,10 +696,8 @@ module FiniteValueDomain: Domain = struct
   let print_abs ppf = function
     | Bot -> fprintf ppf "@[bot@]"
     | Vals v -> begin
+      if StringSet.is_empty v.tracked then fprintf ppf "@[top@]" else
       fprintf ppf "@[{";
-      if StringSet.is_empty v.tracked then
-        pp_print_string ppf "empty-top"
-      else
         pp_print_list
           ~pp_sep:(fun ppf () -> pp_print_custom_break ~fits:(";", 1, "") ~breaks:("",0,"") ppf)
           (fun ppf var ->
