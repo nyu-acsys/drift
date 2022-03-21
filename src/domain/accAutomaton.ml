@@ -1,5 +1,49 @@
 (* An Accumulating Automaton *)
 
+type acc_t = int*int*int
+
+type user_accaut = {
+  q0 : int;
+  qstates: int list;
+  acc0: acc_t;
+  trans: int -> acc_t -> int -> (int * acc_t); (* q a d -> q a *)
+  final: int -> bool;
+}
+
+let user_accaut_of_program (fn:string) = 
+  match fn with
+  | "3states" -> {
+      q0=0;
+      qstates=[0;1;2;3];
+      acc0=(0,0,0); (* unused *)
+      trans=(fun q a d -> match (q,a) with 
+      | (0,_) -> 1
+      | (1,_) -> 2
+      | (2,_) -> 3
+      | (3,_) -> 3
+      );
+      final=(fun q -> q = 0)
+    }
+  | "order" -> { 
+    (* assume c!=0. Property both c and -c cannot happen *)
+      q0=0;
+      qstates=[0;666];
+      acc0=(0,0,0); (* neg c, pos c, _ *)
+      trans=(fun q a d -> match (q,a) with 
+      | (666,_) -> (666,a)
+      | (0,(0,0,_)) -> 
+           if d > 0 then (0,(0,d,0)) else (0,(d,0,0))
+      | (0,(n,p,_)) ->
+           if d * -1 == n then (666,a) 
+
+      | (1,_) -> 2
+      | (2,_) -> 3
+      | (3,_) -> 3
+      );
+      final=(fun q -> q = 0)
+    }
+  | _ -> failwith "need user input"
+
 (*
 User:
    Q = {q0,...,}
