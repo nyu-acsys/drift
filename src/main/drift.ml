@@ -6,6 +6,7 @@ open Config
 open Util
 open DriftParser
 open Printer
+open AccAutomaton
 
 let x = "x"
 let y = "y"
@@ -325,15 +326,14 @@ let _ =
         [parse_from_file !Config.file]
       end
     else tests in
+    let accaut_e = match !Config.accaut_file with
+       | None -> None
+       | Some f -> Some (parse_from_file f)
+    in
     List.iter (fun e -> 
-    (* 1. see if there is a -prop to parse accumulation automaton 
-       2. parse the property program
-         let prop_prog = ...
-      3. Now construct the product
-        e = (product e prop_e) 
-    *)
-      
-      let el = e |> simplify |> label in
+      let el = (match accaut_e with
+	         | Some ae -> (AccAutomaton.product e ae) |> label
+       		 | None -> e |> simplify |> label) in
       if !out_put_level < 2 then
         (print_endline "Executing:";
          print_exp stdout el);

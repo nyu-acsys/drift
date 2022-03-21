@@ -1,5 +1,42 @@
 (* An Accumulating Automaton *)
 
+let rec xform_seq e1 e2 f (* v1 -> v2 -> ast *) =
+  PatMat (xform e1 acc_e, [
+    Case ( TupleList([acc'], v1), 
+       PatMat (xform e2 acc', [
+          Case ( TupleList([acc''], v2), 
+            TupleList(
+               [acc''; (f v1 v2)], 66666))
+       ])
+    )
+  ])
+
+let rec xform e acc_e =
+  match e with
+    | Const _ 
+    | Var (x, loc) -> TupleList ([acc_e;e], 66666)
+    | BinOp (bop, e1, e2, loc) ->
+      xform_seq e1 e2 (fun v1 v2 -> (BinOp (bop, v1, v2, loc)))
+    | App (e1, e2, loc) ->
+      xform_seq e1 e2 (fun v1 v2 -> (App (v1, v2, loc)))
+
+    | UnOp (_, e, _) -> fv bvs acc e
+    | Ite (b, t, e, _, _) -> List.fold_left (fv bvs) acc [b; t; e]
+    | PatMat (t, ps, _) ->
+        let acc1 = fv bvs acc t in
+        List.fold_left (fun acc (Case (p, t)) ->
+          let bvs1 = fv StringSet.empty bvs p in
+          fv bvs1 acc t)
+          acc1 ps
+    | TupleLst (ts, _) ->
+        List.fold_left (fv bvs) acc ts
+    | Rec (f_opt, (x, _), e, _) ->
+        let d = StringSet.of_list (x :: (f_opt |> Opt.map fst |> Opt.to_list)) in
+        fv (StringSet.union bvs d) acc e
+  in
+
+let product acc_e e = failwith "unimplemented"
+
 type acc_t = int*int*int
 
 type user_accaut = {

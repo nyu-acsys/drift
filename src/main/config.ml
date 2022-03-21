@@ -21,7 +21,9 @@ let use_threshold = ref false
 
 let sensitive = ref false
 
-let usage = "usage: " ^ Sys.argv.(0) ^ " [-file <file name>] [-domain <domain name>] [-sen <true/false>] [-thold <true/false>] [-delay-wid <num>] [-nar <true/false>] [-out <num>] [-debug] [-bt]"
+let accaut_file : string option = ref None
+
+let usage = "usage: " ^ Sys.argv.(0) ^ " [-file <file name>] [-domain <domain name>] [-sen <true/false>] [-thold <true/false>] [-delay-wid <num>] [-nar <true/false>] [-out <num>] [-debug] [-bt] [-accaut <file name>]"
 
 let cmd_options_spec =
   [("-file", Arg.String (fun s -> parse_file := true; file := s), ": Input file specification");
@@ -30,6 +32,7 @@ let cmd_options_spec =
    ("-thold", Arg.String (fun s -> if s = "true" then use_threshold:=true else use_threshold:=false), ": Use threshold widening");
    ("-delay-wid", Arg.Int (fun s -> delay_wid := s), ": Set number of delay widening steps (depricated)");
    ("-nar", Arg.String (fun s -> if s = "true" then narrow:=true else narrow:=false), ": Use narrowing procedure");
+   ("-accaut", Arg.String (fun s -> parse_file := true; file := s), ": Filename of Accum. Automaton property");
    ("-out", Arg.Int (fun s -> out_put_level := s), 
     ": Output result level\n
       \t 0: Output map after each step\n
