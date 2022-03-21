@@ -19,6 +19,12 @@ module StringMap = Map.Make(struct
     let compare = compare
   end)
 
+(** set key to value in StringMap. If value is none, delete key from the map. *)
+let map_set (key: string) (value: 'a option) (m: 'a StringMap.t) =
+  match value with
+  | None -> StringMap.remove key m
+  | Some v -> StringMap.add key v m
+
 module IntSet = Set.Make(struct
     type t = int
     let compare = compare

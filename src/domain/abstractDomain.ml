@@ -834,59 +834,82 @@ module FiniteValueDomain: Domain = struct
       let result_var = if result_var = "" then "cur_v" else result_var in
       let left_vals_opt = StringMap.find_opt left_var v.fvm in
       let right_vals_opt = StringMap.find_opt right_var v.fvm in
-      let result_vals_opt = match left_vals_opt, right_vals_opt with
-      (* if either is top, then the result is top *)
-      | None, _ | _, None -> None
-      | Some left_vals, Some right_vals ->
-        let merge_vals l r =
-          let result = match binop with
-          | Plus       -> l + r
-          | Minus      -> l - r
-          | Mult       -> l * r
-          | Div        -> l / r
-          | Mod | Modc -> l mod r
-          (* cond operators *)
-          | Eq         -> int_of_bool (l = r)
-          | Ne         -> int_of_bool (l <> r)
-          | Lt         -> int_of_bool (l < r)
-          | Gt         -> int_of_bool (l > r)
-          | Le         -> int_of_bool (l <= r)
-          | Ge         -> int_of_bool (l >= r)
-          | And        -> failwith "unsupported"
-          | Or         -> failwith "unsupported"
-          | Cons       -> failwith "unsupported"
-          | Seq        -> failwith "unsupported"
-          in
-          result
+      match branch, cond_op binop with
+      | NoBranch, _ ->
+        (* just overwrite the result value *)
+        let result_vals_opt = match left_vals_opt, right_vals_opt with
+          | None, _ | _, None -> None
+          | Some left_vals, Some right_vals ->
+            let merge_vals l r =
+              let result = match binop with
+                | Plus       -> l + r
+                | Minus      -> l - r
+                | Mult       -> l * r
+                | Div        -> l / r (* TODO: Handle r = 0 *)
+                | Mod | Modc -> l mod r
+                | Eq         -> int_of_bool (l = r)
+                | Ne         -> int_of_bool (l <> r)
+                | Lt         -> int_of_bool (l < r)
+                | Gt         -> int_of_bool (l > r)
+                | Le         -> int_of_bool (l <= r)
+                | Ge         -> int_of_bool (l >= r)
+                | Cons       -> failwith "unsupported"
+                | Seq        -> failwith "unsupported"
+              in
+              result
+            in
+            Some (set_union_with merge_vals left_vals right_vals)
         in
-        Some (set_union_with merge_vals left_vals right_vals)
-      in
-      let fvm' =
-        match result_vals_opt with
-        | Some result_vals ->
-          if result_var = "cur_v" then
-            (* @Check
-              It makes sense to me to overwrite the values if we're evaluating the current expression. Is this okay?
-              - ketan
-            *)
+        let fvm = match result_vals_opt with
+          | Some result_vals when IntSet.cardinal result_vals <= max_cardinality ->
             StringMap.add result_var result_vals v.fvm
-          else
-            StringMap.update
-              result_var
-              (fun old_vals -> Some (Option.fold ~none:result_vals ~some:(IntSet.union result_vals) old_vals)) v.fvm
-        | None ->
-          v.fvm
-      in
-      let tracked' = StringSet.add result_var v.tracked in
-      let dom' = Vals { fvm = fvm'; tracked = tracked' } in
-      if !debug then
-        Format.printf "OPERATOR: (expr: [%s]@ :=@ [%s] [%s] [%s])@ [branch: %a]@ @[<hov 2>[dom: %a]@]@ @[<hov 2>[result: %a]@]@.---@."
-          result_var
-          left_var (string_of_op binop) right_var
-          pr_branch branch
-          print_abs dom
-          print_abs dom';
-      dom'
+          | _ ->
+            StringMap.remove result_var v.fvm
+        in
+        let tracked = StringSet.add result_var v.tracked in
+        Vals { fvm; tracked }
+
+      | Branch _, false ->
+        failwith "Can't assume a non-boolean"
+
+      | Branch branch, true -> begin
+          let predicate l r = match binop with
+            | Eq -> l = r
+            | Ne -> l <> r
+            | Lt -> l < r
+            | Gt -> l > r
+            | Le -> l <= r
+            | Ge -> l >= r
+          in
+          let left_vals_filtered, right_vals_filtered = match left_vals_opt, binop, right_vals_opt with
+            | None, _, None -> None, None
+            | None, Eq, Some vals | Some vals, Eq, None -> Some vals, Some vals
+            | None, _, Some vals -> None, Some vals
+            | Some vals, _, None -> Some vals, None
+            | Some left_vals, binop, Some right_vals ->
+              let left_vals'  = IntSet.filter (fun l -> IntSet.exists (fun r -> predicate l r) right_vals) left_vals in
+              let right_vals' = IntSet.filter (fun r -> IntSet.exists (fun l -> predicate l r) left_vals)  right_vals in
+              Some left_vals', Some right_vals'
+          in
+          match left_vals_filtered, right_vals_filtered with
+          | Some left_vals, Some right_vals
+            when IntSet.is_empty left_vals || IntSet.is_empty right_vals -> Bot
+
+          | _, _ ->
+            let fvm =
+              v.fvm
+              |> map_set left_var left_vals_filtered
+              |> map_set right_var right_vals_filtered
+              |> StringMap.add result_var (IntSet.singleton (int_of_bool branch))
+            in
+            let tracked =
+              v.tracked
+              |> StringSet.add left_var
+              |> StringSet.add right_var
+              |> StringSet.add result_var
+            in
+            Vals { fvm; tracked }
+        end
 
   let uoperator result_var var unop branch v = failwith "TODO"
 
