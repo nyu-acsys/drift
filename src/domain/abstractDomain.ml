@@ -911,9 +911,19 @@ module FiniteValueDomain: Domain = struct
             Vals { fvm; tracked }
         end
 
-  let uoperator result_var var unop branch v = failwith "TODO"
+  let uoperator result_var var unop branch dom = match dom with
+    | Bot -> dom
+    | Vals v ->
+      let result_var = if result_var = "" then "cur_v" else result_var in
+      let vals_opt = StringMap.find_opt var v.fvm in
+      match unop, branch with
+      | UMinus, NoBranch ->
+        let fvm = map_set result_var (Opt.map (IntSet.map negate) vals_opt) v.fvm in
+        let tracked = StringSet.add result_var v.tracked in
+        Vals { fvm; tracked }
+      | UMinus, Branch _ ->
+        failwith "Can't evaluate an int in a constraint context"
 
-  let assign result_var left_var right_var binop v = failwith "TODO"
 
   (* maybe rework interface? string expr -> term ; TODO check how this is being used *)
   (* 'derived' is only ever called (by der_R, it's only caller) with exprs of the form 'v1 = v2' *)

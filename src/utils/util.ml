@@ -8,6 +8,7 @@ let id x = x
 
 let uncurry f (x, y) = f x y
 
+let negate x = -x
 
 module StringSet = Set.Make(struct
     type t = string
