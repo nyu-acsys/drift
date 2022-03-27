@@ -414,7 +414,13 @@ let mk_let_main x def params =
   | _ ->
       let e =
         let lst =
-          List.rev_map (function Var (x, _) -> x | _ -> failwith "parameters of main function can only be variables")
+          List.rev_map (function
+              | Var (x, _) ->
+                if VarDefMap.mem ("pref" ^ x) !pre_vars then
+                  x
+                else
+                  failwith "Parameters of main function must all be in pre_vars. This may happen if parameters of main do not have proper type annotations."
+              | _ -> failwith "parameters of main function can only be variables")
             params
         in
         mk_pre_apps lst (mk_var x')
