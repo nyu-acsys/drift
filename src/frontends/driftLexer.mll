@@ -22,6 +22,7 @@ let _ =
       ("mod", MOD);
       ("rec", REC);
       ("then", THEN);
+      ("ev", EV);
       ("true", BOOLCONST true)])
 
 let lexical_error lexbuf msg =
