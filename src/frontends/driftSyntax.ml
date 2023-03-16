@@ -142,14 +142,15 @@ let type_to_string = function
 (** Terms *)
 type term =
   | TupleLst of term list * loc         (* tuple list *)
-  | Const of value * loc               (* i (int constant) *)
-  | Var of var * loc                   (* x (variable) *)
-  | App of term * term * loc           (* t1 t2 (function application) *)
-  | UnOp of unop * term * loc          (* uop t (unary operator) *)
-  | BinOp of binop * term * term * loc (* t1 bop t2 (binary infix operator) *)
+  | Const of value * loc                (* i (int constant) *)
+  | Var of var * loc                    (* x (variable) *)
+  | App of term * term * loc            (* t1 t2 (function application) *)
+  | UnOp of unop * term * loc           (* uop t (unary operator) *)
+  | BinOp of binop * term * term * loc  (* t1 bop t2 (binary infix operator) *)
   | PatMat of term * patcase list * loc     (* match t1 with t2 -> t3 | ... *)
   | Ite of term * term * term * loc * asst    (* if t1 then t2 else t3 (conditional) *)
   | Rec of (var * loc) option * (var * loc) * term * loc (*lambda and recursive function*)
+  | Event of term * loc                 (* event *)
 and patcase = 
   | Case of term * term
 
@@ -162,7 +163,8 @@ let loc = function
   | UnOp (_, _, l)
   | Ite (_, _, _, l, _)
   | PatMat (_, _, l)
-  | Rec (_, _, _, l) -> l
+  | Rec (_, _, _, l)
+  | Event (_, l) -> l
 
 let cond_op = function
   | Plus | Mult | Div | Mod | Modc | Minus | And | Or | Cons | Seq -> false
@@ -441,6 +443,8 @@ let mk_let_main_rec x def params =
 let mk_pattern_lambda t e = Rec (None, t, e, "")
 
 let mk_pattern_let_in t def e = mk_app (mk_pattern_lambda t e) def
+
+let mk_event e = Event (e, "")
 
 (** Substitute closed term c for free occurrences of x in e (not capture avoiding if c is not closed) *)
 let subst sm =
