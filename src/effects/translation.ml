@@ -1,62 +1,64 @@
 open DriftSyntax
 open Util
 
-type q = Q of int
-type ev_val = int 
-type 'a ev_ = ev_val -> q * a -> q * a
-type acc_aut = { 
-  qset: q list; 
-  ev_: (ev_val list) ev_ 
-}
+(* simpl_acc_t = \x.\cfg.match cfg with (q, acc) -> (q, x::acc)  *)
+let simpl_acc_t: term =
+  let px = mk_var "x" in
+  let pcfg = mk_var "x" in
+  let q_pat = mk_var x in
+  let acc_pat = mk_var x in
+  Rec (None, px,
+       Rec (None, pcfg, 
+            PatMat (pcfg, 
+                    Case [(TupleLst [q_pat; acc_pat], 
+                          TupleLst [q_pat; BinOp (Cons, px, acc_pat)])])
+           )
+      )
 
-let simpl_acc: acc_aut = {
-  qset: [Q 0; Q 1]; 
-  ev_ = fun (v: ev:val) ((q, vs): q * ev_val list) -> (q, v :: vs)
-}
+(* cfg0: (0, []) describes the initial configuration where 
+ *    q0 is the initial state of the automaton 
+ *    [] is the empty accumulator 
+ *)
+let cfg0_t: term = TupleLst [ Const (Integer 0, ""); Const (IntList [])] 
 
-(* TODO 1: Define simpl_acc as an Drift AST : 
-    TupleLst [
-      TupleLst [Const _; ...] ;       // Q Set
-      Rec                             // ev _ 
-    ]
-*) 
-
-(* TODO 2: aut_cfg is a Drift AST : 
-    TupleLst [
-      Const _;                       // current q 
-      Rec _                          // accumulator fun 
-    ]
-*)
-let rec tr: acc_aut -> term -> aut_cfg -> term * aut_cfg = 
-  fun a e ((q, acc) as acfg) ->
-  match e with
-  | TupleLst (e, l) -> TupleLst (List.map (fun e' -> tr a e' acfg) e, l)
-  | (Const _ | Var _) -> (e, acfg)
-  | App (e1, e2, l) -> 
-    begin match tr a e1 acfg with
-      | (Rec _ as e1', acfg1) ->
-        let e2', acfg2 =  tr a e2 acfg1 in
-        App (App (e1', acfg2, "?"), e2, l)
-      | _ -> raise (Invalid_argument "Expected lambda abstraction")
-    end
-  | Rec _ -> (Rec (None, ((fresh_var "c"), ""), e, ""), acfg) 
-  | UnOp (uop, e1, l) ->
-    let e1', acfg1 = tr a e1 acfg in (UnOp (uop, e1', l), acfg1)
-  | BinOp (bop, e1, e2, l) ->
-    let e1', acfg1 = tr a e1 acfg in
-    let e2', acfg2 = tr a e2 acfg1 in
-    (BinOp (bop, e1', e2', l), acfg2)
-  | Ite (b, et, ef, l, asst) ->
-    let b', acfg1 = tr a b acfg in
-    let et', acfg2 = tr a et afcg1 in
-    let ef', acfg3 = tra a ef acfg1 in
-    (Ite (b', et', ef', l, asst), if b' then acfg2 else acfg3)
-  | Ev (e1, l) -> 
-    let v, acfg1 = tr a e1 acfg in (Const (UnitLit), a.ev_ v acfg1)
-  | PatMat (e1, patlist, l) ->
-    let e1', acfg1 = tr a e1 acfg in
-    let patlist' = List.map (fun (Case (p, e2)) -> Case (p, tr a t e2)) in
-    (PatMat (e', patlist'), acfg1)
+(*
+ * Translation any program p is given by:
+ *   tr_outer p simpl_acc_t cfg0_t   
+ *)
+let tr_outer (e: term) (a: term) (acfg: term) = 
+  let ev_ = mk_var "ev_" in
+  let rec tr (e: term) (acfg: term) = 
+    match e with
+    | TupleLst (e, l) -> TupleLst (List.map (fun e' -> tr a e' acfg) e, l)
+    | (Const _ | Var _) -> TupleLst [e; acfg]
+    | App (e1, e2, l) -> 
+      begin match tr e1 acfg with
+        | TupleLst [Rec _ as e1'; acfg1] -> begin match tr e2 acfg1 with 
+            | TupleLst [e2'; acfg2] -> App ((mk_app e1' acfg2), e2, l)
+          end
+        | _ -> raise (Invalid_argument "Expected lambda abstraction")
+      end
+    | Rec (fopt, px, def, l) ->
+      let fc = fresh_var "c" in
+      TupleLst [Rec (fopt, (fc, ""), Rec (None, px, tr def (Var (fc, "")), l), ""); acfg]
+    | UnOp (uop, e1, l) -> begin match tr e1 acfg with
+        | TupleLst [e1'; acfg1] -> TupleLst [UnOp (uop, e1', l); acfg1]
+      end
+    | BinOp (bop, e1, e2, l) -> begin match tr e1 acfg with  
+        | TupleLst [e1'; acfg1] -> begin match tr e2 acfg1 with 
+            | TupleLst [e2'; acfg2] -> TupleLst [BinOp (bop, e1', e2', l); acfg2]
+          end
+      end
+    | Ite (b, et, ef, l, asst) -> begin match tr b acfg with
+        | TupleLst [b'; acfg1] -> Ite (b', tr et acfg1, tr ef acfg1, l, asst)
+      end
+    | Ev (e1, l) -> TupleLst [Const (UnitLit); mk_app (mk_app ev_ e1) acfg]
+    | PatMat (e1, patlist, l) -> begin match tr e1 acfg with
+        | TupleLst [e1'; acfg1] -> 
+          let patlist' = List.map (fun (Case (p, e2)) -> Case (p, tr e2 acfg1)) patlist in
+          (PatMat (e', patlist'), acfg1)
+  in
+  mk_app (mk_lambda ev_ (tr e acfg)) a 
 
     
                                      
