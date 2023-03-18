@@ -19,7 +19,7 @@ let simpl_acc_t: term =
  *    q0 is the initial state of the automaton 
  *    [] is the empty accumulator 
  *)
-let cfg0_t: term = TupleLst [ Const (Integer 0, ""); Const (IntList [])] 
+let simpl_cfg0: term = TupleLst [ Const (Integer 0, ""); Const (IntList [])] 
 
 (*
  * Translation any program p is given by:
