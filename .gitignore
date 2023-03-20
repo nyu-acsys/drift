@@ -1,6 +1,7 @@
 _build/
 _opam/
 *.native
+*.exe
 *.smt2
 *.dot
 model.html
