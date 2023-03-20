@@ -1,0 +1,13 @@
+(dirs src)
+(include_subdirs unqualified)
+
+(executable
+  (name drift)
+  (public_name drift)
+  (libraries apron apron.boxD apron.boxMPFR apron.boxMPQ apron.octD apron.octMPQ apron.polkaMPQ apron.polkaRll apron.ppl apron.t1pD apron.t1pMPFR apron.t1pMPQ apron.polkaGrid symkat batteries ocolor)
+  (promote (until-clean)))
+
+(env
+ (dev
+  (flags (:standard -rectypes -g -warn-error -A -w -27-33 ))))
+

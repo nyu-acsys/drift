@@ -1,0 +1,4 @@
+(ocamllex driftLexer)
+(menhir 
+  (modules driftGrammar)
+  (flags --explain --dump))
