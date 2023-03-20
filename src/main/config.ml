@@ -25,6 +25,8 @@ let no_simplify = ref false
 
 let color = ref false
 
+let effect_tr = ref false
+
 let cmd_options_spec =
   [("-file", Arg.String (fun s -> parse_file := true; file := s), ": Input file specification");
    ("-domain", Arg.String (fun s -> domain := s), ": Abstract domain specification (Oct, Polka_st, Polka_ls, OctPolka)");
@@ -41,6 +43,7 @@ let cmd_options_spec =
    ("-debug", Arg.Set debug, ": Debug mode");
    ("-bt", Arg.Set bt, ": Allow trace back");
    ("-no-simplify", Arg.Set no_simplify, ": Disable simplification of program expression before analysis");
+   ("-effect-tr", Arg.Unit (fun () -> effect_tr := true), "Translate effectful computation")
   ]
 
 (* Parse auxiliary 'command line options' that are set during parsing of the input file *)

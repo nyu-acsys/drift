@@ -45,7 +45,12 @@ let _ =
       print_endline ("Domain specification: " ^ AbstractValue.name);
       print_endline "\n";
       (* exit 0; *)
-      ignore (semantics el);
+      if !Config.effect_tr then
+        let tre = Translation.tr el (Translation.simpl_acc_t) (Translation.simpl_cfg0) in
+        (print_endline "Translated program:";
+         print_exp stdout tre); 
+      else
+        ignore (semantics el);
       if !out_put_level < 2 then
         print_exp stdout el;
       print_newline ()) t;
