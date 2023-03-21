@@ -74,6 +74,10 @@ let rec pr_exp pl ppf = function
     (pr_exp pl) e
     (pr_pm pl) patlst
     (pr_label pl) l
+| Event (e, l) ->
+  Format.fprintf ppf "@[<2>(event@ %a)%a@]"
+    (pr_exp pl) e
+    (pr_label pl) l
 and pr_pm pl ppf = function
   | [] -> ()
   | [c] -> Format.fprintf ppf "%a" (pr_pattern pl) c

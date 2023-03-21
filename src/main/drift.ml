@@ -46,9 +46,13 @@ let _ =
       print_endline "\n";
       (* exit 0; *)
       if !Config.effect_tr then
-        let tre = Translation.tr el (Translation.simpl_acc_t) (Translation.simpl_cfg0) in
-        (print_endline "Translated program:";
-         print_exp stdout tre); 
+        begin
+          print_endline "\nRunning translation:";
+          let tre = Translation.tr el (Translation.simpl_ev_) (Translation.simpl_cfg0) in
+          (print_endline "\nTranslated program:";
+           print_exp stdout tre;
+           print_endline "\n------------------");
+        end 
       else
         ignore (semantics el);
       if !out_put_level < 2 then
