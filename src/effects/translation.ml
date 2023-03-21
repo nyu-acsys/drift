@@ -61,7 +61,7 @@ let reentrl_cfg0: term = TupleLst ([Const (Integer 0, ""); Const (Integer 0, "")
 
 (*
  * Translation any program e is given by:
- *   tr e simpl_acc_t cfg0_t   
+ *   tr e simpl_ev simpl_cfg0   
  *)
 let tr (e: term) (a: term) (acfg: term) = 
   let ev_ = mk_fresh_var "ev_" in
