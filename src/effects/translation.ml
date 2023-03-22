@@ -157,7 +157,7 @@ let tr (e: term) (a: term) (acfg: term) =
                 (Ite (e1x, tr_ et acfg1x, tr_ ef acfg1x, l, asst))
             ], "")
       end
-    | Event (e1, l) -> (print_endline "\nEvent"; print_exp stdout e); 
+    | Event (e1, l) -> 
       ret (Const (UnitLit, "")) (mk_app (mk_app ev_ e1) acfg)
     | PatMat (e1, patlist, l) ->
       let tr_e1 = tr_ e1 acfg in
@@ -174,3 +174,5 @@ let tr (e: term) (a: term) (acfg: term) =
       end
   in
   mk_app (mk_lambda ev_ (tr_ e acfg)) a 
+
+let tr_simple e = tr e simpl_ev_ simpl_cfg0

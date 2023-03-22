@@ -17,7 +17,7 @@ let id = "id"
 let loop = "loop"
 
 let tests = []
-  
+
 let _ =
   try
     Config.parse;
@@ -36,6 +36,10 @@ let _ =
               DriftSyntax.simplify
             else
               Fun.id)
+        |> (if !Config.effect_tr then
+               Translation.tr_simple 
+            else
+              Fun.id)
         |> label
       in
       if !out_put_level < 2 then
@@ -45,16 +49,16 @@ let _ =
       print_endline ("Domain specification: " ^ AbstractValue.name);
       print_endline "\n";
       (* exit 0; *)
-      if !Config.effect_tr then
-        begin
-          print_endline "\nRunning translation:";
-          let tre = Translation.tr el (Translation.simpl_ev_) (Translation.simpl_cfg0) in
-          (print_endline "\nTranslated program:";
-           print_exp stdout tre;
-           print_endline "\n------------------");
-        end 
-      else
-        ignore (semantics el);
+      (* if !Config.effect_tr then *)
+      (*   begin *)
+      (*     print_endline "\nRunning translation:"; *)
+      (*     let tre = Translation.tr el (Translation.simpl_ev_) (Translation.simpl_cfg0) in *)
+      (*     (print_endline "\nTranslated program:"; *)
+      (*      print_exp stdout tre; *)
+      (*      print_endline "\n------------------"); *)
+      (*   end  *)
+      (* else *)
+      ignore (semantics el);
       if !out_put_level < 2 then
         print_exp stdout el;
       print_newline ()) t;
