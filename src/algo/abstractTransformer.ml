@@ -1000,6 +1000,8 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             ) tlst (Tuple [], m) in
             let _, t' = prop tp t in
             m' |> update false n t'
+    | Event (e, l) ->
+      failwith "Analysis of programs with effects expects '-effect-tr' option"
     | PatMat (e, patlst, l) ->
         (* (if !debug then
         begin
