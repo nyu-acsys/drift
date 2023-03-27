@@ -6,7 +6,18 @@ open Printer
 (* ===                         I. Concrete Semantics AUTOMATON & Initial CFG                === *)
 (* ============================================================================================ *)
 (* simpl_ev_ = \x.\cfg.match cfg with (q, acc) -> (q, x::acc)  *)
-let simpl_ev_: term =
+(* let simpl_ev_: term = *)
+(*   let px = mk_fresh_var "x" in *)
+(*   let pcfg = mk_fresh_var "cfg" in *)
+(*   let q_pat = mk_fresh_var "q" in *)
+(*   let acc_pat = mk_fresh_var "acc" in *)
+(*   mk_lambda px @@ mk_lambda pcfg (PatMat (pcfg, [ *)
+(*       mk_pattern_case  *)
+(*         (TupleLst ([q_pat; acc_pat], ""))             *)
+(*         (TupleLst ([q_pat; mk_op Cons px acc_pat], "")) *)
+(*     ], "")) *)
+
+let simpl_ev_: term = 
   let px = mk_fresh_var "x" in
   let pcfg = mk_fresh_var "cfg" in
   let q_pat = mk_fresh_var "q" in
@@ -14,14 +25,27 @@ let simpl_ev_: term =
   mk_lambda px @@ mk_lambda pcfg (PatMat (pcfg, [
       mk_pattern_case 
         (TupleLst ([q_pat; acc_pat], ""))            
-        (TupleLst ([q_pat; mk_op Cons px acc_pat], ""))
+        (TupleLst ([q_pat; mk_op Plus px acc_pat], ""))
     ], ""))
 
 (* simpl_cfg0: (0, []) describes the initial configuration where 
  *    q0 is the initial state of the automaton 
  *    [] is the empty accumulator 
  *)
-let simpl_cfg0: term = TupleLst ([Const (Integer 0, ""); Const (IntList [], "")], "") 
+
+(* let simpl_cfg0: term = TupleLst ([Const (Integer 0, ""); Const (IntList [], "")], "") *)
+let simpl_cfg0: term = TupleLst ([Const (Integer 0, ""); Const (Integer 0, "")], "") 
+
+let simpl_asst: term = 
+  let pcfg = mk_fresh_var "cfg" in
+  let q_pat = mk_fresh_var "q" in
+  let acc_pat = mk_fresh_var "acc" in
+  let loc = {isast = true; ps = mk_default_loc} in (* TOOD: replace default_loc with more relevant loc *)
+  mk_lambda pcfg (PatMat (pcfg, [
+      mk_pattern_case 
+        (TupleLst ([q_pat; acc_pat], ""))
+        (Ite (BinOp (Eq, acc_pat, mk_int 6, ""), Const (UnitLit, ""), Const (UnitLit, ""), "", loc))
+    ], ""))
 (* ============================================================================================ *)
 
 (* ============================================================================================ *)
@@ -63,7 +87,7 @@ let reentrl_cfg0: term = TupleLst ([Const (Integer 0, ""); Const (Integer 0, "")
  * Translation any program e is given by:
  *   tr e simpl_ev simpl_cfg0   
  *)
-let tr (e: term) (a: term) (acfg: term) = 
+let tr (e: term) (a: term) (acfg: term) (asst: term) = 
   let ev_ = mk_fresh_var "ev_" in
   let ret e cfg = TupleLst ([e; cfg], "") in
   let rec tr_ (e: term) (acfg: term) = 
@@ -173,6 +197,12 @@ let tr (e: term) (a: term) (acfg: term) =
             ], "")
       end
   in
-  mk_app (mk_lambda ev_ (tr_ e acfg)) a 
+  let e', acfg' = mk_fresh_var "e", mk_fresh_var "acfg" in
+  let tr_e = mk_app (mk_lambda ev_ (tr_ e acfg)) a in
+  PatMat (tr_e, [
+      mk_pattern_case
+        (TupleLst ([e'; acfg'], ""))
+        (mk_app asst acfg')
+    ], "")
 
-let tr_simple e = tr e simpl_ev_ simpl_cfg0
+let tr_simple e = tr e simpl_ev_ simpl_cfg0 simpl_asst
