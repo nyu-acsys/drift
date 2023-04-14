@@ -1,87 +1,43 @@
 open DriftSyntax
+open EffectAutomataSyntax
 open Util
 open Printer
 
 (* ============================================================================================ *)
 (* ===                         I. Concrete Semantics AUTOMATON & Initial CFG                === *)
 (* ============================================================================================ *)
-(* simpl_ev_ = \x.\cfg.match cfg with (q, acc) -> (q, x::acc)  *)
-(* let simpl_ev_: term = *)
-(*   let px = mk_fresh_var "x" in *)
-(*   let pcfg = mk_fresh_var "cfg" in *)
-(*   let q_pat = mk_fresh_var "q" in *)
-(*   let acc_pat = mk_fresh_var "acc" in *)
-(*   mk_lambda px @@ mk_lambda pcfg (PatMat (pcfg, [ *)
-(*       mk_pattern_case  *)
-(*         (TupleLst ([q_pat; acc_pat], ""))             *)
-(*         (TupleLst ([q_pat; mk_op Cons px acc_pat], "")) *)
-(*     ], "")) *)
+let simple_aut_spec = "{ QSet   = [0];" ^ 
+                      "  delta  = fun x (q1, acc1) -> (q1, x + acc1);" ^ 
+                      "  assert = fun (q2, acc2) -> acc2 >= 6;" ^ 
+                      "  IniCfg = (0, 0) }"
 
-let simpl_ev_: term = 
-  let px = mk_fresh_var "x" in
-  let pcfg = mk_fresh_var "cfg" in
-  let q_pat = mk_fresh_var "q" in
-  let acc_pat = mk_fresh_var "acc" in
-  mk_lambda px @@ mk_lambda pcfg (PatMat (pcfg, [
-      mk_pattern_case 
-        (TupleLst ([q_pat; acc_pat], ""))            
-        (TupleLst ([q_pat; mk_op Plus px acc_pat], ""))
-    ], ""))
-
-(* simpl_cfg0: (0, []) describes the initial configuration where 
- *    q0 is the initial state of the automaton 
- *    [] is the empty accumulator 
- *)
-
-(* let simpl_cfg0: term = TupleLst ([Const (Integer 0, ""); Const (IntList [], "")], "") *)
-let simpl_cfg0: term = TupleLst ([Const (Integer 0, ""); Const (Integer 0, "")], "") 
-
-let simpl_asst: term = 
-  let pcfg = mk_fresh_var "cfg" in
-  let q_pat = mk_fresh_var "q" in
-  let acc_pat = mk_fresh_var "acc" in
-  let loc = {isast = true; ps = mk_default_loc} in (* TOOD: replace default_loc with more relevant loc *)
-  mk_lambda pcfg (PatMat (pcfg, [
-      mk_pattern_case 
-        (TupleLst ([q_pat; acc_pat], ""))
-        (Ite (BinOp (Eq, acc_pat, mk_int 6, ""), Const (UnitLit, ""), Const (UnitLit, ""), "", loc))
-    ], ""))
 (* ============================================================================================ *)
 
 (* ============================================================================================ *)
 (* ===                         II. Reentrant-Lock AUTOMATON & Initial CFG                   === *)
 (* ============================================================================================ *)
-(* reentrl_ev_ = \x.\cfg.match cfg with 
- *                        (q, acc) -> if (q = q_err) 
- *                                    then (q_err, acc) 
- *                                    else (if (x + acc >= 0) 
- *                                          then (q, x + acc)
- *                                          else (q_err, acc)) *)
-let reentrl_ev_: term = 
-  let px = mk_fresh_var "x" in
-  let pcfg = mk_fresh_var "cfg" in
-  let q_pat = mk_fresh_var "q" in
-  let acc_pat = mk_fresh_var "acc" in
-  let q_err = mk_int (-1) in
-  mk_lambda px @@ mk_lambda pcfg (PatMat (pcfg, [
-      mk_pattern_case 
-        (TupleLst ([q_pat; acc_pat], ""))            
-        ( mk_ite 
-            (mk_op Eq q_pat q_err)
-            (TupleLst ([q_pat; acc_pat], ""))
-            (mk_ite 
-               (mk_op Ge (mk_op Plus px acc_pat) (mk_int 0))
-               (TupleLst ([q_pat; mk_op Plus px acc_pat], ""))
-               (TupleLst ([q_err; acc_pat], ""))
-            )
-        )
-    ], ""))
-(* reentrl_cfg0: (0, []) describes the initial configuration where 
- *    q0 is the initial state of the automaton 
- *    0 is the base value 
- *)
-let reentrl_cfg0: term = TupleLst ([Const (Integer 0, ""); Const (Integer 0, "")], "") 
+let reentrl_aut_spec = "{ QSet   = [0; 1];" ^ 
+                       "  delta  = fun x (q, acc) -> if (q = 1) then (q, acc) else " ^ 
+                       "     if (x + acc >= 0) then (q, x + acc) else (1, acc);" ^ 
+                       "  assert = fun (q, acc) -> q <> 1 ;" ^ 
+                       "  IniCfg = (0, 0) }"
+
 (* ============================================================================================ *)
+let parse_aut_spec s = 
+  let lexbuf = Lexing.from_string s in
+  EffectAutomataGrammar.top EffectAutomataLexer.token lexbuf
+
+let print_aut_spec (spec:aut_spec) = 
+  print_endline "\nEffect Automaton Spec:";
+  print_endline "\nQSet:";
+  print_endline ("[" ^ (String.concat ";" (List.map (fun (Q q) -> string_of_int q) spec.qset)) ^ "]");
+  print_endline "\ndelta:";
+  print_exp stdout spec.delta;
+  print_endline "\nassert:";
+  print_exp stdout spec.asst;
+  print_endline "\ninitial config:";
+  print_exp stdout spec.cfg0;
+  print_endline "\n<-------------------->\n"
 
 (*
  * Translation any program e is given by:
@@ -198,11 +154,15 @@ let tr (e: term) (a: term) (acfg: term) (asst: term) =
       end
   in
   let e', acfg' = mk_fresh_var "e", mk_fresh_var "acfg" in
-  let tr_e = mk_app (mk_lambda ev_ (tr_ e acfg)) a in
-  PatMat (tr_e, [
+  let tr_e_asst = PatMat (tr_ e acfg, [
       mk_pattern_case
         (TupleLst ([e'; acfg'], ""))
         (mk_app asst acfg')
     ], "")
+  in
+  mk_app (mk_lambda ev_ tr_e_asst) a
 
-let tr_simple e = tr e simpl_ev_ simpl_cfg0 simpl_asst
+let tr_simple e = 
+  let aspec = parse_aut_spec reentrl_aut_spec in
+  print_aut_spec (aspec);
+  tr e aspec.delta aspec.cfg0 aspec.asst
