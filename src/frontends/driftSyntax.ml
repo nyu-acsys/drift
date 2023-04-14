@@ -366,6 +366,7 @@ let fo e =
     | Rec (f_opt, (x, _), e, _) ->
         let bvs1 = List.fold_left inc bvs (x :: (f_opt |> Opt.map fst |> Opt.to_list)) in
         fv bvs1 acc e
+    | Event (e, _) -> fv bvs acc e 
   in
   fv StringMap.empty StringMap.empty e
     
