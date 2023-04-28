@@ -35,16 +35,26 @@ let tr (e: term) (a: term) (acfg: term) (asst: term) =
           end
         | _ ->
           let e1x, acfg1x = mk_fresh_var "x", mk_fresh_var "cfg" in
-          let e2x, acfg2x = mk_fresh_var "x", mk_fresh_var "cfg" in
-          PatMat (tr_e1, [
-              mk_pattern_case 
-                (TupleLst ([e1x; acfg1x], ""))
-                (PatMat (tr_ e2 acfg1x, [
-                     mk_pattern_case 
-                       (TupleLst ([e2x; acfg2x], ""))
-                       (App ((mk_app e1x acfg2x), e2x, l))
-                   ], ""))
-            ], "")
+          let tr_e2 = tr_ e2 acfg1x in
+          begin match tr_e2 with
+            | TupleLst ([e2'; ecfg2], "") -> 
+              PatMat (tr_e1, [
+                  mk_pattern_case
+                    (TupleLst ([e1x; acfg1x], ""))
+                    (App ((mk_app e1x ecfg2), e2', l))
+                    ], "")
+            | _ ->              
+              let e2x, acfg2x = mk_fresh_var "x", mk_fresh_var "cfg" in
+              PatMat (tr_e1, [
+                  mk_pattern_case 
+                    (TupleLst ([e1x; acfg1x], ""))
+                    (PatMat (tr_e2, [
+                         mk_pattern_case 
+                           (TupleLst ([e2x; acfg2x], ""))
+                           (App ((mk_app e1x acfg2x), e2x, l))
+                       ], ""))
+                ], "")
+          end
       end
     | UnOp (uop, e1, l) ->
       let tr_e1 = tr_ e1 acfg in
