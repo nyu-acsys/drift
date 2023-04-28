@@ -3,42 +3,6 @@ open EffectAutomataSyntax
 open Util
 open Printer
 
-(* ============================================================================================ *)
-(* ===                         I. Concrete Semantics AUTOMATON & Initial CFG                === *)
-(* ============================================================================================ *)
-let simple_aut_spec = "{ QSet   = [0];" ^ 
-                      "  delta  = fun x (q1, acc1) -> (q1, x + acc1);" ^ 
-                      "  assert = fun (q2, acc2) -> acc2 >= 6;" ^ 
-                      "  IniCfg = (0, 0) }"
-
-(* ============================================================================================ *)
-
-(* ============================================================================================ *)
-(* ===                         II. Reentrant-Lock AUTOMATON & Initial CFG                   === *)
-(* ============================================================================================ *)
-let reentrl_aut_spec = "{ QSet   = [0; 1];" ^ 
-                       "  delta  = fun x (q, acc) -> if (q = 1) then (q, acc) else " ^ 
-                       "     if (x + acc >= 0) then (q, x + acc) else (1, acc);" ^ 
-                       "  assert = fun (q, acc) -> q <> 1 ;" ^ 
-                       "  IniCfg = (0, 0) }"
-
-(* ============================================================================================ *)
-let parse_aut_spec s = 
-  let lexbuf = Lexing.from_string s in
-  EffectAutomataGrammar.top EffectAutomataLexer.token lexbuf
-
-let print_aut_spec (spec:aut_spec) = 
-  print_endline "\nEffect Automaton Spec:";
-  print_endline "\nQSet:";
-  print_endline ("[" ^ (String.concat ";" (List.map (fun (Q q) -> string_of_int q) spec.qset)) ^ "]");
-  print_endline "\ndelta:";
-  print_exp stdout spec.delta;
-  print_endline "\nassert:";
-  print_exp stdout spec.asst;
-  print_endline "\ninitial config:";
-  print_exp stdout spec.cfg0;
-  print_endline "\n<-------------------->\n"
-
 (*
  * Translation any program e is given by:
  *   tr e simpl_ev simpl_cfg0   
@@ -162,7 +126,24 @@ let tr (e: term) (a: term) (acfg: term) (asst: term) =
   in
   mk_app (mk_lambda ev_ tr_e_asst) a
 
-let tr_simple e = 
-  let aspec = parse_aut_spec reentrl_aut_spec in
+let parse_aut_spec file = 
+  let chan = open_in file in
+  let lexbuf = Lexing.from_channel chan in
+  EffectAutomataGrammar.top EffectAutomataLexer.token lexbuf
+
+let print_aut_spec (spec:aut_spec) = 
+  print_endline "\nEffect Automaton Spec:";
+  print_endline "\nQSet:";
+  print_endline ("[" ^ (String.concat ";" (List.map (fun (Q q) -> string_of_int q) spec.qset)) ^ "]");
+  print_endline "\ndelta:";
+  print_exp stdout spec.delta;
+  print_endline "\nassert:";
+  print_exp stdout spec.asst;
+  print_endline "\ninitial config:";
+  print_exp stdout spec.cfg0;
+  print_endline "\n<-------------------->\n"
+
+let tr_effect spec e = 
+  let aspec = parse_aut_spec spec in
   print_aut_spec (aspec);
   tr e aspec.delta aspec.cfg0 aspec.asst
