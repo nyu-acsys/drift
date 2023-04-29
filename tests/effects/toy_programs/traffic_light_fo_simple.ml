@@ -1,6 +1,6 @@
 let next x = 
   ev x;
-  x
+  x - 1 
 
 let rec loop s = 
   if (s > 0) then loop (next s)
