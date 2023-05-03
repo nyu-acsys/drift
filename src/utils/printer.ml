@@ -4,6 +4,7 @@ open SemanticDomain
 open SemanticsDomain
 open SensitiveDomain
 open SenSemantics
+open TracePartDomain
 
 (** Pretty printing *)
 let pr_relation ppf = function
@@ -90,15 +91,15 @@ let print_exp out_ch e =
   if !Config.color then Ocolor_format.prettify_formatter fmt;
   Format.fprintf fmt "%a@?" (pr_exp true) e
 
-let loc_of_node n = get_label_snode n
+let loc_of_node n = get_token_data (get_label_snode n)
 
 let pr_node ppf n = Format.fprintf ppf "%s" (loc_of_node n)
 
 let rec pr_node_full ppf n = print_node n ppf pr_env
 and pr_env ppf = function
   | [] -> ()
-  | [x, (n,r)] -> Format.fprintf ppf "%s, %b: %a" x r pr_node_full n
-  | (x, (n,r)) :: env -> Format.fprintf ppf "%s, %b: %a,@ %a" x r pr_node_full n pr_env env
+  | [x, (n,r)] -> Format.fprintf ppf "%s, %b: %a" (get_token_data x) r pr_node_full n
+  | (x, (n,r)) :: env -> Format.fprintf ppf "%s, %b: %a,@ %a" (get_token_data x) r pr_node_full n pr_env env
 
 let string_of_node n = pr_node Format.str_formatter n; Format.flush_str_formatter ()
 
@@ -110,6 +111,7 @@ let pr_agg_val ppf a = match a with
 
 let pr_ary ppf ary = 
   let (l,e), (rl, ve) = ary in
+  let l, e = get_token_data l, get_token_data e in
   Format.fprintf ppf "@[<1>{@ cur_v:@ Int Array (%s, %s)@ |@ len:@ %a,@ item:@ %a@ }@]" l e pr_agg_val rl pr_agg_val ve
 
 let rec shape_value = function
@@ -141,6 +143,7 @@ let rec pr_value ppf v = match v with
   | Lst lst -> pr_lst ppf lst
 and pr_lst ppf lst =
     let (l,e), (rl, ve, ke) = lst in
+    let l, e = get_token_data l, get_token_data e in
     Format.fprintf ppf "@[<1>{@ cur_v:@ %s List (%s, %s)@ |@ len:@ %a,@ item:@ %a@ }@]" (shape_value ve) l e pr_agg_val rl pr_value ve
 and pr_tuple ppf u = 
   if List.length u = 0 then Format.fprintf ppf "@[<1>unit@]"
