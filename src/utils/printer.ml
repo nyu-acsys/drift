@@ -11,7 +11,7 @@ let pr_relation ppf = function
   | Int v -> Format.fprintf ppf "@[<1>{@ cur_v:@ int@ |@ %a@ }@]" AbstractValue.print_abs v
   | Unit u -> Format.fprintf ppf "@[<1>unit@]"
 
-let pr_label pl ppf l = if pl then Format.fprintf ppf "^%s" l else ()
+let pr_label pl ppf l = if pl then Format.fprintf ppf "@{<gray24>^%s@}" l else ()
 
 let pr_const ppf value = Format.fprintf ppf "%s" (str_of_val value)
 
@@ -74,6 +74,10 @@ let rec pr_exp pl ppf = function
     (pr_exp pl) e
     (pr_pm pl) patlst
     (pr_label pl) l
+| Event (e, l) ->
+  Format.fprintf ppf "@[<2>(event@ %a)%a@]"
+    (pr_exp pl) e
+    (pr_label pl) l
 and pr_pm pl ppf = function
   | [] -> ()
   | [c] -> Format.fprintf ppf "%a" (pr_pattern pl) c
@@ -81,7 +85,10 @@ and pr_pm pl ppf = function
 and pr_pattern pl ppf (Case (e1, e2)) = 
   Format.fprintf ppf "@[<2>%a@ ->@ %a@]" (pr_exp pl) e1 (pr_exp pl) e2
 
-let print_exp out_ch e = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" (pr_exp true) e
+let print_exp out_ch e =
+  let fmt = Format.formatter_of_out_channel out_ch in
+  if !Config.color then Ocolor_format.prettify_formatter fmt;
+  Format.fprintf fmt "%a@?" (pr_exp true) e
 
 let loc_of_node n = get_label_snode n
 
@@ -125,8 +132,8 @@ let rec shape_value = function
   | Lst _ -> "List"
 
 let rec pr_value ppf v = match v with
-  | Bot -> Format.fprintf ppf "_|_"
-  | Top -> Format.fprintf ppf "T"
+  | Bot -> Format.fprintf ppf "⊥"
+  | Top -> Format.fprintf ppf "⊤"
   | Relation r -> pr_relation ppf r
   | Table t -> print_table t ppf pr_value
   | Tuple u -> pr_tuple ppf u

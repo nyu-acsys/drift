@@ -31,8 +31,7 @@ exception Main_not_found of string
 (** Unary operators *)
 type unop =
   | UMinus (* - *)
-  | Not (* not *)
-    
+
 (** Binary infix operators *)
 type binop =
   | Plus  (* + *)
@@ -94,8 +93,7 @@ let string_of_op = function
         
 let string_of_unop = function
   | UMinus (* - *) -> "-"
-  | Not (* not *) -> "not"
-        
+
 let op_of_string = function
   |  "+" -> Plus  (* + *) 
   | ">=" -> Ge    (* >= *) 
@@ -116,7 +114,6 @@ let op_of_string = function
 
 let unop_of_string = function
   | "-" -> UMinus
-  | "not" -> Not
   | s -> raise (Invalid_argument (s^": Invalid unary operator inside pre-defined var"))
         
 let is_mod = function
@@ -145,14 +142,15 @@ let type_to_string = function
 (** Terms *)
 type term =
   | TupleLst of term list * loc         (* tuple list *)
-  | Const of value * loc               (* i (int constant) *)
-  | Var of var * loc                   (* x (variable) *)
-  | App of term * term * loc           (* t1 t2 (function application) *)
-  | UnOp of unop * term * loc          (* uop t (unary operator) *)
-  | BinOp of binop * term * term * loc (* t1 bop t2 (binary infix operator) *)
+  | Const of value * loc                (* i (int constant) *)
+  | Var of var * loc                    (* x (variable) *)
+  | App of term * term * loc            (* t1 t2 (function application) *)
+  | UnOp of unop * term * loc           (* uop t (unary operator) *)
+  | BinOp of binop * term * term * loc  (* t1 bop t2 (binary infix operator) *)
   | PatMat of term * patcase list * loc     (* match t1 with t2 -> t3 | ... *)
   | Ite of term * term * term * loc * asst    (* if t1 then t2 else t3 (conditional) *)
   | Rec of (var * loc) option * (var * loc) * term * loc (*lambda and recursive function*)
+  | Event of term * loc                 (* event *)
 and patcase = 
   | Case of term * term
 
@@ -165,7 +163,8 @@ let loc = function
   | UnOp (_, _, l)
   | Ite (_, _, _, l, _)
   | PatMat (_, _, l)
-  | Rec (_, _, _, l) -> l
+  | Rec (_, _, _, l)
+  | Event (_, l) -> l
 
 let cond_op = function
   | Plus | Mult | Div | Mod | Modc | Minus | And | Or | Cons | Seq -> false
@@ -284,6 +283,9 @@ let label e =
         let e1', k1 = l k e1 in
         let e2', k2 = l k1 e2 in
         BinOp (bop, e1', e2', string_of_int k2), k2 + 1
+      | Event (e1, _) -> 
+        let e1', k1 = l k e1 in
+        Event (e1', string_of_int k1), k1 + 1
     and lp k = function
       | [] -> [], k
       | Case (e1, e2) :: tl -> 
@@ -311,7 +313,7 @@ let fresh_var =
     let new_index = last_index + 1 in
     Hashtbl.replace used_names name new_index;
     name ^ (string_of_int new_index)
-  
+let mk_fresh_var = compose mk_var fresh_var
     
 let fv_acc acc e =
   let rec fv bvs acc = function
@@ -335,6 +337,7 @@ let fv_acc acc e =
     | Rec (f_opt, (x, _), e, _) ->
         let d = StringSet.of_list (x :: (f_opt |> Opt.map fst |> Opt.to_list)) in
         fv (StringSet.union bvs d) acc e
+    | Event (e, _) -> fv bvs acc e
   in
   fv StringSet.empty acc e
 
@@ -363,6 +366,7 @@ let fo e =
     | Rec (f_opt, (x, _), e, _) ->
         let bvs1 = List.fold_left inc bvs (x :: (f_opt |> Opt.map fst |> Opt.to_list)) in
         fv bvs1 acc e
+    | Event (e, _) -> fv bvs acc e 
   in
   fv StringMap.empty StringMap.empty e
     
@@ -417,7 +421,13 @@ let mk_let_main x def params =
   | _ ->
       let e =
         let lst =
-          List.rev_map (function Var (x, _) -> x | _ -> failwith "parameters of main function can only be variables")
+          List.rev_map (function
+              | Var (x, _) ->
+                if VarDefMap.mem ("pref" ^ x) !pre_vars then
+                  x
+                else
+                  failwith "Parameters of main function must all be in pre_vars. This may happen if parameters of main do not have proper type annotations."
+              | _ -> failwith "parameters of main function can only be variables")
             params
         in
         mk_pre_apps lst (mk_var x')
@@ -438,6 +448,8 @@ let mk_let_main_rec x def params =
 let mk_pattern_lambda t e = Rec (None, t, e, "")
 
 let mk_pattern_let_in t def e = mk_app (mk_pattern_lambda t e) def
+
+let mk_event e = Event (e, "")
 
 (** Substitute closed term c for free occurrences of x in e (not capture avoiding if c is not closed) *)
 let subst sm =
@@ -497,6 +509,7 @@ let subst sm =
                 ps
             in
             PatMat (s t, ps1, l)
+        | Event (e, l) -> Event (s e, l)
   in subst sm
     
 let simplify =
@@ -532,4 +545,5 @@ let simplify =
       PatMat (simp e1, ps', l)
   | Ite (b, t, e, l, a) ->
       Ite (simp b, simp t, simp e, l, a)
+  | Event (e, l) -> Event (simp e, l)
   in simp

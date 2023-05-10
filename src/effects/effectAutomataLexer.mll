@@ -1,8 +1,8 @@
-(** Grammar rules for lexer of MiniML *)
+(** Grammar rules for lexer of Effect Automata Specs *)
 {
 open Util
-open DriftSyntax
-open DriftGrammar
+open EffectAutomataSyntax
+open EffectAutomataGrammar
 open Lexing
 
 let keyword_table = Hashtbl.create 32
@@ -15,21 +15,18 @@ let _ =
       ("assert", ASSERT);
       ("fun", FUN);
       ("if", IF);
-      ("in", IN);
-      ("match", MATCH);
-      ("with", WITH);
-      ("let", LET);
       ("mod", MOD);
-      ("rec", REC);
       ("then", THEN);
-      ("ev", EV);
-      ("true", BOOLCONST true)])
+      ("true", BOOLCONST true);
+      ("QSet", QSET);
+      ("delta", DELTA);
+      ("IniCfg", INICFG)])
 
 let lexical_error lexbuf msg =
   let pos = lexeme_start_p lexbuf in 
   let pos_line = pos.pos_lnum in
   let pos_col = pos.pos_cnum - pos.pos_bol in
-  let pos' = { pl = pos_line; pc = pos_col } in
+  let pos':pos = { pl = pos_line; pc = pos_col } in
   fail pos' "Syntax error"
 }
 
@@ -51,24 +48,6 @@ rule token = parse
   [' ' '\t'] { token lexbuf }
 | '\n' { Lexing.new_line lexbuf; token lexbuf }
 | "(*" { comments 0 lexbuf }
-| "(*-:{"("v"as v)":"white_space("unit"as d)white_space"|"white_space("unit" as t)white_space"}*)"
-{
-  let vk = init_ref ("cur_"^ Char.escaped v) (string_to_type d) t "=" t in 
-  PRE (vk)
-}
-| "(*-:{"("v"as v)":"white_space(("bool"|"int")as d)white_space"|"white_space(bool_str as t)white_space"}*)"
-{ 
-  let vk = init_ref ("cur_"^ Char.escaped v) (string_to_type d) t "=" t in 
-  PRE (vk) 
-}
-| "(*-:{"("v"as v)":"white_space(("bool"|"int")as d)white_space"|"white_space("v" as l)white_space(bin_op_str as bop)white_space((ident|digits) as r)white_space"}*)"
-{ 
-  let r' = try string_of_int (int_of_string r)
-    with _ -> "pref"^r in
-  let vk = init_ref ("cur_"^ Char.escaped v) (string_to_type d) ("cur_"^Char.escaped l) bop r' in 
-  PRE (vk) 
-}
-| ":"  { COLON }
 | ","  { COMMA }
 | ";"  { SEMI }
 | "->" { ARROW }
@@ -76,7 +55,6 @@ rule token = parse
 | ">=" { GE }
 | "&&" { AND }
 | "||" { OR }
-| "|" { BAR }
 | "=" { EQ }
 | "<>" { NE }
 | "<" { LT }
@@ -84,22 +62,21 @@ rule token = parse
 | "::" { CONS }
 | "[" { LSQBR }
 | "]" { RSQBR }
-| "[|" { LARYBR }
-| "|]" { RARYBR }
 | '+' { PLUS }
 | '-' { MINUS }
 | '/' { DIV }
-| types as t { TYPE (t) }
 | '*' { TIMES }
 | '(' { LPAREN }
 | ')' { RPAREN }
+| '{' { LBRACE }
+| '}' { RBRACE }
 | ident as kw
     { try
       Hashtbl.find keyword_table kw
     with Not_found ->
       IDENT (kw)
     }
-| empty_list { EMPTYLST }
+| empty_list { EMPTYLIST }
 | digits as num { INTCONST (int_of_string num) }
 | eof { EOF }
 | _ { lexical_error lexbuf None }

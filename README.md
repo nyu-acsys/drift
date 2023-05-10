@@ -21,6 +21,8 @@ Please use `opam install` to install the following opam libraries:
 - `menhir`, version >= 20181113
 - `conf-ppl`, version >= 1
 - `apron`, version >= 0.9.10
+- `ocolor`
+- `batteries`
 
 Please execute the following commands in a terminal to satisfy these requirements. We here assume an Ubuntu/Debian system but the setup for other Linux distributions and Mac OS will be very similar. The first line can be omitted if you are working from an existing opam OCaml switch >= 4.06:
 ```bash

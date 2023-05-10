@@ -1,8 +1,8 @@
-
 open Apron
 open DriftSyntax
 open Util
 open Config
+open Format
 
 (*
  *******************************
@@ -10,27 +10,27 @@ open Config
  *******************************
  *)
 type var = string
-      
-(*let parse_domain = function
-  | "Box" -> Box.manager_alloc () |> Obj.magic
-  | "Oct" -> Oct.manager_alloc () |> Obj.magic
-  | "Polka_st" -> Polka.manager_alloc_strict() |> Obj.magic
-  | "Polka_ls" -> Polka.manager_alloc_loose () |> Obj.magic
-  | "Polka_eq" -> Polka.manager_alloc_equalities() |> Polka.manager_of_polka_equalities |> Obj.magic
-  | "Ppl_st" -> Ppl.manager_alloc_strict() |> Ppl.manager_of_ppl_strict |> Obj.magic
-  | "Ppl_gd" ->  Ppl.manager_alloc_grid() |> Ppl.manager_of_ppl_grid |> Obj.magic
-  | "Polka_gd" -> let man_polka = Polka.manager_alloc_strict() in
-      let man_pplgrid = Ppl.manager_alloc_grid() in
-      PolkaGrid.manager_alloc man_polka man_pplgrid |> PolkaGrid.manager_of_polkagrid |> Obj.magic
-  | _ -> raise (Invalid_argument "Incorrect domain specification")*)
+
+(* For linear constraints. Which branch of a boolean condition are we in? *)
+type bool_branch =
+  | NoBranch
+  | Branch of bool
+
+let pr_branch ppf branch =
+  Format.pp_print_string ppf (match branch with
+  | NoBranch -> "NoBranch"
+  | Branch bool -> "Branch " ^ string_of_bool bool
+  )
+
 (* Define Abstract Domain Module*)
 
 module type Domain =
   sig
     type t
+    val name : string
     val from_int : int -> t
     val is_bot : t -> bool
-    val contains_var : string -> t -> bool
+    val contains_var : var -> t -> bool
     val leq : t -> t -> bool
     val eq : t -> t -> bool
     val join :
@@ -38,49 +38,48 @@ module type Domain =
     val meet :
       t -> t -> t
     val alpha_rename :
-      t -> string -> string -> t
-    val forget_var : string -> t -> t
+      t -> var -> var -> t
+    val forget_var : var -> t -> t
     val project_other_vars :
-      t -> string list -> t
+      t -> var list -> t
     val top : t
     val bot : t
     val equal_var :
-      t -> string -> string -> t
+      t -> var -> var -> t
     val widening :
       t -> t -> t
     val operator :
-      string ->
-      string ->
-      string ->
-      DriftSyntax.binop -> int -> t -> t
+      var ->
+      var ->
+      var ->
+      DriftSyntax.binop -> bool_branch -> t -> t
     val uoperator :
-      string ->
-      string ->
-      DriftSyntax.unop -> int -> t -> t
+      var ->
+      var ->
+      DriftSyntax.unop -> bool_branch -> t -> t
     val assign :
-      string ->
-      string ->
-      string -> DriftSyntax.binop -> t -> t
+      var ->
+      var ->
+      var -> DriftSyntax.binop -> t -> t
     val print_abs : Format.formatter -> t -> unit
-    (*val print_env : Format.formatter -> t -> unit*)
-    val derived : string -> t -> t
-    val sat_cons : t -> string -> bool
+    val sat_cons : t -> var -> bool
   end
         
 module type DomainManager =
   sig
     type t
     val man : t Apron.Manager.t
+    val name : string
   end
       
-module BaseDomain(Manager : DomainManager) : Domain = 
+module BaseDomain(Manager : DomainManager) : Domain =
   struct
     open Manager
-    type t = Manager.t Abstract1.t 
+    type t = Manager.t Abstract1.t
+    let name = Manager.name
 
     let max_size = 150
     let max_length = 15
-
     let from_int c =
       let var_v = "cur_v" |> Var.of_string in
       let env = Environment.make [|var_v|] [||] in
@@ -327,38 +326,18 @@ module BaseDomain(Manager : DomainManager) : Domain =
               let ea = Lincons1.array_make env' 1 in
               Lincons1.array_set ea 0 eq; ea
             in
-            (*let expr = vl ^ "=" ^ vr in
-            let tab = Parser.tcons1_of_lstring env' [expr] in*)
-            Hashtbl.add cache (env, vl, vr) (env', tab); env', tab)
-            ()
+            Hashtbl.add cache (env, vl, vr) (env', tab); env', tab) ()
         in
-        (* Creation of abstract value vl = vr *)
-        (* (if !debug then
-        begin
-          Format.printf "\n\n = operation \n";
-          Format.printf "%s \n" expr;
-          Format.printf "Before: " ;
-          Abstract1.print Format.std_formatter v;
-          Format.printf "\n";
-        end); *)
         let v' = Abstract1.change_environment man v env' false in
         let res = Abstract1.meet_lincons_array man v' tab in
-        
-        (* (if !debug then
-        begin
-          Format.printf "result: " ;
-          Abstract1.print Format.std_formatter res;
-          Format.printf "\n";
-        end); *)
         Abstract1.minimize_environment man res
-          (* res *)
-          
+
     let licons_ref = 
       let env = Environment.make [||] [||] in
       let ary = Lincons1.array_make env 0 in
       ref ary
 
-    let licons_earray env (vars : string list) complex = 
+    let licons_earray env (vars : var list) complex =
       if complex = false then 
        thresholdsSet:= !thresholdsSet |> ThresholdsSetType.remove 111 |> ThresholdsSetType.remove 101;
       let tset_size = 
@@ -512,9 +491,10 @@ module BaseDomain(Manager : DomainManager) : Domain =
                  Abstract1.meet_tcons_array man v' tab
                end
            in
-           if cons = -1 then vt
-           else (* Bool value *)
-             let exprv = vres ^ " = " ^ (string_of_int cons) in
+           match cons with
+           | NoBranch -> vt
+           | Branch branch ->
+             let exprv = vres ^ " = " ^ (string_of_int (int_of_bool branch)) in
              let tab = Parser.tcons1_of_lstring env [exprv] in
              Abstract1.meet_tcons_array man vt tab
           )
@@ -546,7 +526,6 @@ module BaseDomain(Manager : DomainManager) : Domain =
       match op with
       | UMinus -> let v' = operator vres "0" ve Minus cons v in
          alpha_rename v' ve "cur_v"
-      | Not -> failwith "Not yet implemented"
 
     let assign vres vl vr op v = 
       let vres = if vres = "" then "cur_v" else vres in
@@ -584,30 +563,6 @@ module BaseDomain(Manager : DomainManager) : Domain =
     let print_env ppf v = let env = Abstract1.env v in
         Environment.print ppf env
 
-    let derived expr v = 
-      (* (if !debug then
-      begin
-        Format.printf "\n\nStrengthen derived\n";
-        Format.printf "%s \n" expr;
-        Format.printf "Before: " ;
-        Abstract1.print Format.std_formatter v;
-        Format.printf "\n";
-      end); *)
-      let res = try 
-        let env = Abstract1.env v in
-        let tab = Parser.tcons1_of_lstring env [expr] in
-        Abstract1.meet_tcons_array man v tab 
-        with
-        _ -> v
-      in
-      (* (if !debug then
-        begin
-          Format.printf "result: " ;
-          Abstract1.print Format.std_formatter res;
-          Format.printf "\n";
-        end); *)
-      res
-
     let sat_cons v var =
       if contains_var var v && contains_var "cur_v" v then
         let env = Abstract1.env v in
@@ -617,15 +572,10 @@ module BaseDomain(Manager : DomainManager) : Domain =
       else false
   end
 
-(*module BaseManager : DomainManager =
-  struct
-    type t = Oct.t
-    let man = !domain |> parse_domain
-  end*)
-
 module ProductDomain(D1 : Domain)(D2: Domain) : Domain =
   struct
     type t = D1.t * D2.t
+    let name = D1.name ^ " * " ^ D2.name
     let from_int c =
       D1.from_int c, D2.from_int c
         
@@ -681,115 +631,315 @@ module ProductDomain(D1 : Domain)(D2: Domain) : Domain =
       D1.print_abs ppf v1;
       Format.print_string " && ";
       D2.print_abs ppf v2
-        
-    let derived expr (v1, v2) =
-      D1.derived expr v1,
-      D2.derived expr v2
-        
+
     let sat_cons (v1, v2) var =
       D1.sat_cons v1 var ||
       D2.sat_cons v2 var
   end
 
+module FiniteValueDomain: Domain = struct
+  (** This domain tracks sets of values of all the variables we've seen.
+    *
+    * The domain is either [Bot], or [Vals {fvm, tracked}] where [tracked] is a set
+    * of all tracked variables and [fvm] (finite value map) is a mapping (some
+    * or all) tracked variables to sets of values. The values that [fvm] doesn't
+    * hold (but are in [tracked]) are considered unbounded (so, in the range
+    * (-inf, inf)).
+    *
+    * One invariant is that no variable in [Vals {fvm}] is mapped to an empty
+    * set, since this indicates a bottom value (and we don't want to have
+    * multliple representations for bottom).
+    *)
+  type t =
+    | Vals of { fvm: IntSet.t StringMap.t; tracked: StringSet.t }
+    | Bot
+
+  let name = "FiniteValue"
+  let from_int c = Vals { fvm = StringMap.singleton "cur_v" (IntSet.singleton c); tracked = StringSet.singleton "cur_v" }
+  let is_bot v = (v = Bot)
+  let contains_var var = function
+    | Vals v -> StringSet.mem var v.tracked
+    | Bot -> false
+
+  let max_cardinality = 32
+
+  let print_abs ppf = function
+    | Bot -> fprintf ppf "@[bot@]"
+    | Vals v -> begin
+      if StringSet.is_empty v.tracked then fprintf ppf "@[top@]" else
+      fprintf ppf "@[{";
+        pp_print_list
+          ~pp_sep:(fun ppf () -> pp_print_custom_break ~fits:(";", 1, "") ~breaks:("",0,"") ppf)
+          (fun ppf var ->
+            fprintf ppf "%s =@ " var;
+            match StringMap.find_opt var v.fvm with
+            | None ->
+              pp_print_string ppf "top"
+            | Some vals ->
+              fprintf ppf "@[<hov 2>[";
+              pp_print_list
+                ~pp_sep:(fun ppf () -> pp_print_custom_break ~fits:(",",1,"") ~breaks:("",0,"") ppf)
+                pp_print_int
+                ppf
+                (IntSet.elements vals);
+              fprintf ppf "]@]";
+              )
+          ppf
+          (StringSet.elements v.tracked);
+      fprintf ppf "}@]";
+    end
+
+  let leq v1 v2 = match (v1, v2) with
+    | Bot, _ -> true
+    | Vals _, Bot -> false
+    | Vals v1, Vals v2 ->
+      let pointwise_leq var =
+        match (StringMap.find_opt var v1.fvm, StringMap.find_opt var v2.fvm) with
+        | _         , None       -> true
+        | None      , Some _     -> false
+        | Some vals1, Some vals2 -> IntSet.subset vals1 vals2 || IntSet.equal vals1 vals2
+      (* the comparison HAS to be over the v2 since missing elements are considered top.                             *)
+      (* as an example: ({ } <= { a = {1,2} }) = false. This wouldn't be the case if the comparison was made over v1 *)
+      in StringSet.for_all pointwise_leq v2.tracked
+
+  let eq v1 v2 = match (v1, v2) with
+    | Bot, Bot -> true
+    | Vals v1, Vals v2 -> StringMap.equal (IntSet.equal) v1.fvm v2.fvm
+    | _, _ -> false
+
+  let join v1 v2 = match v1, v2 with
+    | Bot, _ -> v2
+    | _, Bot -> v1
+    | Vals v1', Vals v2' ->
+      if leq v1 v2 then v2 else
+      if leq v2 v1 then v1 else
+      let fvm =
+        StringMap.merge (fun _var vals1 vals2 -> match vals1, vals2 with
+        | _, None -> None
+        | None, _ -> None
+        | Some x, Some y -> Some (IntSet.union x y)
+        ) v1'.fvm v2'.fvm
+      in
+      let tracked = StringSet.union v1'.tracked v2'.tracked in
+      Vals { fvm; tracked }
+
+  let meet v1 v2 = match v1, v2 with
+    | _, Bot | Bot, _ -> Bot
+    | Vals v1', Vals v2' ->
+      if leq v1 v2 then v1 else
+      if leq v2 v1 then v2 else
+      let fvm =
+        StringMap.merge (fun _var vals1 vals2 -> match vals1, vals2 with
+        | None, None -> None
+        | Some x, None -> Some x
+        | None, Some y -> Some y
+        | Some x, Some y -> Some (IntSet.inter x y)
+        ) v1'.fvm v2'.fvm
+      in
+      if StringMap.exists (fun _ vals -> IntSet.is_empty vals) fvm then Bot else
+      let tracked = StringSet.union v1'.tracked v2'.tracked in
+      Vals { fvm; tracked }
+
+  let alpha_rename v old_var new_var = match v with
+    | Bot -> v
+    | Vals v' ->
+      if old_var = new_var || not (contains_var old_var v) then v else
+      let tracked = v'.tracked |> StringSet.remove old_var |> StringSet.add new_var in
+      let fvm = match StringMap.find_opt old_var v'.fvm with
+      | None -> v'.fvm
+      | Some vs -> v'.fvm |> StringMap.remove old_var |> StringMap.add new_var vs
+      in
+      Vals { fvm; tracked }
+
+  let forget_var var v = match v with
+    | Bot -> v
+    | Vals v -> Vals { fvm = StringMap.remove var v.fvm; tracked = StringSet.remove var v.tracked }
+
+  let project_other_vars v vars =
+    let vars = "cur_v" :: vars in
+    match v with
+    | Bot -> v
+    | Vals v' ->
+      if StringSet.equal (StringSet.of_list vars) v'.tracked then v else
+      let fvm =
+        vars
+        |> List.to_seq
+        |> Seq.filter_map (fun var -> StringMap.find_opt var v'.fvm |> Opt.map (fun vals -> (var, vals)))
+        |> StringMap.of_seq
+      in
+      let tracked = StringSet.of_list vars in
+      Vals { fvm; tracked }
+
+  let top = Vals { fvm = StringMap.empty; tracked = StringSet.empty }
+  let bot = Bot
+
+  (** add the constraint: var1 = var2 *)
+  let equal_var v var1 var2 = match v with
+    | Bot -> v
+    | Vals v ->
+      let tracked = v.tracked |> StringSet.add var1 |> StringSet.add var2 in
+      match StringMap.find_opt var1 v.fvm, StringMap.find_opt var2 v.fvm with
+      | None, None -> Vals v
+      | Some vals1, None -> Vals { fvm = StringMap.add var2 vals1 v.fvm; tracked }
+      | None, Some vals2 -> Vals { fvm = StringMap.add var1 vals2 v.fvm; tracked }
+      | Some vals1, Some vals2 ->
+        let vals = IntSet.inter vals1 vals2 in
+        if IntSet.is_empty vals then Bot else
+        Vals { fvm = v.fvm |> StringMap.add var1 vals |> StringMap.add var2 vals; tracked }
+
+  (* join old & new, replace by top every var whose values exceed max_cardinality *)
+  let widening old_v new_v =
+    let v = join old_v new_v in
+    match v with
+    | Bot -> Bot
+    | Vals {fvm; tracked} ->
+      let fvm = StringMap.filter (fun _ vals -> IntSet.cardinal vals <= max_cardinality) fvm in
+      Vals { fvm; tracked }
+
+  let eval_binop binop l r = match binop with
+    | Plus       -> l + r
+    | Minus      -> l - r
+    | Mult       -> l * r
+    | Div        -> l / r (* TODO: Handle r = 0 *)
+    | Mod | Modc -> l mod r
+    | Eq         -> int_of_bool (l = r)
+    | Ne         -> int_of_bool (l <> r)
+    | Lt         -> int_of_bool (l < r)
+    | Gt         -> int_of_bool (l > r)
+    | Le         -> int_of_bool (l <= r)
+    | Ge         -> int_of_bool (l >= r)
+    | Cons       -> failwith "unsupported"
+    | Seq        -> failwith "unsupported"
+
+  let operator result_var left_var right_var binop branch dom = match dom with
+    | Bot -> dom
+    | Vals v ->
+      let result_var = if result_var = "" then "cur_v" else result_var in
+      let left_vals_opt = StringMap.find_opt left_var v.fvm in
+      let right_vals_opt = StringMap.find_opt right_var v.fvm in
+      match branch, cond_op binop with
+      | NoBranch, _ ->
+        (* just overwrite the result value *)
+        let result_vals_opt = match left_vals_opt, right_vals_opt with
+          | None, _ | _, None -> None
+          | Some left_vals, Some right_vals ->
+            Some (set_union_with (eval_binop binop) left_vals right_vals)
+        in
+        let fvm = match result_vals_opt with
+          | Some result_vals when IntSet.cardinal result_vals <= max_cardinality ->
+            StringMap.add result_var result_vals v.fvm
+          | _ ->
+            StringMap.remove result_var v.fvm
+        in
+        let tracked = StringSet.add result_var v.tracked in
+        Vals { fvm; tracked }
+
+      | Branch _, false ->
+        failwith "Can't assume a non-boolean"
+
+      | Branch branch, true -> begin
+          let predicate l r = match binop with
+            | Eq -> l = r
+            | Ne -> l <> r
+            | Lt -> l < r
+            | Gt -> l > r
+            | Le -> l <= r
+            | Ge -> l >= r
+          in
+          let left_vals_filtered, right_vals_filtered = match left_vals_opt, binop, right_vals_opt with
+            | None, _, None -> None, None
+            | None, Eq, Some vals | Some vals, Eq, None -> Some vals, Some vals
+            | None, _, Some vals -> None, Some vals
+            | Some vals, _, None -> Some vals, None
+            | Some left_vals, binop, Some right_vals ->
+              let left_vals'  = IntSet.filter (fun l -> IntSet.exists (fun r -> predicate l r) right_vals) left_vals in
+              let right_vals' = IntSet.filter (fun r -> IntSet.exists (fun l -> predicate l r) left_vals)  right_vals in
+              Some left_vals', Some right_vals'
+          in
+          match left_vals_filtered, right_vals_filtered with
+          | Some left_vals, Some right_vals
+            when IntSet.is_empty left_vals || IntSet.is_empty right_vals -> Bot
+
+          | _, _ ->
+            let fvm =
+              v.fvm
+              |> map_set left_var left_vals_filtered
+              |> map_set right_var right_vals_filtered
+              |> StringMap.add result_var (IntSet.singleton (int_of_bool branch))
+            in
+            let tracked =
+              v.tracked
+              |> StringSet.add left_var
+              |> StringSet.add right_var
+              |> StringSet.add result_var
+            in
+            Vals { fvm; tracked }
+        end
+
+  let uoperator result_var var unop branch dom = match dom with
+    | Bot -> dom
+    | Vals v ->
+      let result_var = if result_var = "" then "cur_v" else result_var in
+      let vals_opt = StringMap.find_opt var v.fvm in
+      match unop, branch with
+      | UMinus, NoBranch ->
+        let fvm = map_set result_var (Opt.map (IntSet.map negate) vals_opt) v.fvm in
+        let tracked = StringSet.add result_var v.tracked in
+        Vals { fvm; tracked }
+      | UMinus, Branch _ ->
+        failwith "Can't evaluate an int in a constraint context"
+
+  let assign result_var left_var right_var binop dom = match dom with
+    | Bot -> dom
+    | Vals v ->
+      let result_var = if result_var = "" then "cur_v" else result_var in
+      let result_vals_opt = Opt.map2 (set_union_with (eval_binop binop)) (StringMap.find_opt left_var v.fvm) (StringMap.find_opt right_var v.fvm) in
+      let fvm = match result_vals_opt with
+        | Some result_vals when IntSet.cardinal result_vals <= max_cardinality ->
+          StringMap.add result_var result_vals v.fvm
+        | _ ->
+          StringMap.remove result_var v.fvm
+      in
+      let tracked = StringSet.add result_var v.tracked in
+      Vals { fvm; tracked }
+
+  (* can constraints on `var` be satisfied (assuming cur_v = var here) *)
+  let sat_cons v var = match v with
+    | Bot -> false
+    | Vals v ->
+      let var_sat_cons var =
+        StringMap.find_opt var v.fvm
+        |> Option.fold ~none:true ~some:(fun vals -> not @@ IntSet.is_empty vals)
+      in
+      var_sat_cons var && var_sat_cons "cur_v"
+end
     
 module OctDomain = BaseDomain(struct
   type t = Oct.t
   let man = Oct.manager_alloc ()
+  let name = "Octagon"
 end)
 
 module PolkaStrictDomain = BaseDomain(struct
   type t = Polka.strict Polka.t
   let man = Polka.manager_alloc_strict ()
+  let name = "PolkaStrict"
 end)
                                 
 module PolkaLooseDomain = BaseDomain(struct
   type t = Polka.loose Polka.t
   let man = Polka.manager_alloc_loose ()
+  let name = "PolkaLoose"
 end)
 
 module OctPolkaDomain = ProductDomain(OctDomain)(PolkaLooseDomain)
-    
+
 let abstractValue = match !domain with
 | "Oct" -> (module OctDomain : Domain)
 | "Polka_st" -> (module PolkaStrictDomain : Domain)
 | "Polka_ls" -> (module PolkaLooseDomain : Domain)
 | "OctPolka" -> (module OctPolkaDomain : Domain)
+| "FinVal" -> (module FiniteValueDomain : Domain)
 | _ -> failwith ("unsupported abstract domain " ^ !domain)
-       
+
 module AbstractValue = (val (abstractValue) : Domain)
-    
-(* Domain Specification
-module BoxManager: ManagerType =
-  struct
-    type t = Box.t
-    let man = Box.manager_alloc ()
-  end
-
-module OctManager: ManagerType =
-  struct
-    type t = Oct.t
-    let man = Oct.manager_alloc ()
-  end
-
-module PolkaStManager: ManagerType =
-  struct 
-    (* 
-      Convex polyhedra are defined by the conjunction of a set of linear constraints of the form 
-      a_0*x_0 + ... + a_n*x_n + b >= 0 or a_0*x_0 + ... + a_n*x_n + b > 0 
-      where a_0, ..., a_n, b, c are constants and x_0, ..., x_n variables.
-    *)
-    type t = Elina_poly.strict
-    let man = Elina_poly.manager_alloc_strict() |> Elina_poly.manager_of_elina_poly_strict
-  end
-
-module PolkaEqManager: ManagerType =
-  struct
-    (* 
-      Linear equalities are conjunctions of linear equalities of the form a_0*x_0 + ... + a_n*x_n + b = 0.
-    *)
-    type t = Polka.equalities
-    let man = Polka.manager_alloc_equalities() |> Polka.manager_of_polka_equalities
-  end
-
-module PolkaLsManager: ManagerType =
-  struct
-    (* 
-      Loose polyhedra cannot have strict inequality constraints like x>0. 
-      They are algorithmically more efficient (less generators, simpler normalization). 
-    *)
-    type t = Elina_poly.loose
-    let man = Elina_poly.manager_alloc_loose () |> Elina_poly.manager_of_elina_poly_loose
-  end
-
-module PplGridManager: ManagerType =
-  struct
-    (* 
-      Linear congruences
-    *)
-    type t = Ppl.grid
-    let man = Ppl.manager_alloc_grid() |> Ppl.manager_of_ppl_grid
-  end
-
-module PplStrictManager: ManagerType =
-  struct
-    (* 
-      wrapper around the Parma Polyhedra
-    *)
-    type t = Ppl.strict
-    let man = Ppl.manager_alloc_strict() |> Ppl.manager_of_ppl_strict
-  end
-
-module PolkaGridManager: ManagerType =
-  struct
-    (* 
-      Reduced product of NewPolka polyhedra (strict) and PPL grids
-    *)
-    type t = (Polka.strict) PolkaGrid.t
-    let man = let man_polka = Polka.manager_alloc_strict() in
-      let man_pplgrid = Ppl.manager_alloc_grid() in
-      PolkaGrid.manager_alloc man_polka man_pplgrid |> PolkaGrid.manager_of_polkagrid
-  end
-
-
-
-module AbstractValue = (val (!domain |> parse_domain)) *)

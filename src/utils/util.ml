@@ -1,5 +1,14 @@
+let flip f x y = f y x
+
+let compose f g x = f (g x)
+
+let const f x y = f y
+
+let id x = x
 
 let uncurry f (x, y) = f x y
+
+let negate x = -x
 
 module StringSet = Set.Make(struct
     type t = string
@@ -10,7 +19,29 @@ module StringMap = Map.Make(struct
     type t = string
     let compare = compare
   end)
-    
+
+(** set key to value in StringMap. If value is none, delete key from the map. *)
+let map_set (key: string) (value: 'a option) (m: 'a StringMap.t) =
+  match value with
+  | None -> StringMap.remove key m
+  | Some v -> StringMap.add key v m
+
+module IntSet = Set.Make(struct
+    type t = int
+    let compare = compare
+  end)
+
+let set_union_with (merge_func: int -> int -> int) (left: IntSet.t) (right: IntSet.t) : IntSet.t =
+  IntSet.fold
+    (fun l result -> IntSet.union result (IntSet.map (merge_func l) right))
+    left
+    IntSet.empty
+
+module IntMap = Map.Make(struct
+    type t = int
+    let compare = compare
+  end)
+
 (** Utility functions on option types *)
 module Opt = struct
   let to_list = function
@@ -60,6 +91,10 @@ module Opt = struct
   let exist = function
     | None -> false
     | Some _ -> true
+
+  let map2 f x y = match x, y with
+    | Some x', Some y' -> Some (f x' y')
+    | _, _ -> None
 end
 
 let rec zip_list xs ys =
@@ -155,3 +190,5 @@ let print_measures () =
       print_endline ("  " ^ id ^ ": " ^ (string_of_int calls) ^ " call(s), " ^ (string_of_float time) ^ " s")
     )
     measures
+
+let int_of_bool b = if b then 1 else 0

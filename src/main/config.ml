@@ -21,23 +21,32 @@ let use_threshold = ref false
 
 let sensitive = ref false
 
-let usage = "usage: " ^ Sys.argv.(0) ^ " [-file <file name>] [-domain <domain name>] [-sen <true/false>] [-thold <true/false>] [-delay-wid <num>] [-nar <true/false>] [-out <num>] [-debug] [-bt]"
+let no_simplify = ref false
+
+let color = ref false
+
+let effect_tr = ref false
+
+let effect_aut_file = ref ""
 
 let cmd_options_spec =
   [("-file", Arg.String (fun s -> parse_file := true; file := s), ": Input file specification");
-  ("-domain", Arg.String (fun s -> domain := s), ": Abstract domain specification (Oct, Polka_st, Polka_ls, OctPolka)");
+   ("-domain", Arg.String (fun s -> domain := s), ": Abstract domain specification (Oct, Polka_st, Polka_ls, OctPolka)");
    ("-sen", Arg.String (fun s -> if s = "true" then sensitive:=true else sensitive:=false), ": Use 1-context sensitive analysis");
    ("-thold", Arg.String (fun s -> if s = "true" then use_threshold:=true else use_threshold:=false), ": Use threshold widening");
    ("-delay-wid", Arg.Int (fun s -> delay_wid := s), ": Set number of delay widening steps (depricated)");
    ("-nar", Arg.String (fun s -> if s = "true" then narrow:=true else narrow:=false), ": Use narrowing procedure");
-   ("-out", Arg.Int (fun s -> out_put_level := s), 
-    ": Output result level\n
-      \t 0: Output map after each step\n
-      \t 1: Output map only for the last step\n
+   ("-color", Arg.Set color, ": Print output in color");
+   ("-out", Arg.Int (fun s -> out_put_level := s),
+    ": Output result level
+      \t 0: Output map after each step
+      \t 1: Output map only for the last step
       \t 2: Output the result only");
    ("-debug", Arg.Set debug, ": Debug mode");
    ("-bt", Arg.Set bt, ": Allow trace back");
-    ]
+   ("-no-simplify", Arg.Set no_simplify, ": Disable simplification of program expression before analysis");
+   ("-eff-aut", Arg.String (fun s -> effect_tr := true; effect_aut_file := s), ": Input automaton specification for effects analysis");
+  ]
 
 (* Parse auxiliary 'command line options' that are set during parsing of the input file *)
 let parse_options options =
@@ -55,4 +64,4 @@ let parse_options options =
     raise (Invalid_argument msg)
 
 
-let parse () = Arg.parse cmd_options_spec (fun x -> raise (Arg.Bad ("Bad argument : " ^ x))) usage;
+let parse = Arg.parse cmd_options_spec (fun x -> raise (Arg.Bad ("Bad argument : " ^ x))) ("Usage: " ^ Sys.argv.(0));

@@ -45,7 +45,7 @@ let convert_var_name_apron_not_support s =
 %token AND OR
 %token ARROW CONS BAR 
 %token SEMI COLON COMMA LSQBR RSQBR LARYBR RARYBR
-%token IF ELSE THEN FUN LET REC IN ASSERT MATCH WITH
+%token IF ELSE THEN FUN LET REC IN ASSERT MATCH WITH EV
 %token BEGIN END        
 %token <string> TYPE
 %token <DriftSyntax.pre_exp> PRE
@@ -248,11 +248,16 @@ let_in_term:
 }
 ;
 
+ev_term:
+| EV term { mk_event $2 }
+;
+
 term:
 | if_term_ { $1 }
 | lambda_term { $1 }
 | let_in_term { $1 }
 | match_term { $1 }
+| ev_term { $1 }
 ;
 
 seq_term:

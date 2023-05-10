@@ -7,6 +7,7 @@ open SenSemantics
 open Printer
 open Util
 open Config
+open Format
 (*
 ** c[M] is a single base refinement type that pulls in all the environment dependencies from M
 M = n1 |-> {v: int | v >= 2}, n2 |-> z:{v: int | v >= 0} -> {v: int | v = z}, n3 |-> {v: bool | v = true}
@@ -48,6 +49,15 @@ let arrow_V x1 x2 = measure_call "arrow_V" (arrow_V x1 x2)
 let forget_V x = measure_call "forget_V" (forget_V x)
 let stren_V x = measure_call "stren_V" (stren_V x)
 let join_V e = measure_call "join_V" (join_V e)
+(* let join_V v1 v2 = *)
+(*   let vf = measure_call "join_V" (join_V v1) v2 in *)
+(*   printf *)
+(*     "---@.join_V:@ @[<hov 0>@[<hov 2>v1 =@ @[<hov 2>%a@]@]@;<4>@[<hov 2>v2 =@ @[<hov 2>%a@]@]@;<4>@[<hov 2>result = @[<hov 2>%a@]@]@]@." *)
+(*     pr_value v1 *)
+(*     pr_value v2 *)
+(*     pr_value vf; *)
+(*   vf *)
+
 let meet_V e = measure_call "meet_V" (meet_V e)
 let equal_V e = measure_call "equal_V" (equal_V e)
 let proj_V e = measure_call "proj_V" (proj_V e)
@@ -198,54 +208,7 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
 
 let prop p = measure_call "prop" (prop p)
 
-        
-(* let lc_env env1 env2 = 
-    Array.fold_left (fun a id -> if Array.mem id a then a else Array.append a [|id|] ) env2 env1 *)
-
-(* let rec nav (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 with
-    | Relation r1, Relation r2 -> 
-            let r2' = if leq_R r1 r2 then r1 else r2
-            in
-            Relation r1, Relation r2'
-    | Ary ary1, Ary ary2 -> let ary1', ary2' = alpha_rename_Arys ary1 ary2 in
-      let _, ary2'' = alpha_rename_Arys ary2 (join_Ary ary1' ary2') in
-      Ary ary1, Ary ary2''
-    | Table t1, Table t2 -> 
-        let t1', t2' = alpha_rename t1 t2 in
-        let (z1, v1i, v1o) = t1' and (z2, v2i, v2o) = t2' in
-        let v1ot = 
-            if is_Array v1i && is_Array v2i then
-                let l1 = get_len_var_V v1i in
-                let l2 = get_len_var_V v2i in
-                replace_V v1o l1 l2
-            else v1o
-        in
-        let p1, p2 = 
-            let v1i', v2i', v1o', v2o' = 
-                let v2i', v1i' = nav v2i v1i in
-                let v1o', v2o' = nav (arrow_V z1 v1ot v2i) (arrow_V z1 v2o v2i) in
-                let v1o', v2o' = match leq_V v1o' v1ot, leq_V v2o' v2o with
-                    | false, false -> v1ot, v2o
-                    | true, false -> v1o', v2o
-                    | false, true -> v1ot, v2o'
-                    | true, true -> v1o', v2o'
-                in
-                let v1o' =
-                    if is_Array v1i' && is_Array v2i' then
-                        let l1 = get_len_var_V v1i' in
-                        let l2 = get_len_var_V v2i' in
-                        replace_V v1o' l2 l1
-                    else v1o'
-                in
-                v1i', v2i', v1o', v2o'
-            in
-            (v1i', v1o'), (v2i', v2o') 
-        in
-        let t1'' = (z1, fst p1, snd p1) and t2'' = (z2, fst p2, snd p2) in
-        Table t1'', Table t2''
-    | _, _ -> v1, v2 *)
-
-let get_env_list (env: env_t) (sx: var) (m: exec_map_t) = 
+let get_env_list (env: env_t) (sx: var) (m: exec_map_t) =
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     let env_l = VarMap.bindings env in
     let helper lst (x, (n, _)) =
@@ -279,26 +242,6 @@ let prop_scope x1 x2 x3 x4 x5 = measure_call "prop_scope" (prop_scope x1 x2 x3 x
 let reset (m:exec_map_t): exec_map_t = NodeMap.fold (fun n t m ->
         m |> NodeMap.add n t
     ) m0 m
-
-(* let iterUpdate m v l = NodeMap.map (fun x -> arrow_V l x v) m *)
-
-(* let getVars env = VarMap.fold (fun var n lst -> var :: lst) env [] *)
-
-(* let iterEnv_c env m c = VarMap.fold (fun var n a ->
-    let v = NodeMap.find_opt n m |> Opt.get_or_else Top in
-    let EN (env', l) = n in
-    let lb = name_of_node l in
-    c_V a v lb) env (init_V_c c)
-
-let iterEnv_v env m v = VarMap.fold (fun var n a -> 
-    let ai = NodeMap.find_opt n m |> Opt.get_or_else Top in
-    arrow_V var a ai) env v *)
-
-(* let optmization m n find = (* Not sound for work *)
-    if !st <= 6000 then false else
-    let t = find n m in
-    let pre_t = find n !pre_m in
-    opt_eq_V pre_t t *)
 
 let rec list_var_item eis sx (cs: (var * loc)) m env nlst left_or_right lst_len = 
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
@@ -617,13 +560,13 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
               res_m
           )
     | BinOp (bop, e1, e2, l) ->
-        (* (if !debug then
+        (if !debug then
         begin
             Format.printf "\n<=== Binop ===>\n";
             pr_exp true Format.std_formatter term;
             Format.printf "\n";
         end
-        ); *)
+        );
         let n1 = construct_enode env (loc e1) |> construct_snode sx in
         let m1 =
           match bop with
@@ -807,6 +750,9 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             (* if optmization m n0 find then m else  *)
             step e0 env sx cs ae assertion is_rec m in
         let t0 = find n0 m0 in
+        if !debug then begin
+          printf "t0 = @[%a@]@." pr_value t0;
+        end;
         if t0 = Bot then m0 else
         if not @@ is_bool_V t0 then m0 |> update false n Top else
         begin
@@ -815,6 +761,9 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             then print_loc pos else
             let t_true = meet_V (extrac_bool_V t0 true) ae in (* Meet with ae*)
             let t_false = meet_V (extrac_bool_V t0 false) ae in
+            if !debug then begin
+              printf "t_true = @[%a@]@ t_false = @[%a@]@." pr_value t_true pr_value t_false;
+            end;
             (if assertion && isast then 
                 let i, j = AssertionPosMap.find_opt pos !sens |> Opt.get_or_else (0,0) in
                 sens := AssertionPosMap.add pos ((if is_bool_bot_V t0 && 
@@ -1051,6 +1000,8 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             ) tlst (Tuple [], m) in
             let _, t' = prop tp t in
             m' |> update false n t'
+    | Event (e, l) ->
+      failwith "Analysis of programs with effects expects '-effect-tr' option"
     | PatMat (e, patlst, l) ->
         (* (if !debug then
         begin
@@ -1278,7 +1229,7 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
 
       
 (** Semantic function *)
-let s e =
+let semantics e =
     (* (if !debug then
     begin
         Format.printf "%% Pre vals: %%\n";
