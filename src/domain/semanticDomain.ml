@@ -2,8 +2,8 @@ open AbstractDomain
 open DriftSyntax
 open Util
 open SensitiveDomain
-open TracePartDomain
 open SenSemantics
+open TracePartDomain
 open KatDomain
 
 module K = Kat
@@ -30,7 +30,6 @@ module SemanticsDomain =
     **********************************
     *)
     let alpha_rename_R (a:relation_t) prevar var :relation_t = 
-      let prevar, var = get_token_data prevar, get_token_data var in
       match a with
       | Int v -> Int (AbstractValue.alpha_rename v prevar var)
       | Bool (vt, vf) -> Bool ((AbstractValue.alpha_rename vt prevar var), 
@@ -88,7 +87,7 @@ module SemanticsDomain =
       | Unit u1, Unit u2 -> true
       | _, _ -> false
     let arrow_R var a1 a2 = 
-      let a2' = alpha_rename_R a2 (Var_Token "cur_v") var in
+      let a2' = alpha_rename_R a2 "cur_v" var in
       match a1, a2' with
       | Int _, Int _ -> meet_R a1 a2'
       | Bool (vt1, vf1), Bool (vt2, vf2) -> (* {v:bool | at: [at^at' V at^af'], af: [af^at' V af^af']} *)
@@ -100,13 +99,11 @@ module SemanticsDomain =
       | Bool _ , Int v -> meet_R a1 (Bool (v, v))
       | _, _ -> a1
     let forget_R var a = 
-      let var = get_token_data var in
       match a with
       | Int v -> Int (AbstractValue.forget_var var v)
       | Bool (vt, vf) -> Bool (AbstractValue.forget_var var vt, AbstractValue.forget_var var vf)
       | Unit _ -> a
     let equal_R a var = 
-      let var = get_token_data var in
       let eq_a = match a with
       | Int v -> Int (AbstractValue.equal_var v "cur_v" var)
       | Bool (vt, vf) -> Bool ((AbstractValue.equal_var vt "cur_v" var), (AbstractValue.equal_var vf "cur_v" var))
@@ -120,13 +117,11 @@ module SemanticsDomain =
       | Unit _, a | a, Unit _ -> a
       | _, _ -> raise (Invalid_argument "Widening: Base Type not equal")
     let sat_equal_R a x = 
-      let x = get_token_data x in
       match a with
       | Int v -> AbstractValue.sat_cons v x
       | Bool (vt, vf) -> AbstractValue.sat_cons vt x && AbstractValue.sat_cons vf x
       | _ -> false
     let op_R res l r op cons a = (*cons for flag of linear constraints*)
-      let res, l, r = get_token_data res, get_token_data l, get_token_data r in
       match op with
       | Plus | Mult | Div | Mod | Modc | Minus -> (match a with
         | Int v -> Int (AbstractValue.operator res l r op NoBranch v)
@@ -152,13 +147,11 @@ module SemanticsDomain =
       )
       | Cons | Seq | And | Or -> raise (Invalid_argument ("Invalid operator matched " ^ (string_of_op op)))
     let uop_R res op e cons a = (*cons for flag of linear constraints*)
-      let res, e = get_token_data res, get_token_data e in
       match op with
       | UMinus -> (match a with
         | Int v -> Int (AbstractValue.uoperator res e op NoBranch v)
         | _ -> raise (Invalid_argument "uop_R: Given a unit type"))
     let assign_R res l r op = 
-      let res, l, r = get_token_data res, get_token_data l, get_token_data r in
       function
       | Int v -> Int (AbstractValue.assign res l r op v)
       | _ -> raise (Invalid_argument "Assign boolean does not support")
@@ -170,8 +163,8 @@ module SemanticsDomain =
       | _, _ -> raise (Invalid_argument "&& or || operation: Base Type should be bool")
     let replace_R a var x = alpha_rename_R a var x
     let extrac_bool_R v b = match v,b with
-      | Bool (vt, _), true -> Int vt |> forget_R (Var_Token "cur_v")
-      | Bool (_, vf), false -> Int vf |> forget_R (Var_Token "cur_v")
+      | Bool (vt, _), true -> Int vt |> forget_R "cur_v"
+      | Bool (_, vf), false -> Int vf |> forget_R "cur_v"
       | _,_ -> raise (Invalid_argument "Extract abstract value for condition, expect bool one")
     let stren_R a ae = 
       match a, ae with
@@ -180,7 +173,6 @@ module SemanticsDomain =
       | Unit _, Int vae -> a
       | _, _ -> raise (Invalid_argument "ae should be {v:Int}")
     let proj_R a vars = 
-      let vars = List.map get_token_data vars in
       match a with
       | Int v -> Int (AbstractValue.project_other_vars v vars)
       | Bool (vt, vf) -> Bool (AbstractValue.project_other_vars vt vars, AbstractValue.project_other_vars vf vars)
@@ -197,7 +189,6 @@ module SemanticsDomain =
       | _ -> raise (Invalid_argument "Expect a bool value")
     let opt_eq_R a1 a2 = is_bot_R a1 = false && is_bot_R a2 = false && eq_R a1 a2
     let contains_var_R var a = 
-      let var = get_token_data var in
       match a with
       | Int v -> AbstractValue.contains_var var v
       | Bool (vt, vf) -> AbstractValue.contains_var var vt && AbstractValue.contains_var var vf
@@ -226,7 +217,7 @@ module SemanticsDomain =
         | c -> Relation (init_R_c c)
       and c_V v1 v2 label = match v2 with
         | Relation r -> (match v1 with
-          | Relation r' -> let tempr = alpha_rename_R r (Var_Token "cur_v") label in
+          | Relation r' -> let tempr = alpha_rename_R r "cur_v" label in
           (try Relation (meet_R r' tempr)
           with Invalid_argument s -> Relation r')
           | _ -> v1)
@@ -318,7 +309,7 @@ module SemanticsDomain =
             let r1' = let res = meet_R r1 rl2 in
             if is_bot_R res then (meet_R (forget_R l2 r1) rl2) else res in
             (match ve2 with
-            | Bot -> if String.length (get_token_data var) >= 2 && String.sub (get_token_data var) 0 2 = "zh" then
+            | Bot -> if String.length var >= 2 && String.sub var 0 2 = "zh" then
                 raise (Invalid_argument "List.hd expects non empty list")
               else Relation r1' 
             | Relation re2 -> if is_bot_R re2 then Relation r1'
@@ -329,7 +320,7 @@ module SemanticsDomain =
             | Relation re2 -> Ary (arrow_Ary var ary re2 (Some rl2))
             | _ -> Ary (arrow_Ary var ary rl2 None))
           | Lst lst -> Lst (arrow_Lst var lst ve2 (Some (vars, rl2)))
-          | Top -> if String.sub (get_token_data var) 0 2 = "zh" then
+          | Top -> if String.sub var 0 2 = "zh" then
               (match ve2 with
                 | Relation re2 -> 
                   let r1' = arrow_R var (equal_R (top_R Plus) e2) rl2 in
@@ -357,11 +348,11 @@ module SemanticsDomain =
         | _, _ -> join_V v1 v2
       and op_V sl sr op v = match v with
         | Bot | Top -> Top
-        | Relation r -> Relation (op_R (Var_Token "") sl sr op false r)
+        | Relation r -> Relation (op_R "" sl sr op false r)
         | _ -> raise (Invalid_argument "Should be a relation type when using op_V")
       and uop_V op s v = match v with
         | Bot | Top -> Top
-        | Relation r -> Relation (uop_R (Var_Token "") op s false r)
+        | Relation r -> Relation (uop_R "" op s false r)
         | _ -> raise (Invalid_argument "Should be a relation type when using uop_V")
       and bool_op_V op v1 v2 = match v1, v2 with
         | Bot, Relation _ -> if string_of_op op = "&&" then Bot else v2
@@ -506,12 +497,12 @@ module SemanticsDomain =
       ** Abstract domain for Array **
       *******************************
       *)
-    and init_Ary_c (): array_t = let varl, vare = Var_Token (fresh_length ()), Var_Token (fresh_item ()) in
-      let r1 = top_R Plus |> op_R (Var_Token "") varl (Var_Token "0") Eq true in
+    and init_Ary_c (): array_t = let varl, vare = fresh_length (), fresh_item () in
+      let r1 = top_R Plus |> op_R "" varl "0" Eq true in
       (varl, vare), (r1, r1)
     and init_Ary vars : array_t = let varl, vare = vars in
-      let varl' = if varl = (Var_Token "l") || varl = (Var_Token "l'") then Var_Token (fresh_length ()) else varl in
-      let vare' = if vare = (Var_Token "e") || vare = (Var_Token "e'") then Var_Token (fresh_item ()) else vare in
+      let varl' = if varl = "l" || varl = "l'" then fresh_length () else varl in
+      let vare' = if vare = "e" || vare = "e'" then fresh_item () else vare in
       let vars = varl', vare' in
       let r1 = bot_R Plus in
       vars, (r1, r1)
@@ -577,7 +568,7 @@ module SemanticsDomain =
     and join_for_item_Ary ary r = 
       let ((l,e), (rl,re)) = ary in
       if is_bot_R rl && is_bot_R re then ary else
-      let re' = alpha_rename_R r (Var_Token "cur_v") e |> join_R re in
+      let re' = alpha_rename_R r "cur_v" e |> join_R re in
       (l,e), (rl,re')
     and bot_shape_Ary (vars, (rl, re)) = 
       (vars, (rl, bot_shape_R re))
@@ -588,34 +579,34 @@ module SemanticsDomain =
       ** Abstract domain for List **
       *******************************
     *)
-    and init_Lst_c (): list_t = let varl, vare = Var_Token (fresh_length ()), Var_Token (fresh_item ()) in
-      let r1 = top_R Plus |> op_R varl varl (Var_Token "0") Eq true in
+    and init_Lst_c (): list_t = let varl, vare = fresh_length (), fresh_item () in
+      let r1 = top_R Plus |> op_R varl varl "0" Eq true in
       (varl, vare), (r1, Bot, K.one)
     and const_Lst lst = 
-      let varl, vare = Var_Token (fresh_length ()), Var_Token (fresh_item ()) in
+      let varl, vare = fresh_length (), fresh_item () in
       let min, max = List.fold_left (fun (min, max) item -> 
         let min' = if min > item then item else min in
         let max' = if max < item then item else max in
         min', max') (max_int, min_int) lst in
-      let rl = top_R Plus |> op_R varl varl (Var_Token (string_of_int (List.length lst))) Eq true in
-      let re = rl |> op_R vare vare (Var_Token (string_of_int min)) Ge true 
-        |> op_R vare vare (Var_Token (string_of_int max)) Le true in
+      let rl = top_R Plus |> op_R varl varl (string_of_int (List.length lst)) Eq true in
+      let re = rl |> op_R vare vare (string_of_int min) Ge true 
+        |> op_R vare vare (string_of_int max) Le true in
       (varl, vare), (rl, Relation re, K.one)
     and init_Lst vars : list_t = let varl, vare = vars in
-      let varl' = if varl = Var_Token "l" || varl = Var_Token "l'" then Var_Token (fresh_length ()) else varl in
-      let vare' = if vare = Var_Token "e" || vare = Var_Token "e'" then Var_Token (fresh_item ()) else vare in
+      let varl' = if varl = "l" || varl = "l'" then fresh_length () else varl in
+      let vare' = if vare = "e" || vare = "e'" then fresh_item () else vare in
       let vars = varl', vare' in
       vars, (bot_R Plus, Bot, K.one)
     and get_len_var_Lst ((varl,_),_) = varl
     and get_item_var_Lst ((_,vare),_) = vare
     and pattern_empty_Lst ((l,e) as vars, (_, ve, ke)) = 
-      let rl' = top_R Plus |> op_R l l (Var_Token "0") Eq true in
+      let rl' = top_R Plus |> op_R l l "0" Eq true in
       let ve' = bot_shape_V ve in
       vars, (rl', ve', ke)
     and extrac_item_Lst vars ((_,vare), (_, ve, ke)) =
       (* let vars' = vare :: vars in *)
       let ve' = match ve with
-      | Relation re -> alpha_rename_V ve vare (Var_Token "cur_v")
+      | Relation re -> alpha_rename_V ve vare "cur_v"
       | _ -> ve
         (* alpha_rename_R (proj_R re vars' |> forget_R "cur_v") vare "cur_v"  *)
       in
@@ -638,7 +629,7 @@ module SemanticsDomain =
     and join_Lst (lst1:list_t) (lst2:list_t) = 
       let (l1, e1), (rl1,ve1,ke1) = lst1 in
       let (l2, e2), (rl2,ve2,ke2) = lst2 in
-      let lst1', lst2' = if l1 <> (Var_Token "l") && contains_var_R l1 rl2 then
+      let lst1', lst2' = if l1 <> "l" && contains_var_R l1 rl2 then
         let a, b = alpha_rename_Lsts lst2 lst1 in 
         b, a
         else alpha_rename_Lsts lst1 lst2 in
@@ -672,39 +663,39 @@ module SemanticsDomain =
       let ((l,e) as vars, (rl,ve,ke)) = lst in
       match ropt with
       | Some ((_, e') , rl') -> (match v, ve with
-        | Bot, _ -> if String.sub (get_token_data var) 0 2 = "xs" && contains_var_R (Var_Token "zc") rl' then
+        | Bot, _ -> if String.sub var 0 2 = "xs" && contains_var_R "zc" rl' then
            let rl = arrow_R var rl rl' in
-           let re' = (op_R (Var_Token "") e (Var_Token "zc") Eq true rl) in
+           let re' = (op_R "" e "zc" Eq true rl) in
            (vars, (rl, Relation re', K.one))
           else let rl = arrow_R var rl rl' in
            (vars, (rl, ve, K.one))
         | Relation r, Relation re ->
-          if String.sub (get_token_data var) 0 2 = "xs" then
+          if String.sub var 0 2 = "xs" then
             let rl = arrow_R var rl rl' in
             let re' = 
               if is_bot_R r then 
-                let r' = (op_R (Var_Token "") e (Var_Token "zc") Eq true rl) |> meet_R re in
+                let r' = (op_R "" e "zc" Eq true rl) |> meet_R re in
                 r' 
               else 
-                let r' = arrow_R var re r |> (op_R (Var_Token "") e e' Eq true) in
-                let r'' = arrow_R var re r |> (op_R (Var_Token "") e (Var_Token "zc") Eq true) in
+                let r' = arrow_R var re r |> (op_R "" e e' Eq true) in
+                let r'' = arrow_R var re r |> (op_R "" e "zc" Eq true) in
                 join_R r' r''
             in
             (vars, (rl, Relation re', K.one))
-          else if String.sub (get_token_data var) 0 2 = "zt" then
+          else if String.sub var 0 2 = "zt" then
             let rl = arrow_R var rl rl' in
-            let re' = arrow_R var re r |> (op_R (Var_Token "") e e' Eq true) in
+            let re' = arrow_R var re r |> (op_R "" e e' Eq true) in
             (vars, (rl, Relation re', K.one))
           else 
             let rl' = forget_R l rl' |> forget_R e in
             let r' = forget_R l r |> forget_R e in
           (vars, (arrow_R var rl rl', Relation (arrow_R var re r'), K.one))
         | Relation r, _ -> 
-          if String.sub (get_token_data var) 0 2 = "xs" then
+          if String.sub var 0 2 = "xs" then
            let rl = arrow_R var rl rl' in
            let re' = 
-            let r' = (op_R (Var_Token "") e e' Eq true rl) in
-            let r'' = (op_R (Var_Token "") e (Var_Token "zc") Eq true rl) in
+            let r' = (op_R "" e e' Eq true rl) in
+            let r'' = (op_R "" e "zc" Eq true rl) in
             join_R r' r''
            in
            (vars, (rl, Relation re', K.one))
@@ -713,7 +704,7 @@ module SemanticsDomain =
             let ve' = arrow_V var ve v in
             (vars, (rl, ve', K.one))
         | _, _ -> 
-          if String.sub (get_token_data var) 0 2 = "xs" then
+          if String.sub var 0 2 = "xs" then
             let rl = arrow_R var rl rl' in
             let ve' = 
               if is_Bot_V v then 
@@ -725,7 +716,7 @@ module SemanticsDomain =
                 join_V v' v''
             in
             (vars, (rl,  ve', K.one))
-          else if String.sub (get_token_data var) 0 2 = "zt" then
+          else if String.sub var 0 2 = "zt" then
             let rl = arrow_R var rl rl' in
             let ve' = v in
             (vars, (rl, ve', K.one))
@@ -751,7 +742,7 @@ module SemanticsDomain =
       let vars' = e :: l :: vars in
       ((l,e), (proj_R rl vars', proj_V ve vars', kd_proj ke))
     and rename_lambda_Lst lst = let (l,e), (rl,ve, ke) = lst in
-      let varl, vare = Var_Token (fresh_length ()), Var_Token (fresh_item ()) in
+      let varl, vare = fresh_length (), fresh_item () in
       let rl' = alpha_rename_R rl l varl in
       let ve' = alpha_rename_V ve e vare in
       (varl, vare), (rl', ve', kd_rename ke)
@@ -764,11 +755,11 @@ module SemanticsDomain =
     and reduce_len_Lst len le_lst lst = let ((l,e), (rl,ve,ke)) = lst in
       let l', e' = 
         match le_lst with
-        | [] -> Var_Token (fresh_length ()), Var_Token (fresh_item())
-        | l' :: e' :: [] -> if l = l' then Var_Token (fresh_length ()), Var_Token (fresh_item()) else l', e'
+        | [] ->  (fresh_length ()),  (fresh_item())
+        | l' :: e' :: [] -> if l = l' then  (fresh_length ()),  (fresh_item()) else l', e'
         | _ -> raise (Invalid_argument "construct pattern tl should give [] or [l;e]")
        in
-      let rl' = assign_R l' l (Var_Token (string_of_int len)) Minus rl |> op_R (Var_Token "") l' (Var_Token "0") Ge true
+      let rl' = assign_R l' l ( (string_of_int len)) Minus rl |> op_R ( "") l' ( "0") Ge true
         (* |> op_R l' l "1" Minus true  *)
       in
       let ve' = 
@@ -782,7 +773,7 @@ module SemanticsDomain =
     and list_cons_Lst f v lst = let ((l,e), (rl,ve, ke)) = lst in
       if v = Bot || is_bot_R rl then (l,e), (bot_R Plus, Bot, K.one) else
       (* let v = stren_V v (Relation (forget_R l rl)) in *)
-      let rl' = assign_R l l (Var_Token "1") Plus rl in
+      let rl' = assign_R l l ( "1") Plus rl in
       let ve' = match v, ve with
         | Relation r, Bot ->
           Relation (arrow_R e (rl') r)
@@ -815,7 +806,7 @@ module SemanticsDomain =
     and cons_temp_lst_Lst v ((l,e) as vars, (rl,ve,ke)) = 
       let ve' = if is_bot_R rl then bot_shape_V ve else 
       (match v with
-      | Relation r -> let re' = alpha_rename_R r (Var_Token "cur_v") e in
+      | Relation r -> let re' = alpha_rename_R r ( "cur_v") e in
         Relation re'
       | _ -> v)
       in (vars, (rl, ve', K.one))
@@ -891,98 +882,98 @@ module SemanticsDomain =
         fun v2 -> 
           let l = get_label_snode n in
           if eq_V v1 v2 then true else 
-          raise (Pre_Def_Change ("Predefined node changed at " ^ (get_token_data l)))
+          raise (Pre_Def_Change ("Predefined node changed at " ^ l))
          )
       |> Opt.get_or_else (v1 = v1)) m1
     let top_M m = NodeMap.map (fun a -> Top) m
     let array_M env m = 
-      let n_make = construct_vnode env "Array.make" (Var_Token (""), Var_Token ("")) in
+      let n_make = construct_vnode env "Array.make" (create_singleton_trace "") in
       let s_make = construct_snode "" n_make in
       let t_make = (* make *)
         (* make |-> zm: {v:int | v >= 0} -> ex: {v:int | top} -> 
            {v: Int Array (l, e) | len: [| l=zm; zm>=0; |] item: [| l=zm; zm>=0; e = ex; |]} *)
-        let var_l = (Var_Token "zm") in
-        let rl = top_R Plus |> op_R (Var_Token "") (Var_Token "cur_v") (Var_Token "0") Ge true in
-        let var_e = (Var_Token "ex") in
+        let var_l = ( "zm") in
+        let rl = top_R Plus |> op_R ( "") ( "cur_v") ( "0") Ge true in
+        let var_e = ( "ex") in
         let rm = top_R Plus in (*TODO: Make poly*)
         (* let ilen = op_R "i" "0" Ge true llen |> op_R "i" "l" Lt true in
            let rlen = op_R "x" var_e Eq true ilen in  *)
         let ary = 
-          let l, e = (Var_Token "l"), (Var_Token "e") in
-          let rl = arrow_R var_l rm rl |> op_R (Var_Token "") l var_l Eq true in
-          let re = arrow_R var_l rm rl |> op_R (Var_Token "") l var_l Eq true |> op_R (Var_Token "") e var_e Eq true in
+          let l, e = ( "l"), ( "e") in
+          let rl = arrow_R var_l rm rl |> op_R ( "") l var_l Eq true in
+          let re = arrow_R var_l rm rl |> op_R ( "") l var_l Eq true |> op_R ( "") e var_e Eq true in
           (l, e), (rl, re)
         in
         let t = 
-          let t' = Table (construct_table (var_e, var_e) (Relation rm, Ary ary)) in
-          Table (construct_table (var_l, var_l) (Relation rl, t')) in
+          let t' = Table (construct_table (var_e, create_singleton_trace var_e) (Relation rm, Ary ary)) in
+          Table (construct_table (var_l, create_singleton_trace var_l) (Relation rl, t')) in
         t
       in
-      let n_len = construct_vnode env  "Array.length" ((Var_Token ""), (Var_Token "")) in
+      let n_len = construct_vnode env  "Array.length" (create_singleton_trace "") in
       let s_len = construct_snode "" n_len in
       let t_len = (* len *)
         (* len |-> zl: { v: Int Array (l, e) | len: [| l>=0; |] item: [| true; |] } 
            -> { v: Int | [| v=l |] } *)
-        let var_l = (Var_Token "zl") in
-        let var_len = (Var_Token "l") in
+        let var_l = ( "zl") in
+        let var_len = ( "l") in
         (* let var_i = "i" in *)
         let ary = 
-          let l, e = (Var_Token "l"), (Var_Token "e") in
-          let rl = top_R Plus |> op_R (Var_Token "") var_len (Var_Token "0") Ge true in
+          let l, e = ( "l"), ( "e") in
+          let rl = top_R Plus |> op_R ( "") var_len ( "0") Ge true in
           let re = top_R Plus in
           (l, e), (rl, re)
           in
         (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
-        let rlen = equal_R (top_R Plus) (Var_Token "l") in
-        Table (construct_table (var_l, var_l) (Ary ary, Relation rlen))
+        let rlen = equal_R (top_R Plus) ( "l") in
+        Table (construct_table (var_l, create_singleton_trace var_l) (Ary ary, Relation rlen))
       in
-      let n_get = construct_vnode env "Array.get" ((Var_Token ""), (Var_Token "")) in
+      let n_get = construct_vnode env "Array.get" (create_singleton_trace "") in
       let s_get = construct_snode "" n_get in
       let t_get = (* get *)
         (* get |-> zg: { v: Int Array (l, e) | l: [| l>=0; |] e: [| true; |] } 
             -> zi: {v: int | 0 <= v < l} -> {v: int | v = e; }  *)
-        let var_l = (Var_Token "zg") in
-        let var_len = (Var_Token "l") in
+        let var_l = ( "zg") in
+        let var_len = ( "l") in
         (* let var_i = "i" in *)
         let ary = 
-          let l, e = (Var_Token "l"), (Var_Token "e") in
-          let rl = replace_R (top_R Plus |> op_R (Var_Token "") (Var_Token "cur_v") (Var_Token "0") Ge true) (Var_Token "cur_v") var_len in
+          let l, e = ( "l"), ( "e") in
+          let rl = replace_R (top_R Plus |> op_R ( "") ( "cur_v") ( "0") Ge true) ( "cur_v") var_len in
           let re = top_R Plus in
           (l, e), (rl, re)
         in
         (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
-        let rm = top_R Plus |> op_R (Var_Token "") (Var_Token "cur_v") (Var_Token "0") Ge true |> op_R (Var_Token "") (Var_Token "cur_v") var_len Lt true in
-        let rr = top_R Plus |> op_R (Var_Token "") (Var_Token "cur_v") (Var_Token "e") Eq true in 
-        let var_zi = (Var_Token "zi") in
+        let rm = top_R Plus |> op_R ( "") ( "cur_v") ( "0") Ge true |> op_R ( "") ( "cur_v") var_len Lt true in
+        let rr = top_R Plus |> op_R ( "") ( "cur_v") ( "e") Eq true in 
+        let var_zi = ( "zi") in
         let t = 
-          let t' = Table (construct_table (var_zi, var_zi) (Relation rm, Relation rr)) in
-          Table (construct_table (var_l, var_l) (Ary ary, t')) in
+          let t' = Table (construct_table (var_zi, create_singleton_trace var_zi) (Relation rm, Relation rr)) in
+          Table (construct_table (var_l, create_singleton_trace var_l) (Ary ary, t')) in
         t
       in
-      let n_set = construct_vnode env "Array.set" ((Var_Token ""), (Var_Token "")) in
+      let n_set = construct_vnode env "Array.set" (create_singleton_trace "") in
       let s_set = construct_snode "" n_set in
       let t_set = (* set *)
         (* set |-> zs: { v: Int Array (l, e) | len: [| l>=0; |] item: [| true; |] } -> 
            zi: {v: int | 0 <= v < l} -> ex: {v: int | top } -> unit *)
-        let var_l = (Var_Token "zs") in
-        let var_len = (Var_Token "l") in
+        let var_l = ( "zs") in
+        let var_len = ( "l") in
         (* let var_i = "i" in *)
         let ary = 
-          let l, e = (Var_Token "l"), (Var_Token "e") in
-          let rl = replace_R (top_R Plus |> op_R (Var_Token "") (Var_Token "cur_v") (Var_Token "0") Ge true) (Var_Token "cur_v") var_len in
+          let l, e = ( "l"), ( "e") in
+          let rl = replace_R (top_R Plus |> op_R ( "") ( "cur_v") ( "0") Ge true) ( "cur_v") var_len in
           let re = top_R Plus in
           (l, e), (rl, re)
         in
         (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
-        let rm = top_R Plus |> op_R (Var_Token "") (Var_Token "cur_v") (Var_Token "0") Ge true |> op_R (Var_Token "") (Var_Token "cur_v") var_len Lt true in
-        let var_e = (Var_Token "ex") in
-        let var_zi = (Var_Token "zi") in
+        let rm = top_R Plus |> op_R ( "") ( "cur_v") ( "0") Ge true |> op_R ( "") ( "cur_v") var_len Lt true in
+        let var_e = ( "ex") in
+        let var_zi = ( "zi") in
         let rri = top_R Plus in
         let rrr = [] in
         let t = 
-          let t' = Table (construct_table (var_e, var_e) (Relation rri, Tuple rrr)) in
-          let t'' = Table (construct_table (var_zi, var_zi) (Relation rm, t')) in
-          Table (construct_table (var_l, var_l) (Ary ary, t'')) in
+          let t' = Table (construct_table (var_e, create_singleton_trace var_e) (Relation rri, Tuple rrr)) in
+          let t'' = Table (construct_table (var_zi, create_singleton_trace var_zi) (Relation rm, t')) in
+          Table (construct_table (var_l, create_singleton_trace var_l) (Ary ary, t'')) in
         t
       in
       let m' = 
@@ -991,101 +982,101 @@ module SemanticsDomain =
       in
       let env' = 
         env
-        |> VarMap.add (Var_Token "Array.make") (n_make, false) 
-        |> VarMap.add (Var_Token "Array.length") (n_len, false) 
-        |> VarMap.add (Var_Token "Array.get") (n_get, false)
-        |> VarMap.add (Var_Token "Array.set") (n_set, false)
+        |> VarMap.add "Array.make" (n_make, false) 
+        |> VarMap.add "Array.length" (n_len, false) 
+        |> VarMap.add "Array.get" (n_get, false)
+        |> VarMap.add "Array.set" (n_set, false)
       in
-      pre_def_func := List.append !pre_def_func [(Var_Token "Array.make"); (Var_Token "Array.length"); (Var_Token "Array.get"); (Var_Token "Array.set")];
+      pre_def_func := List.append !pre_def_func ["Array.make"; "Array.length"; "Array.get"; "Array.set"];
       env', m'
     let list_M env m = 
-      let n_len = construct_vnode env  "List.length" ((Var_Token ""), (Var_Token "")) in
+      let n_len = construct_vnode env  "List.length" (create_singleton_trace "") in
       let s_len = construct_snode "" n_len in
       let t_len = (* len *)
         (* len |-> zl: { v: 'a List (l, e) | len: [| l>=0; |] item: true } 
            -> { v: Int | [| v=l |] } *)
-        let var_l = (Var_Token "zl") in
-        let var_len = (Var_Token "l") in
+        let var_l = ( "zl") in
+        let var_len = ( "l") in
         (* let var_i = "i" in *)
         let list = 
-          let l, e = (Var_Token "l"), (Var_Token "e") in
-          let rl = top_R Plus |> op_R (Var_Token "") var_len (Var_Token "0") Ge true in
+          let l, e = ( "l"), ( "e") in
+          let rl = top_R Plus |> op_R ( "") var_len ( "0") Ge true in
           let ve = Top in
           (l, e), (rl, ve, K.one)
         in
         (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
-        let rlen = equal_R (top_R Plus) (Var_Token "l") in
-        Table (construct_table (var_l, var_l) (Lst list, Relation rlen))
+        let rlen = equal_R (top_R Plus) ( "l") in
+        Table (construct_table (var_l, create_singleton_trace var_l) (Lst list, Relation rlen))
       in
-      let n_hd = construct_vnode env "List.hd" ((Var_Token ""), (Var_Token "")) in
+      let n_hd = construct_vnode env "List.hd" (create_singleton_trace "") in
       let s_hd = construct_snode "" n_hd in
       let t_hd = (* hd *)
         (* hd |-> zh: { v: 'a List (l, e) | l: [| l>=0; |] e: true } 
            -> true  *)
-        let var_h = (Var_Token "zh") in
+        let var_h = ( "zh") in
         (* let var_i = "i" in *)
         let list = 
-          let l, e = (Var_Token "l"), (Var_Token "e") in
-          let rl = replace_R (top_R Plus |> op_R (Var_Token "") (Var_Token "cur_v") (Var_Token "0") Ge true) (Var_Token "cur_v") l in
+          let l, e = ( "l"), ( "e") in
+          let rl = replace_R (top_R Plus |> op_R ( "") ( "cur_v") ( "0") Ge true) ( "cur_v") l in
           let ve = Top in
           (l, e), (rl, ve, K.one)
         in
         let tr = Top in
         let t =
-          Table (construct_table (var_h, var_h) (Lst list, tr)) in
+          Table (construct_table (var_h, create_singleton_trace var_h) (Lst list, tr)) in
         t
       in
-      let n_tl = construct_vnode env "List.tl" ((Var_Token ""), (Var_Token "")) in
+      let n_tl = construct_vnode env "List.tl" (create_singleton_trace "") in
       let s_tl = construct_snode "" n_tl in
       let t_tl = (* tl *)
         (* tl |-> zt: { v: Int List (l, e) | l: [| l>=0; |] e: true } -> 
            { v: Int List (l1, e1) | l1: [| l1=l-1; |] e1: e } *)
-        let var_t = (Var_Token "zt") in
-        let var_len, var_e = (Var_Token "l"), (Var_Token "e") in
+        let var_t = ( "zt") in
+        let var_len, var_e = ( "l"), ( "e") in
         (* let var_i = "i" in *)
         let list1 = 
-          let l, e = (Var_Token "l"), (Var_Token "e") in
-          let rl = replace_R (top_R Plus |> op_R (Var_Token "") (Var_Token "cur_v") (Var_Token "0") Ge true) (Var_Token "cur_v") l in
+          let l, e = ( "l"), ( "e") in
+          let rl = replace_R (top_R Plus |> op_R ( "") ( "cur_v") ( "0") Ge true) ( "cur_v") l in
           let ve = Top in
           (l, e), (rl, ve, K.one)
         in
         let list2 = 
-          let l, e = (Var_Token "l'"), (Var_Token "e'") in
-          let rl = replace_R (top_R Plus |> op_R (Var_Token "") (Var_Token "cur_v") (Var_Token "0") Ge true) (Var_Token "cur_v") l |> op_R l var_len (Var_Token "1") Minus true in
+          let l, e = ( "l'"), ( "e'") in
+          let rl = replace_R (top_R Plus |> op_R ( "") ( "cur_v") ( "0") Ge true) ( "cur_v") l |> op_R l var_len ( "1") Minus true in
           (* let re = replace_R (rl |> op_R "" "cur_v" var_e Eq true) "cur_v" e in *)
           let ve = Top in
           (l, e), (rl, ve, K.one)
         in
         let t =
-          Table (construct_table (var_t, var_t) (Lst list1, Lst list2)) in
+          Table (construct_table (var_t, create_singleton_trace var_t) (Lst list1, Lst list2)) in
         t
       in
-      let n_cons = construct_vnode env "List.cons" ((Var_Token ""), (Var_Token "")) in
+      let n_cons = construct_vnode env "List.cons" (create_singleton_trace "") in
       let s_cons = construct_snode "" n_cons in
       let t_cons = (* cons *)
         (* cons |-> zc: true -> xs: { v: Int List (l, e) | l: [| l>=0; |] e: true } -> 
            { v: Int List (l1, e1) | l': [| l1=l+1; |] e': e ⊔ zc |] }
          *)
-        let var_c = (Var_Token "zc") in
+        let var_c = ( "zc") in
         let ve = Top in
-        let var_len, var_e = (Var_Token "l"), (Var_Token "e") in
+        let var_len, var_e = ( "l"), ( "e") in
         (* let var_i = "i" in *)
         let list1 = 
-          let l, e = (Var_Token "l"), (Var_Token "e") in
-          let rl = replace_R (top_R Plus |> op_R (Var_Token "") (Var_Token "cur_v") (Var_Token "0") Ge true) (Var_Token "cur_v") l in
+          let l, e = ( "l"), ( "e") in
+          let rl = replace_R (top_R Plus |> op_R ( "") ( "cur_v") ( "0") Ge true) ( "cur_v") l in
           let ve = Top in
           (l, e), (rl, ve, K.one)
         in
-        let var_l = (Var_Token "xs") in
+        let var_l = ( "xs") in
         let list2 = 
-          let l, e = (Var_Token "l'"), (Var_Token "e'") in
-          let rl = replace_R (top_R Plus |> op_R (Var_Token "") (Var_Token "cur_v") (Var_Token "1") Ge true) (Var_Token "cur_v") l |> op_R l var_len (Var_Token "1") Plus true in
+          let l, e = ( "l'"), ( "e'") in
+          let rl = replace_R (top_R Plus |> op_R ( "") ( "cur_v") ( "1") Ge true) ( "cur_v") l |> op_R l var_len ( "1") Plus true in
           let ve = Top in
           (l, e), (rl, ve, K.one)
         in
         let t =
-          let t' = Table (construct_table (var_l,var_l) (Lst list1, Lst list2)) in
-          Table (construct_table (var_c, var_c) (ve, t')) in
+          let t' = Table (construct_table (var_l, create_singleton_trace var_l) (Lst list1, Lst list2)) in
+          Table (construct_table (var_c, create_singleton_trace var_c) (ve, t')) in
         t
       in
       let m' = 
@@ -1097,49 +1088,49 @@ module SemanticsDomain =
       in
       let env' = 
         env
-        |> VarMap.add (Var_Token "List.hd") (n_hd, false)
-        |> VarMap.add (Var_Token "List.length") (n_len, false)
-        |> VarMap.add (Var_Token "List.tl") (n_tl, false)
-        |> VarMap.add (Var_Token "List.cons") (n_cons, false)
+        |> VarMap.add "List.hd" (n_hd, false)
+        |> VarMap.add "List.length" (n_len, false)
+        |> VarMap.add "List.tl" (n_tl, false)
+        |> VarMap.add "List.cons" (n_cons, false)
       in
-      pre_def_func := List.append !pre_def_func [(Var_Token "List.hd"); (Var_Token "List.length"); (Var_Token "List.tl"); (Var_Token "List.cons")];
+      pre_def_func := List.append !pre_def_func ["List.hd"; "List.length"; "List.tl"; "List.cons"];
       env', m'
     let nondet_M env m =
-      let n_nondet = construct_vnode env "nondet" ((Var_Token ""), (Var_Token "")) in
+      let n_nondet = construct_vnode env "nondet" (create_singleton_trace "") in
       let s_nondet = construct_snode "" n_nondet in
       let t_nondet = 
         (* nondet |-> u : { v: Unit } -> { v: int | true } *)
-        Table (construct_table ((Var_Token "u"), (Var_Token "u")) (Relation (Unit ()), Relation (top_R Plus))) in
-      let env' = env |> VarMap.add (Var_Token "nondet") (n_nondet, false) in
+        Table (construct_table ("u", create_singleton_trace "u") (Relation (Unit ()), Relation (top_R Plus))) in
+      let env' = env |> VarMap.add "nondet" (n_nondet, false) in
       let m' = m |> NodeMap.add s_nondet t_nondet in
-      pre_def_func := List.cons (Var_Token "nondet") !pre_def_func; env', m'
+      pre_def_func := List.cons "nondet" !pre_def_func; env', m'
     let pref_M env m = 
       let m', env' =
         if VarDefMap.is_empty !pre_vars then
           m, env
         else 
           VarDefMap.fold (fun var (domain: pre_exp) (m, env) -> 
-            let n_var = construct_vnode env var ((Var_Token ""), (Var_Token "")) in
+            let n_var = construct_vnode env var (create_singleton_trace "") in
             let s_var = construct_snode "" n_var in
             let t_var = match domain with
             | {name = n; dtype = Int; left = l; op = bop; right = r} -> 
                 let rm = if l = "true" then 
                   (top_R Plus)
-                else top_R Plus |> op_R (Var_Token "") (Var_Token l) (Var_Token r) bop true
+                else top_R Plus |> op_R ( "") ( l) ( r) bop true
                 in Relation rm
             | {name = n; dtype = Bool; left = l; op = bop; right = r} -> 
                 let rm = if l = "true" then init_R_c (Boolean true)
                 else if l = "false" then
                   init_R_c (Boolean false)
                 else
-                  top_R Plus |> op_R (Var_Token "") (Var_Token l) (Var_Token r) bop true
+                  top_R Plus |> op_R ( "") ( l) ( r) bop true
                 in
                 Relation (rm)
             | {name = n; dtype = Unit; left = l; op = _; right = r} ->
                 if l = "unit" then Tuple []
                 else raise (Invalid_argument"Expected unit predicate as {v: Unit | unit }")
             in
-            let env' = env |> VarMap.add (Var_Token var) (n_var, false) in
+            let env' = env |> VarMap.add var (n_var, false) in
             let m' = m |> NodeMap.add s_var t_var in
             m', env') !pre_vars (m, env)
       in env', m'

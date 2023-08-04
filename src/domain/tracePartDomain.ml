@@ -1,7 +1,7 @@
 open AbstractDomain
+open List
 open DriftSyntax
 open Util
-open List
 open Format
 
 type loc_token_t = 
@@ -12,9 +12,7 @@ type loc_token_t =
   | Pat_Case of loc * loc
   | Pat_End of loc
 
-type token_t = 
-  | Var_Token of var
-  | Loc_Trace of loc_token_t list
+type trace_t = loc_token_t list
 
 type loc_tree = 
   | Empty
@@ -23,9 +21,7 @@ type loc_tree =
 
 type loc_tree_t = loc * loc_tree
 
-let get_trace token = match token with
-  | Var_Token _ -> raise (Invalid_argument "get_trace: expected Loc_Token")
-  | Loc_Trace l -> l
+let create_singleton_trace loc = [None_Loc_Token loc]
 
 let get_loc_token_loc loc_token = match loc_token with
   | None_Loc_Token loc | If_True loc | If_False loc | If_End loc | Pat_Case (loc,_) | Pat_End loc -> loc
@@ -92,25 +88,21 @@ let is_pat_branch_token token = match token with
   | Pat_Case _ -> true
   | _ -> false
 
-let rec comp_trace trace1 trace2 = List.compare comp_loc_token trace1 trace2
+let rec comp_trace trace1 trace2 = match trace1, trace2 with 
+  | [], [] -> 0
+  | [], _ -> 1
+  | _, [] -> -1
+  | head1::tail1, head2::tail2 -> let head_result = comp_loc_token head1 head2 in
+      if head_result = 0 then comp_trace tail1 tail2 else head_result
 
 let sort_traces trace_list = List.sort(fun trace1 trace2 -> comp_trace trace1 trace2) trace_list
 
 let sort_trees tree_list = List.sort (fun t1 t2 -> comp_loc_token (get_trace_tree_token t1) (get_trace_tree_token t2)) tree_list
 
-let comp_token token1 token2 = match token1, token2 with
-  | Var_Token var1, Var_Token var2 -> String.compare var1 var2
-  | Var_Token var1, _ -> 1
-  | Loc_Trace trace1, Var_Token var2 -> -1
-  | Loc_Trace trace1, Loc_Trace trace2 -> comp_trace trace1 trace2
-
-let rec get_trace_loc trace = match trace with
+let rec get_trace_data trace = match trace with
   | [] -> ""
-  | head :: tail -> get_loc_token_loc head ^ get_trace_loc tail
-
-let get_token_data token = match token with
-  | Var_Token var -> var
-  | Loc_Trace loc_trace -> get_trace_loc loc_trace
+  | head :: [] -> get_loc_token_loc head
+  | head :: tail -> get_loc_token_loc head ^","^ get_trace_data tail
 
 let print_loc_token ppf loc_token = match loc_token with
   | None_Loc_Token loc -> Format.fprintf ppf "@[None:<2>%s]" loc
@@ -123,10 +115,6 @@ let print_loc_token ppf loc_token = match loc_token with
 let rec print_trace ppf trace = match trace with
   | [] -> ()
   | head :: tail -> (print_loc_token ppf head; print_trace ppf tail)
-
-let print_token ppf token = match token with
-  | Var_Token var -> Format.fprintf ppf "@[Var:<2>%s]" var
-  | Loc_Trace trace -> (Format.fprintf ppf "@[Loc";  print_trace ppf trace; Format.fprintf ppf "]")
 
 let find_head_in_tree_list tree_list token = List.find (fun tree -> get_trace_tree_token tree = token) tree_list
 

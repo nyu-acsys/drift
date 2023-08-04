@@ -91,15 +91,15 @@ let print_exp out_ch e =
   if !Config.color then Ocolor_format.prettify_formatter fmt;
   Format.fprintf fmt "%a@?" (pr_exp true) e
 
-let loc_of_node n = get_token_data (get_label_snode n)
+let loc_of_node n = get_label_snode n
 
 let pr_node ppf n = Format.fprintf ppf "%s" (loc_of_node n)
 
 let rec pr_node_full ppf n = print_node n ppf pr_env
 and pr_env ppf = function
   | [] -> ()
-  | [x, (n,r)] -> Format.fprintf ppf "%s, %b: %a" (get_token_data x) r pr_node_full n
-  | (x, (n,r)) :: env -> Format.fprintf ppf "%s, %b: %a,@ %a" (get_token_data x) r pr_node_full n pr_env env
+  | [x, (n,r)] -> Format.fprintf ppf "%s, %b: %a" x r pr_node_full n
+  | (x, (n,r)) :: env -> Format.fprintf ppf "%s, %b: %a,@ %a" x r pr_node_full n pr_env env
 
 let string_of_node n = pr_node Format.str_formatter n; Format.flush_str_formatter ()
 
@@ -111,7 +111,7 @@ let pr_agg_val ppf a = match a with
 
 let pr_ary ppf ary = 
   let (l,e), (rl, ve) = ary in
-  let l, e = get_token_data l, get_token_data e in
+  let l, e = l, e in
   Format.fprintf ppf "@[<1>{@ cur_v:@ Int Array (%s, %s)@ |@ len:@ %a,@ item:@ %a@ }@]" l e pr_agg_val rl pr_agg_val ve
 
 let rec shape_value = function
@@ -143,7 +143,7 @@ let rec pr_value ppf v = match v with
   | Lst lst -> pr_lst ppf lst
 and pr_lst ppf lst =
     let (l,e), (rl, ve, ke) = lst in
-    let l, e = get_token_data l, get_token_data e in
+    let l, e = l, e in
     Format.fprintf ppf "@[<1>{@ cur_v:@ %s List (%s, %s)@ |@ len:@ %a,@ item:@ %a@ }@]" (shape_value ve) l e pr_agg_val rl pr_value ve
 and pr_tuple ppf u = 
   if List.length u = 0 then Format.fprintf ppf "@[<1>unit@]"
@@ -156,19 +156,20 @@ and pr_tuple ppf u =
     print_list ppf u
 
 let sort_list (m: exec_map_t) =
-  let comp s1 s2 =
-  let l1 = try int_of_string s1 
-    with _ -> -1 in
-  let l2 = try int_of_string s2
-    with _ -> -1 in
-  if l1 = -1 then
-    if l2 = -1 then String.compare s1 s2
-    else -1
-  else if l2 = -1 then 1
-  else l1 - l2 in
+  (* let comp s1 s2 =
+    let l1 = try int_of_string s1 
+      with _ -> -1 in
+    let l2 = try int_of_string s2
+      with _ -> -1 in
+    if l1 = -1 then
+      if l2 = -1 then String.compare s1 s2
+      else -1
+    else if l2 = -1 then 1
+    else l1 - l2 
+  in *)
   let lst = (NodeMap.bindings m) in
   List.sort (fun (n1,_) (n2,_) -> 
-    compare_node comp n1 n2) lst 
+    compare_node comp_trace n1 n2) lst 
 
 let print_value out_ch v = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" pr_value v
 
