@@ -1,0 +1,4 @@
+(ocamllex effectAutomataLexer)
+(menhir 
+  (modules effectAutomataGrammar)
+  (flags --explain --dump))
