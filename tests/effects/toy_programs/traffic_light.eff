@@ -1,0 +1,15 @@
+{
+  QSet	 = [0; 1; 2; 3];
+	delta	 = fun x (q1, acc1) -> 
+            if (x = 0) then (3, 0)
+						else 
+						  if (q1 = 3) then (1, acc1) 
+							else 
+							  if (q1 = 1) then (2, acc1) 
+								else 
+								  if (q1 = 2) then (3, acc1) 
+									else (q1, acc1);
+	assert = fun (q2, acc2) -> q2 >= 1;
+  IniCfg = (0, 0)	        
+}
+

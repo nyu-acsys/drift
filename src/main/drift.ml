@@ -37,7 +37,7 @@ let _ =
             else
               Fun.id)
         |> (if !Config.effect_tr then
-               Translation.tr_simple 
+               Translation.tr_effect !Config.effect_aut_file 
             else
               Fun.id)
         |> label
