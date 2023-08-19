@@ -269,8 +269,8 @@ module OneSensitive: SemanticsType =
     and list_t = (var * var) * (relation_t * value_t * K.expr')
     and tuple_t = value_t list
     let init_T var = TableMap.empty
-    let alpha_rename_T f (mt:table_t) prevar_trace var_trace = TableMap.map (fun (vi, vo) ->
-      f vi prevar_trace var_trace, f vo prevar_trace var_trace) mt
+    let alpha_rename_T f (mt:table_t) prevar var = TableMap.map (fun (vi, vo) ->
+      f vi prevar var, f vo prevar var) mt
     let join_T f g mt1 mt2 =
       TableMap.union (fun cs (v1i, v1o) (v2i, v2o) -> Some (f v1i v2i, f v1o v2o)) mt1 mt2
     let meet_T f g mt1 mt2 =
@@ -304,8 +304,8 @@ module OneSensitive: SemanticsType =
       in
       f vi vars, f vo vars_o) mt
     let get_label_snode n = match n with 
-      | SEN (v, l) -> v^(get_trace_data l)
-      | SVN (xl, cl) -> xl^(get_trace_data cl)
+      | SEN (v, l) -> v^" "^(get_trace_data l)
+      | SVN (xl, cl) -> xl^" "^(get_trace_data cl)
     let get_var_env_node = function
     | VN(env, var, l) -> env, var, l
     | EN(env, l) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
@@ -399,12 +399,12 @@ module OneSensitive: SemanticsType =
 
 (* module NSensitive: SemanticsType =
   struct
-    type enode_t = env_t * trace_t * call_site (*N = E x loc*)
-    and vnode_t = env_t * var * call_site (*Nx = E x trace_t x stack*)
+    type enode_t = env_t * trace_t (*N = E x loc*)
+    and vnode_t = env_t * var * call_site (*Nx = E x var x stack*)
     and node_t = EN of enode_t | VN of vnode_t
     and env_t = (node_t * bool) VarMap.t (*E = Var -> N*)
-    and call_site = trace_t * trace_t   (*stack = trace_t * loc*)
-    and node_s_t = SEN of (call_site * trace_t) | SVN of (call_site * trace_t) (* call site * label *)
+    and call_site = trace_t   (*stack = trace_t * loc*)
+    and node_s_t = SEN of (var * call_site) | SVN of (var * call_site) (* call site * label *)
     type value_t =
       | Bot
       | Top
@@ -413,15 +413,15 @@ module OneSensitive: SemanticsType =
       | Ary of array_t
       | Lst of list_t
       | Tuple of tuple_t
-    and table_t = (value_t * value_t) TableMap.t (* TODO: sorted assoc list?*)
-    and list_t = (trace_t * trace_t) * (relation_t * value_t * K.expr')
+    and table_t = (value_t * value_t) TableMap.t
+    and list_t = (var * var) * (relation_t * value_t * K.expr')
     and tuple_t = value_t list
     let init_T _ = TableMap.empty
-    let alpha_rename_T f (mt:table_t) (pre_var_trace:trace_t) (var_trace:trace_t) = TableMap.map (fun (vi, vo) ->
-      f vi pre_var_trace var_trace, f vo pre_var_trace var_trace) mt
+    let alpha_rename_T f (mt:table_t) prevar var = TableMap.map (fun (vi, vo) ->
+      f vi prevar var, f vo prevar var) mt
 
-    let get_traces_from_table table = List.map (fun ((var_trace, trace), _) -> var_trace, get_trace trace) table
-    let trace_to_var_trace (var_trace, trace) = None_Loc_Token (get_trace_data var_trace) :: trace
+    let get_traces_from_table table = List.map (fun ((var, trace), _) -> var, get_trace trace) table
+    let trace_to_var_trace (var, trace) = None_Loc_Token (get_trace_data var) :: trace
     let var_trace_to_trace trace = (Var_Token (List.hd trace |> get_loc_trace_loc), Loc_Trace (List.tl trace))
     
     let rec add_traces_to_table bindings trace_trees table_add_function table = match bindings with
@@ -479,11 +479,10 @@ module OneSensitive: SemanticsType =
     let forget_T f var mt = TableMap.map (fun (vi, vo) -> 
       f var vi, f var vo) mt
 
-    (* Todo: understand cs *)
-    let arrow_T f1 f2 var mt v = TableMap.mapi (fun cs (vi, vo) -> 
-      let _, z = cs in
-      let v' = f1 z v in
-      f2 var vi v, f2 var vo v') mt
+      let arrow_T f1 f2 var mt v = TableMap.mapi (fun cs (vi, vo) -> 
+        let z, _ = cs in
+        let v' = f1 z v in
+        f2 var vi v, f2 var vo v') mt
     
     (* TODO: how to widen? *)
     let wid_T f g mt1 mt2 =
@@ -493,17 +492,16 @@ module OneSensitive: SemanticsType =
     let replace_T f mt var x = TableMap.map (fun (vi, vo) -> f vi var x, f vo var x) mt
     let stren_T f mt ae = TableMap.map (fun (vi, vo) -> f vi ae, f vo ae) mt
     
-    (* TODO: proj_T-construct_snode : understand cs*)
     let proj_T f g mt vars = TableMap.mapi (fun cs (vi, vo) -> 
-      let _, var = cs in
+      let var, _ = cs in
       let vars_o = 
         let vars = var :: vars in
         List.append vars (g vi)
       in
       f vi vars, f vo vars_o) mt
     let get_label_snode n = match n with 
-      | SEN (_, l) -> l
-      | SVN (_, xl) -> xl
+      | SEN (v, l) -> v^" "^(get_trace_data l)
+      | SVN (xl, cl) -> xl^" "^(get_trace_data cl)
     let get_var_env_node = function
     | VN(env, l, var) -> env, l, var
     | EN(env, l, loc) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
@@ -517,7 +515,7 @@ module OneSensitive: SemanticsType =
       | SVN(_, l) -> raise (Invalid_argument ("Expected normal node at "^(get_trace_data l)))
       | SEN(var, l) -> var, l
     let construct_vnode env label callsite = VN (env, Var_Token label, callsite)
-    let construct_enode env label call_site = EN (env, Var_Token label, call_site)
+    let construct_enode env label = EN (env, label)
     let construct_snode (x: var) (n:node_t): node_s_t = match n with
     | EN (env, l, (cx, cl)) -> if VarMap.is_empty env || x = "" then SEN ((Var_Token x, Var_Token x), l) else
       let _, _, (_, va) = 
@@ -562,14 +560,14 @@ module OneSensitive: SemanticsType =
         Format.fprintf ppf "@[<2>"; print_trace ppf var; Format.fprintf ppf ":@ @[<2>%a@]@]" pr_table t
       in print_table_map ppf t
     let compare_node comp n1 n2 = 
-      let var1, var2, e1, e2 = match n1, n2 with
-        | SEN ((_, var1), e1), SEN ((_, var2), e2) -> var1, var2, e1, e2
-        | SEN ((_, var1), e1), SVN ((_, var2), e2) -> var1, var2, e1, e2
-        | SVN ((_, var1), e1), SEN ((_, var2), e2) -> var1, var2, e1, e2
-        | SVN ((_, var1), e1), SVN ((_, var2), e2) -> var1, var2, e1, e2
-      in
-      if comp (get_trace_data e1) (get_trace_data e2) = 0 then
-        String.compare (get_trace_data var1) (get_trace_data var2) else comp (get_trace_data e1) (get_trace_data e2)
+        let var1, var2, e1, e2 = match n1, n2 with
+          | SEN (var1, e1), SEN (var2, e2) -> var1, var2, e1, e2
+          | SEN (var1, e1), SVN (var2, e2) -> var1, var2, e1, e2
+          | SVN (var1, e1), SEN (var2, e2) -> var1, var2, e1, e2
+          | SVN (var1, e1), SVN (var2, e2) -> var1, var2, e1, e2
+        in
+        if comp e1 e2 = 0 then
+          String.compare var1 var2 else comp e1 e2
     
     (* Todo: after discussion *)
     let prop_table f g t1 t2 = 
