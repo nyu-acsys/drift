@@ -6,6 +6,8 @@ open TracePartDomain
 
 module K = Kat
 
+exception AssertionError of string
+
 type relation_t = Int of AbstractValue.t 
   | Bool of AbstractValue.t * AbstractValue.t
   | Unit of unit
@@ -320,8 +322,7 @@ module OneSensitive: SemanticsType =
       | SEN(var, l) -> var, l
     let construct_vnode env label callsite = VN (env, label, callsite)
     let construct_enode env label = EN (env, label)
-    let construct_snode x (n:node_t): node_s_t = 
-    match n with
+    let construct_snode x (n:node_t): node_s_t = match n with
     | EN (env, l) -> if VarMap.is_empty env || x = "" then SEN (x, l) else
       let _, va, _ = 
         let n, _ = VarMap.find x env in
@@ -397,7 +398,7 @@ module OneSensitive: SemanticsType =
         (f vi, f vo)) t
   end
 
-(* module NSensitive: SemanticsType =
+module NSensitive: SemanticsType =
   struct
     type enode_t = env_t * trace_t (*N = E x loc*)
     and vnode_t = env_t * var * call_site (*Nx = E x var x stack*)
@@ -420,22 +421,20 @@ module OneSensitive: SemanticsType =
     let alpha_rename_T f (mt:table_t) prevar var = TableMap.map (fun (vi, vo) ->
       f vi prevar var, f vo prevar var) mt
 
-    let get_traces_from_table table = List.map (fun ((var, trace), _) -> var, get_trace trace) table
-    let trace_to_var_trace (var, trace) = None_Loc_Token (get_trace_data var) :: trace
-    let var_trace_to_trace trace = (Var_Token (List.hd trace |> get_loc_trace_loc), Loc_Trace (List.tl trace))
+    let get_traces_from_table table = List.map (fun ((var, trace), _) -> var, trace) table
+    let trace_to_var_trace (var, trace) = None_Loc_Token var :: trace
+    let var_trace_to_trace trace = List.hd trace |> get_loc_token_loc, List.tl trace
     
-    let rec add_traces_to_table bindings trace_trees table_add_function table = match bindings with
-      | [] -> table
-      | ((trace, trace_trace), (vi, vo)) :: tail ->
-        let trace = trace_to_var_trace (trace, get_trace (trace_trace)) in
-        let tree = List.hd trace |> find_head_in_tree_list trace_trees in
-        try 
-          let common_trace = find_trace_tree_longest_common_trace trace tree |> var_trace_to_trace |> snd in 
-          TableMap.update (trace, common_trace) (table_add_function (vi, vo)) table  
-        with
-          Not_found -> table
-    
-    let join_T f g mt1 mt2 =
+    let join_T f g mt1 mt2 = 
+      let rec add_traces_to_table bindings trace_trees table_add_function table = match bindings with
+        | [] -> table
+        | ((var, trace), (vi, vo)) :: tail_bindings ->
+          let var_trace = trace_to_var_trace (var, trace) in
+          let tree = None_Loc_Token var |> find_head_in_tree_list trace_trees in
+          let common_trace = find_trace_tree_longest_common_trace var_trace tree |> var_trace_to_trace |> snd in 
+          TableMap.update (var, common_trace) (table_add_function (vi, vo)) table |>
+            add_traces_to_table tail_bindings trace_trees table_add_function 
+      in
       let table_add_function = (fun (vi, vo) v -> match v with | None -> Some (vi, vo) | Some (v1i, v1o) -> Some (f vi v1i, f vo v1o)) in
       let var_traces1 = TableMap.bindings mt1 |> get_traces_from_table |> List.map trace_to_var_trace in
       let var_traces2 = TableMap.bindings mt2 |> get_traces_from_table |> List.map trace_to_var_trace in
@@ -445,32 +444,92 @@ module OneSensitive: SemanticsType =
         |> add_traces_to_table (TableMap.bindings mt2) var_trace_trees table_add_function
     
     let meet_T f g mt1 mt2 = 
-      let var_traces1 = TableMap.bindings mt1 |> get_traces_from_table |> List.map trace_to_var_trace in
-      let var_traces2 = TableMap.bindings mt2 |> get_traces_from_table |> List.map trace_to_var_trace in
-      let met_var_traces = meet_traces var_traces1 var_traces2 in
+      let rec add_traces_to_table var_traces1 var_traces2 var_trace_trees table_add_function mt1 mt2 table = 
+        match var_traces1, var_traces2 with
+        | [], [] -> table
+        | _, [] -> add_traces_to_table [] var_traces1 var_trace_trees table_add_function mt2 mt1 table
+        | [], var_trace2 :: tail2 -> 
+            let (var2, trace2) = var_trace_to_trace var_trace2 in
+            let (vi2, vo2) = TableMap.find (var2, trace2) mt2 in
+            let tree = List.hd var_trace_trees in
+            if tree_contains_trace var_trace2 tree then
+              TableMap.update (var2, trace2) (table_add_function (vi2, vo2)) table |>
+                add_traces_to_table [] tail2 var_trace_trees table_add_function mt1 mt2
+            else 
+              if List.length var_trace_trees >= 2 then 
+                let next_tree = List.tl var_trace_trees |> List.hd in
+                if tree_contains_trace var_trace2 next_tree then
+                  add_traces_to_table var_traces1 var_traces2 (List.tl var_trace_trees) table_add_function mt1 mt2 table
+                else
+                  table
+              else
+                table
+        | var_trace1 :: tail1, var_trace2 :: tail2 -> 
+            if comp_trace var_trace1 var_trace2 > 0 then (* P1: smallest trace added first *)
+              add_traces_to_table var_traces2 var_traces1 var_trace_trees table_add_function mt2 mt1 table
+            else
+              let (var1, trace1) = var_trace_to_trace var_trace1 in
+              let (vi1, vo1) = TableMap.find (var1, trace1) mt1 in
+              let tree = List.hd var_trace_trees in
+              if tree_contains_trace var_trace1 tree then
+                if is_maximal_trace var_trace1 tree then (* maximal traces added first *)
+                  TableMap.update (var1, trace1) (table_add_function (vi1, vo1)) table |>
+                    add_traces_to_table tail1 var_traces2 var_trace_trees table_add_function mt1 mt2
+                else
+                  if tree_contains_trace var_trace2 tree then (* if trace1 is not maximal, trace2 can't be maximal as it violates P1 *)
+                    raise (AssertionError "meet_T.add_traces_to_table: trace2 smaller than trace 1")
+                  else (* trace1 is not maximal and has to be added now *)
+                    let traces = find_trace_tree_super_traces [] var_trace1 tree |> List.map var_trace_to_trace in
+                    List.fold_left (fun table trace -> TableMap.update (var1, trace1) (table_add_function (vi1, vo1)) table) table traces |>
+                      add_traces_to_table tail1 var_traces2 var_trace_trees table_add_function mt1 mt2
+              else
+                if tree_contains_trace var_trace2 tree then 
+                (* violates P1 as current tree is smallest and a tree is only changed when "a" trace 1 (i.e. the smallest one at the time) is in a tree.  *)
+                  raise (AssertionError "meet_T.add_traces_to_table: trace 1 not in tree, but trace 2 is")
+                else 
+                  if List.length var_trace_trees >= 2 then 
+                    let next_tree = List.tl var_trace_trees |> List.hd in
+                    if tree_contains_trace var_trace1 next_tree then
+                      add_traces_to_table var_traces1 var_traces2 (List.tl var_trace_trees) table_add_function mt1 mt2 table
+                    else
+                        add_traces_to_table tail1 var_traces2 var_trace_trees table_add_function mt1 mt2 table
+                  else
+                    table
+        
+      in
+      let var_traces1 = TableMap.bindings mt1 |> get_traces_from_table |> List.map trace_to_var_trace |> sort_traces in
+      let var_traces2 = TableMap.bindings mt2 |> get_traces_from_table |> List.map trace_to_var_trace |> sort_traces in
+      let met_var_traces = meet_traces var_traces1 var_traces2 true in (* assumes that this discards non-matches *)
       let var_trace_trees = sort_trees met_var_traces in
-      add_traces_to_table (TableMap.bindings mt1) var_trace_trees 
-          (fun (vi, vo) v -> match v with | None -> Some (vi, vo) | Some (v1i, v1o) -> Some (f vi v1i, f vo v1o)) TableMap.empty 
-        |> add_traces_to_table (TableMap.bindings mt2) var_trace_trees 
-          (fun (vi, vo) v -> match v with | None -> None | Some (v1i, v1o) -> Some (f vi v1i, f vo v1o))
+      add_traces_to_table var_traces1 var_traces2 var_trace_trees 
+          (fun (vi, vo) v -> match v with | None -> Some (vi, vo) | Some (v1i, v1o) ->  Some ((f v1i vi), (f v1o vo))) 
+          mt1 mt2 TableMap.empty 
 
     let leq_T f mt1 mt2 = 
-      let var_traces1 = TableMap.bindings mt1 |> get_traces_from_table |> List.map trace_to_var_trace in
-      let var_traces2 = TableMap.bindings mt2 |> get_traces_from_table |> List.map trace_to_var_trace in
-      let var_trees2 = sort_traces var_traces2 |> collect_traces in
+      let leq_T_traces var_trace1 var_trace2 mt1 mt2 = 
+        let (var1, trace1), (var2, trace2) = var_trace_to_trace var_trace1, var_trace_to_trace var_trace2 in
+        let (v1i, v1o), (v2i, v2o) = TableMap.find (var1, trace1) mt1, TableMap.find (var2, trace2) mt2 in
+        f v1i v2i && f v1o v2o
+      in
+
+      let var_traces1 = TableMap.bindings mt1 |> get_traces_from_table |> List.map trace_to_var_trace |> sort_traces in
+      let var_traces2 = TableMap.bindings mt2 |> get_traces_from_table |> List.map trace_to_var_trace |> sort_traces in
+      let var_trees2 = collect_traces var_traces2 |> sort_trees in
       List.for_all (fun var_trace  -> 
+        let var_tree = List.hd var_trace |> find_head_in_tree_list var_trees2 in
         try
-          let var, trace = var_trace_to_trace var_trace in
-          let v1i, v1o = TableMap.find (var, trace) mt1 in
-          let var_tree = List.hd var_trace |> find_head_in_tree_list var_trees2 in
-          let super_var_traces = find_trace_tree_super_traces var_trace var_tree in
-          if List.length super_var_traces = 0 then false (* TODO: should i join all values and then compare? *)
-            else List.for_all (fun super_var_trace -> 
-              let var, trace = var_trace_to_trace super_var_trace in
-              let v2i, v2o = TableMap.find (var, trace) mt2 in
-              f v1i v2i && f v1o v2o
-            ) super_var_traces
-        with Not_found -> false
+          let super_var_traces = find_trace_tree_super_traces [] var_trace var_tree in
+          List.for_all (fun super_var_trace -> 
+            leq_T_traces var_trace super_var_trace mt1 mt2
+          ) super_var_traces
+        with 
+          | Not_found -> TableMap.find (var_trace_to_trace var_trace) mt1 = (Bot, Bot)
+          | Trace_larger_than_tree -> 
+              let common_trace = find_trace_tree_longest_common_trace var_trace var_tree in
+              if is_maximal_trace common_trace var_tree then
+                leq_T_traces var_trace common_trace mt1 mt2
+              else
+                TableMap.find (var_trace_to_trace var_trace) mt1 = (Bot, Bot)
       ) var_traces1
 
     let eq_T f mt1 mt2 =
@@ -479,14 +538,13 @@ module OneSensitive: SemanticsType =
     let forget_T f var mt = TableMap.map (fun (vi, vo) -> 
       f var vi, f var vo) mt
 
-      let arrow_T f1 f2 var mt v = TableMap.mapi (fun cs (vi, vo) -> 
-        let z, _ = cs in
-        let v' = f1 z v in
-        f2 var vi v, f2 var vo v') mt
+    let arrow_T f1 f2 var mt v = TableMap.mapi (fun cs (vi, vo) -> 
+      let z, _ = cs in
+      let v' = f1 z v in
+      f2 var vi v, f2 var vo v') mt
     
-    (* TODO: how to widen? *)
     let wid_T f g mt1 mt2 =
-      TableMap.union (fun cs (v1i, v1o) (v2i, v2o) -> Some (f v1i v2i, f v1o v2o)) mt1 mt2
+      join_T f g mt1 mt2
 
     let equal_T f g mt var = TableMap.map (fun (vi, vo) -> f vi var, f vo var) mt
     let replace_T f mt var x = TableMap.map (fun (vi, vo) -> f vi var x, f vo var x) mt
@@ -503,49 +561,45 @@ module OneSensitive: SemanticsType =
       | SEN (v, l) -> v^" "^(get_trace_data l)
       | SVN (xl, cl) -> xl^" "^(get_trace_data cl)
     let get_var_env_node = function
-    | VN(env, l, var) -> env, l, var
-    | EN(env, l, loc) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
+    | VN(env, var, l) -> env, var, l
+    | EN(env, l) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
     let get_en_env_node = function
-      | VN(env, l, var) -> raise (Invalid_argument ("Expected normal node at "^(get_trace_data l)))
-      | EN(env, l, loc) -> env, l, loc
+      | VN(env, var, l) -> raise (Invalid_argument ("Expected normal node at "^(get_trace_data l)))
+      | EN(env, l) -> env, l
     let get_var_s_node = function
-      | SVN ((varx, var), xl) -> varx, var, xl
-      | SEN(var, l) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
+      | SVN (varx, xl) -> varx, xl
+      | SEN(_, l) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
     let get_en_s_node = function
       | SVN(_, l) -> raise (Invalid_argument ("Expected normal node at "^(get_trace_data l)))
       | SEN(var, l) -> var, l
-    let construct_vnode env label callsite = VN (env, Var_Token label, callsite)
+    let construct_vnode env label callsite = VN (env, label, callsite)
     let construct_enode env label = EN (env, label)
-    let construct_snode (x: var) (n:node_t): node_s_t = match n with
-    | EN (env, l, (cx, cl)) -> if VarMap.is_empty env || x = "" then SEN ((Var_Token x, Var_Token x), l) else
-      let _, _, (_, va) = 
-        let n, _ = VarMap.find (Var_Token x) env in
+    let construct_snode x (n:node_t): node_s_t = match n with
+    | EN (env, l) -> if VarMap.is_empty env || x = "" then SEN (x, l) else
+      let _, va, _ = 
+        let n, _ = VarMap.find x env in
         get_var_env_node n in
-      SEN ((va, l), l)
-    | VN (env, xl, (cx, cl)) -> SVN ((cx, cl), xl)
+      SEN (va, l)
+    | VN (env, xl, cl) -> SVN (xl, cl)
     let construct_table cs (vi,vo) = TableMap.singleton cs (vi, vo)
     let get_vnode = function
       | VN(env, l, cs) -> env, l, cs
-      | EN(_, l, cs) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
+      | EN(_, l) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
     let io_T cs v = match v with
         | Table t -> TableMap.find cs t
         | _ -> raise (Invalid_argument "Should be a table when using io_T")
-    
-    (* Todo: understand cs *)
     let dx_T v = match v with
         | Table t -> let cs, _ = try TableMap.min_binding t with
-          Not_found -> (Var_Token "",Var_Token ""), (Bot,Bot) in cs
+          Not_found -> ("",create_singleton_trace "") , (Bot,Bot) in cs
         | _ -> raise (Invalid_argument "Should be a table when using dx_T")
     let get_table_T = function
       | Table t -> t
       | _ -> raise (Invalid_argument "Should be a table when using get_table_T")
-    let print_node n ppf f = 
-      let env, l, cs = match n with
-        | EN (env, l, cs) -> env, l, cs
-        | VN (env, l, cs) ->  env, l, cs
-        in
-      let var, trace = cs in Format.fprintf ppf "@[<1><@[<1>[%a]@], "
-        f (VarMap.bindings env); print_trace ppf var; print_trace ppf trace ; print_trace ppf l; Format.fprintf ppf "]"
+    let print_node n ppf f = match n with
+      | EN (env, l) -> Format.fprintf ppf "@[<1><@[<1>[%a]@], " 
+        f (VarMap.bindings env); print_trace ppf l; Format.fprintf ppf "]"
+      | VN (env, l, cs) -> let var = cs in Format.fprintf ppf "@[<1><@[<1>[%a]@], " 
+        f (VarMap.bindings env); print_trace ppf var; Format.fprintf ppf "%s" l; Format.fprintf ppf "]"
     let print_table t ppf f = 
       let rec pr_table ppf t = let (vi, vo) = t in
         Format.fprintf ppf "@[(%a ->@ %a)@]" f vi f vo
@@ -556,36 +610,36 @@ module OneSensitive: SemanticsType =
         | [row] -> Format.fprintf ppf "%a" pr_table_row row
         | row :: rows -> Format.fprintf ppf "%a;@ %a" pr_table_row row pr_table_map rows
       and pr_table_row ppf (cs, t) = 
-        let l, var = cs in
-        Format.fprintf ppf "@[<2>"; print_trace ppf var; Format.fprintf ppf ":@ @[<2>%a@]@]" pr_table t
+        let var, l = cs in
+        Format.fprintf ppf "@[<2>%s" var; Format.fprintf ppf ":@ @[<2>%a@]@]" pr_table t
       in print_table_map ppf t
     let compare_node comp n1 n2 = 
-        let var1, var2, e1, e2 = match n1, n2 with
-          | SEN (var1, e1), SEN (var2, e2) -> var1, var2, e1, e2
-          | SEN (var1, e1), SVN (var2, e2) -> var1, var2, e1, e2
-          | SVN (var1, e1), SEN (var2, e2) -> var1, var2, e1, e2
-          | SVN (var1, e1), SVN (var2, e2) -> var1, var2, e1, e2
-        in
-        if comp e1 e2 = 0 then
-          String.compare var1 var2 else comp e1 e2
+      let var1, var2, e1, e2 = match n1, n2 with
+        | SEN (var1, e1), SEN (var2, e2) -> var1, var2, e1, e2
+        | SEN (var1, e1), SVN (var2, e2) -> var1, var2, e1, e2
+        | SVN (var1, e1), SEN (var2, e2) -> var1, var2, e1, e2
+        | SVN (var1, e1), SVN (var2, e2) -> var1, var2, e1, e2
+      in
+      if comp e1 e2 = 0 then
+        String.compare var1 var2 else comp e1 e2
     
-    (* Todo: after discussion *)
+    (* todo *)
     let prop_table f g t1 t2 = 
       let t = TableMap.merge (fun cs vio1 vio2 ->
         match vio1, vio2 with
-          | None, Some (v2i, v2o) -> Some ((v2i, Bot), (v2i, v2o))
-          | Some (v1i, v1o), None -> Some ((v1i, v1o), (Bot, Bot))
-          | Some (v1i, v1o), Some (v2i, v2o) -> 
+         | None, Some (v2i, v2o) -> Some ((v2i, Bot), (v2i, v2o))
+         | Some (v1i, v1o), None -> Some ((v1i, v1o), (Bot, Bot))
+         | Some (v1i, v1o), Some (v2i, v2o) -> 
             let t1', t2' = f cs (v1i, v1o) (v2i, v2o) in
             Some (t1', t2')
-          | _, _ -> None
+         | _, _ -> None
         ) t1 t2 in
         let t1' = TableMap.map (fun (vio1, _) -> vio1) t in
         let t2' = 
             let temp_mt2 = TableMap.map (fun (_, vio2) -> vio2) t in
             TableMap.filter (fun cs (v2i, v2o) -> v2i <> Bot || v2o <> Bot) temp_mt2
             (*Q: How to detect node scoping?*)
-        in t1', t2'
+       in t1', t2'
     let step_func f v m = let t = get_table_T v in
       TableMap.fold f t m
     let get_full_table_T t = TableMap.min_binding t
@@ -596,7 +650,7 @@ module OneSensitive: SemanticsType =
     let bot_shape_T f t = 
       TableMap.mapi (fun cs (vi, vo) -> 
         (f vi, f vo)) t
-end *)
+end
 
 let parse_sensitive = function
   | false -> (module NonSensitive: SemanticsType)
