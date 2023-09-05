@@ -33,10 +33,17 @@ let get_trace_tree_token tree : loc_token_t = match tree with
   | Leaf token -> token
   | Node (token, _) -> token
 
+let comp_loc loc1 loc2 = 
+  let l1 = try int_of_string loc1 with _ -> -1 in
+  let l2 = try int_of_string loc2 with _ -> -1 in
+  if l1 = -1 then
+    if l2 = -1 then String.compare loc1 loc2 else -1
+  else if l2 = -1 then 1 else l1 - l2
+
 let comp_loc_token token1 token2 = 
   let loc1 = get_loc_token_loc token1 in
   let loc2 = get_loc_token_loc token2 in
-  let loc_comp = String.compare loc1 loc2 in
+  let loc_comp = comp_loc loc1 loc2 in
   if loc_comp != 0 then loc_comp else
   (
     match token1 with

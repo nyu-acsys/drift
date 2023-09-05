@@ -307,8 +307,8 @@ module OneSensitive: SemanticsType =
       in
       f vi vars, f vo vars_o) mt
     let get_label_snode n = match n with 
-      | SEN (_, l) -> get_trace_data l
-      | SVN (_, cl) -> get_trace_data cl
+      | SEN (x, l) -> "EN: "^x^","^get_trace_data l
+      | SVN (x, cl) -> "VN: "^x^","^get_trace_data cl
     let get_var_env_node = function
     | VN(env, var, l) -> env, var, l
     | EN(env, l) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
@@ -347,10 +347,10 @@ module OneSensitive: SemanticsType =
       | Table t -> t
       | _ -> raise (Invalid_argument "Should be a table when using get_table_T")
     let print_node n ppf f = match n with
-      | EN (env, l) -> Format.fprintf ppf "@[<1><@[<1>[%a]@], " 
-        f (VarMap.bindings env); print_trace ppf l; Format.fprintf ppf "]"
-      | VN (env, l, cs) -> let var = cs in Format.fprintf ppf "@[<1><@[<1>[%a]@], " 
-        f (VarMap.bindings env); print_trace ppf var; Format.fprintf ppf "%s" l; Format.fprintf ppf "]"
+      | EN (env, l) -> Format.fprintf ppf "@[<1><[%a], " 
+        f (VarMap.bindings env); print_trace ppf l; Format.fprintf ppf ">@]"
+      | VN (env, l, cs) -> let var = cs in Format.fprintf ppf "@[<1><@[<1>[%a]@],@ " 
+        f (VarMap.bindings env); Format.fprintf ppf ",@ "; print_trace ppf var; Format.fprintf ppf "%s>@]" l
     let print_table t ppf f = 
       let rec pr_table ppf t = let (vi, vo) = t in
         Format.fprintf ppf "@[(%a ->@ %a)@]" f vi f vo
@@ -369,7 +369,7 @@ module OneSensitive: SemanticsType =
       | SVN (var1, e1), SEN (var2, e2) -> comp e1 e2
       | SVN (var1, e1), SVN (var2, e2) -> 
           if comp e1 e2 = 0 then
-            String.compare var1 var2 else comp e1 e2
+            String.compare var1 var2 else 0
               
     let prop_table f g t1 t2 = 
       let t = TableMap.merge (fun cs vio1 vio2 ->
