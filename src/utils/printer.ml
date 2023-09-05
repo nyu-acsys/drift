@@ -4,6 +4,7 @@ open SemanticDomain
 open SemanticsDomain
 open SensitiveDomain
 open SenSemantics
+open TracePartDomain
 
 (** Pretty printing *)
 let pr_relation ppf = function
@@ -146,19 +147,9 @@ and pr_tuple ppf u =
     print_list ppf u
 
 let sort_list (m: exec_map_t) =
-  let comp s1 s2 =
-  let l1 = try int_of_string s1 
-    with _ -> -1 in
-  let l2 = try int_of_string s2
-    with _ -> -1 in
-  if l1 = -1 then
-    if l2 = -1 then String.compare s1 s2
-    else -1
-  else if l2 = -1 then 1
-  else l1 - l2 in
   let lst = (NodeMap.bindings m) in
   List.sort (fun (n1,_) (n2,_) -> 
-    compare_node comp n1 n2) lst 
+    compare_node comp_trace n1 n2) lst 
 
 let print_value out_ch v = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" pr_value v
 
