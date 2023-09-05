@@ -1,6 +1,10 @@
 
 let uncurry f (x, y) = f x y
 
+let compose f g x = f (g x)
+
+let id x = x
+
 module StringSet = Set.Make(struct
     type t = string
     let compare = compare

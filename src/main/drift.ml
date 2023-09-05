@@ -326,7 +326,14 @@ let _ =
       end
     else tests in
     List.iter (fun e -> 
-      let el = e |> simplify |> label in
+      let el = e 
+               |> simplify
+               |> (if !Config.effect_tr then
+                     (Printf.printf "\neff_aut_file: %s" !Config.effect_aut_file;
+                     Translation.tr_effect !Config.effect_aut_file)
+                   else 
+                     Fun.id)
+               |> label in
       if !out_put_level < 2 then
         (print_endline "Executing:";
          print_exp stdout el);

@@ -1,5 +1,5 @@
 (* Version string *)
-let version = "0.1 beta"
+let version = "0.2 beta"
 
 let debug = ref false
 
@@ -21,7 +21,11 @@ let use_threshold = ref false
 
 let sensitive = ref false
 
-let usage = "usage: " ^ Sys.argv.(0) ^ " [-file <file name>] [-domain <domain name>] [-sen <true/false>] [-thold <true/false>] [-delay-wid <num>] [-nar <true/false>] [-out <num>] [-debug] [-bt]"
+let effect_tr = ref false
+
+let effect_aut_file = ref "" 
+
+let usage = "usage: " ^ Sys.argv.(0) ^ " [-file <file name>] [-domain <domain name>] [-sen <true/false>] [-thold <true/false>] [-delay-wid <num>] [-nar <true/false>] [-eff-aut <file name>] [-out <num>] [-debug] [-bt]"
 
 let cmd_options_spec =
   [("-file", Arg.String (fun s -> parse_file := true; file := s), ": Input file specification");
@@ -37,6 +41,7 @@ let cmd_options_spec =
       \t 2: Output the result only");
    ("-debug", Arg.Set debug, ": Debug mode");
    ("-bt", Arg.Set bt, ": Allow trace back");
+   ("-eff-aut", Arg.String (fun s -> effect_tr := true; effect_aut_file := s), ": Input automaton specification for effect analysis");
     ]
 
 (* Parse auxiliary 'command line options' that are set during parsing of the input file *)

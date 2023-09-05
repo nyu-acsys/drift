@@ -2,7 +2,7 @@
 
 set -e
 
-DIRS="-Is src/utils,src/domain,src/main,src/algo,src/frontends"
+DIRS="-Is src/utils,src/domain,src/main,src/algo,src/frontends,src/effects"
 TARGET="src/main/drift "
 APRONPKG="apron,apron.boxD,apron.boxMPFR,apron.boxMPQ,apron.octD,apron.octMPQ,apron.polkaMPQ,apron.polkaRll,\
 apron.ppl,apron.t1pD,apron.t1pMPFR,apron.t1pMPQ,apron.polkaGrid"
