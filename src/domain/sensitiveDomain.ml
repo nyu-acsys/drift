@@ -254,7 +254,7 @@ module NonSensitive: SemanticsType =
 
 module OneSensitive: SemanticsType =
   struct
-    type enode_t = env_t * trace_t (*N = E x loc*)
+    type enode_t = env_t * call_site (*N = E x loc*)
     and vnode_t = env_t * var * call_site (*Nx = E x var x stack*)
     and node_t = EN of enode_t | VN of vnode_t
     and env_t = (node_t * bool) VarMap.t (*E = Var -> N*)
@@ -399,13 +399,160 @@ module OneSensitive: SemanticsType =
         (f vi, f vo)) t
   end
 
-(*module NSensitive: SemanticsType =
+module NSensitive: SemanticsType =
   struct
-    type enode_t = env_t * trace_t (*N = E x loc*)
+    type enode_t = env_t * call_site (*N = E x loc*)
     and vnode_t = env_t * var * call_site (*Nx = E x var x stack*)
     and node_t = EN of enode_t | VN of vnode_t
     and env_t = (node_t * bool) VarMap.t (*E = Var -> N*)
-    and call_site = trace_t   (*stack = trace_t * loc*)
+    and call_site = trace_t  (*stack = trace_t * loc*)
+    and node_s_t = SEN of (var * call_site) | SVN of (var * call_site) (* call site * label *)
+    type value_t =
+      | Bot
+      | Top
+      | Relation of relation_t
+      | Table of table_t (* [<call_site>: table_t ...]*)
+      | Ary of array_t
+      | Lst of list_t
+      | Tuple of tuple_t
+    and table_t = (value_t * value_t) TableMap.t
+    and list_t = (var * var) * (relation_t * value_t)
+    and tuple_t = value_t list
+    let init_T var = TableMap.empty
+    let alpha_rename_T f (mt:table_t) prevar var = TableMap.map (fun (vi, vo) ->
+      f vi prevar var, f vo prevar var) mt
+    let join_T f g mt1 mt2 =
+      TableMap.union (fun cs (v1i, v1o) (v2i, v2o) -> Some (f v1i v2i, f v1o v2o)) mt1 mt2
+    let meet_T f g mt1 mt2 =
+        TableMap.merge (fun cs vio1 vio2 -> 
+          match vio1, vio2 with
+          | None, _ | _, None -> None
+          | Some (v1i, v1o), Some (v2i, v2o) -> Some ((f v1i v2i), (f v1o v2o))
+          ) mt1 mt2
+    let leq_T f mt1 mt2 =
+      TableMap.for_all (fun cs (v1i, v1o) -> 
+        TableMap.find_opt cs mt2 |> Opt.map (fun (v2i, v2o) -> f v1i v2i && f v1o v2o) |>
+        Opt.get_or_else (v1i = Bot && v1o = Bot)) mt1
+    let eq_T f mt1 mt2 =
+        TableMap.equal (fun (v1i, v1o) (v2i, v2o) -> f v1i v2i && f v1o v2o) mt1 mt2
+    let forget_T f var mt = TableMap.map (fun (vi, vo) -> 
+      f var vi, f var vo) mt
+    let arrow_T f1 f2 var mt v = TableMap.mapi (fun cs (vi, vo) -> 
+      let z = get_trace_data cs in
+      let v' = f1 z v in
+      f2 var vi v, f2 var vo v') mt
+    let wid_T f g mt1 mt2 =
+      TableMap.union (fun cs (v1i, v1o) (v2i, v2o) -> Some (f v1i v2i, f v1o v2o)) mt1 mt2
+    let equal_T f g mt var = TableMap.map (fun (vi, vo) -> f vi var, f vo var) mt
+    let replace_T f mt var x = TableMap.map (fun (vi, vo) -> f vi var x, f vo var x) mt
+    let stren_T f mt ae = TableMap.map (fun (vi, vo) -> f vi ae, f vo ae) mt
+    let proj_T f g mt vars = TableMap.mapi (fun cs (vi, vo) -> 
+      let var = get_trace_data cs in
+      let vars_o = 
+        let vars = var :: vars in
+        List.append vars (g vi)
+      in
+      f vi vars, f vo vars_o) mt
+    let get_label_snode n = match n with 
+      | SEN (x, l) -> "EN: "^x^","^get_trace_data l
+      | SVN (x, cl) -> "VN: "^x^","^get_trace_data cl
+    let get_var_env_node = function
+    | VN(env, var, l) -> env, var, l
+    | EN(env, l) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
+    let get_en_env_node = function
+      | VN(env, var, l) -> raise (Invalid_argument ("Expected normal node at "^(get_trace_data l)))
+      | EN(env, l) -> env, l
+    let get_var_s_node = function
+      | SVN (varx, xl) -> varx, xl
+      | SEN(_, l) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
+    let get_en_s_node = function
+      | SVN(_, l) -> raise (Invalid_argument ("Expected normal node at "^(get_trace_data l)))
+      | SEN(var, l) -> var, l
+    let construct_vnode env label callsite = VN (env, label, callsite)
+    let construct_enode env label = EN (env, label)
+    let construct_snode x (n:node_t): node_s_t = match n with
+    | EN (env, l) -> if VarMap.is_empty env || x = "" then SEN ("", l) else
+      let _, _, va = 
+        let n, _ = VarMap.find x env in
+        get_var_env_node n in
+      SEN (get_trace_data va, l)
+    | VN (env, xl, cl) -> SVN (xl, cl)
+    let construct_table cs (vi,vo) = TableMap.singleton cs (vi, vo)
+    let get_vnode = function
+      | VN(env, l, cs) -> env, l, cs
+      | EN(_, l) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
+    let io_T cs v = match v with
+        | Table t -> TableMap.find cs t
+        | _ -> raise (Invalid_argument "Should be a table when using io_T")
+    let dx_T v = match v with
+        | Table t -> let cs, _ = 
+              try TableMap.min_binding t with
+              Not_found -> (create_singleton_trace "") , (Bot,Bot) 
+            in cs
+        | _ -> raise (Invalid_argument "Should be a table when using dx_T")
+    let get_table_T = function
+      | Table t -> t
+      | _ -> raise (Invalid_argument "Should be a table when using get_table_T")
+    let print_node n ppf f = match n with
+      | EN (env, l) -> Format.fprintf ppf "@[<1><[%a], " 
+        f (VarMap.bindings env); print_trace ppf l; Format.fprintf ppf ">@]"
+      | VN (env, l, cs) -> let var = cs in Format.fprintf ppf "@[<1><@[<1>[%a]@],@ " 
+        f (VarMap.bindings env); Format.fprintf ppf ",@ "; print_trace ppf var; Format.fprintf ppf "%s>@]" l
+    let print_table t ppf f = 
+      let rec pr_table ppf t = let (vi, vo) = t in
+        Format.fprintf ppf "@[(%a ->@ %a)@]" f vi f vo
+      and print_table_map ppf mt = 
+        Format.fprintf ppf "[ %a ]" pr_table_map (TableMap.bindings mt)
+      and pr_table_map ppf = function
+        | [] -> ()
+        | [row] -> Format.fprintf ppf "%a" pr_table_row row
+        | row :: rows -> Format.fprintf ppf "%a;@ %a" pr_table_row row pr_table_map rows
+      and pr_table_row ppf (cs, t) = 
+        Format.fprintf ppf "@[<2>%s" (get_trace_data cs); Format.fprintf ppf ":@ @[<2>%a@]@]" pr_table t
+      in print_table_map ppf t
+    let compare_node comp n1 n2 = match n1, n2 with
+      | SEN (var1, e1), SEN (var2, e2) -> comp e1 e2
+      | SEN (var1, e1), SVN (var2, e2) -> comp e1 e2
+      | SVN (var1, e1), SEN (var2, e2) -> comp e1 e2
+      | SVN (var1, e1), SVN (var2, e2) -> 
+          if comp e1 e2 = 0 then
+            String.compare var1 var2 else 0
+              
+    let prop_table f g t1 t2 = 
+      let t = TableMap.merge (fun cs vio1 vio2 ->
+        match vio1, vio2 with
+         | None, Some (v2i, v2o) -> Some ((v2i, Bot), (v2i, v2o))
+         | Some (v1i, v1o), None -> Some ((v1i, v1o), (Bot, Bot))
+         | Some (v1i, v1o), Some (v2i, v2o) -> 
+            let t1', t2' = f cs (v1i, v1o) (v2i, v2o) in
+            Some (t1', t2')
+         | _, _ -> None
+        ) t1 t2 in
+        let t1' = TableMap.map (fun (vio1, _) -> vio1) t in
+        let t2' = 
+            let temp_mt2 = TableMap.map (fun (_, vio2) -> vio2) t in
+            TableMap.filter (fun cs (v2i, v2o) -> v2i <> Bot || v2o <> Bot) temp_mt2
+            (*Q: How to detect node scoping?*)
+       in t1', t2'
+    let step_func f v m = let t = get_table_T v in
+      TableMap.fold f t m
+    let get_full_table_T t = TableMap.min_binding t
+    let get_table_by_cs_T cs t = TableMap.find cs t
+    let update_table cs vio t = TableMap.add cs vio t
+    let table_isempty t = TableMap.is_empty t
+    let table_mapi f t = TableMap.mapi f t
+    let bot_shape_T f t = 
+      TableMap.mapi (fun cs (vi, vo) -> 
+        (f vi, f vo)) t
+  end
+
+(*module NSensitive: SemanticsType =
+  struct
+    type enode_t = env_t * call_site (*N = E x loc*)
+    and vnode_t = env_t * var * call_site (*Nx = E x var x stack*)
+    and node_t = EN of enode_t | VN of vnode_t
+    and env_t = (node_t * bool) VarMap.t (*E = Var -> N*)
+    and call_site = trace_t list   (*stack = trace_t * loc*)
     and node_s_t = SEN of (var * call_site) | SVN of (var * call_site) (* call site * label *)
     type value_t =
       | Bot
