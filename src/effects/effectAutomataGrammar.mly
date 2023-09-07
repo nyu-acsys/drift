@@ -42,7 +42,8 @@ let convert_var_name_apron_not_support s =
 %nonassoc THEN
 %nonassoc ELSE
 %right CONS
-%left PLUS MINUS
+%left PLUS 
+%left MINUS
 %left TIMES DIV MOD
 
 %start <EffectAutomataSyntax.aut_spec> top
@@ -76,6 +77,7 @@ exp:
   | e=if_exp { e } 
   | e=tuple_exp { e }
   | e=binary_exp { e }
+  | e=unary_exp { e }
   | BEGIN e=exp END { e } 
 
 var:
@@ -117,6 +119,12 @@ comp_exp:
   | LT { Lt }
   | GE { Ge }
   | GT { Gt }
+
+unary_exp:
+  | op=uop e=exp { UnOp (op, e, "") }
+
+%inline uop:
+  | MINUS { UMinus }
 
 binary_exp:
   | e1=exp op=bop e2=exp { BinOp (op, e1, e2, "") }
