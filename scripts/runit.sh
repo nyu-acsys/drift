@@ -24,11 +24,11 @@ shift
 wid=0
 nar=false
 thold=false
-sen=false
+trace_len=0
 
 if [[ $# -ge 1 && ($1 = "-sen" || $2 = "-sen" || $3 = "-sen") ]]; then
     echo "Use sensitive"
-    sen=true;
+    trace_len=1;
 fi
 
 if [ $# -ge 1 ] && [ $1 = "-nar" ]; then
@@ -89,9 +89,9 @@ for hdir in ${DIRS}; do
                 if [[ "$OSTYPE" != "darwin"* ]]; then
                     f=${f#*./}
                 fi
-                echo "${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -sen ${sen}"
+                echo "${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -trace-len ${trace_len}"
                 ts=$(${DATE} +%s%N)
-                timeout ${timeout} ${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -sen ${sen} &> ${OUTDIR}/${dir}/${OUTPRE}_${f}
+                timeout ${timeout} ${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -trace-len ${trace_len} &> ${OUTDIR}/${dir}/${OUTPRE}_${f}
                 if [[ $? -ne 0 ]]; then
                     echo "Time: timeout" >> ${OUTDIR}/${dir}/${OUTPRE}_${f}
                 else
@@ -105,7 +105,7 @@ done
 
 csv_name="res"
 
-if [[ $sen == true ]]; then
+if [[ $trace_len > 0 ]]; then
     csv_name="${csv_name}1-"
 else
     csv_name="${csv_name}-"
@@ -124,7 +124,7 @@ else
     config="-standard"
 fi
 
-if [[ $sen == true ]]; then
+if [[ $trace_len > 0 ]]; then
     RESDIR="1-sensitive"
 else
     RESDIR="non-sensitive"

@@ -115,12 +115,12 @@ module type SemanticsType =
     val proj_T: (value_t -> string list -> value_t) -> (value_t -> string list) -> table_t -> string list -> table_t
     val bot_shape_T: (value_t -> value_t) -> table_t -> table_t
     val get_label_snode: node_s_t -> string
-    val construct_vnode: env_t -> var -> trace_t -> node_t
+    val construct_vnode: env_t -> trace_t -> trace_t -> node_t
     val construct_enode: env_t -> trace_t -> node_t
     val construct_snode: var -> node_t -> node_s_t
     val construct_table: trace_t -> value_t * value_t -> table_t
     val io_T: trace_t -> value_t -> value_t * value_t
-    val get_vnode: node_t -> env_t * var * trace_t
+    val get_vnode: node_t -> env_t * trace_t * trace_t
     val dx_T: value_t -> trace_t
     val get_table_T: value_t -> table_t
     val print_node: node_t -> Format.formatter -> (Format.formatter -> (string * (node_t * bool)) list -> unit) -> unit
@@ -199,7 +199,7 @@ module NonSensitive: SemanticsType =
       in
       (z, f vi vars, f vo vars_o)
     let get_label_snode n = let SN (_, e1) = n in get_trace_data e1
-    let construct_vnode env label _ = EN (env, create_singleton_trace label)
+    let construct_vnode env label _ = EN (env, label)
     let construct_enode env label = EN (env, label)
     let construct_snode var_trace (EN (_, label)) = SN (true, label)
     let construct_table z (vi,vo) = get_trace_data z, vi, vo
@@ -207,7 +207,7 @@ module NonSensitive: SemanticsType =
       | Table (_, vi, vo) -> vi, vo
       | _ -> raise (Invalid_argument "Should be a table when using io_T")
     let get_vnode = function
-      | EN (env, l) -> env, (get_trace_data l), l
+      | EN (env, l) -> env, l, l
     let dx_T v = match v with
         | Table (z,_,_) -> create_singleton_trace z
         | _ -> raise (Invalid_argument "Should be a table when using dx_T")
@@ -255,11 +255,11 @@ module NonSensitive: SemanticsType =
 module OneSensitive: SemanticsType =
   struct
     type enode_t = env_t * call_site (*N = E x loc*)
-    and vnode_t = env_t * var * call_site (*Nx = E x var x stack*)
+    and vnode_t = env_t * trace_t * call_site (*Nx = E x var x stack*)
     and node_t = EN of enode_t | VN of vnode_t
     and env_t = (node_t * bool) VarMap.t (*E = Var -> N*)
     and call_site = trace_t   (*stack = trace_t * loc*)
-    and node_s_t = SEN of (var * call_site) | SVN of (var * call_site) (* call site * label *)
+    and node_s_t = SEN of (trace_t * call_site) | SVN of (trace_t * call_site) (* call site * label *)
     type value_t =
       | Bot
       | Top
@@ -307,8 +307,8 @@ module OneSensitive: SemanticsType =
       in
       f vi vars, f vo vars_o) mt
     let get_label_snode n = match n with 
-      | SEN (x, l) -> "EN: "^x^","^get_trace_data l
-      | SVN (x, cl) -> "VN: "^x^","^get_trace_data cl
+      | SEN (x, l) -> "EN: "^get_trace_data x^","^get_trace_data l
+      | SVN (x, cl) -> "VN: "^get_trace_data x^","^get_trace_data cl
     let get_var_env_node = function
     | VN(env, var, l) -> env, var, l
     | EN(env, l) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
@@ -324,11 +324,11 @@ module OneSensitive: SemanticsType =
     let construct_vnode env label callsite = VN (env, label, callsite)
     let construct_enode env label = EN (env, label)
     let construct_snode x (n:node_t): node_s_t = match n with
-    | EN (env, l) -> if VarMap.is_empty env || x = "" then SEN ("", l) else
+    | EN (env, l) -> if VarMap.is_empty env || x = "" then SEN (create_singleton_trace "", l) else
       let _, _, va = 
         let n, _ = VarMap.find x env in
         get_var_env_node n in
-      SEN (get_trace_data va, l)
+      SEN (va, l)
     | VN (env, xl, cl) -> SVN (xl, cl)
     let construct_table cs (vi,vo) = TableMap.singleton cs (vi, vo)
     let get_vnode = function
@@ -350,7 +350,7 @@ module OneSensitive: SemanticsType =
       | EN (env, l) -> Format.fprintf ppf "@[<1><[%a], " 
         f (VarMap.bindings env); print_trace ppf l; Format.fprintf ppf ">@]"
       | VN (env, l, cs) -> let var = cs in Format.fprintf ppf "@[<1><@[<1>[%a]@],@ " 
-        f (VarMap.bindings env); Format.fprintf ppf ",@ "; print_trace ppf var; Format.fprintf ppf "%s>@]" l
+        f (VarMap.bindings env); Format.fprintf ppf ",@ "; print_trace ppf var; Format.fprintf ppf "%s>@]" (get_trace_data l)
     let print_table t ppf f = 
       let rec pr_table ppf t = let (vi, vo) = t in
         Format.fprintf ppf "@[(%a ->@ %a)@]" f vi f vo
@@ -367,9 +367,9 @@ module OneSensitive: SemanticsType =
       | SEN (var1, e1), SEN (var2, e2) -> comp e1 e2
       | SEN (var1, e1), SVN (var2, e2) -> comp e1 e2
       | SVN (var1, e1), SEN (var2, e2) -> comp e1 e2
-      | SVN (var1, e1), SVN (var2, e2) -> 
-          if comp e1 e2 = 0 then
-            String.compare var1 var2 else 0
+      | SVN (var1, e1), SVN (var2, e2) -> let comp_res = comp e1 e2 in
+          if comp_res = 0 then
+            comp var1 var2 else comp_res
               
     let prop_table f g t1 t2 = 
       let t = TableMap.merge (fun cs vio1 vio2 ->
@@ -402,11 +402,11 @@ module OneSensitive: SemanticsType =
 module NSensitive: SemanticsType =
   struct
     type enode_t = env_t * call_site (*N = E x loc*)
-    and vnode_t = env_t * var * call_site (*Nx = E x var x stack*)
+    and vnode_t = env_t * trace_t * call_site (*Nx = E x var x stack*)
     and node_t = EN of enode_t | VN of vnode_t
     and env_t = (node_t * bool) VarMap.t (*E = Var -> N*)
-    and call_site = trace_t  (*stack = trace_t * loc*)
-    and node_s_t = SEN of (var * call_site) | SVN of (var * call_site) (* call site * label *)
+    and call_site = trace_t   (*stack = trace_t * loc*)
+    and node_s_t = SEN of (trace_t * call_site) | SVN of (trace_t * call_site) (* call site * label *)
     type value_t =
       | Bot
       | Top
@@ -454,8 +454,8 @@ module NSensitive: SemanticsType =
       in
       f vi vars, f vo vars_o) mt
     let get_label_snode n = match n with 
-      | SEN (x, l) -> "EN: "^x^","^get_trace_data l
-      | SVN (x, cl) -> "VN: "^x^","^get_trace_data cl
+      | SEN (x, l) -> "EN: "^get_trace_data x^","^get_trace_data l
+      | SVN (x, cl) -> "VN: "^get_trace_data x^","^get_trace_data cl
     let get_var_env_node = function
     | VN(env, var, l) -> env, var, l
     | EN(env, l) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
@@ -471,11 +471,11 @@ module NSensitive: SemanticsType =
     let construct_vnode env label callsite = VN (env, label, callsite)
     let construct_enode env label = EN (env, label)
     let construct_snode x (n:node_t): node_s_t = match n with
-    | EN (env, l) -> if VarMap.is_empty env || x = "" then SEN ("", l) else
+    | EN (env, l) -> if VarMap.is_empty env || x = "" then SEN (create_singleton_trace "", l) else
       let _, _, va = 
         let n, _ = VarMap.find x env in
         get_var_env_node n in
-      SEN (get_trace_data va, l)
+      SEN (va, l)
     | VN (env, xl, cl) -> SVN (xl, cl)
     let construct_table cs (vi,vo) = TableMap.singleton cs (vi, vo)
     let get_vnode = function
@@ -497,7 +497,7 @@ module NSensitive: SemanticsType =
       | EN (env, l) -> Format.fprintf ppf "@[<1><[%a], " 
         f (VarMap.bindings env); print_trace ppf l; Format.fprintf ppf ">@]"
       | VN (env, l, cs) -> let var = cs in Format.fprintf ppf "@[<1><@[<1>[%a]@],@ " 
-        f (VarMap.bindings env); Format.fprintf ppf ",@ "; print_trace ppf var; Format.fprintf ppf "%s>@]" l
+        f (VarMap.bindings env); Format.fprintf ppf ",@ "; print_trace ppf var; Format.fprintf ppf "%s>@]" (get_trace_data l)
     let print_table t ppf f = 
       let rec pr_table ppf t = let (vi, vo) = t in
         Format.fprintf ppf "@[(%a ->@ %a)@]" f vi f vo
@@ -514,9 +514,9 @@ module NSensitive: SemanticsType =
       | SEN (var1, e1), SEN (var2, e2) -> comp e1 e2
       | SEN (var1, e1), SVN (var2, e2) -> comp e1 e2
       | SVN (var1, e1), SEN (var2, e2) -> comp e1 e2
-      | SVN (var1, e1), SVN (var2, e2) -> 
-          if comp e1 e2 = 0 then
-            String.compare var1 var2 else 0
+      | SVN (var1, e1), SVN (var2, e2) -> let comp_res = comp e1 e2 in
+          if comp_res = 0 then
+            comp var1 var2 else comp_res
               
     let prop_table f g t1 t2 = 
       let t = TableMap.merge (fun cs vio1 vio2 ->
@@ -801,10 +801,11 @@ module NSensitive: SemanticsType =
 end*)
 
 let parse_sensitive = function
-  | false -> (module NonSensitive: SemanticsType)
-  | _ -> (module OneSensitive: SemanticsType)
+  | 0 -> (module NonSensitive: SemanticsType)
+  | 1 -> (module OneSensitive: SemanticsType)
+  | _ -> (module NSensitive: SemanticsType)
 
-module SenSemantics = (val (!sensitive |> parse_sensitive))
+module SenSemantics = (val (!trace_len |> parse_sensitive))
 
 module TempNodeMap = MakeHash(struct
   type t = SenSemantics.node_s_t

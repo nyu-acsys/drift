@@ -19,14 +19,15 @@ let domain = ref "Oct" (*Default: Octagon domain*)
 
 let use_threshold = ref false
 
-let sensitive = ref false
+let trace_len = ref 0
+let sensitive = ref true
 
 let usage = "usage: " ^ Sys.argv.(0) ^ " [-file <file name>] [-domain <domain name>] [-sen <true/false>] [-thold <true/false>] [-delay-wid <num>] [-nar <true/false>] [-out <num>] [-debug] [-bt]"
 
 let cmd_options_spec =
   [("-file", Arg.String (fun s -> parse_file := true; file := s), ": Input file specification");
   ("-domain", Arg.String (fun s -> domain := s), ": Abstract domain specification (Oct, Polka_st, Polka_ls, OctPolka)");
-   ("-sen", Arg.String (fun s -> if s = "true" then sensitive:=true else sensitive:=false), ": Use 1-context sensitive analysis");
+  ("-sen", Arg.String (fun s -> if s = "true" then sensitive:=true else sensitive:=false), ": Use 1-context sensitive analysis");
    ("-thold", Arg.String (fun s -> if s = "true" then use_threshold:=true else use_threshold:=false), ": Use threshold widening");
    ("-delay-wid", Arg.Int (fun s -> delay_wid := s), ": Set number of delay widening steps (depricated)");
    ("-nar", Arg.String (fun s -> if s = "true" then narrow:=true else narrow:=false), ": Use narrowing procedure");
@@ -37,6 +38,7 @@ let cmd_options_spec =
       \t 2: Output the result only");
    ("-debug", Arg.Set debug, ": Debug mode");
    ("-bt", Arg.Set bt, ": Allow trace back");
+   ("-trace-len", Arg.Int (fun s -> trace_len := s), ": Set maximum allowed trace length. 0 -> not context sensitive.");
     ]
 
 (* Parse auxiliary 'command line options' that are set during parsing of the input file *)

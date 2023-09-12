@@ -305,7 +305,7 @@ let rec list_var_item eis sx (cs: trace_t) m env nlst left_or_right lst_len =
     let vlst = find nlst m in
     match eis, left_or_right with
     | Var (x, l), true -> 
-        let n = construct_vnode env l cs in
+        let n = construct_vnode env (create_singleton_trace l) cs in
         let env1 = env |> VarMap.add x (n, false) in
         let n = construct_snode sx n in
         let t = find n m in
@@ -334,7 +334,7 @@ let rec list_var_item eis sx (cs: trace_t) m env nlst left_or_right lst_len =
         let m' = m |> NodeMap.add n t' |> NodeMap.add nlst vlst' in
         m', env1
     | Var(x, l), false ->
-        let n = construct_vnode env l cs in
+        let n = construct_vnode env (create_singleton_trace l) cs in
         let env1 = env |> VarMap.add x (n, false) in
         let n = construct_snode sx n in
         let lst = find n m |> get_list_length_item_V in
@@ -370,7 +370,7 @@ let rec list_var_item eis sx (cs: trace_t) m env nlst left_or_right lst_len =
         let env', m', tlst', tllst' = List.fold_left2 (fun (env, m, li, llst) e (ti, tlsti) -> 
             match e with
             | Var (x, l') -> 
-                let nx = construct_vnode env l' cs in
+                let nx = construct_vnode env (create_singleton_trace l') cs in
                 let env1 = env |> VarMap.add x (nx, false) in
                 let nx = construct_snode sx nx in
                 let tx = find nx m in
@@ -511,9 +511,9 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
         ); *)
         let tx', t' =
             (* if optmization m n find && optmization m nx find then tx, t else *)
-            if List.mem lx !pre_def_func then
+            if List.mem (get_trace_data lx) !pre_def_func then
                 let tx0 = find nx m0 in
-                let tx = if !sensitive then prop_predef l tx0 tx else tx in
+                let tx = if !trace_len > 0 then prop_predef l tx0 tx else tx in
                 prop tx t
             else
                 (* if recnb then prop tx t else *)
@@ -565,7 +565,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
           | _ ->
               let t = find n m2 in
               let cs =
-                if !sensitive then
+                if !trace_len > 0 then
                   if is_rec && is_func e1 then cs
                   else loc e1 |> name_of_node |> create_singleton_trace
                 else dx_T t1
@@ -943,9 +943,9 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
               let trace = cs in
               let z = get_trace_data trace in
               let f_nf_opt =
-                Opt.map (fun (f, lf) -> f, (construct_vnode env lf trace, true)) f_opt
+                Opt.map (fun (f, lf) -> f, (construct_vnode env (create_singleton_trace lf) trace, true)) f_opt
               in
-              let nx = construct_vnode env lx trace in
+              let nx = construct_vnode env (create_singleton_trace lx) trace in
               let env' = env |> VarMap.add x (nx, false) in
               let nx = construct_snode x nx in
               let env1 =
@@ -1133,7 +1133,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
                 m2 |> update false ne te' |> update false n1 t1' 
                 |> update false n2 t2' |> update false n t'
             | Var (x, l') ->
-                let n1 = sx |> create_singleton_trace |> construct_vnode env l' in
+                let n1 = sx |> create_singleton_trace |> construct_vnode env (create_singleton_trace l') in
                 let env1 = env |> VarMap.add x (n1, false) in
                 let n1 = construct_snode x n1 in
                 let t1 = find n1 m in let te = find ne m in
@@ -1197,7 +1197,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
                 let env', m', tlst', tllst' = List.fold_left2 (fun (env, m, li, llst) e (ti, tlsti) -> 
                     match e with
                     | Var (x, l') -> 
-                        let nx = construct_vnode env l' cs in
+                        let nx = construct_vnode env (create_singleton_trace l') cs in
                         let env1 = env |> VarMap.add x (nx, false) in
                         let nx = construct_snode sx nx in
                         let tx = find nx m in
