@@ -343,13 +343,13 @@ let rec list_var_item eis sx (cs: trace_t) m env nlst left_or_right lst_len =
         let m' = NodeMap.add n t' m in
         m', env1
     | Const (c, l), false ->
-        let n = create_singleton_trace_loc l |> construct_enode env |> construct_snode sx in
+        let n = l |> construct_enode env |> construct_snode sx in
         let t_new = pattern_empty_lst_V vlst in
         let _, t' = prop t_new (find n m) in
         let m' = NodeMap.add n t' m in
         m', env
     | TupleLst (termlst, l), true -> 
-        let n = create_singleton_trace_loc l |> construct_enode env |> construct_snode sx in
+        let n = l |> construct_enode env |> construct_snode sx in
         let t = 
             let raw_t = find n m in
             if is_tuple_V raw_t then raw_t
@@ -441,7 +441,7 @@ let prop_predef l v0 v =
 
     
 let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion: bool) (is_rec: bool) (m:exec_map_t) =
-    let n = create_singleton_trace_loc (loc term) |> construct_enode env |> construct_snode sx in
+    let n = loc term |> construct_enode env |> construct_snode sx in
     let update widen n v m =
       (*NodeMap.update n (function
           | None -> v
@@ -538,7 +538,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
         end
         ); *)
         let m0 = step e1 env sx cs ae assertion is_rec m in
-        let n1 = e1 |> loc |> create_singleton_trace_loc |> construct_enode env |> construct_snode sx in
+        let n1 = loc e1 |> construct_enode env |> construct_snode sx in
         let t0 = find n1 m0 in
         let t1, m1 =
           match t0 with
@@ -557,7 +557,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
            m1 |> update false n Top)
         else
           let m2 = step e2 env sx cs ae assertion is_rec m1 in
-          let n2 = e2 |> loc |> create_singleton_trace_loc |> construct_enode env |> construct_snode sx in
+          let n2 = loc e2 |> construct_enode env |> construct_snode sx in
           let t2 = find n2 m2 in (* M[env*l2] *)
           (match t1, t2 with
           | Bot, _ | _, Bot -> m2
@@ -624,7 +624,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
             Format.printf "\n";
         end
         ); *)
-        let n1 = e1 |> loc |> create_singleton_trace_loc |> construct_enode env |> construct_snode sx in
+        let n1 = loc e1 |> construct_enode env |> construct_snode sx in
         let m1 =
           match bop with
           | Cons ->
@@ -635,7 +635,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
                   l1 + l2, join_V t1' t2', m2'
               | _ ->
                   let m' = step term env sx cs ae assertion is_rec m in
-                  let n' = term |> loc |> create_singleton_trace_loc |>  construct_enode env |> construct_snode sx in
+                  let n' = loc term |> construct_enode env |> construct_snode sx in
                   let t' = find n' m' in
                   1, t', m'
               in
@@ -647,7 +647,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
         in
         let m2 = step e2 env sx cs ae assertion is_rec m1 in
         let t1 = find n1 m2 in
-        let n2 = e2 |> loc |> create_singleton_trace_loc |> construct_enode env |> construct_snode sx in
+        let n2 = loc e2 |> construct_enode env |> construct_snode sx in
         let t2 = find n2 m2 in
         if t1 = Bot || t2 = Bot then m2 
         else
@@ -774,7 +774,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
             Format.printf "\n";
         end
         ); *)
-        let n1 = e1 |> loc |> create_singleton_trace_loc |> construct_enode env |> construct_snode sx in
+        let n1 = loc e1 |> construct_enode env |> construct_snode sx in
         let m1 = step e1 env sx cs ae assertion is_rec m in
         let t1 = find n1 m1 in
         if t1 = Bot then m1
@@ -802,7 +802,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
             Format.printf "\n";
         end
         ); *)
-        let n0 = e0 |> loc |> create_singleton_trace_loc |> construct_enode env |> construct_snode sx in
+        let n0 = loc e0 |> construct_enode env |> construct_snode sx in
         let m0 = 
             (* if optmization m n0 find then m else  *)
             step e0 env sx cs ae assertion is_rec m in
@@ -822,7 +822,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
                 then i + 1 else i), j + 1) !sens);
             let t = find n m0 in
             let m1 = step e1 env sx cs t_true assertion is_rec m0 in
-            let n1 = e1 |> loc |> create_singleton_trace_loc |> construct_enode env |> construct_snode sx in
+            let n1 = loc e1 |> construct_enode env |> construct_snode sx in
             let t1 = find n1 m1 in
             (* (if !debug then
             begin
@@ -847,7 +847,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
             end
             );  *)
             let m2 = step e2 env sx cs t_false assertion is_rec m1 in
-            let n2 = e2 |> loc |> create_singleton_trace_loc |> construct_enode env |> construct_snode sx in
+            let n2 = loc e2 |> construct_enode env |> construct_snode sx in
             let t2 = find n2 m2 in
             (* (if !debug then 
             begin
@@ -953,7 +953,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
                 (Opt.map (uncurry VarMap.add) f_nf_opt |>
                 Opt.get_or_else (fun env -> env))
               in
-              let n1 = e1 |> loc |> create_singleton_trace_loc |> construct_enode env1 |> construct_snode x in
+              let n1 = loc e1 |> construct_enode env1 |> construct_snode x in
               let tx = find nx m in
               let ae' = if (x <> "_" && is_Relation tx) || is_List tx then 
                 (* if only_shape_V tx then ae else  *)
@@ -1045,7 +1045,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
         else
             let tp, m' = List.fold_right (fun e (t, m) -> 
                 let m' = step e env sx cs ae assertion is_rec m in
-                let ne = e |> loc |> create_singleton_trace_loc |> construct_enode env |> construct_snode sx in
+                let ne = loc e |> construct_enode env |> construct_snode sx in
                 let te = find ne m' in
                 let t' = add_tuple_item_V t te in
                 t', m'
@@ -1060,7 +1060,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
             Format.printf "\n";
         end
         ); *)
-        let ne = e |> loc |> create_singleton_trace_loc |> construct_enode env |> construct_snode sx in
+        let ne = loc e |> construct_enode env |> construct_snode sx in
         (* let ex = get_var_name e in *)
         let m' = step e env sx cs ae assertion is_rec m in
         let te = find ne m' in
@@ -1078,7 +1078,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
             match e1 with
             | Const (c, l') ->
                 let m1 = step e1 env sx cs ae assertion is_rec m in
-                let n1 = e1 |> loc |> create_singleton_trace_loc |> construct_enode env |> construct_snode sx in
+                let n1 = loc e1 |> construct_enode env |> construct_snode sx in
                 let te, t1 = find ne m1, find n1 m1 in
                 let te, t1 = alpha_rename_Vs te t1 in
                 if leq_V te t1 then m' else
@@ -1102,8 +1102,8 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
                 let b =
                     sat_leq_V t1 te
                 in
-                let n1 = e1 |> loc |> create_singleton_trace_loc |> construct_enode env |> construct_snode sx in
-                let n2 = e2 |> loc |> create_singleton_trace_loc |> construct_enode env |> construct_snode sx in
+                let n1 = loc e1 |> construct_enode env |> construct_snode sx in
+                let n2 = loc e2 |> construct_enode env |> construct_snode sx in
                 (* (if true then
                 begin
                     Format.printf "\npattern ae: %b\n" b;
@@ -1140,7 +1140,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
                 let _, t1' = prop te t1 in
                 let m1 = m |> update false n1 t1' in
                 let m2 = step e2 env1 sx cs ae assertion is_rec m1 in
-                let n2 = e2 |> loc |> create_singleton_trace_loc |> construct_enode env1 |> construct_snode sx in
+                let n2 = loc e2 |> construct_enode env1 |> construct_snode sx in
                 let t = find n m2 in let t2 = find n2 m2 in
                 let t2', t' = prop t2 t in
                 m2 |> update false n2 t2' |> update false n t'
@@ -1163,9 +1163,9 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
                     end
                     ); *)
                 let mr, envr = list_var_item er sx cs ml envl ne false 1 in
-                let nr = er |> loc |> create_singleton_trace_loc |> construct_enode envr |> construct_snode sx in
-                let n2 = e2 |> loc |> create_singleton_trace_loc |> construct_enode envr |> construct_snode sx in
-                let n1 = l' |> create_singleton_trace_loc |> construct_enode envr |> construct_snode sx in
+                let nr = loc er |> construct_enode envr |> construct_snode sx in
+                let n2 = loc e2 |> construct_enode envr |> construct_snode sx in
+                let n1 = l' |> construct_enode envr |> construct_snode sx in
                 let m1 = step e1 envr sx cs ae assertion is_rec mr in
                 let te, t1 = find ne m1, find n1 m1 in
                 let te, t1 = alpha_rename_Vs te t1 in
@@ -1183,7 +1183,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
                 m2 |> update false ne te' |> update false n1 t1'
                 |> update false n2 t2' |> update false n t'
             | TupleLst (termlst, l') ->
-                let n1 = l' |> create_singleton_trace_loc |> construct_enode env |> construct_snode sx in
+                let n1 = l' |> construct_enode env |> construct_snode sx in
                 let t1 = 
                     let raw_t1 = find n1 m in
                     if is_tuple_V raw_t1 then raw_t1
@@ -1213,7 +1213,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
                 let te', _ = prop te te' in
                 let m1 = m |> update false n1 t1' |> update false ne te' in
                 let m2 = step e2 env' sx cs ae assertion is_rec m1 in
-                let n2 = e2 |> loc |> create_singleton_trace_loc |> construct_enode env' |> construct_snode sx in
+                let n2 = loc e2 |> construct_enode env' |> construct_snode sx in
                 let t = find n m2 in let t2 = find n2 m2 in
                 let t2', t' = prop t2 t in
                 m2 |> update false n2 t2' |> update false n t'

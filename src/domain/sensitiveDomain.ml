@@ -116,7 +116,7 @@ module type SemanticsType =
     val bot_shape_T: (value_t -> value_t) -> table_t -> table_t
     val get_label_snode: node_s_t -> string
     val construct_vnode: env_t -> var -> trace_t -> node_t
-    val construct_enode: env_t -> trace_t -> node_t
+    val construct_enode: env_t -> var -> node_t
     val construct_snode: var -> node_t -> node_s_t
     val construct_table: trace_t -> value_t * value_t -> table_t
     val io_T: trace_t -> value_t -> value_t * value_t
@@ -138,9 +138,9 @@ module type SemanticsType =
 
 module NonSensitive: SemanticsType =
   struct
-    type node_t = EN of env_t * trace_t (*N = E x loc*)
+    type node_t = EN of env_t * var (*N = E x loc*)
     and env_t = (node_t * bool) VarMap.t (*E = Var -> N*)
-    type node_s_t = SN of bool * trace_t
+    type node_s_t = SN of bool * var
     type value_t =
       | Bot
       | Top
@@ -199,8 +199,8 @@ module NonSensitive: SemanticsType =
         List.append vars (g vi)
       in
       (z, f vi vars, f vo vars_o)
-    let get_label_snode n = let SN (_, e1) = n in get_trace_data e1
-    let construct_vnode env label _ = EN (env, create_singleton_trace_loc label)
+    let get_label_snode n = let SN (_, e1) = n in e1
+    let construct_vnode env label _ = EN (env, label)
     let construct_enode env label = EN (env, label)
     let construct_snode var_trace (EN (_, label)) = SN (true, label)
     let construct_table z (vi,vo) = get_trace_data z, vi, vo
@@ -208,7 +208,7 @@ module NonSensitive: SemanticsType =
       | Table (_, vi, vo) -> vi, vo
       | _ -> raise (Invalid_argument "Should be a table when using io_T")
     let get_vnode = function
-      | EN (env, l) -> env, get_trace_data l, l
+      | EN (env, l) -> env, l, create_singleton_trace_loc l
     let dx_T v = match v with
         | Table (z,_,_) -> create_singleton_trace_loc z
         | _ -> raise (Invalid_argument "Should be a table when using dx_T")
@@ -216,13 +216,13 @@ module NonSensitive: SemanticsType =
       | Table t -> t
       | _ -> raise (Invalid_argument "Should be a table when using get_table_T")
     let print_node n ppf f = match n with
-      | EN (env, l) -> Format.fprintf ppf "@[<1><[%a], " f (VarMap.bindings env); print_trace ppf l ; Format.fprintf ppf ">@]"
+      | EN (env, l) -> Format.fprintf ppf "@[<1><[%a],[%s] " f (VarMap.bindings env) l ; Format.fprintf ppf ">@]"
     let print_table t ppf f = let (z, vi, vo) = t in
       Format.fprintf ppf "@[%s" z; Format.fprintf ppf ": (%a ->@ %a)@]" f vi f vo
     let compare_node comp n1 n2 = 
       let SN (_, e1) = n1 in
       let SN (_, e2) = n2 in
-      comp e1 e2
+      comp (create_singleton_trace_loc e1) (create_singleton_trace_loc e2)
     let prop_table f g (t1:table_t) (t2:table_t) = 
       let alpha_rename t1 t2 = let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
         if z1 = z2 then t1, t2
@@ -256,12 +256,12 @@ module NonSensitive: SemanticsType =
 
 module OneSensitive: SemanticsType =
   struct
-    type enode_t = env_t * call_site (*N = E x loc*)
+    type enode_t = env_t * var (*N = E x loc*)
     and vnode_t = env_t * var * call_site (*Nx = E x var x stack*)
     and node_t = EN of enode_t | VN of vnode_t
     and env_t = (node_t * bool) VarMap.t (*E = Var -> N*)
     and call_site = trace_t   (*stack = trace_t * loc*)
-    and node_s_t = SEN of (trace_t * call_site) | SVN of (var * call_site) (* call site * label *)
+    and node_s_t = SEN of (var * call_site) | SVN of (var * call_site) (* call site * label *)
     type value_t =
       | Bot
       | Top
@@ -309,11 +309,11 @@ module OneSensitive: SemanticsType =
       in
       f vi vars, f vo vars_o) mt
     let get_label_snode n = match n with 
-      | SEN (x, l) -> "EN: "^get_trace_data x^","^get_trace_data l
+      | SEN (x, l) -> "EN: "^x^","^get_trace_data l
       | SVN (x, cl) -> "VN: "^x^","^get_trace_data cl
     let get_var_env_node = function
     | VN(env, var, l) -> env, var, l
-    | EN(env, l) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
+    | EN(env, l) -> raise (Invalid_argument ("Expected variable node at "^l))
     let get_en_env_node = function
       | VN(env, var, l) -> raise (Invalid_argument ("Expected normal node at "^(get_trace_data l)))
       | EN(env, l) -> env, l
@@ -326,16 +326,16 @@ module OneSensitive: SemanticsType =
     let construct_vnode env label call_site = VN (env, label, call_site)
     let construct_enode env label = EN (env, label)
     let construct_snode x (n:node_t): node_s_t = match n with
-    | EN (env, l) -> if VarMap.is_empty env || x = "" then SEN (create_singleton_trace_loc "", l) else
+    | EN (env, l) -> if VarMap.is_empty env || x = "" then SEN (l, create_singleton_trace_loc "") else
       let _, _, va = 
         let n, _ = VarMap.find x env in
         get_var_env_node n in
-      SEN (va, l)
+      SEN (l, va)
     | VN (env, xl, cl) -> SVN (xl, cl)
     let construct_table cs (vi,vo) = TableMap.singleton cs (vi, vo)
     let get_vnode = function
       | VN(env, l, cs) -> env, l, cs
-      | EN(_, l) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
+      | EN(_, l) -> raise (Invalid_argument ("Expected variable node at "^l))
     let io_T cs v = match v with
         | Table t -> TableMap.find cs t
         | _ -> raise (Invalid_argument "Should be a table when using io_T")
@@ -349,8 +349,8 @@ module OneSensitive: SemanticsType =
       | Table t -> t
       | _ -> raise (Invalid_argument "Should be a table when using get_table_T")
     let print_node n ppf f = match n with
-      | EN (env, l) -> Format.fprintf ppf "@[<1><[%a], " 
-        f (VarMap.bindings env); print_trace ppf l; Format.fprintf ppf ">@]"
+      | EN (env, l) -> Format.fprintf ppf "@[<1><[%a],[%s] " 
+        f (VarMap.bindings env) l; Format.fprintf ppf ">@]"
       | VN (env, l, cs) -> let var = cs in Format.fprintf ppf "@[<1><@[<1>[%a]@],@ " 
         f (VarMap.bindings env); Format.fprintf ppf ",@ "; print_trace ppf var; Format.fprintf ppf "%s>@]" l
     let print_table t ppf f = 
@@ -404,12 +404,12 @@ module OneSensitive: SemanticsType =
 
 module NSensitive: SemanticsType =
   struct
-    type enode_t = env_t * call_site (*N = E x loc*)
+    type enode_t = env_t * var (*N = E x loc*)
     and vnode_t = env_t * var * call_site (*Nx = E x var x stack*)
     and node_t = EN of enode_t | VN of vnode_t
     and env_t = (node_t * bool) VarMap.t (*E = Var -> N*)
     and call_site = trace_t   (*stack = trace_t * loc*)
-    and node_s_t = SEN of (trace_t * call_site) | SVN of (var * call_site) (* call site * label *)
+    and node_s_t = SEN of (var * call_site) | SVN of (var * call_site) (* call site * label *)
     type value_t =
       | Bot
       | Top
@@ -457,11 +457,11 @@ module NSensitive: SemanticsType =
       in
       f vi vars, f vo vars_o) mt
     let get_label_snode n = match n with 
-      | SEN (x, l) -> "EN: "^get_trace_data x^","^get_trace_data l
+      | SEN (x, l) -> "EN: "^x^","^get_trace_data l
       | SVN (x, cl) -> "VN: "^x^","^get_trace_data cl
     let get_var_env_node = function
     | VN(env, var, l) -> env, var, l
-    | EN(env, l) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
+    | EN(env, l) -> raise (Invalid_argument ("Expected variable node at "^l))
     let get_en_env_node = function
       | VN(env, var, l) -> raise (Invalid_argument ("Expected normal node at "^(get_trace_data l)))
       | EN(env, l) -> env, l
@@ -474,16 +474,16 @@ module NSensitive: SemanticsType =
     let construct_vnode env label call_site = VN (env, label, call_site)
     let construct_enode env label = EN (env, label)
     let construct_snode x (n:node_t): node_s_t = match n with
-    | EN (env, l) -> if VarMap.is_empty env || x = "" then SEN (create_singleton_trace_loc "", l) else
+    | EN (env, l) -> if VarMap.is_empty env || x = "" then SEN (l, create_singleton_trace_loc "") else
       let _, _, va = 
         let n, _ = VarMap.find x env in
         get_var_env_node n in
-      SEN (va, l)
+      SEN (l, va)
     | VN (env, xl, cl) -> SVN (xl, cl)
     let construct_table cs (vi,vo) = TableMap.singleton cs (vi, vo)
     let get_vnode = function
       | VN(env, l, cs) -> env, l, cs
-      | EN(_, l) -> raise (Invalid_argument ("Expected variable node at "^(get_trace_data l)))
+      | EN(_, l) -> raise (Invalid_argument ("Expected variable node at "^l))
     let io_T cs v = match v with
         | Table t -> TableMap.find cs t
         | _ -> raise (Invalid_argument "Should be a table when using io_T")
@@ -497,8 +497,8 @@ module NSensitive: SemanticsType =
       | Table t -> t
       | _ -> raise (Invalid_argument "Should be a table when using get_table_T")
     let print_node n ppf f = match n with
-      | EN (env, l) -> Format.fprintf ppf "@[<1><[%a], " 
-        f (VarMap.bindings env); print_trace ppf l; Format.fprintf ppf ">@]"
+      | EN (env, l) -> Format.fprintf ppf "@[<1><[%a],[%s] " 
+        f (VarMap.bindings env) l; Format.fprintf ppf ">@]"
       | VN (env, l, cs) -> let var = cs in Format.fprintf ppf "@[<1><@[<1>[%a]@],@ " 
         f (VarMap.bindings env); Format.fprintf ppf ",@ "; print_trace ppf var; Format.fprintf ppf "%s>@]" l
     let print_table t ppf f = 
@@ -547,7 +547,7 @@ module NSensitive: SemanticsType =
     let bot_shape_T f t = 
       TableMap.mapi (fun cs (vi, vo) -> 
         (f vi, f vo)) t
-    let update_call_site call_site new_token = add_token_to_trace new_token call_site !trace_len
+    let update_call_site call_site new_token = add_token_to_trace new_token call_site 1
   end
 
 (*module NSensitive: SemanticsType =
