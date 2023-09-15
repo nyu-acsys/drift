@@ -7,6 +7,7 @@ open Format
 exception Trace_larger_than_tree
 
 type loc_token_t = 
+  | None_Token
   | Loc_Token of loc
   | If_Case of loc * loc
   | Pat_Case of loc * loc
@@ -20,13 +21,25 @@ type loc_tree =
 
 type loc_tree_t = loc * loc_tree
 
-let create_singleton_trace loc = [Loc_Token loc]
+let create_singleton_trace_loc loc = List.init 1 (fun _ -> Loc_Token loc)
+
+let create_singleton_trace_token token = List.init 1 (fun _ -> token)
+
+let rec remove_last trace = match trace with
+  | [] -> raise (Invalid_argument "remove_last: empty list")
+  | head :: [] -> []
+  | head :: tail -> head :: (remove_last tail)
+
+let add_token_to_trace token trace limit = 
+  let new_trace = token :: trace in
+  if List.length new_trace > limit then remove_last new_trace else new_trace
 
 let get_loc_token_loc loc_token = match loc_token with
   | Loc_Token loc | If_Case (loc,_) | Pat_Case (loc,_) -> loc
+  | None_Token -> raise(Invalid_argument "get_loc_token_loc: None token")
 
 let get_trace_tree_token tree : loc_token_t = match tree with
-  | Empty -> raise (Invalid_argument "Empty tree")
+  | Empty -> raise (Invalid_argument "get_trace_tree_token: Empty tree")
   | Leaf token -> token
   | Node (token, _) -> token
 
@@ -60,7 +73,14 @@ let comp_loc_token token1 token2 =
     | Pat_Case (_, loc21) ->
       (
         match token2 with
+        | None_Token -> 1
         | Pat_Case (_, loc22) -> comp_loc loc21 loc22
+        | _ -> -1
+      )
+    | None_Token ->
+      (
+        match token2 with
+        | None_Token -> 0
         | _ -> -1
       )
   )
@@ -90,7 +110,8 @@ let rec get_trace_data trace = match trace with
   | head :: tail -> get_loc_token_loc head ^","^ get_trace_data tail
 
 let print_loc_token ppf loc_token = match loc_token with
-  | Loc_Token loc -> Format.fprintf ppf "@[None:<2>%s]" loc
+  | None_Token -> Format.fprintf ppf ""
+  | Loc_Token loc -> Format.fprintf ppf "@[Loc:<2>%s]" loc
   | If_Case (loc1, loc2) -> Format.fprintf ppf "@[If True:<2>%s <2>%s]" loc1 loc2
   | Pat_Case (loc1, loc2) -> Format.fprintf ppf "@[Pattern Matching case:<2>%s <2>%s]" loc1 loc2
 
