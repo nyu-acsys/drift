@@ -404,7 +404,7 @@ let rec list_var_item eis sx (cs: trace_t) m env nlst left_or_right lst_len =
     | _ -> raise (Invalid_argument "Pattern should only be either constant, variable, and list cons")
 
 let prop_predef l v0 v = 
-    let l = l |> name_of_node in
+    let l = l |> name_of_node |> create_singleton_trace_loc in
     let rec alpha_rename v0 v = 
         match v0, v with
         | Table t0, Table t -> 
@@ -422,8 +422,7 @@ let prop_predef l v0 v =
         let vpdef = Table (construct_table cs0 (get_table_by_cs_T cs0 t)) in
         let pdefvp = ref (construct_table cs0 (get_table_by_cs_T cs0 t)) in
         let t' = table_mapi (fun cs (vi, vo) -> 
-            let l' = get_trace_data cs in
-            if cs = cs0 || l' <> l then vi, vo else
+            if cs = cs0 || (not (is_subtrace l cs)) then vi, vo else
             let vs = Table (construct_table cs (vi, vo)) in
             let v' = vs |> alpha_rename v0 in
             let vt, v'' = prop vpdef v' in
@@ -530,13 +529,13 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
         ); *)
         m |> update false nx tx' |> update false n (stren_V t' ae) (* t' ^ ae *)
     | App (e1, e2, l) ->
-        (* (if !debug then
+        (if !debug then
         begin
             Format.printf "\n<=== App ===>\n";
             pr_exp true Format.std_formatter term;
             Format.printf "\n";
         end
-        ); *)
+        );
         let m0 = step e1 env sx cs ae assertion is_rec m in
         let n1 = loc e1 |> construct_enode env |> construct_snode sx in
         let t0 = find n1 m0 in
@@ -544,8 +543,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
           match t0 with
           | Bot when false ->
               let te =
-                let z = fresh_z () |> create_singleton_trace_loc in
-                init_T z
+                fresh_z () |> create_loc_token |> update_call_site cs |> init_T
               in
               let t1 = Table te in
               t1, update false n1 t1 m0
@@ -567,7 +565,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
               let cs =
                 if !trace_len > 0 then
                   if is_rec && is_func e1 then cs
-                  else loc e1 |> name_of_node |> create_singleton_trace_loc
+                  else loc e1 |> name_of_node |> create_loc_token |> update_call_site cs
                 else dx_T t1
               in
               let t_temp = Table (construct_table cs (t2, t)) in
@@ -821,7 +819,12 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
                 (is_asst_false e0 = false && only_shape_V ae = false) 
                 then i + 1 else i), j + 1) !sens);
             let t = find n m0 in
-            let m1 = step e1 env sx cs t_true assertion is_rec m0 in
+            let cst = 
+                if !trace_len > 1 then 
+                    create_if_token (loc e1 |> name_of_node) (loc term |> name_of_node) |> update_call_site cs 
+                else cs
+            in
+            let m1 = step e1 env sx cst t_true assertion is_rec m0 in
             let n1 = loc e1 |> construct_enode env |> construct_snode sx in
             let t1 = find n1 m1 in
             (* (if !debug then
@@ -846,7 +849,12 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
                 Format.printf "\n";
             end
             );  *)
-            let m2 = step e2 env sx cs t_false assertion is_rec m1 in
+            let csf = 
+                if !trace_len > 1 then 
+                    create_if_token (loc e2 |> name_of_node) (loc term |> name_of_node) |> update_call_site cs 
+                else cs
+            in
+            let m2 = step e2 env sx csf t_false assertion is_rec m1 in
             let n2 = loc e2 |> construct_enode env |> construct_snode sx in
             let t2 = find n2 m2 in
             (* (if !debug then 
@@ -930,7 +938,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
         let t =
           match t0 with
           | Bot ->
-              let te = let z = fresh_z () |> create_singleton_trace_loc in init_T z in
+              let te = fresh_z () |> create_loc_token |> update_call_site cs |> init_T in
               Table te
           | _ -> t0
         in
@@ -1133,7 +1141,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
                 m2 |> update false ne te' |> update false n1 t1' 
                 |> update false n2 t2' |> update false n t'
             | Var (x, l') ->
-                let n1 = sx |> create_singleton_trace_loc |> construct_vnode env l' in
+                let n1 = sx |> create_loc_token |> update_call_site cs |> construct_vnode env l' in
                 let env1 = env |> VarMap.add x (n1, false) in
                 let n1 = construct_snode x n1 in
                 let t1 = find n1 m in let te = find ne m in
@@ -1254,7 +1262,7 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
     arrow_V var ae t else ae
     ) env (Relation (top_R Plus)) in
   let m_t = Hashtbl.copy m in
-  let m' = step e env "" (create_singleton_trace_loc "") ae assertion false m_t in
+  let m' = step e env "" [] ae assertion false m_t in
   if k < 0 then if k = -1 then "", m' else fix stage env e (k+1) m' assertion else
   (* if k > 2 then Hashtbl.reset !pre_m;
   pre_m := m; *)

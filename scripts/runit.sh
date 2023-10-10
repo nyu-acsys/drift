@@ -13,7 +13,7 @@ if [ $# -gt 1 ]; then
     DOMAIN=$4
 else
     echo "ERROR!!! The command should be:"
-    echo "./runit.sh -set call/unv -domain <domain_name> [-dwid <delay_steps> | -nar]"
+    echo "./runit.sh -set call/unv -domain <domain_name> [-sen <trace_length>] [-dwid <delay_steps> | -nar]"
     exit 0
 fi
 shift
@@ -26,9 +26,11 @@ nar=false
 thold=false
 trace_len=0
 
-if [[ $# -ge 1 && ($1 = "-sen" || $2 = "-sen" || $3 = "-sen") ]]; then
-    echo "Use sensitive"
-    trace_len=1;
+if [[ $# -ge 1 && ($1 = "-sen")]]; then
+    trace_len=$2;
+    echo "Use $trace_len sensitive"
+    shift
+    shift
 fi
 
 if [ $# -ge 1 ] && [ $1 = "-nar" ]; then
@@ -106,7 +108,7 @@ done
 csv_name="res"
 
 if [[ $trace_len > 0 ]]; then
-    csv_name="${csv_name}1-"
+    csv_name="${csv_name}${trace_len}-"
 else
     csv_name="${csv_name}-"
 fi
@@ -125,7 +127,7 @@ else
 fi
 
 if [[ $trace_len > 0 ]]; then
-    RESDIR="1-sensitive"
+    RESDIR="${trace_len}-sensitive"
 else
     RESDIR="non-sensitive"
 fi

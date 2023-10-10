@@ -342,7 +342,7 @@ module OneSensitive: SemanticsType =
     let dx_T v = match v with
         | Table t -> let cs, _ = 
               try TableMap.min_binding t with
-              Not_found -> (create_singleton_trace_loc "") , (Bot,Bot) 
+              Not_found -> [] , (Bot,Bot) 
             in cs
         | _ -> raise (Invalid_argument "Should be a table when using dx_T")
     let get_table_T = function
@@ -366,12 +366,12 @@ module OneSensitive: SemanticsType =
         Format.fprintf ppf "@[<2>%s" (get_trace_data cs); Format.fprintf ppf ":@ @[<2>%a@]@]" pr_table t
       in print_table_map ppf t
     let compare_node comp n1 n2 = match n1, n2 with
-      | SEN (var1, e1), SEN (var2, e2) -> comp e1 e2
-      | SEN (var1, e1), SVN (var2, e2) -> comp e1 e2
-      | SVN (var1, e1), SEN (var2, e2) -> comp e1 e2
-      | SVN (var1, e1), SVN (var2, e2) -> let comp_res = comp e1 e2 in
+      | SEN (var1, e1), SEN (var2, e2) -> comp_loc var1 var2
+      | SEN (var1, e1), SVN (var2, e2) -> comp_loc var1 var2
+      | SVN (var1, e1), SEN (var2, e2) -> comp_loc var1 var2
+      | SVN (var1, e1), SVN (var2, e2) -> let comp_res = comp_loc var1 var2 in
           if comp_res = 0 then
-            String.compare var1 var2 else comp_res
+            comp e1 e2 else comp_res
               
     let prop_table f g t1 t2 = 
       let t = TableMap.merge (fun cs vio1 vio2 ->
@@ -490,7 +490,7 @@ module NSensitive: SemanticsType =
     let dx_T v = match v with
         | Table t -> let cs, _ = 
               try TableMap.min_binding t with
-              Not_found -> (create_singleton_trace_loc "") , (Bot,Bot) 
+              Not_found -> [] , (Bot,Bot) 
             in cs
         | _ -> raise (Invalid_argument "Should be a table when using dx_T")
     let get_table_T = function
@@ -514,12 +514,12 @@ module NSensitive: SemanticsType =
         Format.fprintf ppf "@[<2>%s" (get_trace_data cs); Format.fprintf ppf ":@ @[<2>%a@]@]" pr_table t
       in print_table_map ppf t
     let compare_node comp n1 n2 = match n1, n2 with
-      | SEN (var1, e1), SEN (var2, e2) -> comp e1 e2
-      | SEN (var1, e1), SVN (var2, e2) -> comp e1 e2
-      | SVN (var1, e1), SEN (var2, e2) -> comp e1 e2
-      | SVN (var1, e1), SVN (var2, e2) -> let comp_res = comp e1 e2 in
+      | SEN (var1, e1), SEN (var2, e2) -> comp_loc var1 var2
+      | SEN (var1, e1), SVN (var2, e2) -> comp_loc var1 var2
+      | SVN (var1, e1), SEN (var2, e2) -> comp_loc var1 var2
+      | SVN (var1, e1), SVN (var2, e2) -> let comp_res = comp_loc var1 var2 in
           if comp_res = 0 then
-            String.compare var1 var2 else comp_res
+            comp e1 e2 else comp_res
               
     let prop_table f g t1 t2 = 
       let t = TableMap.merge (fun cs vio1 vio2 ->
@@ -547,7 +547,7 @@ module NSensitive: SemanticsType =
     let bot_shape_T f t = 
       TableMap.mapi (fun cs (vi, vo) -> 
         (f vi, f vo)) t
-    let update_call_site call_site new_token = add_token_to_trace new_token call_site 1
+    let update_call_site call_site new_token = add_token_to_trace new_token call_site !trace_len
   end
 
 (*module NSensitive: SemanticsType =
@@ -575,7 +575,7 @@ module NSensitive: SemanticsType =
 
     let get_traces_from_table table = List.map (fun ((var, trace), _) -> var, trace) table
     let trace_to_var_trace (var, trace) = None_Loc_Token var :: trace
-    let var_trace_to_trace trace = List.hd trace |> get_loc_token_loc, List.tl trace
+    let var_trace_to_trace trace = List.hd trace |> get_token_loc, List.tl trace
     
     let join_T f g mt1 mt2 = 
       let rec add_traces_to_table bindings trace_trees table_add_function table = match bindings with

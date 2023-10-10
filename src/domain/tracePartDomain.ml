@@ -21,6 +21,21 @@ type loc_tree =
 
 type loc_tree_t = loc * loc_tree
 
+let print_loc_token ppf loc_token = match loc_token with
+  | None_Token -> Format.fprintf ppf "@[%s@]" "None"
+  | Loc_Token loc -> Format.fprintf ppf "@[<2>%s: %s@]" "Loc" loc
+  | If_Case (loc1, loc2) -> Format.fprintf ppf "@[<2>%s:%s %s@]" "If" loc1 loc2
+  | Pat_Case (loc1, loc2) -> Format.fprintf ppf "@[<2>%s:%s %s@]" "PatMatch" loc1 loc2
+
+let rec print_trace ppf trace = match trace with
+  | [] -> ()
+  | head :: [] -> print_loc_token ppf head
+  | head :: tail -> (print_loc_token ppf head; print_string ","; print_trace ppf tail)
+
+let create_loc_token loc = Loc_Token loc
+
+let create_if_token cond_loc block_loc = If_Case (cond_loc, block_loc)
+
 let create_singleton_trace_loc loc = List.init 1 (fun _ -> Loc_Token loc)
 
 let create_singleton_trace_token token = List.init 1 (fun _ -> token)
@@ -30,13 +45,9 @@ let rec remove_last trace = match trace with
   | head :: [] -> []
   | head :: tail -> head :: (remove_last tail)
 
-let add_token_to_trace token trace limit = 
-  let new_trace = token :: trace in
-  if List.length new_trace > limit then remove_last new_trace else new_trace
-
-let get_loc_token_loc loc_token = match loc_token with
+let get_token_loc loc_token = match loc_token with
   | Loc_Token loc | If_Case (loc,_) | Pat_Case (loc,_) -> loc
-  | None_Token -> raise(Invalid_argument "get_loc_token_loc: None token")
+  | None_Token -> raise(Invalid_argument "get_token_loc: None token")
 
 let get_trace_tree_token tree : loc_token_t = match tree with
   | Empty -> raise (Invalid_argument "get_trace_tree_token: Empty tree")
@@ -51,8 +62,8 @@ let comp_loc loc1 loc2 =
   else if l2 = -1 then 1 else l1 - l2
 
 let comp_loc_token token1 token2 = 
-  let loc1 = get_loc_token_loc token1 in
-  let loc2 = get_loc_token_loc token2 in
+  let loc1 = get_token_loc token1 in
+  let loc2 = get_token_loc token2 in
   let loc_comp = comp_loc loc1 loc2 in
   if loc_comp != 0 then loc_comp else
   (
@@ -106,18 +117,20 @@ let sort_trees tree_list = List.sort (fun t1 t2 -> comp_loc_token (get_trace_tre
 
 let rec get_trace_data trace = match trace with
   | [] -> ""
-  | head :: [] -> get_loc_token_loc head
-  | head :: tail -> get_loc_token_loc head ^","^ get_trace_data tail
+  | head :: [] -> get_token_loc head
+  | head :: tail -> get_token_loc head ^","^ get_trace_data tail
 
-let print_loc_token ppf loc_token = match loc_token with
-  | None_Token -> Format.fprintf ppf ""
-  | Loc_Token loc -> Format.fprintf ppf "@[Loc:<2>%s]" loc
-  | If_Case (loc1, loc2) -> Format.fprintf ppf "@[If True:<2>%s <2>%s]" loc1 loc2
-  | Pat_Case (loc1, loc2) -> Format.fprintf ppf "@[Pattern Matching case:<2>%s <2>%s]" loc1 loc2
+let add_token_to_trace token trace limit = 
+  (* print_trace Format.std_formatter trace; print_string "->"; *)
+  let new_trace = token :: trace in
+  let new_trace = if List.length new_trace > limit then remove_last new_trace else new_trace in 
+  (* print_trace Format.std_formatter new_trace; print_newline (); *)
+  new_trace
 
-let rec print_trace ppf trace = match trace with
-  | [] -> ()
-  | head :: tail -> (print_loc_token ppf head; print_trace ppf tail)
+let rec is_subtrace trace1 trace2 = match trace1, trace2 with
+  | [], _ -> true
+  | _, [] -> false
+  | head1 :: tail1, head2 :: tail2 -> head1 = head2 && is_subtrace tail1 tail2
 
 (*let find_head_in_tree_list tree_list token = List.find (fun tree -> get_trace_tree_token tree = token) tree_list
 
@@ -238,8 +251,8 @@ and join_trace_subtree_lists children1 children2 =
   match matches, no_matches with
   | [], [] -> raise (Invalid_argument "join_trace_trees: Empty children")
   | [], tree :: tail -> 
-      let tree_loc = get_trace_tree_token tree |> get_loc_token_loc in
-      if List.for_all (fun tree -> get_trace_tree_token tree |> get_loc_token_loc = tree_loc) tail then
+      let tree_loc = get_trace_tree_token tree |> get_token_loc in
+      if List.for_all (fun tree -> get_trace_tree_token tree |> get_token_loc = tree_loc) tail then
         (* here we will merge the partitioned if branch of one of the 2 children. This is necessary to preserve any partitions down the tree that might be there
           in both children. *) 
         let if_case = (List.hd children1 |> get_trace_tree_token |> is_if_branch_token |> not) || (List.hd children2 |> get_trace_tree_token |> is_if_branch_token |> not) in
@@ -293,8 +306,8 @@ and meet_trace_subtree_lists children1 children2 =
   match matches, no_matches with
   | [], [] -> raise (Invalid_argument "meet_trace_subtree_lists: Empty children")
   | [], tree :: tail -> 
-      let tree_loc = get_trace_tree_token tree |> get_loc_token_loc in
-      if List.for_all (fun tree -> get_trace_tree_token tree |> get_loc_token_loc = tree_loc) tail then 
+      let tree_loc = get_trace_tree_token tree |> get_token_loc in
+      if List.for_all (fun tree -> get_trace_tree_token tree |> get_token_loc = tree_loc) tail then 
         let non_loc_token = Loc_Token tree_loc in
         let if_case = (List.hd children1 |> get_trace_tree_token |> is_if_branch_token |> not) || (List.hd children2 |> get_trace_tree_token |> is_if_branch_token |> not) in
         let end_token = if if_case then If_End tree_loc else Pat_End tree_loc in
@@ -353,7 +366,7 @@ let rec find_trace_tree_longest_common_trace trace tree = match tree, trace with
           with Not_found -> []
       else 
         let if_else_token = List.hd trace in 
-        let if_end_token =  If_End (get_loc_token_loc if_else_token) in
+        let if_end_token =  If_End (get_token_loc if_else_token) in
         let subtrace = find_subtrace_with_token trace if_end_token in
         token :: 
           try  
