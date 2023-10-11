@@ -23,20 +23,18 @@ SPDX-License-Identifier: Apache-2.0
            cpuCores="1">
 
   <!-- <rundefinition> defines tool configurations to benchmark. -->
-  <rundefinition name="unwind3">
-    <option name="--unwind">3</option> <!-- Pass command-line option "unwind 3" to CBMC. -->
-  </rundefinition>
-
-  <rundefinition name="unwind10">
-    <option name="--unwind">10</option>
+  <rundefinition name="basic">
+    <option name="-out">2</option> <!-- Pass command-line option "-out 2" to Drift. -->
   </rundefinition>
 
   <!-- <tasks> defines a set of tasks
        (here two group of files from SV-COMP15 declared in a separate file). -->
   <tasks name="ReachSafety-ControlFlow">
-    <include>programs/signedintegeroverflow-regression/Division-1.c</include>
+    <include>../../tests/effects/traffic_light_fo_simple.ml</include>
     <!-- <includesfile>programs/ReachSafety-ControlFlow.set</includesfile> -->
   </tasks>
+
+  <propertyfile>../../tests/effects/traffic_light_fo_simple.eff</propertyfile>
 
   <!-- <tasks name="Simple.set">
     <includesfile>programs/Simple.set</includesfile>
@@ -44,5 +42,4 @@ SPDX-License-Identifier: Apache-2.0
 
   <!-- Use an SV-COMP property file as specification
     (file ALL.prp in the same directory as each source file). -->
-  <propertyfile>unreach-call.prp</propertyfile>
 </benchmark>
