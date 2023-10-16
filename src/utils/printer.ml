@@ -4,6 +4,7 @@ open SemanticDomain
 open SemanticsDomain
 open SensitiveDomain
 open SenSemantics
+open TracePartDomain
 
 (** Pretty printing *)
 let pr_relation ppf = function
@@ -33,44 +34,44 @@ let rec pr_exp pl ppf = function
     Format.fprintf ppf "@[<2>(%a)%a@]"
       (print_tuple pl) u (pr_label pl) l
 | Const (c, l) ->
-    Format.fprintf ppf "%a%a" pr_const c (pr_label pl) l
+    Format.fprintf ppf "Const %a%a" pr_const c (pr_label pl) l
 | Var (x, l) ->
-    Format.fprintf ppf "%s%a" x (pr_label pl) l
+    Format.fprintf ppf "Var %s%a" x (pr_label pl) l
 | App (e1, e2, l) ->
-    Format.fprintf ppf "@[<2>(%a@ %a)%a@]"
+    Format.fprintf ppf "App @[<2>(%a@ %a)%a@]"
       (pr_exp pl) e1
       (pr_exp pl) e2
       (pr_label pl) l
 | Rec (None, (x, lx), e, l) ->
-    Format.fprintf ppf "@[<3>(lambda %s%a.@ %a)%a@]"
+    Format.fprintf ppf "Rec @[<3>(lambda %s%a.@ %a)%a@]"
       x (pr_label pl) lx
       (pr_exp pl) e
       (pr_label pl) l
 | Rec (Some (f, lf), (x, lx), e, l) ->
-    Format.fprintf ppf "@[<3>(mu %s%a %s%a.@ %a)%a@]"
+    Format.fprintf ppf "Rec @[<3>(mu %s%a %s%a.@ %a)%a@]"
       f (pr_label pl) lf
       x (pr_label pl) lx
       (pr_exp pl) e
       (pr_label pl) l
 | Ite (e1, e2, e3, l, _) ->
-    Format.fprintf ppf "@[<2>(%a@ ?@ %a@ :@ %a)%a@]"
+    Format.fprintf ppf "Ite @[<2>(%a@ ?@ %a@ :@ %a)%a@]"
       (pr_exp pl) e1
       (pr_exp pl) e2
       (pr_exp pl) e3
       (pr_label pl) l
 | BinOp (bop, e1, e2, l) ->
-    Format.fprintf ppf "@[<3>(%a@ %a@ %a)%a@]"
+    Format.fprintf ppf "BinOp @[<3>(%a@ %a@ %a)%a@]"
     (pr_exp pl) e1
     pr_op bop
     (pr_exp pl) e2
     (pr_label pl) l
 | UnOp (uop, e1, l) ->
-    Format.fprintf ppf "@[<3>(%a@ %a)%a@]"
+    Format.fprintf ppf "UnOp @[<3>(%a@ %a)%a@]"
     pr_unop uop
     (pr_exp pl) e1
     (pr_label pl) l
 | PatMat (e, patlst, l) ->
-  Format.fprintf ppf "@[<2>(match@ %a@ with@ %a)%a@]"
+  Format.fprintf ppf "PatMat @[<2>(match@ %a@ with@ %a)%a@]"
     (pr_exp pl) e
     (pr_pm pl) patlst
     (pr_label pl) l
@@ -150,19 +151,9 @@ and pr_tuple ppf u =
     print_list ppf u
 
 let sort_list (m: exec_map_t) =
-  let comp s1 s2 =
-  let l1 = try int_of_string s1 
-    with _ -> -1 in
-  let l2 = try int_of_string s2
-    with _ -> -1 in
-  if l1 = -1 then
-    if l2 = -1 then String.compare s1 s2
-    else -1
-  else if l2 = -1 then 1
-  else l1 - l2 in
   let lst = (NodeMap.bindings m) in
   List.sort (fun (n1,_) (n2,_) -> 
-    compare_node comp n1 n2) lst 
+    compare_node comp_trace n1 n2) lst 
 
 let print_value out_ch v = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" pr_value v
 

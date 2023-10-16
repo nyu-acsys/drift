@@ -4,6 +4,7 @@ open SemanticDomain
 open SemanticsDomain
 open SensitiveDomain
 open SenSemantics
+open TracePartDomain
 open Printer
 open Util
 open Config
@@ -62,7 +63,8 @@ let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 wit
         Relation r1, Relation (join_R r1 r2)
     | Table t1, Table t2 ->
         let prop_table_entry cs (v1i, v1o) (v2i, v2o) =
-          let _, z = cs in
+          let z = cs in
+          let z = get_trace_data z in
           let v1ot, v2ip = 
             if (is_Array v1i && is_Array v2i) || (is_List v1i && is_List v2i) then
               let l1 = get_len_var_V v1i in
@@ -298,7 +300,7 @@ let iterEnv_v env m v = VarMap.fold (fun var n a ->
     let pre_t = find n !pre_m in
     opt_eq_V pre_t t *)
 
-let rec list_var_item eis sx (cs: (var * loc)) m env nlst left_or_right lst_len = 
+let rec list_var_item eis sx (cs: trace_t) m env nlst left_or_right lst_len = 
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
     let vlst = find nlst m in
     match eis, left_or_right with
@@ -341,13 +343,13 @@ let rec list_var_item eis sx (cs: (var * loc)) m env nlst left_or_right lst_len 
         let m' = NodeMap.add n t' m in
         m', env1
     | Const (c, l), false ->
-        let n = construct_enode env l |> construct_snode sx in
+        let n = l |> construct_enode env |> construct_snode sx in
         let t_new = pattern_empty_lst_V vlst in
         let _, t' = prop t_new (find n m) in
         let m' = NodeMap.add n t' m in
         m', env
     | TupleLst (termlst, l), true -> 
-        let n = construct_enode env l |> construct_snode sx in
+        let n = l |> construct_enode env |> construct_snode sx in
         let t = 
             let raw_t = find n m in
             if is_tuple_V raw_t then raw_t
@@ -402,15 +404,15 @@ let rec list_var_item eis sx (cs: (var * loc)) m env nlst left_or_right lst_len 
     | _ -> raise (Invalid_argument "Pattern should only be either constant, variable, and list cons")
 
 let prop_predef l v0 v = 
-    let l = l |> name_of_node in
+    let l = l |> name_of_node |> create_singleton_trace_loc in
     let rec alpha_rename v0 v = 
         match v0, v with
         | Table t0, Table t -> 
             if table_isempty t || table_isempty t0  then Table t else
-            let (var0, z0), (vi0, vo0) = get_full_table_T t0 in
-            let (var, z), (vi, vo) = get_full_table_T t in
-            let vo' = alpha_rename vo0 (alpha_rename_V vo z z0) in
-            let t' = construct_table (var0,z0) (vi, vo') in
+            let trace0, (vi0, vo0) = get_full_table_T t0 in
+            let trace, (vi, vo) = get_full_table_T t in
+            let vo' = alpha_rename vo0 (alpha_rename_V vo (get_trace_data trace) (get_trace_data trace0)) in
+            let t' = construct_table trace0 (vi, vo') in
             Table t'
         | _, _ -> v
     in
@@ -420,8 +422,7 @@ let prop_predef l v0 v =
         let vpdef = Table (construct_table cs0 (get_table_by_cs_T cs0 t)) in
         let pdefvp = ref (construct_table cs0 (get_table_by_cs_T cs0 t)) in
         let t' = table_mapi (fun cs (vi, vo) -> 
-            let _, l' = cs in
-            if cs = cs0 || l' <> l then vi, vo else
+            if cs = cs0 || (not (is_subtrace l cs)) then vi, vo else
             let vs = Table (construct_table cs (vi, vo)) in
             let v' = vs |> alpha_rename v0 in
             let vt, v'' = prop vpdef v' in
@@ -438,8 +439,8 @@ let prop_predef l v0 v =
 
 
     
-let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assertion: bool) (is_rec: bool) (m:exec_map_t) =
-    let n = construct_enode env (loc term) |> construct_snode sx in
+let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion: bool) (is_rec: bool) (m:exec_map_t) =
+    let n = loc term |> construct_enode env |> construct_snode sx in
     let update widen n v m =
       (*NodeMap.update n (function
           | None -> v
@@ -486,7 +487,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         end
         ); *)
         let (nx, recnb) = VarMap.find x env in
-        let envx, lx, (varcs, lcs) = get_vnode nx in
+        let envx, lx, lcs = get_vnode nx in
         let nx = construct_snode sx nx in
         let tx = let tx' = find nx m in
             if is_Relation tx' then 
@@ -511,7 +512,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             (* if optmization m n find && optmization m nx find then tx, t else *)
             if List.mem lx !pre_def_func then
                 let tx0 = find nx m0 in
-                let tx = if !sensitive then prop_predef l tx0 tx else tx in
+                let tx = if !trace_len > 0 then prop_predef l tx0 tx else tx in
                 prop tx t
             else
                 (* if recnb then prop tx t else *)
@@ -528,22 +529,21 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         ); *)
         m |> update false nx tx' |> update false n (stren_V t' ae) (* t' ^ ae *)
     | App (e1, e2, l) ->
-        (* (if !debug then
+        (if !debug then
         begin
             Format.printf "\n<=== App ===>\n";
             pr_exp true Format.std_formatter term;
             Format.printf "\n";
         end
-        ); *)
+        );
         let m0 = step e1 env sx cs ae assertion is_rec m in
-        let n1 = construct_enode env (loc e1) |> construct_snode sx in
+        let n1 = loc e1 |> construct_enode env |> construct_snode sx in
         let t0 = find n1 m0 in
         let t1, m1 =
           match t0 with
           | Bot when false ->
               let te =
-                let z = fresh_z () in
-                init_T (z,z)
+                fresh_z () |> create_loc_token |> update_call_site cs |> init_T
               in
               let t1 = Table te in
               t1, update false n1 t1 m0
@@ -555,7 +555,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
            m1 |> update false n Top)
         else
           let m2 = step e2 env sx cs ae assertion is_rec m1 in
-          let n2 = construct_enode env (loc e2) |> construct_snode sx in
+          let n2 = loc e2 |> construct_enode env |> construct_snode sx in
           let t2 = find n2 m2 in (* M[env*l2] *)
           (match t1, t2 with
           | Bot, _ | _, Bot -> m2
@@ -563,10 +563,10 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
           | _ ->
               let t = find n m2 in
               let cs =
-                if !sensitive then
+                if !trace_len > 0 then
                   if is_rec && is_func e1 then cs
-                  else (loc e1, loc e1 |> name_of_node)
-                else (dx_T t1)
+                  else loc e1 |> name_of_node |> create_loc_token |> update_call_site cs
+                else dx_T t1
               in
               let t_temp = Table (construct_table cs (t2, t)) in
               (* let var1, var2 = cs in
@@ -622,7 +622,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             Format.printf "\n";
         end
         ); *)
-        let n1 = construct_enode env (loc e1) |> construct_snode sx in
+        let n1 = loc e1 |> construct_enode env |> construct_snode sx in
         let m1 =
           match bop with
           | Cons ->
@@ -633,7 +633,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                   l1 + l2, join_V t1' t2', m2'
               | _ ->
                   let m' = step term env sx cs ae assertion is_rec m in
-                  let n' = construct_enode env (loc term) |> construct_snode sx in
+                  let n' = loc term |> construct_enode env |> construct_snode sx in
                   let t' = find n' m' in
                   1, t', m'
               in
@@ -645,7 +645,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         in
         let m2 = step e2 env sx cs ae assertion is_rec m1 in
         let t1 = find n1 m2 in
-        let n2 = construct_enode env (loc e2) |> construct_snode sx in
+        let n2 = loc e2 |> construct_enode env |> construct_snode sx in
         let t2 = find n2 m2 in
         if t1 = Bot || t2 = Bot then m2 
         else
@@ -772,7 +772,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             Format.printf "\n";
         end
         ); *)
-        let n1 = construct_enode env (loc e1) |> construct_snode sx in
+        let n1 = loc e1 |> construct_enode env |> construct_snode sx in
         let m1 = step e1 env sx cs ae assertion is_rec m in
         let t1 = find n1 m1 in
         if t1 = Bot then m1
@@ -800,7 +800,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             Format.printf "\n";
         end
         ); *)
-        let n0 = construct_enode env (loc e0) |> construct_snode sx in
+        let n0 = loc e0 |> construct_enode env |> construct_snode sx in
         let m0 = 
             (* if optmization m n0 find then m else  *)
             step e0 env sx cs ae assertion is_rec m in
@@ -819,8 +819,13 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 (is_asst_false e0 = false && only_shape_V ae = false) 
                 then i + 1 else i), j + 1) !sens);
             let t = find n m0 in
-            let m1 = step e1 env sx cs t_true assertion is_rec m0 in
-            let n1 = construct_enode env (loc e1) |> construct_snode sx in
+            let cst = 
+                if !trace_len > 1 then 
+                    create_if_token (loc e1 |> name_of_node) (loc term |> name_of_node) |> update_call_site cs 
+                else cs
+            in
+            let m1 = step e1 env sx cst t_true assertion is_rec m0 in
+            let n1 = loc e1 |> construct_enode env |> construct_snode sx in
             let t1 = find n1 m1 in
             (* (if !debug then
             begin
@@ -844,8 +849,13 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 Format.printf "\n";
             end
             );  *)
-            let m2 = step e2 env sx cs t_false assertion is_rec m1 in
-            let n2 = construct_enode env (loc e2) |> construct_snode sx in
+            let csf = 
+                if !trace_len > 1 then 
+                    create_if_token (loc e2 |> name_of_node) (loc term |> name_of_node) |> update_call_site cs 
+                else cs
+            in
+            let m2 = step e2 env sx csf t_false assertion is_rec m1 in
+            let n2 = loc e2 |> construct_enode env |> construct_snode sx in
             let t2 = find n2 m2 in
             (* (if !debug then 
             begin
@@ -928,7 +938,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         let t =
           match t0 with
           | Bot ->
-              let te = let z = fresh_z () in init_T (z,z) in
+              let te = fresh_z () |> create_loc_token |> update_call_site cs |> init_T in
               Table te
           | _ -> t0
         in
@@ -938,11 +948,12 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             if tl = Bot then m' |> update false n t
             else if tr = Top then top_M m' else
             begin
-              let _, var = cs in
+              let trace = cs in
+              let z = get_trace_data trace in
               let f_nf_opt =
-                Opt.map (fun (f, lf) -> f, (construct_vnode env lf cs, true)) f_opt
+                Opt.map (fun (f, lf) -> f, (construct_vnode env lf trace, true)) f_opt
               in
-              let nx = construct_vnode env lx cs in
+              let nx = construct_vnode env lx trace in
               let env' = env |> VarMap.add x (nx, false) in
               let nx = construct_snode x nx in
               let env1 =
@@ -950,12 +961,12 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 (Opt.map (uncurry VarMap.add) f_nf_opt |>
                 Opt.get_or_else (fun env -> env))
               in
-              let n1 = construct_enode env1 (loc e1) |> construct_snode x in
+              let n1 = loc e1 |> construct_enode env1 |> construct_snode x in
               let tx = find nx m in
               let ae' = if (x <> "_" && is_Relation tx) || is_List tx then 
                 (* if only_shape_V tx then ae else  *)
                 (arrow_V x ae tx) else ae in
-              let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x var in
+              let t1 = if x = "_" then find n1 m else replace_V (find n1 m) x z in
               let prop_t = Table (construct_table cs (tx, t1)) in
               (* (if l = "20" then
                  begin
@@ -1003,10 +1014,10 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                   nf, t2, tf') f_nf_opt
               in
               let tx', t1' = io_T cs px_t in
-              let m1 = m |> update is_rec' nx tx' |> update false n1 (if x = "_" then t1' else replace_V t1' var x) |>
+              let m1 = m |> update is_rec' nx tx' |> update false n1 (if x = "_" then t1' else replace_V t1' z x) |>
               (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> update true nf tf' |> update false n (join_V t1 t2))
                  nf_t2_tf'_opt |> Opt.get_or_else (update false n t1)) in
-              let cs = if is_rec' && x = "_" then cs' else cs in
+              let cs = if is_rec' && x = "_" then cs' else trace in
               let m1' = step e1 env1 x cs ae' assertion is_rec' m1 in
               (* let t1 = if x = "_" then find n1 m1' else replace_V (find n1 m1') x var in
               let prop_t = Table (construct_table cs (tx, t1)) in
@@ -1020,7 +1031,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                   nf, t2, tf') f_nf_opt
               in
               let tx', t1' = io_T cs px_t in
-              let m1' = m1' |> update nx tx' |> update n1 (if x = "_" then t1' else replace_V t1' var x) |>
+              let m1' = m1' |> update nx tx' |> update n1 (if x = "_" then t1' else replace_V t1' z x) |>
               (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> update nf tf' |> update n (join_V t1 t2))
                  nf_t2_tf'_opt |> Opt.get_or_else (update n t1)) in *)
               join_M m1' m'
@@ -1042,7 +1053,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
         else
             let tp, m' = List.fold_right (fun e (t, m) -> 
                 let m' = step e env sx cs ae assertion is_rec m in
-                let ne = construct_enode env (loc e) |> construct_snode sx in
+                let ne = loc e |> construct_enode env |> construct_snode sx in
                 let te = find ne m' in
                 let t' = add_tuple_item_V t te in
                 t', m'
@@ -1057,7 +1068,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             Format.printf "\n";
         end
         ); *)
-        let ne = construct_enode env (loc e) |> construct_snode sx in
+        let ne = loc e |> construct_enode env |> construct_snode sx in
         (* let ex = get_var_name e in *)
         let m' = step e env sx cs ae assertion is_rec m in
         let te = find ne m' in
@@ -1075,7 +1086,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
             match e1 with
             | Const (c, l') ->
                 let m1 = step e1 env sx cs ae assertion is_rec m in
-                let n1 = construct_enode env (loc e1) |> construct_snode sx in
+                let n1 = loc e1 |> construct_enode env |> construct_snode sx in
                 let te, t1 = find ne m1, find n1 m1 in
                 let te, t1 = alpha_rename_Vs te t1 in
                 if leq_V te t1 then m' else
@@ -1099,8 +1110,8 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 let b =
                     sat_leq_V t1 te
                 in
-                let n1 = construct_enode env (loc e1) |> construct_snode sx in
-                let n2 = construct_enode env (loc e2) |> construct_snode sx in
+                let n1 = loc e1 |> construct_enode env |> construct_snode sx in
+                let n2 = loc e2 |> construct_enode env |> construct_snode sx in
                 (* (if true then
                 begin
                     Format.printf "\npattern ae: %b\n" b;
@@ -1130,14 +1141,14 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 m2 |> update false ne te' |> update false n1 t1' 
                 |> update false n2 t2' |> update false n t'
             | Var (x, l') ->
-                let n1 = construct_vnode env l' (sx,sx) in
+                let n1 = sx |> create_loc_token |> update_call_site cs |> construct_vnode env l' in
                 let env1 = env |> VarMap.add x (n1, false) in
                 let n1 = construct_snode x n1 in
                 let t1 = find n1 m in let te = find ne m in
                 let _, t1' = prop te t1 in
                 let m1 = m |> update false n1 t1' in
                 let m2 = step e2 env1 sx cs ae assertion is_rec m1 in
-                let n2 = construct_enode env1 (loc e2) |> construct_snode sx in
+                let n2 = loc e2 |> construct_enode env1 |> construct_snode sx in
                 let t = find n m2 in let t2 = find n2 m2 in
                 let t2', t' = prop t2 t in
                 m2 |> update false n2 t2' |> update false n t'
@@ -1160,9 +1171,9 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                     end
                     ); *)
                 let mr, envr = list_var_item er sx cs ml envl ne false 1 in
-                let nr = construct_enode envr (loc er) |> construct_snode sx in
-                let n2 = construct_enode envr (loc e2) |> construct_snode sx in
-                let n1 = construct_enode envr l' |> construct_snode sx in
+                let nr = loc er |> construct_enode envr |> construct_snode sx in
+                let n2 = loc e2 |> construct_enode envr |> construct_snode sx in
+                let n1 = l' |> construct_enode envr |> construct_snode sx in
                 let m1 = step e1 envr sx cs ae assertion is_rec mr in
                 let te, t1 = find ne m1, find n1 m1 in
                 let te, t1 = alpha_rename_Vs te t1 in
@@ -1180,7 +1191,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 m2 |> update false ne te' |> update false n1 t1'
                 |> update false n2 t2' |> update false n t'
             | TupleLst (termlst, l') ->
-                let n1 = construct_enode env l' |> construct_snode sx in
+                let n1 = l' |> construct_enode env |> construct_snode sx in
                 let t1 = 
                     let raw_t1 = find n1 m in
                     if is_tuple_V raw_t1 then raw_t1
@@ -1210,7 +1221,7 @@ let rec step term (env: env_t) (sx: var) (cs: (var * loc)) (ae: value_t) (assert
                 let te', _ = prop te te' in
                 let m1 = m |> update false n1 t1' |> update false ne te' in
                 let m2 = step e2 env' sx cs ae assertion is_rec m1 in
-                let n2 = construct_enode env' (loc e2) |> construct_snode sx in
+                let n2 = loc e2 |> construct_enode env' |> construct_snode sx in
                 let t = find n m2 in let t2 = find n2 m2 in
                 let t2', t' = prop t2 t in
                 m2 |> update false n2 t2' |> update false n t'
@@ -1251,7 +1262,7 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
     arrow_V var ae t else ae
     ) env (Relation (top_R Plus)) in
   let m_t = Hashtbl.copy m in
-  let m' = step e env "" ("","") ae assertion false m_t in
+  let m' = step e env "" [] ae assertion false m_t in
   if k < 0 then if k = -1 then "", m' else fix stage env e (k+1) m' assertion else
   (* if k > 2 then Hashtbl.reset !pre_m;
   pre_m := m; *)
