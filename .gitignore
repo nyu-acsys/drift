@@ -45,6 +45,6 @@ tests/benchmark/*.json
 *.sol
 *.json
 *.status
-
+*.exe
 
 nohup.out
