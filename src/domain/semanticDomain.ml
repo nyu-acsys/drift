@@ -186,183 +186,280 @@ module SemanticsDomain =
     let is_unit_R = function
       | Unit _ -> true
       | _ -> false
-      (*
-      ********************************
-      ** Abstract domain for Values **
-      ********************************
-      *)
+
+    (********************************************
+     ** Abstract domain for Effects            **
+     ********************************************)
+    let alpha_rename_Eff (Effect r) prevar var = Effect (alpha_rename_R r prevar var)
+    let join_Eff (Effect r1) (Effect r2) = Effect (join_R r1 r2) 
+    let meet_Eff (Effect r1) (Effect r2) = Effect (meet_R r1 r2) 
+    let leq_Eff (Effect r1) (Effect r2) = leq_R r1 r2
+    let eq_Eff (Effect r1) (Effect r2) = eq_R r1 r2
+    let forget_Eff var (Effect r1) = Effect (forget_R var r1)
+    let arrow_Eff var (Effect r1) r2 = Effect (arrow_R var r1 r2)
+    let equal_Eff (Effect r) var = Effect (equal_R r var)
+    let wid_Eff (Effect r1) (Effect r2) = Effect (wid_R r1 r2)
+    let replace_Eff (Effect r) var x = Effect (replace_R r var x)
+    let stren_Eff (Effect r) ae = match ae with 
+      | Relation rae -> Effect (stren_R r rae)
+      | Top -> Effect r
+      | Bot -> failwith "ae is Bot and is confusing for Eff"
+      | _ -> raise (Invalid_argument "ae should not be a table") 
+    let proj_Eff (Effect r) vars = Effect (proj_R r vars)
+    let bot_shape_Eff (Effect r) = Effect (bot_shape_R r)
+    (*
+     ********************************
+     ** Abstract domains for       **
+     **     Values                 **
+     **     and ValueAndEffects    **
+     ********************************
+     *)
     let rec alpha_rename_V v prevar var = match v with
-        | Relation r -> Relation (alpha_rename_R r prevar var)
-        | Table t -> Table (alpha_rename_T alpha_rename_V t prevar var)
-        | Ary ary -> Ary (alpha_rename_Ary ary prevar var)
-        | Lst lst -> Lst (alpha_rename_Lst lst prevar var)
-        | _ -> v
-      and init_V_c = function
-        | IntList lst -> if List.length lst = 0 then Lst (init_Lst_c ())
-          else Lst (const_Lst lst)
-        | c -> Relation (init_R_c c)
-      and c_V v1 v2 label = match v2 with
-        | Relation r -> (match v1 with
-          | Relation r' -> let tempr = alpha_rename_R r "cur_v" label in
-          (try Relation (meet_R r' tempr)
-          with Invalid_argument s -> Relation r')
-          | _ -> v1)
-        | _ -> v1
-      and join_V (v1:value_t) (v2:value_t) :value_t = match v1, v2 with
-        | Bot, v | v, Bot -> v
-        | Relation r1, Relation r2 -> Relation (join_R r1 r2)
-        | Table t1, Table t2 -> Table (join_T join_V alpha_rename_V t1 t2)
-        | Ary ary1, Ary ary2 -> Ary (join_Ary ary1 ary2)
-        | Lst lst1, Lst lst2 -> Lst (join_Lst lst1 lst2)
-        | Tuple u1, Tuple u2 -> Tuple (join_Tuple u1 u2)
-        | _, _ -> Top
-      and meet_V (v1:value_t) (v2:value_t) :value_t = match v1, v2 with
-        | Top, v | v, Top -> v
-        | Relation r1, Relation r2 -> Relation (meet_R r1 r2)
-        | Table t1, Table t2 -> Table (meet_T meet_V alpha_rename_V t1 t2)
-        | Ary ary1, Ary ary2 -> Ary (meet_Ary ary1 ary2)
-        | Lst lst1, Lst lst2 -> Lst (meet_Lst lst1 lst2)
-        | Tuple u1, Tuple u2 -> Tuple (meet_Tuple u1 u2)
-        | _, _ -> Bot
-      and leq_V (v1:value_t) (v2:value_t) :bool = match v1, v2 with
-        | Bot, _ -> true
-        | _, Top -> true
-        | Relation r1, Relation r2 -> leq_R r1 r2
-        | Table t1, Table t2 -> leq_T leq_V t1 t2
-        | Ary ary1, Ary ary2 -> leq_Ary ary1 ary2
-        | Lst lst1, Lst lst2 -> leq_Lst lst1 lst2
-        | Tuple u1, Tuple u2 -> leq_Tuple u1 u2
-        | _, _ -> false
-      and sat_leq_V (v1:value_t) (v2:value_t) :bool = match v1, v2 with
-        | Bot, _ -> true
-        | _, Top -> true
-        | Relation r1, Relation r2 -> leq_R r1 r2
-        | Table t1, Table t2 -> leq_T leq_V t1 t2
-        | Ary ary1, Ary ary2 -> leq_Ary ary1 ary2
-        | Lst lst1, Lst lst2 -> sat_leq_Lst lst1 lst2
-        | Tuple u1, Tuple u2 -> leq_Tuple u1 u2
-        | _, _ -> false
-      and eq_V (v1:value_t) (v2:value_t) :bool = match v1, v2 with
-        | Bot, Bot -> true
-        | Top, Top -> true
-        | Relation r1, Relation r2 -> eq_R r1 r2
-        | Table t1, Table t2 -> eq_T eq_V t1 t2
-        | Ary ary1, Ary ary2 -> eq_Ary ary1 ary2
-        | Lst lst1, Lst lst2 -> eq_Lst lst1 lst2
-        | Tuple u1, Tuple u2 -> eq_Tuple u1 u2
-        | _, _ -> false
-      and is_table (v:value_t) = match v with
-        | Table _ -> true
-        | _ -> false
-      and is_bool_V (v:value_t) = match v with
-        | Relation r -> is_bool_R r
-        | _ -> false
-      and is_Relation = function 
-        | Relation _ -> true
-        | _ -> false
-      and is_Array = function
-        | Ary _ -> true
-        | _ -> false
-      and is_List = function
-        | Lst _ -> true
-        | _ -> false
-      and arrow_V var (v:value_t) (v':value_t) = match v' with
-        | Bot | Top | Table _ -> v
-        | Relation r2 -> (match v with
-            | Table t -> Table (arrow_T forget_V arrow_V var t v')
-            | Relation r1 -> Relation (arrow_R var r1 r2)
-            | Ary ary -> Ary (arrow_Ary var ary r2 None)
-            | Lst lst -> Lst (arrow_Lst var lst (Relation r2) None)
-            | Tuple u -> Tuple (arrow_Tuple var u v')
-            | _ -> v)
-        | Tuple u2 -> List.fold_left (fun v1 v2 ->
-          arrow_V var v1 v2) v u2
-        | Ary ary2 -> let (vars, (rl2, re2)) = ary2 in
-          (match v with
-          | Table t -> Table (arrow_T forget_V arrow_V var t v')
-          | Relation r1 -> Relation (
-            let r1' = arrow_R var r1 rl2 in
-            if is_bot_R re2 then r1' else
-            arrow_R var r1' re2
-          )
-          | Ary ary -> Ary (arrow_Ary var ary re2 (Some rl2))
-          | Lst lst -> Lst (arrow_Lst var lst (Relation re2) (Some (vars, rl2)))
-          | _ -> v)
-        | Lst lst2 -> let ((l2,e2) as vars, (rl2, ve2)) = lst2 in
-          (match v with
-          | Table t -> Table (arrow_T forget_V arrow_V var t v')
-          | Relation r1 -> if is_bot_R rl2 then Relation (bot_shape_R r1) else
-            let r1' = let res = meet_R r1 rl2 in
-            if is_bot_R res then (meet_R (forget_R l2 r1) rl2) else res in
-            (match ve2 with
-            | Bot -> if String.length var >= 2 && String.sub var 0 2 = "zh" then
-                raise (Invalid_argument "List.hd expects non empty list")
-              else Relation r1' 
-            | Relation re2 -> if is_bot_R re2 then Relation r1'
-              else Relation (meet_R r1' (proj_R re2 [e2]))
-            | Tuple ue -> Relation r1'
-            | _ -> arrow_V var (Relation r1') ve2)
-          | Ary ary -> (match ve2 with
-            | Relation re2 -> Ary (arrow_Ary var ary re2 (Some rl2))
-            | _ -> Ary (arrow_Ary var ary rl2 None))
-          | Lst lst -> Lst (arrow_Lst var lst ve2 (Some (vars, rl2)))
-          | Top -> if String.sub var 0 2 = "zh" then
-              (match ve2 with
-                | Relation re2 -> 
-                  let r1' = arrow_R var (equal_R (top_R Plus) e2) rl2 in
-                  arrow_V var (Relation r1') ve2
-                | _ -> ve2)
-              else v
-          | _ -> v)
-      and forget_V var v = match v with
-        | Table t -> Table (forget_T forget_V var t)
-        | Ary ary -> Ary (forget_Ary var ary)
-        | Lst lst -> Lst (forget_Lst var lst)
-        | Relation r -> Relation (forget_R var r)
-        | Tuple u -> Tuple (forget_Tuple var u)
-        | _ -> v
-      and equal_V v var = match v with
-        | Relation r -> Relation (equal_R r var)
-        | Table t -> Table (equal_T equal_V alpha_rename_V t var)
-        | _ -> v
-      and wid_V v1 v2 = match v1, v2 with
-        | Relation r1, Relation r2 -> Relation (wid_R r1 r2)
-        | Table t1, Table t2 -> Table (wid_T wid_V alpha_rename_V t1 t2)
-        | Ary ary1, Ary ary2 -> Ary (wid_Ary ary1 ary2)
-        | Lst lst1, Lst lst2 -> Lst (wid_Lst lst1 lst2)
-        | Tuple u1, Tuple u2 -> Tuple (wid_Tuple u1 u2)
-        | _, _ -> join_V v1 v2
-      and op_V sl sr op v = match v with
-        | Bot | Top -> Top
-        | Relation r -> Relation (op_R "" sl sr op false r)
-        | _ -> raise (Invalid_argument "Should be a relation type when using op_V")
-      and uop_V op s v = match v with
-        | Bot | Top -> Top
-        | Relation r -> Relation (uop_R "" op s false r)
-        | _ -> raise (Invalid_argument "Should be a relation type when using uop_V")
-      and bool_op_V op v1 v2 = match v1, v2 with
-        | Bot, Relation _ -> if string_of_op op = "&&" then Bot else v2
-        | Top, Relation _ -> if string_of_op op = "&&" then v2 else Top
-        | Relation r1, Relation r2 -> Relation (bool_op_R op r1 r2)
-        | Relation _, Bot -> if string_of_op op = "&&" then Bot else v1
-        | Relation _, Top -> if string_of_op op = "&&" then v1 else Top
-        | _, _ -> raise (Invalid_argument "Should be a relation type when using bool_op_V")
+      | Relation r -> Relation (alpha_rename_R r prevar var)
+      | Table t -> Table (alpha_rename_T alpha_rename_VE t prevar var)
+      | Ary ary -> Ary (alpha_rename_Ary ary prevar var)
+      | Lst lst -> Lst (alpha_rename_Lst lst prevar var)
+      | _ -> v
+    and alpha_rename_VE v prevar var = match v with 
+      | TypeAndEff (v, e) -> TypeAndEff (alpha_rename_V v prevar var, alpha_rename_Eff e prevar var)
+      | _ -> v
+    and init_V_c = function
+      | IntList lst -> if List.length lst = 0 then Lst (init_Lst_c ())
+                      else Lst (const_Lst lst)
+      | c -> Relation (init_R_c c)
+    and c_V v1 v2 label = match v2 with
+      | Relation r -> (match v1 with
+                      | Relation r' -> let tempr = alpha_rename_R r "cur_v" label in
+                                      (try Relation (meet_R r' tempr)
+                                       with Invalid_argument s -> Relation r')
+                      | _ -> v1)
+      | _ -> v1
+    and join_V (v1:value_tt) (v2:value_tt) :value_tt = match v1, v2 with
+      | Bot, v | v, Bot -> v
+      | Relation r1, Relation r2 -> Relation (join_R r1 r2)
+      | Table t1, Table t2 -> Table (join_T join_VE alpha_rename_VE t1 t2)
+      | Ary ary1, Ary ary2 -> Ary (join_Ary ary1 ary2)
+      | Lst lst1, Lst lst2 -> Lst (join_Lst lst1 lst2)
+      | Tuple u1, Tuple u2 -> Tuple (join_Tuple u1 u2)
+      | _, _ -> Top
+    and join_VE (ve1: value_te) (ve2: value_te) :value_te = match ve1, ve2 with 
+      | TEBot, ve | ve, TEBot -> ve
+      | TypeAndEff (v1, e1), TypeAndEff (v2, e2) -> TypeAndEff (join_V v1 v2, join_Eff e1 e2)
+      | _, _ -> TETop
+    and meet_V (v1:value_tt) (v2:value_tt) :value_tt = match v1, v2 with
+      | Top, v | v, Top -> v
+      | Relation r1, Relation r2 -> Relation (meet_R r1 r2)
+      | Table t1, Table t2 -> Table (meet_T meet_VE alpha_rename_VE t1 t2)
+      | Ary ary1, Ary ary2 -> Ary (meet_Ary ary1 ary2)
+      | Lst lst1, Lst lst2 -> Lst (meet_Lst lst1 lst2)
+      | Tuple u1, Tuple u2 -> Tuple (meet_Tuple u1 u2)
+      | _, _ -> Bot
+    and meet_VE (ve1: value_te) (ve2: value_te) :value_te = match ve1, ve2 with 
+      | TETop, ve | ve, TETop -> ve
+      | TypeAndEff (v1, e1), TypeAndEff (v2, e2) -> TypeAndEff (meet_V v1 v2, meet_Eff e1 e2)
+      | _, _ -> TEBot
+    and leq_V (v1:value_tt) (v2:value_tt) :bool = match v1, v2 with
+      | Bot, _ -> true
+      | _, Top -> true
+      | Relation r1, Relation r2 -> leq_R r1 r2
+      | Table t1, Table t2 -> leq_T leq_VE t1 t2
+      | Ary ary1, Ary ary2 -> leq_Ary ary1 ary2
+      | Lst lst1, Lst lst2 -> leq_Lst lst1 lst2
+      | Tuple u1, Tuple u2 -> leq_Tuple u1 u2
+      | _, _ -> false
+    and leq_VE (ve1: value_te) (ve2: value_te) :bool = match ve1, ve2 with 
+      | TEBot, _ -> true
+      | _, TETop -> true
+      | TypeAndEff (v1, e1), TypeAndEff (v2, e2) -> (leq_V v1 v2) && (leq_Eff e1 e2) 
+      | _, _ -> false
+    and sat_leq_V (v1:value_tt) (v2:value_tt) :bool = match v1, v2 with
+      | Bot, _ -> true
+      | _, Top -> true
+      | Relation r1, Relation r2 -> leq_R r1 r2
+      | Table t1, Table t2 -> leq_T leq_VE t1 t2
+      | Ary ary1, Ary ary2 -> leq_Ary ary1 ary2
+      | Lst lst1, Lst lst2 -> sat_leq_Lst lst1 lst2
+      | Tuple u1, Tuple u2 -> leq_Tuple u1 u2
+      | _, _ -> false
+    and sat_leq_VE (ve1: value_te) (ve2: value_te) :bool = match ve1, ve2 with 
+      | TEBot, _ -> true
+      | _, TETop -> true
+      | TypeAndEff (v1, e1), TypeAndEff (v2, e2) -> (sat_leq_V v1 v2) && (leq_Eff e1 e2) 
+      | _, _ -> false
+    and eq_V (v1:value_tt) (v2:value_tt) :bool = match v1, v2 with
+      | Bot, Bot -> true
+      | Top, Top -> true
+      | Relation r1, Relation r2 -> eq_R r1 r2
+      | Table t1, Table t2 -> eq_T eq_VE t1 t2
+      | Ary ary1, Ary ary2 -> eq_Ary ary1 ary2
+      | Lst lst1, Lst lst2 -> eq_Lst lst1 lst2
+      | Tuple u1, Tuple u2 -> eq_Tuple u1 u2
+      | _, _ -> false
+    and eq_VE (ve1: value_te) (ve2: value_te) :bool = match ve1, ve2 with 
+      | TEBot, TEBot -> true
+      | TETop, TETop -> true
+      | TypeAndEff (v1, e1), TypeAndEff (v2, e2) -> (eq_V v1 v2) && (eq_Eff e1 e2) 
+      | _, _ -> false
+    and is_table (v:value_tt) = match v with
+      | Table _ -> true
+      | _ -> false
+    and is_bool_V (v:value_tt) = match v with
+      | Relation r -> is_bool_R r
+      | _ -> false
+    and is_Relation = function 
+      | Relation _ -> true
+      | _ -> false
+    and is_Array = function
+      | Ary _ -> true
+      | _ -> false
+    and is_List = function
+      | Lst _ -> true
+      | _ -> false
+    (*todo: if v' is Bot then the result should be Bot? why is it different from the paper *)
+    and arrow_V var (v:value_tt) (v':value_tt) = match v' with
+      | Bot | Top | Table _ -> v
+      | Relation r2 -> (match v with
+                       | Table t -> Table (arrow_T forget_V arrow_VE var t v')
+                       | Relation r1 -> Relation (arrow_R var r1 r2)
+                       | Ary ary -> Ary (arrow_Ary var ary r2 None)
+                       | Lst lst -> Lst (arrow_Lst var lst (Relation r2) None)
+                       | Tuple u -> Tuple (arrow_Tuple var u v')
+                       | _ -> v)
+      | Tuple u2 -> List.fold_left (fun v1 ve2 ->
+                       match ve2 with 
+                       | TETop | TEBot -> v1
+                       | TypeAndEff (v2, _) -> arrow_V var v1 v2) v u2
+      | Ary ary2 -> let (vars, (rl2, re2)) = ary2 in
+                   (match v with
+                    | Table t -> Table (arrow_T forget_V arrow_VE var t v')
+                    | Relation r1 -> Relation (
+                                        let r1' = arrow_R var r1 rl2 in
+                                        if is_bot_R re2 then r1' else
+                                          arrow_R var r1' re2
+                                      )
+                    | Ary ary -> Ary (arrow_Ary var ary re2 (Some rl2))
+                    | Lst lst -> Lst (arrow_Lst var lst (Relation re2) (Some (vars, rl2)))
+                    | _ -> v)
+      | Lst lst2 -> let ((l2,e2) as vars, (rl2, vee2)) = lst2 in
+                   (match v with
+                    | Table t -> Table (arrow_T forget_V arrow_VE var t v')
+                    | Relation r1 -> if is_bot_R rl2 then Relation (bot_shape_R r1) else
+                                      let r1' = let res = meet_R r1 rl2 in
+                                                if is_bot_R res then (meet_R (forget_R l2 r1) rl2) else res in
+                                      (match vee2 with 
+                                       | TEBot -> if String.length var >= 2 && String.sub var 0 2 = "zh" then
+                                                 raise (Invalid_argument "List.hd expects non empty list")
+                                                 else Relation r1'
+                                       | TypeAndEff (Relation re2, _) ->
+                                          if is_bot_R re2 then Relation r1'
+                                          else Relation (meet_R r1' (proj_R re2 [e2]))
+                                       | TypeAndEff (Tuple ue, _) -> Relation r1'
+                                       | TypeAndEff (ve2, _) -> arrow_V var (Relation r1') ve2
+                                       | TETop -> Relation r1')
+                    | Ary ary -> (match vee2 with
+                                 | TypeAndEff (Relation re2, _) -> Ary (arrow_Ary var ary re2 (Some rl2))
+                                 | _ -> Ary (arrow_Ary var ary rl2 None))
+                    | Lst lst -> (match vee2 with 
+                                 | TypeAndEff (ve2, _) -> Lst (arrow_Lst var lst ve2 (Some (vars, rl2)))
+                                 | _ -> Lst lst)
+                    | Top -> if String.sub var 0 2 = "zh" then
+                              (match vee2 with
+                               | TypeAndEff (Relation re2, _) -> 
+                                  let r1' = arrow_R var (equal_R (top_R Plus) e2) rl2 in
+                                  arrow_V var (Relation r1') (Relation re2)
+                               | TypeAndEff (ve2, _) -> ve2 
+                               | TETop -> Top 
+                               | TEBot -> Bot)
+                            else v
+                    | _ -> v)
+    (* todo: same here, the strengthening with Bot return the effect. Need to verify why is that? *)
+    and arrow_EffV var e v' = match v' with 
+      | Bot | Top | Table _ -> e
+      | Relation r2 -> arrow_Eff var e r2
+      | Tuple u2 -> List.fold_left (fun e1 ve2 ->
+                       match ve2 with 
+                       | TETop | TEBot -> e1
+                       | TypeAndEff (v2, _) -> arrow_EffV var e1 v2) e u2
+      | Ary ary2 -> let (vars, (rl2, re2)) = ary2 in
+                   let e' = arrow_Eff var e rl2 in 
+                   if is_bot_R re2 then e' else arrow_Eff var e' re2
+      | Lst lst2 -> let ((l2,e2) as vars, (rl2, vee2)) = lst2 in
+                   let Effect er = e in 
+                   if is_bot_R rl2 then Effect (bot_shape_R er) else
+                     let er' = let res = meet_R er rl2 in
+                                if is_bot_R res then (meet_R (forget_R l2 er) rl2) else res in
+                     (match vee2 with 
+                      | TEBot -> if String.length var >= 2 && String.sub var 0 2 = "zh" then
+                                  raise (Invalid_argument "List.hd expects non empty list")
+                                else Effect er'
+                      | TypeAndEff (Relation re2, _) ->
+                         if is_bot_R re2 then Effect er'
+                         else Effect (meet_R er' (proj_R re2 [e2]))
+                      | TypeAndEff (Tuple ue, _) -> Effect er'
+                      | TypeAndEff (ve2, _) -> arrow_EffV var (Effect er') ve2
+                      | TETop -> Effect er')                    
+    and arrow_VE var ve v' = match ve with 
+      | TypeAndEff (v, e) -> TypeAndEff (arrow_V var v v', arrow_EffV var e v')
+      | _ -> ve
+    and forget_V var v = match v with
+      | Table t -> Table (forget_T forget_VE var t)
+      | Ary ary -> Ary (forget_Ary var ary)
+      | Lst lst -> Lst (forget_Lst var lst)
+      | Relation r -> Relation (forget_R var r)
+      | Tuple u -> Tuple (forget_Tuple var u)
+      | _ -> v
+    and forget_VE var ve = match ve with
+      | TypeAndEff (v, e) -> TypeAndEff (forget_V var v, forget_Eff var e)
+      | _ -> ve
+    and equal_V v var = match v with
+      | Relation r -> Relation (equal_R r var)
+      | Table t -> Table (equal_T equal_VE alpha_rename_VE t var)
+      | _ -> v
+    and equal_VE ve var = 
+      temap ((fun v -> equal_V v var), (fun e -> equal_Eff e var)) ve
+    and wid_V v1 v2 = match v1, v2 with
+      | Relation r1, Relation r2 -> Relation (wid_R r1 r2)
+      | Table t1, Table t2 -> Table (wid_T wid_VE alpha_rename_VE t1 t2)
+      | Ary ary1, Ary ary2 -> Ary (wid_Ary ary1 ary2)
+      | Lst lst1, Lst lst2 -> Lst (wid_Lst lst1 lst2)
+      | Tuple u1, Tuple u2 -> Tuple (wid_Tuple u1 u2)
+      | _, _ -> join_V v1 v2
+    and wid_VE ve1 ve2 = match ve1, ve2 with 
+      | TypeAndEff (v1, e1), TypeAndEff (v2, e2) -> TypeAndEff ((wid_V v1 v2), (wid_Eff e1 e2))
+      | _, _ -> join_VE ve1 ve2
+    and op_V sl sr op v = match v with
+      | Bot | Top -> Top
+      | Relation r -> Relation (op_R "" sl sr op false r)
+      | _ -> raise (Invalid_argument "Should be a relation type when using op_V")
+    and uop_V op s v = match v with
+      | Bot | Top -> Top
+      | Relation r -> Relation (uop_R "" op s false r)
+      | _ -> raise (Invalid_argument "Should be a relation type when using uop_V")
+    and bool_op_V op v1 v2 = match v1, v2 with
+      | Bot, Relation _ -> if string_of_op op = "&&" then Bot else v2
+      | Top, Relation _ -> if string_of_op op = "&&" then v2 else Top
+      | Relation r1, Relation r2 -> Relation (bool_op_R op r1 r2)
+      | Relation _, Bot -> if string_of_op op = "&&" then Bot else v1
+      | Relation _, Top -> if string_of_op op = "&&" then v1 else Top
+      | _, _ -> raise (Invalid_argument "Should be a relation type when using bool_op_V")
     and is_Bot_V = function
       | Bot -> true
       | _ -> false
     and replace_V v var x = match v with
-      | Table t -> Table (replace_T replace_V t var x)
+      | Table t -> Table (replace_T replace_VE t var x)
       | Relation r -> Relation (replace_R r var x)
       | Ary ary -> Ary (replace_Ary ary var x)
       | Lst lst -> Lst (replace_Lst lst var x)
       | _ -> v
+    and replace_VE ve var x = 
+      temap ((fun v -> replace_V v var x), (fun e -> replace_Eff e var x)) ve
     and extrac_bool_V v b = match v with
       | Relation r -> Relation (extrac_bool_R r b)
       | _ -> raise (Invalid_argument "Should be relation when split if statement")
     and stren_V v ae = match v,ae with
       | Bot, _ -> Bot
       | Relation r, Relation rae -> if is_bot_R rae && is_unit_R r then Bot else
-        Relation (stren_R r rae)
+                                     Relation (stren_R r rae)
       | Ary ary, Relation rae -> Ary (stren_Ary ary rae)
       | Lst lst, Relation rae -> Lst (stren_Lst lst rae)
       | Table t, Relation rae -> Table t (* Table (stren_T stren_V t ae) *)
@@ -371,38 +468,45 @@ module SemanticsDomain =
       | _, Bot -> Bot
       | _, Top -> v
       | _,_ -> raise (Invalid_argument "ae should not be a table")
+    and stren_VE ve ae = 
+      let ve' = temap ((fun v -> stren_V v ae), (fun e -> stren_Eff e ae)) ve in 
+      match ve' with 
+      | TETop -> failwith "todo: not implemented. need further insights"
+      | _ -> ve'
     and stren_ite_V v ae = match v, ae with
       | Table t, Relation rae -> 
-        if is_bot_R rae then Table t else Table (stren_T stren_V t ae)
+         if is_bot_R rae then Table t else Table (stren_T stren_VE t ae)
       | _, _ -> stren_V v ae
     and sat_equal_V v x = match v with
       | Relation r -> sat_equal_R r x
       | _ -> false
     (* and der_V term v = match term, v with
-      | _, Top | _, Bot -> v
-      | Const (c,l), Relation r -> 
-        let r' = (match c with
-          | Integer i -> der_R ((string_of_int i) ^ "=" ^ (name_of_node l)) r
-          | Boolean b -> r (*TODO:this case*))
-        in
-        Relation r'
-      | Var (x, l), Relation r -> Relation (der_R (x ^ "=" ^ (name_of_node l)) r)
-      | App (e1, e2, l), Relation r -> v |> der_V e1 |> der_V e2
-      | Rec (f_opt, x, lx, e1, l), Table t -> v (*TODO:this case*)
-      | Ite (e1, e2, e3, l, _), Relation r -> v |> der_V e1 |> der_V e2 |> der_V e3
-      | BinOp (bop, e1, e2, l), Relation r -> 
-        let expr = ((e1 |> loc |> name_of_node)^(string_of_op bop)^(e2 |> loc |> name_of_node) ^ "=" ^ (name_of_node l)) in
-        let v' = Relation (der_R expr r) in
-        v' |> der_V e1 |> der_V e2
-      | _, _ -> raise (Invalid_argument "derived values match incorrectly") *)
+       | _, Top | _, Bot -> v
+       | Const (c,l), Relation r -> 
+       let r' = (match c with
+       | Integer i -> der_R ((string_of_int i) ^ "=" ^ (name_of_node l)) r
+       | Boolean b -> r (*TODO:this case*))
+       in
+       Relation r'
+       | Var (x, l), Relation r -> Relation (der_R (x ^ "=" ^ (name_of_node l)) r)
+       | App (e1, e2, l), Relation r -> v |> der_V e1 |> der_V e2
+       | Rec (f_opt, x, lx, e1, l), Table t -> v (*TODO:this case*)
+       | Ite (e1, e2, e3, l, _), Relation r -> v |> der_V e1 |> der_V e2 |> der_V e3
+       | BinOp (bop, e1, e2, l), Relation r -> 
+       let expr = ((e1 |> loc |> name_of_node)^(string_of_op bop)^(e2 |> loc |> name_of_node) ^ "=" ^ (name_of_node l)) in
+       let v' = Relation (der_R expr r) in
+       v' |> der_V e1 |> der_V e2
+       | _, _ -> raise (Invalid_argument "derived values match incorrectly") *)
     and proj_V v vars =
       match v with
       | Relation r -> Relation (proj_R r vars)
-      | Table t -> Table (proj_T proj_V get_list_length_item_V t vars)
+      | Table t -> Table (proj_T proj_VE get_list_length_item_V t vars)
       | Ary ary -> Ary (proj_Ary ary vars)
       | Lst lst -> Lst (proj_Lst lst vars)
       | Tuple u -> Tuple (proj_Tuple u vars)
       | _ -> v
+    and proj_VE ve vars = 
+      temap ((fun v -> proj_V v vars), (fun e -> proj_Eff e vars)) ve
     and get_len_var_V = function
       | Ary ary -> get_len_var_Ary ary
       | Lst lst -> get_len_var_Lst lst
@@ -412,14 +516,14 @@ module SemanticsDomain =
       | Lst lst -> get_item_var_Lst lst
       | _ -> raise (Invalid_argument "get item dep variable unsucessful")
     (* and opt_eq_V v1 v2 = match v1, v2 with
-      | Bot, _ | _, Bot -> false
-      | _, Top -> true
-      | Relation r1, Relation r2 -> is_bot_R r1 = false && is_bot_R r2 = false && eq_R r1 r2
-      | Table (z1, v1i, v1o), Table (z2, v2i, v2o) ->
-          z1 = z2 && opt_eq_V v1i v2i && opt_eq_V v1o v2o
-      | Ary ary1, Ary ary2 -> eq_Ary ary1 ary2
-      | Unit u1, Unit u2 -> true
-      | _, _ -> false  *)
+       | Bot, _ | _, Bot -> false
+       | _, Top -> true
+       | Relation r1, Relation r2 -> is_bot_R r1 = false && is_bot_R r2 = false && eq_R r1 r2
+       | Table (z1, v1i, v1o), Table (z2, v2i, v2o) ->
+       z1 = z2 && opt_eq_V v1i v2i && opt_eq_V v1o v2o
+       | Ary ary1, Ary ary2 -> eq_Ary ary1 ary2
+       | Unit u1, Unit u2 -> true
+       | _, _ -> false  *)
     and is_bool_bot_V = function
       | Relation r -> is_bool_bot_R r
       | _ -> true
@@ -429,12 +533,16 @@ module SemanticsDomain =
     and get_second_table_input_V = function
       | Bot -> Bot
       | Table t -> if table_isempty t then Bot else
-        let _,(_,vo) = get_full_table_T t in
-        (match vo with
-          | Bot -> Bot
-          | Table t -> if table_isempty t then Bot else
-            let _,(vi,_) = get_full_table_T t in vi
-          | _ -> raise (Invalid_argument "array.set should be a table"))
+                    let _,(_,veo) = get_full_table_t t in
+                    (match veo with
+                     | TEBot -> Bot
+                     | TypeAndEff (Table t, _) -> if table_isempty t then Bot else
+                                                   (let _,(vei,_) = get_full_table_t t in 
+                                                   match vei with
+                                                   | TEBot -> Bot
+                                                   | TypeAndEff (vi, _) -> vi 
+                                                   | TETop -> raise (Invalid_argument "input should not be Top"))
+                     | _ -> raise (Invalid_argument "array.set should be a table"))
       | _ -> raise (Invalid_argument "array.set should be a table")
     and join_for_item_V v1 v2 = match v1, v2 with
       | Bot, _ | _, Bot -> v1
@@ -453,22 +561,22 @@ module SemanticsDomain =
       | v, Lst lst -> Lst (list_cons_Lst f v lst)
       | _,_ -> raise (Invalid_argument "List construct should be item :: lst")
     and alpha_rename_Vs v1 v2 = match v1, v2 with
-      | Lst (((l1,e1), (rl1,ve1)) as lst1), Lst (((l2,e2), (rl2,ve2)) as lst2) ->
-        if l1 = l2 && e1 = e2 then Lst lst1, Lst lst2 else
-        let lst2 = 
-          ((l2,e2), (rl2 |> forget_R l1 |> forget_R e1,
-          ve2 |> forget_V l1 |> forget_V e1)) in
-        let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
-        Lst lst1', Lst lst2'
+      | Lst (((l1,e1), (rl1,vee1)) as lst1), Lst (((l2,e2), (rl2,vee2)) as lst2) ->
+         if l1 = l2 && e1 = e2 then Lst lst1, Lst lst2 else
+           let lst2 = 
+             ((l2,e2), (rl2 |> forget_R l1 |> forget_R e1,
+                        vee2 |> forget_VE l1 |> forget_VE e1)) in
+           let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
+           Lst lst1', Lst lst2'
       | Ary ary1, Ary ary2 -> let ary1', ary2' =  alpha_rename_Arys ary1 ary2 in
-        Ary ary1', Ary ary2'
+                             Ary ary1', Ary ary2'
       | _, _ -> v1, v2
     and bot_relation_V (tp: inputType) = match tp with
       | Int -> Relation (bot_R Plus)
       | Bool -> Relation (bot_R Ge)
       | Unit -> Tuple []
     and get_list_length_item_V = function
-      | Lst lst -> get_list_length_item_Lst lst
+      | TypeAndEff (Lst lst, _) -> get_list_length_item_Lst lst
       | _ -> []
     and only_shape_V = function
       | Relation r -> is_bot_R r
@@ -480,15 +588,20 @@ module SemanticsDomain =
       | _ -> raise (Invalid_argument "Temp list construct should be item :: lst")
     and item_shape_V te t = match te, t with
       | Lst lste, Lst lst ->
-        Lst (item_shape_Lst lste lst)
+         Lst (item_shape_Lst lste lst)
       | _, _ -> t
     and bot_shape_V = function
       | Bot | Top -> Bot
       | Relation r -> Relation (bot_shape_R r)
-      | Table t -> Table (bot_shape_T bot_shape_V t)
+      | Table t -> Table (bot_shape_T bot_shape_VE t)
       | Lst lst -> Lst (bot_shape_Lst lst)
       | Ary ary -> Ary (bot_shape_Ary ary)
       | Tuple u -> Tuple (bot_shape_Tuple u)
+    and bot_shape_VE ve =
+      let ve' = temap (bot_shape_V, bot_shape_Eff) ve in 
+      match ve' with 
+      | TEBot | TETop -> TEBot
+      | _ -> ve'
     and add_tuple_item_V v v' = match v with
       | Tuple u -> Tuple (add_tuple_item_Tuple u v')
       | _ -> raise (Invalid_argument "Tuple constrct should be value, tuple")
@@ -503,7 +616,8 @@ module SemanticsDomain =
       | _ -> raise (Invalid_argument "pattern x::[] should give a list")
     and rename_lambda_V v = match v with
       | Lst lst -> Lst (rename_lambda_Lst lst)
-      | _ -> v
+      | _ -> v 
+
     (*
       *******************************
       ** Abstract domain for Array **
@@ -593,7 +707,7 @@ module SemanticsDomain =
     *)
     and init_Lst_c (): list_t = let varl, vare = fresh_length (), fresh_item () in
       let r1 = top_R Plus |> op_R varl varl "0" Eq true in
-      (varl, vare), (r1, Bot)
+      (varl, vare), (r1, TEBot)
     and const_Lst lst = 
       let varl, vare = fresh_length (), fresh_item () in
       let min, max = List.fold_left (fun (min, max) item -> 

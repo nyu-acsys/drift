@@ -5,6 +5,8 @@ let compose f g x = f (g x)
 
 let id x = x
 
+let apply2 (f, g) (x, y) = (f x, g y)
+
 module StringSet = Set.Make(struct
     type t = string
     let compare = compare
