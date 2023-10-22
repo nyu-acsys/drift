@@ -190,23 +190,54 @@ module SemanticsDomain =
     (********************************************
      ** Abstract domain for Effects            **
      ********************************************)
-    let alpha_rename_Eff (Effect r) prevar var = Effect (alpha_rename_R r prevar var)
-    let join_Eff (Effect r1) (Effect r2) = Effect (join_R r1 r2) 
-    let meet_Eff (Effect r1) (Effect r2) = Effect (meet_R r1 r2) 
-    let leq_Eff (Effect r1) (Effect r2) = leq_R r1 r2
-    let eq_Eff (Effect r1) (Effect r2) = eq_R r1 r2
-    let forget_Eff var (Effect r1) = Effect (forget_R var r1)
-    let arrow_Eff var (Effect r1) r2 = Effect (arrow_R var r1 r2)
-    let equal_Eff (Effect r) var = Effect (equal_R r var)
-    let wid_Eff (Effect r1) (Effect r2) = Effect (wid_R r1 r2)
-    let replace_Eff (Effect r) var x = Effect (replace_R r var x)
-    let stren_Eff (Effect r) ae = match ae with 
-      | Relation rae -> Effect (stren_R r rae)
-      | Top -> Effect r
-      | Bot -> failwith "ae is Bot and is confusing for Eff"
+    let alpha_rename_Eff e prevar var = effmap (fun r -> alpha_rename_R r prevar var) e
+    let join_Eff e1 e2 = match e1, e2 with 
+      | EffBot, _ | _, EffTop -> e2 
+      | Effect r1, Effect r2 -> Effect (join_R r1 r2)
+      | EffTop, _ | _, EffBot -> e1 
+    let meet_Eff e1 e2 = match e1, e2 with 
+      | EffBot, _ | _, EffTop -> e1
+      | Effect r1, Effect r2 -> Effect (meet_R r1 r2) 
+      | EffTop, _ | _, EffBot -> e2 
+    let leq_Eff e1 e2 = match e1, e2 with 
+      | EffBot, _  | _, EffTop -> true
+      | Effect r1, Effect r2 -> leq_R r1 r2
+      | _,  _ -> false
+    let eq_Eff e1 e2 = match e1, e2 with 
+      | EffBot, EffBot | EffTop, EffTop -> true
+      | Effect r1, Effect r2 -> eq_R r1 r2
+      | _, _ -> false
+    let forget_Eff var e = effmap (fun r -> forget_R var r) e
+    let arrow_Eff var e r = match e with 
+      | EffBot -> EffBot 
+      | Effect _ -> effmap (fun e_r -> arrow_R var e_r r) e
+      | EffTop -> Effect r
+    let equal_Eff e var = effmap (fun r -> equal_R r var) e
+    let wid_Eff e1 e2 = match e1, e2 with 
+      | Effect r1, Effect r2 -> Effect (wid_R r1 r2)
+      | _, _ -> join_Eff e1 e2
+    let replace_Eff e var x = effmap (fun r -> replace_R r var x) e
+    let stren_Eff e ae = match e, ae with
+      | EffBot, _ -> EffBot 
+      | Effect _, Relation rae -> if is_bot_R rae then EffBot else (effmap (fun r -> stren_R r rae) e)
+      | EffTop, Relation rae -> begin match rae with 
+                               | Int _ -> Effect rae
+                               | _ -> raise (Invalid_argument "ae should be {v: Int}")
+                               end 
+      | _, Top -> e
+      | _, Bot -> EffBot
       | _ -> raise (Invalid_argument "ae should not be a table") 
-    let proj_Eff (Effect r) vars = Effect (proj_R r vars)
-    let bot_shape_Eff (Effect r) = Effect (bot_shape_R r)
+    let proj_Eff e vars = effmap (fun r -> proj_R r vars) e
+    let bot_shape_Eff e = effmap (fun r -> bot_shape_R r)
+    let bot_Eff = EffBot (* Effect (bot_R Plus) *)
+    let extract_v = function
+      | TEBot -> Bot
+      | TypeAndEff (v, _) -> v
+      | TETop -> Top
+    let extract_eff = function
+      | TEBot -> EffBot
+      | TypeAndEff (_, e) -> e
+      | TETop -> EffTop
     (*
      ********************************
      ** Abstract domains for       **
@@ -373,19 +404,21 @@ module SemanticsDomain =
                             else v
                     | _ -> v)
     (* todo: same here, the strengthening with Bot return the effect. Need to verify why is that? *)
-    and arrow_EffV var e v' = match v' with 
-      | Bot | Top | Table _ -> e
-      | Relation r2 -> arrow_Eff var e r2
-      | Tuple u2 -> List.fold_left (fun e1 ve2 ->
+    and arrow_EffV var e v' = match e, v' with 
+      | EffBot,  _ -> EffBot
+      | _, Bot | _, Top | _, Table _ -> e
+      | _, Relation r2 -> arrow_Eff var e r2
+      | _, Tuple u2 -> List.fold_left (fun e1 ve2 ->
                        match ve2 with 
                        | TETop | TEBot -> e1
                        | TypeAndEff (v2, _) -> arrow_EffV var e1 v2) e u2
-      | Ary ary2 -> let (vars, (rl2, re2)) = ary2 in
+      | _, Ary ary2 -> let (vars, (rl2, re2)) = ary2 in
                    let e' = arrow_Eff var e rl2 in 
                    if is_bot_R re2 then e' else arrow_Eff var e' re2
-      | Lst lst2 -> let ((l2,e2) as vars, (rl2, vee2)) = lst2 in
-                   let Effect er = e in 
-                   if is_bot_R rl2 then Effect (bot_shape_R er) else
+      | Effect er, Lst lst2 -> let ((l2,e2) as vars, (rl2, vee2)) = lst2 in
+                   if is_bot_R rl2 
+                   then Effect (bot_shape_R er) 
+                   else
                      let er' = let res = meet_R er rl2 in
                                 if is_bot_R res then (meet_R (forget_R l2 er) rl2) else res in
                      (match vee2 with 
@@ -397,7 +430,8 @@ module SemanticsDomain =
                          else Effect (meet_R er' (proj_R re2 [e2]))
                       | TypeAndEff (Tuple ue, _) -> Effect er'
                       | TypeAndEff (ve2, _) -> arrow_EffV var (Effect er') ve2
-                      | TETop -> Effect er')                    
+                      | TETop -> Effect er')
+      |                     
     and arrow_VE var ve v' = match ve with 
       | TypeAndEff (v, e) -> TypeAndEff (arrow_V var v v', arrow_EffV var e v')
       | _ -> ve
@@ -717,63 +751,63 @@ module SemanticsDomain =
       let rl = top_R Plus |> op_R varl varl (string_of_int (List.length lst)) Eq true in
       let re = rl |> op_R vare vare (string_of_int min) Ge true 
         |> op_R vare vare (string_of_int max) Le true in
-      (varl, vare), (rl, Relation re)
+      (varl, vare), (rl, TypeAndEff (Relation re, bot_Eff))
     and init_Lst vars : list_t = let varl, vare = vars in
       let varl' = if varl = "l" || varl = "l'" then fresh_length () else varl in
       let vare' = if vare = "e" || vare = "e'" then fresh_item () else vare in
       let vars = varl', vare' in
-      vars, (bot_R Plus, Bot)
+      vars, (bot_R Plus, TEBot)
     and get_len_var_Lst ((varl,_),_) = varl
     and get_item_var_Lst ((_,vare),_) = vare
-    and pattern_empty_Lst ((l,e) as vars, (_, ve)) = 
+    and pattern_empty_Lst ((l,e) as vars, (_, vee)) = 
       let rl' = top_R Plus |> op_R l l "0" Eq true in
-      let ve' = bot_shape_V ve in
-      vars, (rl', ve')
-    and extrac_item_Lst vars ((_,vare), (_, ve)) =
+      let vee' = bot_shape_VE vee in
+      vars, (rl', vee')
+    and extrac_item_Lst vars ((_,vare), (_, vee)) =
       (* let vars' = vare :: vars in *)
-      let ve' = match ve with
-      | Relation re -> alpha_rename_V ve vare "cur_v"
-      | _ -> ve
+      let vee' = match vee with
+      | TypeAndEff (Relation _, _) -> alpha_rename_VE vee vare "cur_v" |> extract_v
+      | _ -> extract_v vee
         (* alpha_rename_R (proj_R re vars' |> forget_R "cur_v") vare "cur_v"  *)
       in
-      ve'
+      vee'
     and join_Lst lst1 lst2 = 
-      let (l1, e1), (rl1,ve1) = lst1 in
-      let (l2, e2), (rl2,ve2) = lst2 in
+      let (l1, e1), (rl1,vee1) = lst1 in
+      let (l2, e2), (rl2,vee2) = lst2 in
       let lst1', lst2' = if l1 <> "l" && contains_var_R l1 rl2 then
         let a, b = alpha_rename_Lsts lst2 lst1 in 
         b, a
         else alpha_rename_Lsts lst1 lst2 in
-      let (l1, e1) as vars1, (rl1,ve1) = lst1' in let (l2, e2) as vars2, (rl2,ve2) = lst2' in
-      vars1, (join_R rl1 rl2, join_V ve1 ve2)
+      let (l1, e1) as vars1, (rl1,vee1) = lst1' in let (l2, e2) as vars2, (rl2,vee2) = lst2' in
+      vars1, (join_R rl1 rl2, join_VE vee1 vee2)
     and meet_Lst lst1 lst2 = 
       let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
-      let vars1, (rl1,ve1) = lst1' in let vars2, (rl2,ve2) = lst2' in
-      vars1, (meet_R rl1 rl2, meet_V ve1 ve2)
+      let vars1, (rl1,vee1) = lst1' in let vars2, (rl2,vee2) = lst2' in
+      vars1, (meet_R rl1 rl2, meet_VE vee1 vee2)
     and leq_Lst lst1 lst2 = 
-      let (l1,e1), (rl1,ve1) = lst1 in let (l2,e2), (rl2,ve2) = lst2 in
+      let (l1,e1), (rl1,vee1) = lst1 in let (l2,e2), (rl2,vee2) = lst2 in
       let scop_check = l1 = l2 && e1 = e2 in
-      if scop_check then leq_R rl1 rl2 && leq_V ve1 ve2 else false
+      if scop_check then leq_R rl1 rl2 && leq_VE vee1 vee2 else false
     and sat_leq_Lst lst1 lst2 = 
-      let (l1,e1), (rl1,ve1) = lst1 in let (l2,e2), (rl2,ve2) = lst2 in
+      let (l1,e1), (rl1,vee1) = lst1 in let (l2,e2), (rl2,vee2) = lst2 in
       let scop_check = l1 = l2 && e1 = e2 in
       if scop_check then 
         let rl1 = proj_R rl1 [l1] in
         let rl2 = proj_R rl2 [l2] in
-        leq_R rl1 rl2 && leq_V ve1 ve2
+        leq_R rl1 rl2 && leq_VE vee1 vee2
       else false
     and eq_Lst lst1 lst2 =
-      let (l1,e1), (rl1,ve1) = lst1 in let (l2,e2), (rl2,ve2) = lst2 in
+      let (l1,e1), (rl1,vee1) = lst1 in let (l2,e2), (rl2,vee2) = lst2 in
       let scop_check = l1 = l2 && e1 = e2 in
-      if scop_check then eq_R rl1 rl2 && eq_V ve1 ve2 else false
+      if scop_check then eq_R rl1 rl2 && eq_VE vee1 vee2 else false
     and wid_Lst lst1 lst2 =
       let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
-      let vars1, (rl1,ve1) = lst1' in let vars2, (rl2,ve2) = lst2' in
-      vars1, (wid_R rl1 rl2,wid_V ve1 ve2)
+      let vars1, (rl1,vee1) = lst1' in let vars2, (rl2,vee2) = lst2' in
+      vars1, (wid_R rl1 rl2,wid_VE vee1 vee2)
     and arrow_Lst var lst v ropt = 
-      let ((l,e) as vars, (rl,ve)) = lst in
+      let ((l,e) as vars, (rl,vee)) = lst in
       match ropt with
-      | Some ((_, e') , rl') -> (match v, ve with
+      | Some ((_, e') , rl') -> (match v, extract_v vee with
         | Bot, _ -> if String.sub var 0 2 = "xs" && contains_var_R "zc" rl' then
            let rl = arrow_R var rl rl' in
            let re' = (op_R "" e "zc" Eq true rl) in

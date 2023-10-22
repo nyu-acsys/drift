@@ -102,10 +102,11 @@ module type SensitiveSemanticsType =
       | TEBot 
       | TETop
       | TypeAndEff of value_tt * eff
-    and eff = Effect of relation_e
+    and eff = EffBot | EffTop | Effect of relation_e
     and list_t = (var * var) * (relation_t * value_te)
     and tuple_t = (value_te list)
     val temap: (value_tt -> value_tt) * (eff -> eff) -> value_te -> value_te
+    val effmap: (relation_e -> relation_e) -> eff -> eff
     val init_T: (var * loc) -> table_t
     val alpha_rename_T: (value_te -> string -> string -> value_te) -> table_t -> string -> string -> table_t
     val join_T: (value_te -> value_te -> value_te) -> (value_te -> string -> string -> value_te) -> table_t -> table_t -> table_t
@@ -154,7 +155,7 @@ module NonSensitive: SensitiveSemanticsType =
       | Ary of array_t
       | Lst of list_t
       | Tuple of tuple_t
-    and eff = Effect of relation_e
+    and eff = EffBot | EffTop | Effect of relation_e
     and value_te = 
       | TEBot 
       | TETop 
@@ -167,6 +168,10 @@ module NonSensitive: SensitiveSemanticsType =
       | TEBot -> TEBot
       | TypeAndEff (v, e) -> TypeAndEff (f v, g e) (* TypeAndEff (apply2 (f, g) ve)  *)      
       | TETop -> TETop
+    let effmap f = function 
+      | EffBot -> EffBot
+      | Effect r -> Effect (f r)
+      | EffTop -> EffTop
     let init_T (var, _) = var, TEBot, TEBot
     let alpha_rename_T (f: value_te -> string -> string -> value_te) (t:table_t) (prevar:string) (var:string) :table_t = 
       let (z, vi, vo) = t in
@@ -281,7 +286,7 @@ module OneSensitive: SensitiveSemanticsType =
       | Ary of array_t
       | Lst of list_t
       | Tuple of tuple_t
-    and eff = Effect of relation_e
+    and eff = EffBot | EffTop | Effect of relation_e
     and value_te = 
       | TEBot  
       | TETop
@@ -293,6 +298,10 @@ module OneSensitive: SensitiveSemanticsType =
       | TEBot -> TEBot
       | TypeAndEff (v, e) -> TypeAndEff (f v, g e) (* TypeAndEff (apply2 (f, g) ve)  *)      
       | TETop -> TETop
+    let effmap f = function 
+      | EffBot -> EffBot
+      | Effect r -> Effect (f r)
+      | EffTop -> EffTop
     let init_T var = TableMap.empty
     let alpha_rename_T f (mt:table_t) (prevar:string) (var:string) = TableMap.map (fun (vi, vo) -> 
       f vi prevar var, f vo prevar var) mt

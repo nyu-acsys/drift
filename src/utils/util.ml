@@ -101,9 +101,6 @@ let fresh_func var =
     let idx = !ref_index in
     incr ref_index;
     var ^ (string_of_int idx)
-
-
-
 let measured_time = ref 0.
 let measured_calls = ref 0
 
