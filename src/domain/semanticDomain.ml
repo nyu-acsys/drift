@@ -239,6 +239,7 @@ module SemanticsDomain =
       | TEBot -> EffBot
       | TypeAndEff (_, e) -> e
       | TETop -> EffTop
+
     (*
      ********************************
      ** Abstract domains for       **
@@ -246,6 +247,7 @@ module SemanticsDomain =
      **     and ValueAndEffects    **
      ********************************
      *)
+    let init_VE_v v = TypeAndEff (v, EffBot)
     let rec alpha_rename_V v prevar var = match v with
       | Relation r -> Relation (alpha_rename_R r prevar var)
       | Table t -> Table (alpha_rename_T alpha_rename_VE t prevar var)
@@ -572,11 +574,11 @@ module SemanticsDomain =
     and get_second_table_input_V = function
       | Bot -> Bot
       | Table t -> if table_isempty t then Bot else
-                    let _,(_,veo) = get_full_table_t t in
+                    let _,(_,veo) = get_full_table_T t in
                     (match veo with
                      | TEBot -> Bot
                      | TypeAndEff (Table t, _) -> if table_isempty t then Bot else
-                                                   (let _,(vei,_) = get_full_table_t t in 
+                                                   (let _,(vei,_) = get_full_table_T t in 
                                                    match vei with
                                                    | TEBot -> Bot
                                                    | TypeAndEff (vi, _) -> vi 
@@ -1089,8 +1091,10 @@ module SemanticsDomain =
           (l, e), (rl, re)
         in
         let t = 
-          let t' = Table (construct_table (var_e, var_e) (Relation rm, Ary ary)) in
-          Table (construct_table (var_l, var_l) (Relation rl, t')) in
+          let t' = Table (construct_table (create_singleton_trace_loc var_e) 
+                            ((init_VE_v (Relation rm)), (init_VE_v (Ary ary)))) in
+          Table (construct_table (create_singleton_trace_loc var_l) 
+                   ((init_VE_v (Relation rl)), (init_VE_v t'))) in
         t
       in
       let n_len = construct_vnode env "Array.length" [] in
@@ -1109,7 +1113,8 @@ module SemanticsDomain =
           in
         (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
         let rlen = equal_R (top_R Plus) "l" in
-        Table (construct_table (var_l, var_l) (Ary ary, Relation rlen))
+        Table (construct_table (create_singleton_trace_loc var_l) 
+                 ((init_VE_v (Ary ary)), (init_VE_v (Relation rlen))))
       in
       let n_get = construct_vnode env "Array.get" [] in
       let s_get = construct_snode "" n_get in
@@ -1130,8 +1135,10 @@ module SemanticsDomain =
         let rr = top_R Plus |> op_R "" "cur_v" "e" Eq true in 
         let var_zi = "zi" in
         let t = 
-          let t' = Table (construct_table (create_singleton_trace_loc var_zi) (Relation rm, Relation rr)) in
-          Table (construct_table (create_singleton_trace_loc var_l) (Ary ary, t')) in
+          let t' = Table (construct_table (create_singleton_trace_loc var_zi) 
+                            ((init_VE_v (Relation rm)), (init_VE_v (Relation rr)))) in
+          Table (construct_table (create_singleton_trace_loc var_l) 
+                   ((init_VE_v (Ary ary)), (init_VE_v t'))) in
         t
       in
       let n_set = construct_vnode env "Array.set" [] in
@@ -1155,9 +1162,12 @@ module SemanticsDomain =
         let rri = top_R Plus in
         let rrr = [] in
         let t = 
-          let t' = Table (construct_table (create_singleton_trace_loc var_e) (Relation rri, Tuple rrr)) in
-          let t'' = Table (construct_table (create_singleton_trace_loc var_zi) (Relation rm, t')) in
-          Table (construct_table (create_singleton_trace_loc var_l) (Ary ary, t'')) in
+          let t' = Table (construct_table (create_singleton_trace_loc var_e) 
+                            ((init_VE_v (Relation rri)), (init_VE_v (Tuple rrr)))) in
+          let t'' = Table (construct_table (create_singleton_trace_loc var_zi) 
+                             ((init_VE_v (Relation rm)), (init_VE_v t'))) in
+          Table (construct_table (create_singleton_trace_loc var_l) 
+                   ((init_VE_v (Ary ary)), (init_VE_v t''))) in
         t
       in
       let m' = 
@@ -1182,12 +1192,13 @@ module SemanticsDomain =
         let list = 
           let l, e = "l", "e" in
           let rl = top_R Plus |> op_R "" var_len "0" Ge true in
-          let ve = Top in
+          let ve = TETop in
           (l, e), (rl, ve)
         in
         (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
         let rlen = equal_R (top_R Plus) "l" in
-        Table (construct_table (create_singleton_trace_loc var_l) (Lst list, Relation rlen))
+        Table (construct_table (create_singleton_trace_loc var_l) 
+                 ((init_VE_v (Lst list)), (init_VE_v (Relation rlen))))
       in
       let n_hd = construct_vnode env "List.hd" [] in
       let s_hd = construct_snode "" n_hd in
@@ -1199,12 +1210,13 @@ module SemanticsDomain =
         let list = 
           let l, e = "l", "e" in
           let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" l in
-          let ve = Top in
+          let ve = TETop in
           (l, e), (rl, ve)
         in
         let tr = Top in
         let t =
-          Table (construct_table (create_singleton_trace_loc var_h) (Lst list, tr)) in
+          Table (construct_table (create_singleton_trace_loc var_h) 
+                   ((init_VE_v (Lst list)), (init_VE_v tr))) in
         t
       in
       let n_tl = construct_vnode env "List.tl" [] in
@@ -1218,18 +1230,19 @@ module SemanticsDomain =
         let list1 = 
           let l, e = "l", "e" in
           let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" l in
-          let ve = Top in
+          let ve = TETop in
           (l, e), (rl, ve)
         in
         let list2 = 
           let l, e = "l'", "e'" in
           let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" l |> op_R l var_len "1" Minus true in
           (* let re = replace_R (rl |> op_R "" "cur_v" var_e Eq true) "cur_v" e in *)
-          let ve = Top in
+          let ve = TETop in
           (l, e), (rl, ve)
         in
         let t =
-          Table (construct_table (create_singleton_trace_loc var_t) (Lst list1, Lst list2)) in
+          Table (construct_table (create_singleton_trace_loc var_t) 
+                   ((init_VE_v (Lst list1)), (init_VE_v (Lst list2)))) in
         t
       in
       let n_cons = construct_vnode env "List.cons" [] in
@@ -1239,25 +1252,27 @@ module SemanticsDomain =
            { v: Int List (l1, e1) | l': [| l1=l+1; |] e': e ⊔ zc |] }
          *)
         let var_c = "zc" in
-        let ve = Top in
+        let ve = TETop in
         let var_len, var_e = "l", "e" in
         (* let var_i = "i" in *)
         let list1 = 
           let l, e = "l", "e" in
           let rl = replace_R (top_R Plus |> op_R "" "cur_v" "0" Ge true) "cur_v" l in
-          let ve = Top in
+          let ve = TETop in
           (l, e), (rl, ve)
         in
         let var_l = "xs" in
         let list2 = 
           let l, e = "l'", "e'" in
           let rl = replace_R (top_R Plus |> op_R "" "cur_v" "1" Ge true) "cur_v" l |> op_R l var_len "1" Plus true in
-          let ve = Top in
+          let ve = TETop in
           (l, e), (rl, ve)
         in
         let t =
-          let t' = Table (construct_table (create_singleton_trace_loc var_l) (Lst list1, Lst list2)) in
-          Table (construct_table (create_singleton_trace_loc var_c) (ve, t')) in
+          let t' = Table (construct_table (create_singleton_trace_loc var_l) 
+                            ((init_VE_v (Lst list1)), (init_VE_v (Lst list2)))) in
+          Table (construct_table (create_singleton_trace_loc var_c) 
+                   (ve, (init_VE_v t'))) in
         t
       in
       let m' = 

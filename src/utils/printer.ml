@@ -117,37 +117,56 @@ let rec shape_value = function
     | Int _ -> "Int"
     | Bool _ -> "Bool"
     | Unit _ -> "Unit")
-  | Table t -> let (_, (vi,vo)) = get_full_table_T t in 
-    (shape_value vi)^"->"^(shape_value vo)
+  | Table t -> let (_, (vei,veo)) = get_full_table_T t in 
+    (shape_value_and_eff vei)^"->"^(shape_value_and_eff veo)
   | Tuple u -> if List.length u = 0 then "Unit"
     else 
       let rec shape_tuple = function
       | [] -> ""
-      | [it] -> shape_value it
-      | hd :: tl -> (shape_value hd) ^ "*" ^ (shape_tuple tl) in
+      | [it] -> shape_value_and_eff it
+      | hd :: tl -> (shape_value_and_eff hd) ^ "*" ^ (shape_tuple tl) in
       shape_tuple u
   | Ary _ -> "Array"
   | Lst _ -> "List"
+and shape_eff = function 
+  | EffBot -> "Bot"
+  | EffTop -> "Top"
+  | Effect r -> (match r with 
+                | Int _ -> "Int"
+                | Bool _ -> "Bool"
+                | Unit _ -> "Unit")
+and shape_value_and_eff = function 
+  | TEBot -> "Bot"
+  | TETop -> "Top"
+  | TypeAndEff (v, e) -> "("^ (shape_value v) ^","^ (shape_eff e) ^ ")"
 
 let rec pr_value ppf v = match v with
   | Bot -> Format.fprintf ppf "_|_"
   | Top -> Format.fprintf ppf "T"
   | Relation r -> pr_relation ppf r
-  | Table t -> print_table t ppf pr_value
+  | Table t -> print_table t ppf pr_value_and_eff
   | Tuple u -> pr_tuple ppf u
   | Ary ary -> pr_ary ppf ary
   | Lst lst -> pr_lst ppf lst
+and pr_value_and_eff ppf ve = match ve with
+  | TEBot -> Format.fprintf ppf "_|_"
+  | TETop -> Format.fprintf ppf "T"
+  | TypeAndEff (v, e) -> Format.fprintf ppf "@[<1>(@ v:@ %a, eff:@ %a)@]" pr_value v pr_eff e
+and pr_eff ppf e = match e with 
+  | EffBot -> Format.fprintf ppf "_|_"
+  | EffTop -> Format.fprintf ppf "T"
+  | Effect r -> pr_relation ppf r
 and pr_lst ppf lst =
     let (l,e), (rl, ve) = lst in
-    Format.fprintf ppf "@[<1>{@ cur_v:@ %s List (%s, %s)@ |@ len:@ %a,@ item:@ %a@ }@]" (shape_value ve) l e pr_agg_val rl pr_value ve
+    Format.fprintf ppf "@[<1>{@ cur_v:@ %s List (%s, %s)@ |@ len:@ %a,@ item:@ %a@ }@]" (shape_value_and_eff ve) l e pr_agg_val rl pr_value_and_eff ve
 and pr_tuple ppf u = 
   if List.length u = 0 then Format.fprintf ppf "@[<1>Unit@]"
   else 
     let rec print_list ppf = function
     | [] -> ()
-    | [it] -> pr_value ppf it
+    | [it] -> pr_value_and_eff ppf it
     | hd :: tl -> 
-    Format.fprintf ppf "@[<1>%a,@ %a @]" pr_value hd print_list tl in
+    Format.fprintf ppf "@[<1>%a,@ %a @]" pr_value_and_eff hd print_list tl in
     print_list ppf u
 
 let sort_list (m: exec_map_t) =
@@ -166,7 +185,7 @@ and pr_exec_rows ppf = function
   | [row] -> Format.fprintf ppf "%a\n" pr_exec_row row
   | row :: rows -> Format.fprintf ppf "%a@\n@\n%a" pr_exec_row row pr_exec_rows rows
 and pr_exec_row ppf (n, v) =
-  Format.fprintf ppf "@[<2>%a |->@ @[<2>%a@]@]" pr_node n pr_value v
+  Format.fprintf ppf "@[<2>%a |->@ @[<2>%a@]@]" pr_node n pr_value_and_eff v
 
 let print_exec_map m = Format.fprintf Format.std_formatter "%a@?" pr_exec_map m
 
@@ -195,7 +214,7 @@ let pr_pre_def_vars ppf =
 let print_last_node m = 
   let pr_map_lst_node ppf m = let lst = (sort_list m) in 
     let lst_n, v = List.nth lst (List.length lst - 1) in
-    Format.fprintf ppf "@[<2>%a |->@ @[<2>%a@]@]\n\n" pr_node lst_n pr_value v
+    Format.fprintf ppf "@[<2>%a |->@ @[<2>%a@]@]\n\n" pr_node lst_n pr_value_and_eff v
   in
   Format.fprintf Format.std_formatter "%a@?" pr_map_lst_node m
 
@@ -203,7 +222,7 @@ let print_node_by_label m l =
   let pr_map_nst_node ppf m = let lst = (sort_list m) in
   try
     let nst_n, v = List.nth lst (l + 4) in
-    Format.fprintf ppf "@[<2>%a |->@ @[<2>%a@]@]\n\n" pr_node nst_n pr_value v
+    Format.fprintf ppf "@[<2>%a |->@ @[<2>%a@]@]\n\n" pr_node nst_n pr_value_and_eff v
   with Failure s -> ()
   in
   Format.fprintf Format.std_formatter "%a@?" pr_map_nst_node m

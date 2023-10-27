@@ -52,8 +52,27 @@ let equal_V e = measure_call "equal_V" (equal_V e)
 let proj_V e = measure_call "proj_V" (proj_V e)
 let sat_equal_V e = measure_call "sat_equal_V" (sat_equal_V e)
 
-    
-let rec prop (v1: value_t) (v2: value_t): (value_t * value_t) = match v1, v2 with
+
+let rec prop (ve1: value_te) (ve2: value_te): (value_te * value_te) = 
+    match ve1, ve2 with
+    | TETop, TEBot -> TETop, TETop 
+    | TypeAndEff _, TETop -> TETop, TETop
+    | TypeAndEff (v,e), TEBot -> 
+       let (v1, v2) = prop_v v Bot in 
+       (TypeAndEff (v1, e)), (TypeAndEff (v2, e))
+    | TypeAndEff (v1, e1), TypeAndEff(v2, e2) -> 
+       let v1', v2' = prop_v v1 v2 in
+       let e1', e2' = prop_eff e1 e2 in 
+       if v2' = Top then (TETop, TETop)
+       else (TypeAndEff (v1', e1'), TypeAndEff (v2', e2'))
+and prop_eff e1 e2 = match e1, e2 with
+    | EffTop, _ -> EffTop, EffTop
+    | _, EffTop -> e1, EffTop
+    | _, EffBot -> e1, e1 
+    | EffBot, _ -> EffBot, EffBot
+    | Effect r1, Effect r2 -> if leq_R r1 r2 then e1, e2
+                             else e1, Effect (join_R r1 r2)
+and prop_v (v1: value_tt) (v2: value_tt): (value_tt * value_tt) = match v1, v2 with
     | Top, Bot | Table _, Top -> Top, Top
     | Table t, Bot ->
         let t' = init_T (dx_T v1) in
