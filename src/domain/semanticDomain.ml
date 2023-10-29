@@ -248,6 +248,10 @@ module SemanticsDomain =
      ********************************
      *)
     let init_VE_v v = TypeAndEff (v, EffBot)
+    let destruct_VE = function 
+      | TEBot -> Bot, EffBot
+      | TypeAndEff (v, e) -> v, e
+      | TETop -> Top, EffTop 
     let rec alpha_rename_V v prevar var = match v with
       | Relation r -> Relation (alpha_rename_R r prevar var)
       | Table t -> Table (alpha_rename_T alpha_rename_VE t prevar var)
@@ -541,7 +545,7 @@ module SemanticsDomain =
     and proj_V v vars =
       match v with
       | Relation r -> Relation (proj_R r vars)
-      | Table t -> Table (proj_T proj_VE get_list_length_item_V t vars)
+      | Table t -> Table (proj_T proj_VE get_list_length_item_VE t vars)
       | Ary ary -> Ary (proj_Ary ary vars)
       | Lst lst -> Lst (proj_Lst lst vars)
       | Tuple u -> Tuple (proj_Tuple u vars)
@@ -593,9 +597,17 @@ module SemanticsDomain =
       | Bot | Top as v -> v
       | Lst lst -> extrac_item_Lst vars lst
       | _ -> raise (Invalid_argument "item inside either a list or an array")
+    and extrac_item_VE vars = function
+      | TEBot | TETop as ve -> ve
+      | TypeAndEff ((Lst lst), e) -> TypeAndEff ((extrac_item_Lst vars lst), e)
+      | _ -> raise (Invalid_argument "item inside either a list or an array")
     and reduce_len_V len le_lst = function
       | Bot | Top as v -> v
       | Lst lst -> Lst (reduce_len_Lst len le_lst lst)
+      | _ -> raise (Invalid_argument "reduce length either a list or an array")
+    and reduce_len_VE len le_lst = function
+      | TEBot | TETop as v -> v
+      | TypeAndEff ((Lst lst), e) -> TypeAndEff ((Lst (reduce_len_Lst len le_lst lst)), e)
       | _ -> raise (Invalid_argument "reduce length either a list or an array")
     and list_cons_V f v1 v2 = match v1, v2 with
       | Bot, _ | _, Bot -> Bot
@@ -616,7 +628,7 @@ module SemanticsDomain =
       | Int -> Relation (bot_R Plus)
       | Bool -> Relation (bot_R Ge)
       | Unit -> Tuple []
-    and get_list_length_item_V = function
+    and get_list_length_item_VE = function
       | TypeAndEff (Lst lst, _) -> get_list_length_item_Lst lst
       | _ -> []
     and only_shape_V = function
@@ -626,6 +638,9 @@ module SemanticsDomain =
       | _ -> false
     and cons_temp_lst_V t = function
       | Lst lst -> Lst (cons_temp_lst_Lst t lst)
+      | _ -> raise (Invalid_argument "Temp list construct should be item :: lst")
+    and cons_temp_lst_VE t = function
+      | TypeAndEff ((Lst lst), e) -> TypeAndEff ((Lst (cons_temp_lst_Lst t lst)), e)
       | _ -> raise (Invalid_argument "Temp list construct should be item :: lst")
     and item_shape_V te t = match te, t with
       | Lst lste, Lst lst ->
@@ -649,11 +664,20 @@ module SemanticsDomain =
     and is_tuple_V = function
       | Tuple u -> true
       | _ -> false
+    and is_tuple_VE = function
+      | TypeAndEff ((Tuple u), _) -> true
+      | _ -> false
     and get_tuple_list_V = function
       | Tuple u -> get_tuple_list u
       | _ -> raise (Invalid_argument "extract tuple should be a tuple")
+    and get_tuple_list_VE = function
+      | TypeAndEff ((Tuple u), _) -> get_tuple_list u
+      | _ -> raise (Invalid_argument "extract tuple should be a tuple")
     and pattern_empty_lst_V = function
       | Lst lst -> Lst (pattern_empty_Lst lst)
+      | _ -> raise (Invalid_argument "pattern x::[] should give a list")
+    and pattern_empty_lst_VE = function
+      | TypeAndEff ((Lst lst), e)  -> TypeAndEff ((Lst (pattern_empty_Lst lst)), e)
       | _ -> raise (Invalid_argument "pattern x::[] should give a list")
     and rename_lambda_V v = match v with
       | Lst lst -> Lst (rename_lambda_Lst lst)
@@ -985,16 +1009,21 @@ module SemanticsDomain =
          TypeAndEff ((Ary ary1), eff1), TypeAndEff ((Ary (join_Ary ary1 ary2)), join_Eff eff1 eff2)
       | _, _ -> vee1, join_VE vee1 vee2 in
       (vars1, (rl1', vee1')), (vars2, (rl2', vee2'))
-    and cons_temp_lst_Lst v ((l,e) as vars, (rl,vee)) = 
+    and cons_temp_lst_Lst ve ((l,e) as vars, (rl,vee)) = 
       let eff' = match extract_eff vee with 
         | (Effect _) as e  -> e
         | _ -> EffBot
       in
+      let v, _ = match ve with
+        | TEBot -> Bot, EffBot
+        | TypeAndEff (v, e) -> v, e
+        | TETop -> Top, EffTop 
+      in 
       let vee' = if is_bot_R rl then bot_shape_VE vee else 
-      (match v with
-      | Relation r -> let re' = alpha_rename_R r "cur_v" e in
-        TypeAndEff ((Relation re'), eff')
-      | _ -> TypeAndEff (v, eff'))
+                   (match v with
+                    | Relation r -> let re' = alpha_rename_R r "cur_v" e in
+                                   TypeAndEff ((Relation re'), eff')
+                    | _ -> TypeAndEff (v, eff'))
       in (vars, (rl, vee'))
     and item_shape_Lst (_, (_, vee)) (vars, (rl, _)) =
       let vee' = bot_shape_VE vee in
@@ -1075,7 +1104,7 @@ module SemanticsDomain =
     let array_M env m = 
       let n_make = construct_vnode env "Array.make" [] in
       let s_make = construct_snode "" n_make in
-      let t_make = (* make *)
+      let te_make = (* make *)
         (* make |-> zm: {v:int | v >= 0} -> ex: {v:int | top} -> 
            {v: Int Array (l, e) | len: [| l=zm; zm>=0; |] item: [| l=zm; zm>=0; e = ex; |]} *)
         let var_l = "zm" in
@@ -1095,11 +1124,11 @@ module SemanticsDomain =
                             ((init_VE_v (Relation rm)), (init_VE_v (Ary ary)))) in
           Table (construct_table (create_singleton_trace_loc var_l) 
                    ((init_VE_v (Relation rl)), (init_VE_v t'))) in
-        t
+        init_VE_v t
       in
       let n_len = construct_vnode env "Array.length" [] in
       let s_len = construct_snode "" n_len in
-      let t_len = (* len *)
+      let te_len = (* len *)
         (* len |-> zl: { v: Int Array (l, e) | len: [| l>=0; |] item: [| true; |] } 
            -> { v: Int | [| v=l |] } *)
         let var_l = "zl" in
@@ -1110,15 +1139,17 @@ module SemanticsDomain =
           let rl = top_R Plus |> op_R "" var_len "0" Ge true in
           let re = top_R Plus in
           (l, e), (rl, re)
-          in
+        in
         (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
         let rlen = equal_R (top_R Plus) "l" in
-        Table (construct_table (create_singleton_trace_loc var_l) 
+        let t = Table (construct_table (create_singleton_trace_loc var_l) 
                  ((init_VE_v (Ary ary)), (init_VE_v (Relation rlen))))
+        in
+        init_VE_v t
       in
       let n_get = construct_vnode env "Array.get" [] in
       let s_get = construct_snode "" n_get in
-      let t_get = (* get *)
+      let te_get = (* get *)
         (* get |-> zg: { v: Int Array (l, e) | l: [| l>=0; |] e: [| true; |] } 
             -> zi: {v: int | 0 <= v < l} -> {v: int | v = e; }  *)
         let var_l = "zg" in
@@ -1139,11 +1170,11 @@ module SemanticsDomain =
                             ((init_VE_v (Relation rm)), (init_VE_v (Relation rr)))) in
           Table (construct_table (create_singleton_trace_loc var_l) 
                    ((init_VE_v (Ary ary)), (init_VE_v t'))) in
-        t
+        init_VE_v t
       in
       let n_set = construct_vnode env "Array.set" [] in
       let s_set = construct_snode "" n_set in
-      let t_set = (* set *)
+      let te_set = (* set *)
         (* set |-> zs: { v: Int Array (l, e) | len: [| l>=0; |] item: [| true; |] } -> 
            zi: {v: int | 0 <= v < l} -> ex: {v: int | top } -> unit *)
         let var_l = "zs" in
@@ -1168,11 +1199,11 @@ module SemanticsDomain =
                              ((init_VE_v (Relation rm)), (init_VE_v t'))) in
           Table (construct_table (create_singleton_trace_loc var_l) 
                    ((init_VE_v (Ary ary)), (init_VE_v t''))) in
-        t
+        init_VE_v t
       in
       let m' = 
-        m |> NodeMap.add s_make t_make |> NodeMap.add s_len t_len |> NodeMap.add s_get t_get
-      |> NodeMap.add s_set t_set
+        m |> NodeMap.add s_make te_make |> NodeMap.add s_len te_len |> NodeMap.add s_get te_get
+      |> NodeMap.add s_set te_set
       in
       let env' = 
         env |> VarMap.add "Array.make" (n_make, false) |> VarMap.add "Array.length" (n_len, false) |> VarMap.add "Array.get" (n_get, false)
@@ -1183,7 +1214,7 @@ module SemanticsDomain =
     let list_M env m = 
       let n_len = construct_vnode env "List.length" [] in
       let s_len = construct_snode "" n_len in
-      let t_len = (* len *)
+      let te_len = (* len *)
         (* len |-> zl: { v: 'a List (l, e) | len: [| l>=0; |] item: true } 
            -> { v: Int | [| v=l |] } *)
         let var_l = "zl" in
@@ -1197,12 +1228,13 @@ module SemanticsDomain =
         in
         (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
         let rlen = equal_R (top_R Plus) "l" in
-        Table (construct_table (create_singleton_trace_loc var_l) 
+        let t = Table (construct_table (create_singleton_trace_loc var_l) 
                  ((init_VE_v (Lst list)), (init_VE_v (Relation rlen))))
+        in init_VE_v t
       in
       let n_hd = construct_vnode env "List.hd" [] in
       let s_hd = construct_snode "" n_hd in
-      let t_hd = (* hd *)
+      let te_hd = (* hd *)
         (* hd |-> zh: { v: 'a List (l, e) | l: [| l>=0; |] e: true } 
            -> true  *)
         let var_h = "zh" in
@@ -1217,11 +1249,11 @@ module SemanticsDomain =
         let t =
           Table (construct_table (create_singleton_trace_loc var_h) 
                    ((init_VE_v (Lst list)), (init_VE_v tr))) in
-        t
+        init_VE_v t
       in
       let n_tl = construct_vnode env "List.tl" [] in
       let s_tl = construct_snode "" n_tl in
-      let t_tl = (* tl *)
+      let te_tl = (* tl *)
         (* tl |-> zt: { v: Int List (l, e) | l: [| l>=0; |] e: true } -> 
            { v: Int List (l1, e1) | l1: [| l1=l-1; |] e1: e } *)
         let var_t = "zt" in
@@ -1243,11 +1275,11 @@ module SemanticsDomain =
         let t =
           Table (construct_table (create_singleton_trace_loc var_t) 
                    ((init_VE_v (Lst list1)), (init_VE_v (Lst list2)))) in
-        t
+        init_VE_v t
       in
       let n_cons = construct_vnode env "List.cons" [] in
       let s_cons = construct_snode "" n_cons in
-      let t_cons = (* cons *)
+      let te_cons = (* cons *)
         (* cons |-> zc: true -> xs: { v: Int List (l, e) | l: [| l>=0; |] e: true } -> 
            { v: Int List (l1, e1) | l': [| l1=l+1; |] e': e ⊔ zc |] }
          *)
@@ -1273,11 +1305,11 @@ module SemanticsDomain =
                             ((init_VE_v (Lst list1)), (init_VE_v (Lst list2)))) in
           Table (construct_table (create_singleton_trace_loc var_c) 
                    (ve, (init_VE_v t'))) in
-        t
+        init_VE_v t
       in
       let m' = 
-        m |> NodeMap.add s_hd t_hd |> NodeMap.add s_len t_len |> NodeMap.add s_tl t_tl
-      |> NodeMap.add s_cons t_cons
+        m |> NodeMap.add s_hd te_hd |> NodeMap.add s_len te_len |> NodeMap.add s_tl te_tl
+      |> NodeMap.add s_cons te_cons
       in
       let env' = 
         env |> VarMap.add "List.hd" (n_hd, false) |> VarMap.add "List.length" (n_len, false) |> VarMap.add "List.tl" (n_tl, false)
