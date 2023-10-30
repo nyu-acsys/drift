@@ -489,7 +489,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
           | Some v' -> if false && widen then wid_V v' v else (*join_V v'*) v) m*)
         NodeMap.add n v m
     in
-    let find n m = NodeMap.find_opt n m |> Opt.get_or_else Bot in
+    let find n m = NodeMap.find_opt n m |> Opt.get_or_else TEBot in
     match term with
     | Const (c, l) ->
         (* (if !debug then
