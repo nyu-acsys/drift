@@ -258,9 +258,9 @@ module SemanticsDomain =
       | Ary ary -> Ary (alpha_rename_Ary ary prevar var)
       | Lst lst -> Lst (alpha_rename_Lst lst prevar var)
       | _ -> v
-    and alpha_rename_VE v prevar var = match v with 
+    and alpha_rename_VE ve prevar var = match ve with 
       | TypeAndEff (v, e) -> TypeAndEff (alpha_rename_V v prevar var, alpha_rename_Eff e prevar var)
-      | _ -> v
+      | _ -> ve
     and init_V_c = function
       | IntList lst -> if List.length lst = 0 then Lst (init_Lst_c ())
                       else Lst (const_Lst lst)

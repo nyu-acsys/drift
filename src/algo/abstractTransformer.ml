@@ -445,42 +445,53 @@ let rec list_var_item eis sx (cs: trace_t) m env nlst left_or_right lst_len =
         m', env'
     | _ -> raise (Invalid_argument "Pattern should only be either constant, variable, and list cons")
 
-let prop_predef l v0 v = 
+
+let rec prop_predef l ve0 ve =
+  match ve0, ve with 
+  | TypeAndEff (v0, _), TypeAndEff (v, e) -> TypeAndEff ((prop_predef_v l v0 v), e)
+  | _, _ -> ve
+and prop_predef_v l v0 v = 
     let l = l |> name_of_node |> create_singleton_trace_loc in
-    let rec alpha_rename v0 v = 
+    let rec alpha_rename ve0 ve = 
+      match ve0, ve with
+      | (TypeAndEff (v0, e0)), (TypeAndEff (v, e)) -> TypeAndEff ((alpha_rename_v v0 v), e)
+      | _, _ -> ve
+    and alpha_rename_v v0 v = 
         match v0, v with
         | Table t0, Table t -> 
             if table_isempty t || table_isempty t0  then Table t else
-            let trace0, (vi0, vo0) = get_full_table_T t0 in
-            let trace, (vi, vo) = get_full_table_T t in
-            let vo' = alpha_rename vo0 (alpha_rename_V vo (get_trace_data trace) (get_trace_data trace0)) in
-            let t' = construct_table trace0 (vi, vo') in
+            let trace0, (vei0, veo0) = get_full_table_T t0 in
+            let trace, (vei, veo) = get_full_table_T t in
+            let veo' = alpha_rename veo0 
+                         (alpha_rename_VE veo (get_trace_data trace) (get_trace_data trace0)) 
+            in
+            let t' = construct_table trace0 (vei, veo') in
             Table t'
-        | _, _ -> v
+        | _, _ -> v      
     in
     match v0, v with
     | Table t0, Table t -> 
         let cs0, _ = get_full_table_T t0 in
         let vpdef = Table (construct_table cs0 (get_table_by_cs_T cs0 t)) in
         let pdefvp = ref (construct_table cs0 (get_table_by_cs_T cs0 t)) in
-        let t' = table_mapi (fun cs (vi, vo) -> 
-            if cs = cs0 || (not (is_subtrace l cs)) then vi, vo else
-            let vs = Table (construct_table cs (vi, vo)) in
-            let v' = vs |> alpha_rename v0 in
-            let vt, v'' = prop vpdef v' in
-            pdefvp := join_V vt (Table !pdefvp) |> get_table_T;
-            let vi', vo' = match alpha_rename vs v'' with
-                | Table t'' -> let _, (vi, vo) = get_full_table_T t'' in (vi, vo)
+        let t' = table_mapi (fun cs (vei, veo) -> 
+            if cs = cs0 || (not (is_subtrace l cs)) then vei, veo else
+            let vs = Table (construct_table cs (vei, veo)) in
+            let v' = vs |> alpha_rename_v v0 in
+            let vt, v'' = prop_v vpdef v' in
+            pdefvp := (match join_V vt (Table !pdefvp) with 
+                      | Table t -> t 
+                      | _ -> raise (Invalid_argument "Should be a table"));
+            let vei', veo' = match alpha_rename_v vs v'' with
+                | Table t'' -> let _, (vei, veo) = get_full_table_T t'' in (vei, veo)
                 | _ -> raise (Invalid_argument "Expect predefined functions as table")
-            in vi', vo') t
+            in vei', veo') t
         in Table (
-            let _, vio = get_full_table_T !pdefvp in
-            t' |> update_table cs0 vio
+            let _, veio = get_full_table_T !pdefvp in
+            t' |> update_table cs0 veio
         )
     | _, _ -> v
 
-
-    
 let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion: bool) (is_rec: bool) (m:exec_map_t) =
     let n = loc term |> construct_enode env |> construct_snode sx in
     let update widen n v m =
@@ -531,7 +542,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion:
         let (nx, recnb) = VarMap.find x env in
         let envx, lx, lcs = get_vnode nx in
         let nx = construct_snode sx nx in
-        let tx = let tx' = find nx m in
+        let tex = let tex' = find nx m in
             if is_Relation tx' then 
               if sat_equal_V tx' x then tx'
               else equal_V (forget_V x tx') x (* M<E(x)>[v=E(x)] *) 
