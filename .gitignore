@@ -48,3 +48,9 @@ tests/benchmark/*.json
 
 
 nohup.out
+scripts/draft/base-drifttoolinfo/build/**/*
+scripts/draft/base-drifttoolinfo/dist/**/*
+scripts/draft/base-drifttoolinfo/drifttoolinfo/__pycache__
+scripts/draft/base-drifttoolinfo/drifttoolinfo.egg-info
+
+scripts/draft/results/**/*
