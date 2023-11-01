@@ -491,7 +491,7 @@ and prop_predef_v l v0 v =
         )
     | _, _ -> v
 
-let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value_t) (assertion: bool) (is_rec: bool) (m:exec_map_t) =
+let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value_tt) (assertion: bool) (is_rec: bool) (m:exec_map_t) =
     let n = loc term |> construct_enode env |> construct_snode sx in
     let update widen n v m =
       (*NodeMap.update n (function
@@ -500,6 +500,11 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
         NodeMap.add n v m
     in
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else TEBot in
+    let find_ra q e = StateMap.find_opt q e |> Opt.get_or_else (bot_R Plus) in
+    let extract_ec te = match (extract_eff te) with
+      | EffBot | EffTop -> raise (Invalid_argument "An effect should be observable at this stage of the analysis")
+      | Effect e -> e
+    in   
     match term with
     | Const (c, l) ->
         (* (if !debug then
@@ -510,14 +515,17 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
         end
         ); *)
         (* if optmization m n find then m else *)
-        let t = find n m in (* M[env*l] *)
-        let t' =
+        let te = find n m in (* M[env*l] *)
+        let update_t t =  
           if leq_V ae t then t
           else
             let ct = init_V_c c in
             let t' = join_V t ct in
             (stren_V t' ae)
         in
+        let update_e eff = join_Eff eff (stren_Eff (Effect ec) ae) in
+        let te' = temap (update_t, update_e) te in
+              
         (* (if l = "11" then
         begin
             Format.printf "\n<=== Const ===> %s\n" l;
@@ -529,7 +537,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
             Format.printf "\n";
         end
         ); *)
-        m |> update false n t' (* {v = c ^ aE}*)
+        m |> update false n te' (* {v = c ^ aE}*)
     | Var (x, l) ->
         (* (if !debug then
         begin
@@ -541,34 +549,33 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
         let (nx, recnb) = VarMap.find x env in
         let envx, lx, lcs = get_vnode nx in
         let nx = construct_snode sx nx in
-        let tex = let tex' = find nx m in
-            if is_Relation tx' then 
-              if sat_equal_V tx' x then tx'
-              else equal_V (forget_V x tx') x (* M<E(x)>[v=E(x)] *) 
-            else tx'
+        let tex = find nx m 
+                  |> temap ((fun tx -> if is_Relation tx then
+                                      if sat_equal_V tx x then tx
+                                      else equal_V (forget_V x tx) x
+                                    else tx),
+                            (fun _ -> Effect ec))
         in
-        let t = find n m in (* M[env*l] *)
+        let te = find n m in  (* M[env*l] *)
         (* (if l = "10" || l = "14" then
-        begin
-            Format.printf "\n<=== Prop Var %s %b ===> %s\n" x recnb lx;
-            Format.printf "cs %s, %s \n" varcs lcs;
-            pr_value Format.std_formatter tx;
-            Format.printf "\n<<~~~~>> %s\n" l;
-            pr_value Format.std_formatter t;
-            Format.printf "\n<<~~ae~~>> %s\n" l;
-            pr_value Format.std_formatter ae;
-            Format.printf "\n";
-        end
-        ); *)
-        let tx', t' =
-            (* if optmization m n find && optmization m nx find then tx, t else *)
-            if List.mem lx !pre_def_func then
-                let tx0 = find nx m0 in
-                let tx = if !trace_len > 0 then prop_predef l tx0 tx else tx in
-                prop tx t
-            else
-                (* if recnb then prop tx t else *)
-                prop_scope envx env sx m tx t
+           begin
+           Format.printf "\n<=== Prop Var %s %b ===> %s\n" x recnb lx;
+           Format.printf "cs %s, %s \n" varcs lcs;
+           pr_value Format.std_formatter tx;
+           Format.printf "\n<<~~~~>> %s\n" l;
+           pr_value Format.std_formatter t;
+           Format.printf "\n<<~~ae~~>> %s\n" l;
+           pr_value Format.std_formatter ae;
+           Format.printf "\n";
+           end
+           ); *)
+        let tex', te' = 
+          if List.mem lx !pre_def_func then
+            let tex0 = find nx m0 in
+            let tex = if !trace_len > 0 then prop_predef l tex0 tex else tex in
+            prop tex te
+          else 
+            prop_scope envx env sx m tex te
         in
         (* (if l = "10" || l = "14" then
         begin
@@ -579,7 +586,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
             Format.printf "\n";
         end
         ); *)
-        m |> update false nx tx' |> update false n (stren_V t' ae) (* t' ^ ae *)
+        m |> update false nx tex' |> update false n (stren_VE te' ae) (* t' ^ ae *)
     | App (e1, e2, l) ->
         (if !debug then
         begin
@@ -588,84 +595,89 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
             Format.printf "\n";
         end
         );
-        let m0 = step e1 env sx cs ae assertion is_rec m in
+        let m0 = step e1 env sx cs ec ae assertion is_rec m in
         let n1 = loc e1 |> construct_enode env |> construct_snode sx in
-        let t0 = find n1 m0 in
-        let t1, m1 =
-          match t0 with
-          | Bot when false ->
-              let te =
+        let te0 = find n1 m0 in
+        let te1, m1 =
+          match te0 with
+          | TEBot when false ->
+              let t =
                 fresh_z () |> create_loc_token |> update_call_site cs |> init_T
               in
-              let t1 = Table te in
-              t1, update false n1 t1 m0
-          | _ -> t0, m0
+              let te1 = Table t |> init_VE_v in
+              te1, update false n1 te1 m0
+          | _ -> te0, m0
         in
-        if t1 <> Bot && not @@ is_table t1 then
-          (Format.printf "Error at location %s: expected function, but found %s.\n"
-             (loc e1) (string_of_value t1);
-           m1 |> update false n Top)
-        else
-          let m2 = step e2 env sx cs ae assertion is_rec m1 in
-          let n2 = loc e2 |> construct_enode env |> construct_snode sx in
-          let t2 = find n2 m2 in (* M[env*l2] *)
-          (match t1, t2 with
-          | Bot, _ | _, Bot -> m2
-          | _, Top -> m2 |> update false n Top
-          | _ ->
-              let t = find n m2 in
-              let cs =
-                if !trace_len > 0 then
-                  if is_rec && is_func e1 then cs
-                  else loc e1 |> name_of_node |> create_loc_token |> update_call_site cs
-                else dx_T t1
-              in
-              let t_temp = Table (construct_table cs (t2, t)) in
-              (* let var1, var2 = cs in
-                 (Format.printf "\nis_rec? %b\n") is_rec;
-                 (Format.printf "\nAPP cs at %s: %s, %s\n") (loc e1) var1 var2; *)
-              (* (if loc e1 = "20" then
-                begin
-                 Format.printf "\n<=== Prop APP ===> %s\n" (loc e1);
-                 pr_value Format.std_formatter t1;
-                 Format.printf "\n<<~~~~>> %s\n" l;
-                 pr_value Format.std_formatter t_temp;
-                 Format.printf "\n";
-                 end
-                 ); *)
-              let t1', t0 = 
-                (* if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then t1, t_temp else *)
-                prop t1 t_temp
-              in
-              (* (if loc e1 = "20" then
-                 begin
-                 Format.printf "\nRES for prop:\n";
-                 pr_value Format.std_formatter t1';
-                 Format.printf "\n<<~~~~>>\n";
-                 pr_value Format.std_formatter t0;
-                 Format.printf "\n";
-                 end
-                 ); *)
-              let t2', raw_t' = 
-                (* if is_array_set e1 then
-                   let t2', t' = io_T cs t0 in
-                   let elt = proj_V (get_second_table_input_V t') [] in
-                   join_for_item_V t2' elt, t'
+        if (te1 = TEBot) then m1
+        else             
+          if not @@ is_table (extract_v te1) then
+            (Format.printf "Error at location %s: expected function, but found %s.\n"
+               (loc e1) (string_of_value_and_eff te1);
+             m1 |> update false n TETop)
+          else
+            let ec' = extract_ec te1 in            
+            let m2 = step e2 env sx cs ec' ae assertion is_rec m1 in
+            let n2 = loc e2 |> construct_enode env |> construct_snode sx in
+            let te2 = find n2 m2 in (* M[env*l2] *)
+            (match te1, te2 with
+             | TEBot, _ | _, TEBot -> m2
+             | _, TETop -> m2 |> update false n TETop
+             | _ ->
+                let te = find n m2 in
+                let cs =
+                  if !trace_len > 0 then
+                    if is_rec && is_func e1 then cs
+                    else loc e1 |> name_of_node |> create_loc_token |> update_call_site cs
+                  else dx_T te1
+                in
+                let te_temp = Table (construct_table cs (te2, te)) 
+                            |> init_VE_v 
+                in
+                (* let var1, var2 = cs in
+                   (Format.printf "\nis_rec? %b\n") is_rec;
+                   (Format.printf "\nAPP cs at %s: %s, %s\n") (loc e1) var1 var2; *)
+                (* (if loc e1 = "20" then
+                   begin
+                   Format.printf "\n<=== Prop APP ===> %s\n" (loc e1);
+                   pr_value Format.std_formatter t1;
+                   Format.printf "\n<<~~~~>> %s\n" l;
+                   pr_value Format.std_formatter t_temp;
+                   Format.printf "\n";
+                   end
+                   ); *)
+                let te1', te0 = 
+                  (* if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then t1, t_temp else *)
+                  prop te1 te_temp
+                in
+                (* (if loc e1 = "20" then
+                   begin
+                   Format.printf "\nRES for prop:\n";
+                   pr_value Format.std_formatter t1';
+                   Format.printf "\n<<~~~~>>\n";
+                   pr_value Format.std_formatter t0;
+                   Format.printf "\n";
+                   end
+                   ); *)
+                let te2', raw_te' = 
+                  (* if is_array_set e1 then
+                     let t2', t' = io_T cs t0 in
+                     let elt = proj_V (get_second_table_input_V t') [] in
+                     join_for_item_V t2' elt, t'
+                     else  *)
+                  io_T cs te0
+                in
+                let te' = get_env_list env sx m |> proj_VE raw_te' in
+                let res_m = m2 |> update false n1 te1' |> update false n2 te2' |> update false n (stren_VE te' ae) in
+                (* if is_array_set e1 && only_shape_V t2' = false then
+                   let nx = VarMap.find (get_var_name e2) env in
+                   let envx, lx,_ = get_vnode nx in
+                   let nx = construct_snode sx nx in
+                   let tx = find nx m in
+                   let tx', t2' = prop_scope envx env sx res_m t2' tx in
+                   res_m |> NodeMap.add n2 t2' |> NodeMap.add nx tx'
                    else  *)
-                io_T cs t0
-              in
-              let t' = get_env_list env sx m |> proj_V raw_t' in
-              let res_m = m2 |> update false n1 t1' |> update false n2 t2' |> update false n (stren_V t' ae) in
-              (* if is_array_set e1 && only_shape_V t2' = false then
-                 let nx = VarMap.find (get_var_name e2) env in
-                 let envx, lx,_ = get_vnode nx in
-                 let nx = construct_snode sx nx in
-                 let tx = find nx m in
-                 let tx', t2' = prop_scope envx env sx res_m t2' tx in
-                 res_m |> NodeMap.add n2 t2' |> NodeMap.add nx tx'
-                 else  *)
-              res_m
-          )
+                res_m
+            )
     | BinOp (bop, e1, e2, l) ->
         (* (if !debug then
         begin
@@ -678,52 +690,57 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
         let m1 =
           match bop with
           | Cons ->
-              let rec cons_list_items m term = match term with
-              | BinOp (Cons, e1', e2', l') ->
-                  let l1, t1', m1' = cons_list_items m e1' in
-                  let l2, t2', m2' = cons_list_items m1' e2' in
-                  l1 + l2, join_V t1' t2', m2'
-              | _ ->
-                  let m' = step term env sx cs ae assertion is_rec m in
+             let rec cons_list_items ec m term = match term with
+               | BinOp (Cons, e1', e2', l') ->
+                  let l1, te1', m1' = cons_list_items ec m e1' in
+                  if te1' = TEBot then l1, te1', m1'
+                  else
+                    let ec' = extract_ec te1' in
+                    let l2, te2', m2' = cons_list_items ec' m1' e2' in
+                    l1 + l2, join_VE te1' te2', m2'
+               | _ ->
+                  let m' = step term env sx cs ec ae assertion is_rec m in
                   let n' = loc term |> construct_enode env |> construct_snode sx in
-                  let t' = find n' m' in
-                  1, t', m'
+                  let te' = find n' m' in
+                  1, te', m'
               in
-              let len, t1', m1 = cons_list_items m e1 in
-              let t1 = find n1 m1 in
-              let t1', _ = prop t1 t1' in
-              m1 |> update false n1 t1'
-          | _ -> step e1 env sx cs ae assertion is_rec m
+              let len, te1', m1 = cons_list_items ec m e1 in
+              let te1 = find n1 m1 in
+              let te1', _ = prop te1 te1' in
+              m1 |> update false n1 te1'
+          | _ -> step e1 env sx cs ec ae assertion is_rec m
         in
-        let m2 = step e2 env sx cs ae assertion is_rec m1 in
-        let t1 = find n1 m2 in
+        let te1 = find n1 m1 in
+        let ec' = extract_ec te1 in
+        let m2 = step e2 env sx cs ec' ae assertion is_rec m1 in
+        let te1 = find n1 m2 in
         let n2 = loc e2 |> construct_enode env |> construct_snode sx in
-        let t2 = find n2 m2 in
-        if t1 = Bot || t2 = Bot then m2 
+        let te2 = find n2 m2 in
+        if te1 = TEBot || te2 = TEBot then m2 
         else
-        begin
-          (*if not @@ is_List t2 then
-             if not @@ (is_Relation t1) then 
-               (Format.printf "Error at location %s: expected value, but found %s.\n"
-                  (loc e1) (string_of_value t1))
-             else (if not @@ (is_Relation t2) then
-               Format.printf "Error at location %s: expected value, but found %s.\n"
-                 (loc e2) (string_of_value t2));*)
-          
-          let bop =
-            match bop, e1, e2 with
-            | Mod, Const _, Const _ -> Mod
-            | Mod, _, Const _ -> Modc
-            | _ -> bop
-          in
-          let t = find n m2 in
+          begin
+            (*if not @@ is_List t2 then
+              if not @@ (is_Relation t1) then 
+              (Format.printf "Error at location %s: expected value, but found %s.\n"
+              (loc e1) (string_of_value t1))
+              else (if not @@ (is_Relation t2) then
+              Format.printf "Error at location %s: expected value, but found %s.\n"
+              (loc e2) (string_of_value t2));*)
+            
+            let bop =
+              match bop, e1, e2 with
+              | Mod, Const _, Const _ -> Mod
+              | Mod, _, Const _ -> Modc
+              | _ -> bop
+            in
+            let te = find n m2 in
             (* if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then m2 else *)
-          let raw_t =
-            match bop with
-            | Cons (* list op *) ->
-                list_cons_V prop t1 t2
+            let raw_te =
+              match bop with
+              | Cons (* list op *) ->
+                 list_cons_V te1 te2
             | And | Or (* bool op *) ->
-                bool_op_V bop t1 t2
+                bool_op_VE bop te1 te2
             | Modc ->
                 (* {v:int | a(t) ^ v = n1 mod const }[n1 <- t1] *)
                 let td = Relation (top_R bop) in

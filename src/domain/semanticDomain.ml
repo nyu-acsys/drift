@@ -229,7 +229,7 @@ module SemanticsDomain =
                         else match mr1, mr2 with
                              | Some r1, Some r2 -> eq_R r1 r2
                              | None, None -> res
-                             | _, _ -> false)
+                             | _, _ -> false
                       ) ea true)
       | _, _ -> false
     let forget_Eff var e = effmapi (fun q r -> forget_R var r) e
@@ -246,7 +246,9 @@ module SemanticsDomain =
       | EffBot, _ -> EffBot 
       | Effect _, Relation rae -> if is_bot_R rae then EffBot else (effmapi (fun q r -> stren_R r rae) e)
       | EffTop, Relation rae -> raise (Invalid_argument "EffTop should not be inferred")
-         (* begin match rae with 
+         (* effmapi (fun q r -> stren_R r) rae) eff_Top; where eff_Top = StateMap.creat (Q.size) (top_R Plus) *)
+         (* 
+         begin match rae with 
          | Int _ -> Effect rae
          | _ -> raise (Invalid_argument "ae should be {v: Int}")
          end*) 
@@ -642,7 +644,7 @@ module SemanticsDomain =
       | _ -> raise (Invalid_argument "reduce length either a list or an array")
     and list_cons_V f v1 v2 = match v1, v2 with
       | Bot, _ | _, Bot -> Bot
-      | v, Lst lst -> Lst (list_cons_Lst f v lst)
+      | v, Lst lst -> Lst (list_cons_Lst v lst)
       | _,_ -> raise (Invalid_argument "List construct should be item :: lst")
     and alpha_rename_Vs v1 v2 = match v1, v2 with
       | Lst (((l1,e1), (rl1,vee1)) as lst1), Lst (((l2,e2), (rl2,vee2)) as lst2) ->
@@ -1000,7 +1002,7 @@ module SemanticsDomain =
         | _ -> vee
       in
       (l',e'), (rl',vee')
-    and list_cons_Lst f v lst = let ((l,e), (rl,vee)) = lst in
+    and list_cons_Lst v lst = let ((l,e), (rl,vee)) = lst in
       if v = Bot || is_bot_R rl then (l,e), (bot_R Plus, TEBot) else
       (* let v = stren_V v (Relation (forget_R l rl)) in *)
       let rl' = assign_R l l "1" Plus rl in
