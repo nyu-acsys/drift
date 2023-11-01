@@ -45,7 +45,9 @@ tests/benchmark/*.json
 *.sol
 *.json
 *.status
+*.exe
 
+<<<<<<< HEAD
 
 nohup.out
 scripts/draft/base-drifttoolinfo/build/**/*
@@ -54,3 +56,7 @@ scripts/draft/base-drifttoolinfo/drifttoolinfo/__pycache__
 scripts/draft/base-drifttoolinfo/drifttoolinfo.egg-info
 
 scripts/draft/results/**/*
+=======
+nohup.out
+\#*\#
+>>>>>>> b011e4396bad5513ac7f65b95857783d9e6e3c28

@@ -13,7 +13,7 @@ if [ $# -gt 1 ]; then
     DOMAIN=$4
 else
     echo "ERROR!!! The command should be:"
-    echo "./runit.sh -set call/unv -domain <domain_name> [-dwid <delay_steps> | -nar]"
+    echo "./runit.sh -set call/unv -domain <domain_name> [-sen <trace_length>] [-dwid <delay_steps> | -nar]"
     exit 0
 fi
 shift
@@ -24,11 +24,13 @@ shift
 wid=0
 nar=false
 thold=false
-sen=false
+trace_len=0
 
-if [[ $# -ge 1 && ($1 = "-sen" || $2 = "-sen" || $3 = "-sen") ]]; then
-    echo "Use sensitive"
-    sen=true;
+if [[ $# -ge 1 && ($1 = "-sen")]]; then
+    trace_len=$2;
+    echo "Use $trace_len sensitive"
+    shift
+    shift
 fi
 
 if [ $# -ge 1 ] && [ $1 = "-nar" ]; then
@@ -89,9 +91,9 @@ for hdir in ${DIRS}; do
                 if [[ "$OSTYPE" != "darwin"* ]]; then
                     f=${f#*./}
                 fi
-                echo "${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -sen ${sen}"
+                echo "${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -trace-len ${trace_len}"
                 ts=$(${DATE} +%s%N)
-                timeout ${timeout} ${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -sen ${sen} &> ${OUTDIR}/${dir}/${OUTPRE}_${f}
+                timeout ${timeout} ${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -trace-len ${trace_len} &> ${OUTDIR}/${dir}/${OUTPRE}_${f}
                 if [[ $? -ne 0 ]]; then
                     echo "Time: timeout" >> ${OUTDIR}/${dir}/${OUTPRE}_${f}
                 else
@@ -105,8 +107,8 @@ done
 
 csv_name="res"
 
-if [[ $sen == true ]]; then
-    csv_name="${csv_name}1-"
+if [[ $trace_len > 0 ]]; then
+    csv_name="${csv_name}${trace_len}-"
 else
     csv_name="${csv_name}-"
 fi
@@ -124,8 +126,8 @@ else
     config="-standard"
 fi
 
-if [[ $sen == true ]]; then
-    RESDIR="1-sensitive"
+if [[ $trace_len > 0 ]]; then
+    RESDIR="${trace_len}-sensitive"
 else
     RESDIR="non-sensitive"
 fi

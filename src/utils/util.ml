@@ -5,6 +5,8 @@ let compose f g x = f (g x)
 
 let id x = x
 
+let apply2 (f, g) (x, y) = (f x, g y)
+
 module StringSet = Set.Make(struct
     type t = string
     let compare = compare
@@ -99,9 +101,6 @@ let fresh_func var =
     let idx = !ref_index in
     incr ref_index;
     var ^ (string_of_int idx)
-
-
-
 let measured_time = ref 0.
 let measured_calls = ref 0
 
