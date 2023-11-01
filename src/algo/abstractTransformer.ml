@@ -67,13 +67,12 @@ let rec prop (ve1: value_te) (ve2: value_te): (value_te * value_te) =
          let e1', e2' = prop_eff e1 e2 in 
          (TypeAndEff (v1', e1'), TypeAndEff (v2', e2'))
     | TETop, _ -> TETop, TETop
-and prop_eff e1 e2 = match e1, e2 with
+and prop_eff eff1 eff2 = match eff1, eff2 with
     | EffTop, _ -> EffTop, EffTop
-    | _, EffTop -> e1, EffTop
-    | _, EffBot -> e1, e1 
-    | EffBot, _ -> EffBot, e2
-    | Effect r1, Effect r2 -> if leq_R r1 r2 then e1, e2
-                             else e1, Effect (join_R r1 r2)
+    | _, EffTop -> eff1, EffTop
+    | _, EffBot -> eff1, eff1 
+    | EffBot, _ -> EffBot, eff2
+    | Effect _, Effect _ -> eff1, (join_Eff eff1 eff2)
 and prop_v (v1: value_tt) (v2: value_tt): (value_tt * value_tt) = match v1, v2 with
     | Top, Bot | Table _, Top -> Top, Top
     | Table t, Bot ->
@@ -492,7 +491,7 @@ and prop_predef_v l v0 v =
         )
     | _, _ -> v
 
-let rec step term (env: env_t) (sx: var) (cs: trace_t) (ae: value_t) (assertion: bool) (is_rec: bool) (m:exec_map_t) =
+let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value_t) (assertion: bool) (is_rec: bool) (m:exec_map_t) =
     let n = loc term |> construct_enode env |> construct_snode sx in
     let update widen n v m =
       (*NodeMap.update n (function

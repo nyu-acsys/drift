@@ -190,47 +190,73 @@ module SemanticsDomain =
     (********************************************
      ** Abstract domain for Effects            **
      ********************************************)
-    let alpha_rename_Eff e prevar var = effmap (fun r -> alpha_rename_R r prevar var) e
+    let alpha_rename_Eff e prevar var = effmapi (fun q r -> alpha_rename_R r prevar var) e
     let join_Eff e1 e2 = match e1, e2 with 
       | EffBot, _ | _, EffTop -> e2 
-      | Effect r1, Effect r2 -> Effect (join_R r1 r2)
+      | Effect e1, Effect e2 -> Effect (StateMap.union (fun q r1 r2 -> Some (join_R r1 r2)) e1 e2)
       | EffTop, _ | _, EffBot -> e1 
     let meet_Eff e1 e2 = match e1, e2 with 
       | EffBot, _ | _, EffTop -> e1
-      | Effect r1, Effect r2 -> Effect (meet_R r1 r2) 
+      | Effect e1, Effect e2 -> 
+         Effect (StateMap.merge 
+                   (fun q mr1 mr2 -> 
+                     match mr1, mr2 with 
+                     | None, _  | _, None -> None
+                     | Some r1, Some r2 -> Some (meet_R r1 r2)) 
+                   e1 e2) 
       | EffTop, _ | _, EffBot -> e2 
     let leq_Eff e1 e2 = match e1, e2 with 
       | EffBot, _  | _, EffTop -> true
-      | Effect r1, Effect r2 -> leq_R r1 r2
+      | Effect e1, Effect e2 -> 
+         StateMap.merge (fun k mr1 mr2 -> 
+             match mr1, mr2 with None, None -> None | _, _ -> Some (mr1, mr2)) e1 e2
+         |> (fun ea -> StateMap.fold (fun k (mr1, mr2) res ->
+                        if not res then res 
+                        else match mr1, mr2 with
+                             | Some r1, Some r2 -> leq_R r1 r2
+                             | None, Some _ -> res
+                             | Some _, None -> false
+                             | None, None -> res
+                      ) ea true)  
       | _,  _ -> false
     let eq_Eff e1 e2 = match e1, e2 with 
       | EffBot, EffBot | EffTop, EffTop -> true
-      | Effect r1, Effect r2 -> eq_R r1 r2
+      | Effect e1, Effect e2 -> 
+         StateMap.merge (fun k mr1 mr2 -> 
+             match mr1, mr2 with None, None -> None | _, _ -> Some (mr1, mr2)) e1 e2
+         |> (fun ea -> StateMap.fold (fun k (mr1, mr2) res ->
+                        if not res then res 
+                        else match mr1, mr2 with
+                             | Some r1, Some r2 -> eq_R r1 r2
+                             | None, None -> res
+                             | _, _ -> false)
+                      ) ea true)
       | _, _ -> false
-    let forget_Eff var e = effmap (fun r -> forget_R var r) e
+    let forget_Eff var e = effmapi (fun q r -> forget_R var r) e
     let arrow_Eff var e r = match e with 
       | EffBot -> EffBot 
-      | Effect _ -> effmap (fun e_r -> arrow_R var e_r r) e
-      | EffTop -> Effect r
-    let equal_Eff e var = effmap (fun r -> equal_R r var) e
+      | Effect _ -> effmapi (fun q e_r -> arrow_R var e_r r) e
+      | EffTop -> raise (Invalid_argument "EffTop should not be inferred")
+    let equal_Eff e var = effmapi (fun q r -> equal_R r var) e
     let wid_Eff e1 e2 = match e1, e2 with 
-      | Effect r1, Effect r2 -> Effect (wid_R r1 r2)
+      | Effect e1, Effect e2 -> Effect (StateMap.union (fun q r1 r2 -> Some (wid_R r1 r2)) e1 e2)
       | _, _ -> join_Eff e1 e2
-    let replace_Eff e var x = effmap (fun r -> replace_R r var x) e
+    let replace_Eff e var x = effmapi (fun q r -> replace_R r var x) e
     let stren_Eff e ae = match e, ae with
       | EffBot, _ -> EffBot 
-      | Effect _, Relation rae -> if is_bot_R rae then EffBot else (effmap (fun r -> stren_R r rae) e)
-      | EffTop, Relation rae -> begin match rae with 
-                               | Int _ -> Effect rae
-                               | _ -> raise (Invalid_argument "ae should be {v: Int}")
-                               end 
+      | Effect _, Relation rae -> if is_bot_R rae then EffBot else (effmapi (fun q r -> stren_R r rae) e)
+      | EffTop, Relation rae -> raise (Invalid_argument "EffTop should not be inferred")
+         (* begin match rae with 
+         | Int _ -> Effect rae
+         | _ -> raise (Invalid_argument "ae should be {v: Int}")
+         end*) 
       | _, Top -> e
       | _, Bot -> EffBot
       | _ -> raise (Invalid_argument "ae should not be a table") 
-    let proj_Eff e vars = effmap (fun r -> proj_R r vars) e
-    let bot_shape_Eff e = effmap (fun r -> bot_shape_R r) e
+    let proj_Eff e vars = effmapi (fun q r -> proj_R r vars) e
+    let bot_R_Eff e = effmapi (fun q r -> bot_R Plus) e
     let bot_Eff = EffBot 
-    let empty_eff = Effect (bot_R Plus)
+    let empty_eff = Effect (StateMap.empty)  (* todo: must revisit. it should be  a map where all states map to Bot *)
     let extract_v = function
       | TEBot -> Bot
       | TypeAndEff (v, _) -> v
@@ -412,26 +438,32 @@ module SemanticsDomain =
                     | _ -> v)
     (* todo: same here, the strengthening with Bot return the effect. Need to verify why is that? *)
     and arrow_EffV var e v' = 
-      let arrow_eff_R_with_lst er l =
-          let ((l2,e2) as vars, (rl2, vee2)) = l in
-          if is_bot_R rl2 
-          then Effect (bot_shape_R er) 
-          else
-            let er' = let res = meet_R er rl2 in
-                      if is_bot_R res then (meet_R (forget_R l2 er) rl2) else res in
-            (match vee2 with 
-             | TEBot -> if String.length var >= 2 && String.sub var 0 2 = "zh" then
-                         raise (Invalid_argument "List.hd expects non empty list")
-                       else Effect er'
-             | TypeAndEff (Relation re2, _) ->
-                if is_bot_R re2 then Effect er'
-                else Effect (meet_R er' (proj_R re2 [e2]))
-             | TypeAndEff (Tuple ue, _) -> Effect er'
-             | TypeAndEff (ve2, _) -> arrow_EffV var (Effect er') ve2
-             | TETop -> Effect er')
+      let arrow_Eff_with_lst eff l =
+          let ((l2,e2) as vars, (rl2, vee2)) = l in 
+          let arrow_EffR er = 
+            if is_bot_R rl2 then bot_shape_R er 
+            else
+              let er' = let res = meet_R er rl2 in
+                        if is_bot_R res then (meet_R (forget_R l2 er) rl2) else res in
+              (match vee2 with 
+               | TEBot -> if String.length var >= 2 && String.sub var 0 2 = "zh" then
+                           raise (Invalid_argument "List.hd expects non empty list")
+                         else er'
+               | TypeAndEff (Relation re2, _) ->
+                  if is_bot_R re2 then er'
+                  else meet_R er' (proj_R re2 [e2])
+               | TypeAndEff (Tuple ue, _) -> er'
+               | TypeAndEff (ve2, _) -> (match arrow_V var (Relation er') ve2 with
+                                        | Relation er'' -> er''
+                                        | _ -> raise (Invalid_argument ("Arrow operator applied to a " ^
+                                                       "Relation should be relation")))
+               | TETop -> er')
+          in
+          effmapi (fun q er -> arrow_EffR er) eff
       in
       match e, v' with 
       | EffBot,  _ -> EffBot
+      | EffTop, _ -> EffTop
       | _, Bot | _, Top | _, Table _ -> e
       | _, Relation r2 -> arrow_Eff var e r2
       | _, Tuple u2 -> List.fold_left (fun e1 ve2 ->
@@ -441,8 +473,7 @@ module SemanticsDomain =
       | _, Ary ary2 -> let (vars, (rl2, re2)) = ary2 in
                    let e' = arrow_Eff var e rl2 in 
                    if is_bot_R re2 then e' else arrow_Eff var e' re2
-      | Effect er, Lst lst2 -> arrow_eff_R_with_lst er lst2
-      | EffTop, Lst lst2 -> arrow_eff_R_with_lst (top_R Plus) lst2                   
+      | ((Effect _) as eff), Lst lst2 -> arrow_Eff_with_lst eff lst2                  
     and arrow_VE var ve v' = match ve with 
       | TypeAndEff (v, e) -> TypeAndEff (arrow_V var v v', arrow_EffV var e v')
       | _ -> ve
@@ -654,7 +685,7 @@ module SemanticsDomain =
       | Ary ary -> Ary (bot_shape_Ary ary)
       | Tuple u -> Tuple (bot_shape_Tuple u)
     and bot_shape_VE ve =
-      let ve' = temap (bot_shape_V, bot_shape_Eff) ve in 
+      let ve' = temap (bot_shape_V, (fun _ -> bot_Eff)) ve in 
       match ve' with 
       | TEBot | TETop -> TEBot
       | _ -> ve'

@@ -11,7 +11,6 @@ let name_of_node lb = ("z" ^ lb)
 type relation_t = Int of AbstractValue.t 
   | Bool of AbstractValue.t * AbstractValue.t
   | Unit of unit
-type relation_e = relation_t (* dependent effect *)
 type array_t = (var * var) * (relation_t * relation_t)
 
 module type HashType =
@@ -85,6 +84,11 @@ module TableMap = struct
   let compare = compare
 end
 
+type state_t = int (* representation of automata state domain*)
+type relation_e = relation_t (* dependent effect *)
+module StateMap = Map.Make(struct type t = state_t let compare = compare end)
+type effect_t = relation_e StateMap.t
+
 module type SemanticsType =
   sig
     type node_t
@@ -104,11 +108,12 @@ module type SemanticsType =
       | TEBot 
       | TETop
       | TypeAndEff of value_tt * eff
-    and eff = EffBot | EffTop | Effect of relation_e
+    and eff = EffBot | EffTop | Effect of effect_t
     and list_t = (var * var) * (relation_t * value_te)
     and tuple_t = value_te list
     val temap: (value_tt -> value_tt) * (eff -> eff) -> value_te -> value_te
-    val effmap: (relation_e -> relation_e) -> eff -> eff
+    val effmap: (effect_t -> effect_t) -> eff -> eff
+    val effmapi: (state_t -> relation_e -> relation_e) -> eff -> eff
     val init_T: trace_t -> table_t
     val alpha_rename_T: (value_te -> string -> string -> value_te) -> table_t -> string -> string -> table_t
     val join_T: (value_te -> value_te -> value_te) -> (value_te -> string -> string -> value_te) -> table_t -> table_t -> table_t
@@ -158,7 +163,7 @@ module NonSensitive: SemanticsType =
       | Ary of array_t
       | Lst of list_t
       | Tuple of tuple_t
-    and eff = EffBot | EffTop | Effect of relation_e
+    and eff = EffBot | EffTop | Effect of effect_t
     and value_te = 
       | TEBot 
       | TETop 
@@ -168,13 +173,14 @@ module NonSensitive: SemanticsType =
     and tuple_t = value_te list
     type call_site = None (* Not used *)
     let temap (f, g) = function 
-      | TEBot -> TEBot
       | TypeAndEff (v, e) -> TypeAndEff (f v, g e) (* TypeAndEff (apply2 (f, g) ve)  *)      
-      | TETop -> TETop
+      | te -> te
     let effmap f = function 
-      | EffBot -> EffBot
-      | Effect r -> Effect (f r)
-      | EffTop -> EffTop
+      | Effect eff -> Effect (f eff)
+      | e -> e
+    let effmapi f = function
+      | Effect eff -> Effect (StateMap.mapi f eff)
+      | e -> e 
     let init_T trace = get_trace_data trace, TEBot, TEBot
     let alpha_rename_T f (t:table_t) prevar_trace var_trace :table_t =
       let (z, vi, vo) = t in
@@ -292,7 +298,7 @@ module OneSensitive: SemanticsType =
       | Ary of array_t
       | Lst of list_t
       | Tuple of tuple_t
-    and eff = EffBot | EffTop | Effect of relation_e
+    and eff = EffBot | EffTop | Effect of effect_t
     and value_te = 
       | TEBot  
       | TETop
@@ -301,13 +307,14 @@ module OneSensitive: SemanticsType =
     and list_t = (var * var) * (relation_t * value_te)
     and tuple_t = value_te list
     let temap (f, g) = function 
-      | TEBot -> TEBot
       | TypeAndEff (v, e) -> TypeAndEff (f v, g e) (* TypeAndEff (apply2 (f, g) ve)  *)      
-      | TETop -> TETop
+      | te -> te
     let effmap f = function 
-      | EffBot -> EffBot
-      | Effect r -> Effect (f r)
-      | EffTop -> EffTop
+      | Effect eff -> Effect (f eff)
+      | e -> e
+    let effmapi f = function
+      | Effect eff -> Effect (StateMap.mapi f eff)
+      | e -> e
     let init_T var = TableMap.empty
     let alpha_rename_T f (mt:table_t) prevar var = TableMap.map (fun (vi, vo) ->
       f vi prevar var, f vo prevar var) mt
@@ -453,7 +460,7 @@ module NSensitive: SemanticsType =
       | Ary of array_t
       | Lst of list_t
       | Tuple of tuple_t
-    and eff = EffBot | EffTop | Effect of relation_e
+    and eff = EffBot | EffTop | Effect of effect_t
     and value_te = 
       | TEBot  
       | TETop
@@ -462,13 +469,14 @@ module NSensitive: SemanticsType =
     and list_t = (var * var) * (relation_t * value_te)
     and tuple_t = value_te list
     let temap (f, g) = function 
-      | TEBot -> TEBot
       | TypeAndEff (v, e) -> TypeAndEff (f v, g e) (* TypeAndEff (apply2 (f, g) ve)  *)      
-      | TETop -> TETop
+      | te -> te
     let effmap f = function 
-      | EffBot -> EffBot
-      | Effect r -> Effect (f r)
-      | EffTop -> EffTop
+      | Effect eff -> Effect (f eff)
+      | e -> e
+    let effmapi f = function
+      | Effect eff -> Effect (StateMap.mapi f eff)
+      | e -> e
     let init_T var = TableMap.empty
     let alpha_rename_T f (mt:table_t) prevar var = TableMap.map (fun (vi, vo) ->
       f vi prevar var, f vo prevar var) mt
