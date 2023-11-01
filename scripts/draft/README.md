@@ -1,12 +1,23 @@
 # benchmarking
 
-# Testing the Drift tool-info Python module 
+# 1. Building the pythoing package
 
 ```
-PATH=$PATH:/tools/home/eric/drift/ python3 -m benchexec.test_tool_info tools.drift --read-only-dir /
+# AS ROOT!
+cd /tools/home/eric/drift/scripts/draft/base-drifttoolinfo
+pip uninstall drifttoolinfo
+python3 setup.py sdist bdist_wheel
+pip install .
 ```
 
-# Running benchmarking
+# 2. Testing the Drift tool-info Python module 
+
+```
+# As ROOT!
+PATH=$PATH:/tools/home/eric/drift/ python3 -m benchexec.test_tool_info drifttoolinfo.drift --read-only-dir /
+```
+
+# 3. Running benchmarking
 
 ```
 cd /tools/home/eric/drift/scripts/draft

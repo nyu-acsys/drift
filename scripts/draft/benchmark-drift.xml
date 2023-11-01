@@ -16,25 +16,36 @@ SPDX-License-Identifier: Apache-2.0
      To use this file, CBMC needs to be on PATH
      and C programs from SV-COMP need to be available in directory programs/
      (or input files need to be changed). -->
-<benchmark tool="drift"
+<benchmark tool="drifttoolinfo.drift"
            timelimit="60s"
            hardtimelimit="90s"
            memlimit="1000 MB"
            cpuCores="1">
 
-  <!-- <rundefinition> defines tool configurations to benchmark. -->
-  <rundefinition name="basic">
-    <option name="-out">2</option> <!-- Pass command-line option "-out 2" to Drift. -->
+  <rundefinition name="drift-legacy">
+    <option name="-out">2</option>
+    <option name="-domain">Oct</option>
+    <option name="-sen">true</option> <!-- will be replaced by -trace-len {0,1,2} -->
   </rundefinition>
+
+<!--
+  <tasks name="all-drift-legacy-benchmarks">
+    <include>../../tests/benchmarks/DOrder/first/gcd.ml</include>
+    <include>../../tests/benchmarks/DRIFT/array/a-append.ml</include>
+    <include>../../tests/benchmarks/r_type/array/a-append.ml</include>
+  </tasks>
+-->
 
   <!-- <tasks> defines a set of tasks
        (here two group of files from SV-COMP15 declared in a separate file). -->
   <tasks name="ReachSafety-ControlFlow">
     <include>../../tests/effects/traffic_light_fo_simple.ml</include>
+    <include>../../tests/effects/assert-true.ml</include>
     <!-- <includesfile>programs/ReachSafety-ControlFlow.set</includesfile> -->
   </tasks>
 
-  <propertyfile>../../tests/effects/traffic_light_fo_simple.eff</propertyfile>
+  <propertyfile>../../tests/effects/assert_true.eff</propertyfile>
+  <!-- <propertyfile>../../tests/effects/traffic_light_fo_simple.eff</propertyfile> -->
 
   <!-- <tasks name="Simple.set">
     <includesfile>programs/Simple.set</includesfile>
