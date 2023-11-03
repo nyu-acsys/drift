@@ -18,7 +18,7 @@ import benchexec.tools.template
 import benchexec.result as result
 
 import os
-
+import re
 
 class Tool(benchexec.tools.template.BaseTool2):
     REQUIRED_PATHS = ["bin", "include", "lib", "share"]
@@ -54,24 +54,12 @@ class Tool(benchexec.tools.template.BaseTool2):
     #returncode, returnsignal, output, isTimeout):
     # see: https://github.com/sosy-lab/benchexec/blob/fde8a997ea8b522a73fedd3c2256140e635243ef/benchexec/result.py#L58
     def determine_result(self, run): 
-        if "The input program is safe" in run.output:
-            status = result.RESULT_TRUE_PROP
-        elif "The program may not be safe" in run.output:
-            status = result.RESULT_UNKNOWN
-            # if "BRUNCH_STAT Termination" in output:
-            #     status = result.RESULT_FALSE_TERMINATION
-            # else:
-            #     status = result.RESULT_FALSE_REACH
-        elif run.was_terminated:
-            status = result.RESULT_UNKNOWN
-        elif run.exit_code.signal == 9 or run.exit_code.signal == (128 + 9):
-            if run.was_timeout:
-                status = result.RESULT_TIMEOUT
-            else:
-                status = "KILLED BY SIGNAL 9"
-        elif run.exit_code.value != 0:
-            status = f"ERROR ({run.exit_code.value})"
-        else:
-            status = "FAILURE"
-
-        return status
+        # Search for "sat,9    	@assert"
+        p = re.compile('sat,\d+\s+\@assert')
+        for line in reversed(run.output):
+            if p.match(line):
+                return result.RESULT_TRUE_PROP
+        
+        # Other possibilities
+        # TODO
+        return result.RESULT_UNKNOWN
