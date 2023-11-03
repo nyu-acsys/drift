@@ -182,6 +182,7 @@ let sort_list (m: exec_map_t) =
 let print_value out_ch v = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" pr_value v
 
 let string_of_value v = pr_value Format.str_formatter v; Format.flush_str_formatter ()
+let string_of_value_and_eff ve = pr_value_and_eff Format.str_formatter ve; Format.flush_str_formatter ()
 
 let rec pr_exec_map ppf m =
   Format.fprintf ppf "----\n%a----\n" pr_exec_rows (sort_list m)

@@ -229,7 +229,7 @@ module SemanticsDomain =
                         else match mr1, mr2 with
                              | Some r1, Some r2 -> eq_R r1 r2
                              | None, None -> res
-                             | _, _ -> false)
+                             | _, _ -> false
                       ) ea true)
       | _, _ -> false
     let forget_Eff var e = effmapi (fun q r -> forget_R var r) e
@@ -246,7 +246,9 @@ module SemanticsDomain =
       | EffBot, _ -> EffBot 
       | Effect _, Relation rae -> if is_bot_R rae then EffBot else (effmapi (fun q r -> stren_R r rae) e)
       | EffTop, Relation rae -> raise (Invalid_argument "EffTop should not be inferred")
-         (* begin match rae with 
+         (* effmapi (fun q r -> stren_R r) rae) eff_Top; where eff_Top = StateMap.creat (Q.size) (top_R Plus) *)
+         (* 
+         begin match rae with 
          | Int _ -> Effect rae
          | _ -> raise (Invalid_argument "ae should be {v: Int}")
          end*) 
@@ -507,10 +509,12 @@ module SemanticsDomain =
       | Bot | Top -> Top
       | Relation r -> Relation (op_R "" sl sr op false r)
       | _ -> raise (Invalid_argument "Should be a relation type when using op_V")
+    and op_VE sl sr op ve = temap ((op_V sl sr op), id) ve
     and uop_V op s v = match v with
       | Bot | Top -> Top
       | Relation r -> Relation (uop_R "" op s false r)
       | _ -> raise (Invalid_argument "Should be a relation type when using uop_V")
+    and uop_VE op s ve = temap ((uop_V op s), id) ve
     and bool_op_V op v1 v2 = match v1, v2 with
       | Bot, Relation _ -> if string_of_op op = "&&" then Bot else v2
       | Top, Relation _ -> if string_of_op op = "&&" then v2 else Top
@@ -518,6 +522,11 @@ module SemanticsDomain =
       | Relation _, Bot -> if string_of_op op = "&&" then Bot else v1
       | Relation _, Top -> if string_of_op op = "&&" then v1 else Top
       | _, _ -> raise (Invalid_argument "Should be a relation type when using bool_op_V")
+    and bool_op_VE op ve1 ve2 = match ve1, ve2 with
+      | TEBot, TypeAndEff (v,e) -> TypeAndEff ((bool_op_V op Bot v), e)
+      | TETop, TypeAndEff (v,e) -> TypeAndEff ((bool_op_V op Top v), e)
+      | (TypeAndEff (v1, e1)), (TypeAndEff (v2, e2)) -> TypeAndEff ((bool_op_V op v1 v2), e2)
+      | _, _ -> raise (Invalid_argument "Should be a relation type when using bool_op_VE")
     and is_Bot_V = function
       | Bot -> true
       | _ -> false
@@ -553,6 +562,11 @@ module SemanticsDomain =
       | Table t, Relation rae -> 
          if is_bot_R rae then Table t else Table (stren_T stren_VE t ae)
       | _, _ -> stren_V v ae
+    and stren_ite_VE ve ae = 
+      let ve' = temap ((fun v ->  stren_ite_V v ae), (fun e -> stren_Eff e ae)) ve in 
+      match ve' with 
+      | TETop -> failwith "todo: not implemented. need further insights"
+      | _ -> ve'
     and sat_equal_V v x = match v with
       | Relation r -> sat_equal_R r x
       | _ -> false
@@ -640,10 +654,14 @@ module SemanticsDomain =
       | TEBot | TETop as v -> v
       | TypeAndEff ((Lst lst), e) -> TypeAndEff ((Lst (reduce_len_Lst len le_lst lst)), e)
       | _ -> raise (Invalid_argument "reduce length either a list or an array")
-    and list_cons_V f v1 v2 = match v1, v2 with
+    and list_cons_V v1 v2 = match v1, v2 with
       | Bot, _ | _, Bot -> Bot
-      | v, Lst lst -> Lst (list_cons_Lst f v lst)
+      | v, Lst lst -> Lst (list_cons_Lst v lst)
       | _,_ -> raise (Invalid_argument "List construct should be item :: lst")
+    and list_cons_VE ve1 ve2 = match ve1, ve2 with 
+      | TEBot, _ | _, TEBot -> TEBot
+      | (TypeAndEff (v, _)), (TypeAndEff ((Lst lst), e)) -> TypeAndEff ((Lst (list_cons_Lst v lst)), e)
+      | _ -> raise (Invalid_argument "reduce length either a list or an array")
     and alpha_rename_Vs v1 v2 = match v1, v2 with
       | Lst (((l1,e1), (rl1,vee1)) as lst1), Lst (((l2,e2), (rl2,vee2)) as lst2) ->
          if l1 = l2 && e1 = e2 then Lst lst1, Lst lst2 else
@@ -655,6 +673,11 @@ module SemanticsDomain =
       | Ary ary1, Ary ary2 -> let ary1', ary2' =  alpha_rename_Arys ary1 ary2 in
                              Ary ary1', Ary ary2'
       | _, _ -> v1, v2
+    and alpha_rename_VEs ve1 ve2 = match ve1, ve2 with
+      | (TypeAndEff (v1, e1)), (TypeAndEff (v2, e2)) -> 
+         let v1', v2' = alpha_rename_Vs v1 v2 in
+         (TypeAndEff (v1', e1)), (TypeAndEff (v2', e2))
+      | _, _ -> ve1, ve2
     and bot_relation_V (tp: inputType) = match tp with
       | Int -> Relation (bot_R Plus)
       | Bool -> Relation (bot_R Ge)
@@ -677,6 +700,10 @@ module SemanticsDomain =
       | Lst lste, Lst lst ->
          Lst (item_shape_Lst lste lst)
       | _, _ -> t
+    and item_shape_VE tee te = match tee, te with 
+      | (TypeAndEff (v1, e1)), (TypeAndEff (v2, e2)) -> 
+         TypeAndEff ((item_shape_V v1 v2), e2)
+      | _, _ -> te
     and bot_shape_V = function
       | Bot | Top -> Bot
       | Relation r -> Relation (bot_shape_R r)
@@ -1000,7 +1027,7 @@ module SemanticsDomain =
         | _ -> vee
       in
       (l',e'), (rl',vee')
-    and list_cons_Lst f v lst = let ((l,e), (rl,vee)) = lst in
+    and list_cons_Lst v lst = let ((l,e), (rl,vee)) = lst in
       if v = Bot || is_bot_R rl then (l,e), (bot_R Plus, TEBot) else
       (* let v = stren_V v (Relation (forget_R l rl)) in *)
       let rl' = assign_R l l "1" Plus rl in
@@ -1131,7 +1158,7 @@ module SemanticsDomain =
           raise (Pre_Def_Change ("Predefined node changed at " ^ l))
          )
       |> Opt.get_or_else (v1 = v1)) m1
-    let top_M m = NodeMap.map (fun a -> Top) m
+    let top_M m = NodeMap.map (fun a -> TETop) m
     let array_M env m = 
       let n_make = construct_vnode env "Array.make" [] in
       let s_make = construct_snode "" n_make in
@@ -1354,29 +1381,30 @@ module SemanticsDomain =
           m, env
         else 
           VarDefMap.fold (fun var (domain: pre_exp) (m, env) -> 
-            let n_var = construct_vnode env var [] in
-            let s_var = construct_snode "" n_var in
-            let t_var = match domain with
-            | {name = n; dtype = Int; left = l; op = bop; right = r} -> 
-                let rm = if l = "true" then 
-                  (top_R Plus)
-                else top_R Plus |> op_R "" l r bop true
-                in Relation rm
-            | {name = n; dtype = Bool; left = l; op = bop; right = r} -> 
-                let rm = if l = "true" then init_R_c (Boolean true)
-                else if l = "false" then
-                  init_R_c (Boolean false)
-                else
-                  top_R Plus |> op_R "" l r bop true
-                in
-                Relation (rm)
-            | {name = n; dtype = Unit; left = l; op = _; right = r} ->
-                if l = "unit" then Tuple []
-                else raise (Invalid_argument"Expected unit predicate as {v: Unit | unit }")
-            in
-            let env' = env |> VarMap.add var (n_var, false) in
-            let m' = m |> NodeMap.add s_var t_var in
-            m', env') !pre_vars (m, env)
+              let n_var = construct_vnode env var [] in
+              let s_var = construct_snode "" n_var in
+              let t_var = match domain with
+                | {name = n; dtype = Int; left = l; op = bop; right = r} -> 
+                   let rm = if l = "true" then 
+                              (top_R Plus)
+                            else top_R Plus |> op_R "" l r bop true
+                   in Relation rm
+                | {name = n; dtype = Bool; left = l; op = bop; right = r} -> 
+                   let rm = if l = "true" then init_R_c (Boolean true)
+                            else if l = "false" then
+                              init_R_c (Boolean false)
+                            else
+                              top_R Plus |> op_R "" l r bop true
+                   in
+                   Relation (rm)
+                | {name = n; dtype = Unit; left = l; op = _; right = r} ->
+                   if l = "unit" then Tuple []
+                   else raise (Invalid_argument"Expected unit predicate as {v: Unit | unit }")
+              in
+              let te_var = init_VE_v t_var in
+              let env' = env |> VarMap.add var (n_var, false) in
+              let m' = m |> NodeMap.add s_var te_var in
+              m', env') !pre_vars (m, env)
       in env', m'
 
   end
