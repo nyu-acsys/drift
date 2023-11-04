@@ -500,12 +500,13 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
         NodeMap.add n v m
     in
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else TEBot in
-    let find_ra q e = StateMap.find_opt q e |> Opt.get_or_else (bot_R Plus) in
+    (* let find_ra q e = StateMap.find_opt q e |> Opt.get_or_else (bot_R Plus) in *)
     let init_VE_wec v = TypeAndEff (v, (Effect ec)) in
-    let extract_ec te = match (extract_eff te) with
+    let extract_ec te = StateMap.empty
+      (* match (extract_eff te) with
       | EffBot | EffTop -> 
          raise (Invalid_argument "An effect should be observable at this stage of the analysis")
-      | Effect e -> e
+      | Effect e -> e *)
     in   
     match term with
     | Const (c, l) ->
@@ -1330,7 +1331,37 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
                 | _ -> raise (Invalid_argument "Pattern should only be either constant, variable, or list cons")
               ) (update false ne tee m' |> Hashtbl.copy) patlst in
           m''
-
+    | Event (e1, l) ->
+       (* (if !debug then
+        begin
+            Format.printf "\n<=== EV ===>\n";
+            pr_exp true Format.std_formatter term;
+            Format.printf "\n";
+        end
+        ); *)
+        let n1 = loc e1 |> construct_enode env |> construct_snode sx in
+        let m1 = step e1 env sx cs ec ae assertion is_rec m in
+        let te1 = find n1 m1 in
+        if te1 = TEBot then m1
+        else
+          m1 (* todo: implement abstract transformer for EV *)
+          (*
+            let node_1 = e1 |> loc |> name_of_node in
+          let ted = init_VE_v (Relation (utop_R uop)) in
+          let te = find n m1 in
+          let te' = arrow_VE node_1 ted (extract_v te1) |> temap (id, fun _ -> extract_eff te1) in
+          let te'' = uop_VE uop node_1 te' in
+          let raw_te = get_env_list env sx m1 |> proj_VE te'' in
+          (* if !domain = "Box" then
+             temp_t |> der_V e1 |> der_V e2  (* Deprecated: Solve remaining constraint only for box*)
+             else  *)
+          let _, re_te =
+            if is_Relation (extract_v raw_te)
+            then raw_te, raw_te
+            else prop raw_te te
+          in
+          m1 |> update false n (stren_VE re_te ae)
+          *)
 let step x1 x2 x3 x4 x5 x6 x7 = measure_call "step" (step x1 x2 x3 x4 x5 x6 x7)
           
 (** Widening **)
