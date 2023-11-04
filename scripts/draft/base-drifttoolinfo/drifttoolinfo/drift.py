@@ -6,10 +6,7 @@
 #
 # SPDX-License-Identifier: LicenseRef-BSD-3-Clause-CMU
 
-
-# cd ~pepper/projects/coar/
-# dune exec main -- -c ./config/solver/dbg_rcaml_pcsat_tb_ar.json -p ml ./benchmarks/OCaml/safety/simple/
-
+# https://github.com/sosy-lab/benchexec/blob/main/doc/tool-integration.md
 # https://github.com/sosy-lab/benchexec/blob/main/benchexec/tools/template.py
 
 import benchexec.util as util
@@ -64,7 +61,8 @@ class Tool(benchexec.tools.template.BaseTool2):
         return cmd
 
     def version(self, executable):
-        return self._version_from_tool(executable)
+        return "0.0.todo"
+        #return self._version_from_tool(executable)
 
     #returncode, returnsignal, output, isTimeout):
     # see: https://github.com/sosy-lab/benchexec/blob/fde8a997ea8b522a73fedd3c2256140e635243ef/benchexec/result.py#L58
