@@ -116,7 +116,7 @@ let sort_traces trace_list = List.sort(fun trace1 trace2 -> comp_trace trace1 tr
 let sort_trees tree_list = List.sort (fun t1 t2 -> comp_loc_token (get_trace_tree_token t1) (get_trace_tree_token t2)) tree_list
 
 let rec get_trace_data trace = match trace with
-  | [] -> ""
+  | [] -> "z1500"
   | head :: [] -> get_token_loc head
   | head :: tail -> get_token_loc head ^","^ get_trace_data tail
 

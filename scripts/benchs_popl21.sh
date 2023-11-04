@@ -23,8 +23,8 @@ for i in $(seq 2 $END); do
     for domain in ${DOMAIN}; do
         echo "./runit.sh -set unv -domain ${domain} ${SEN}"
         ./runit.sh -set unv -domain ${domain} ${SEN}
-        echo "./runit.sh -set unv -domain ${domain} -thold ${SEN}"
-        ./runit.sh -set unv -domain ${domain} -thold ${SEN}
+        echo "./runit.sh -set unv -domain ${domain} -thold ${SEN}" 1
+        ./runit.sh -set unv -domain ${domain} -thold ${SEN} 1
     done
 done
 

@@ -39,6 +39,8 @@ let env0, m0 =
     let enva, ma = array_M VarMap.empty (NodeMap.create 500) in
     let envb, mb = list_M enva ma in
     envb, mb
+    
+let node_ref = construct_enode env0 "" |> construct_snode "" |> ref
 
 (* Create a fresh variable name *)
 let fresh_z= fresh_func "z"
@@ -497,6 +499,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
       (*NodeMap.update n (function
           | None -> v
           | Some v' -> if false && widen then wid_V v' v else (*join_V v'*) v) m*)
+        if (get_label_snode n)="EN: 126,z130" then node_ref := n;
         NodeMap.add n v m
     in
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else TEBot in
@@ -507,7 +510,8 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
          raise (Invalid_argument "An effect should be observable at this stage of the analysis")
       | Effect e -> e
     in   
-    match term with
+    (* if !debug then (print_string "\nst[\n"; print_string ((get_trace_data cs)^" "^(loc term)); pr_value Format.std_formatter (find !node_ref m); print_string "\n"); *)
+    let m = match term with
     | Const (c, l) ->
         (* (if !debug then
         begin
@@ -590,7 +594,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
         ); *)
         m |> update false nx tex' |> update false n (stren_VE te' ae) (* t' ^ ae *)
     | App (e1, e2, l) ->
-        (if !debug then
+        (* (if !debug then
         begin
             Format.printf "\n<=== App ===>\n";
             pr_exp true Format.std_formatter term;
@@ -629,8 +633,10 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
                 let cs =
                   if !trace_len > 0 then
                     if is_rec && is_func e1 then cs
-                    else loc e1 |> name_of_node |> create_loc_token |> update_call_site cs
-                  else dx_T te1
+                    (* if is_func e1 then cs *)
+                  else loc e1 |> name_of_node |> create_loc_token |> update_call_site cs
+                    (*loc e1 |> name_of_node |> create_loc_token |> update_call_site cs*)
+                else dx_T te1
                 in
                 let te_temp = Table (construct_table cs (te2, te)) 
                             |> init_VE_v 
@@ -874,6 +880,8 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
         end
         ); *)
         let n0 = loc e0 |> construct_enode env |> construct_snode sx in
+        (* (if !debug && get_label_snode n = "EN: 126,z130" then
+            (here := !here +1; print_string ("1 "^(string_of_int !here)); pr_value Format.std_formatter (find n m); Format.print_flush())); *)
         let m0 = 
             (* if optmization m n0 find then m else  *)
             step e0 env sx cs ec ae assertion is_rec m in
@@ -894,7 +902,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
                 then i + 1 else i), j + 1) !sens);
             let te = find n m0 in
             let cst = 
-                if !trace_len > 1 then 
+                if !trace_len > 10 then 
                     create_if_token (loc e1 |> name_of_node) (loc term |> name_of_node) |> update_call_site cs 
                 else cs
             in
@@ -925,7 +933,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
             end
             );  *)
             let csf = 
-                if !trace_len > 1 then 
+                if !trace_len > 10 then 
                     create_if_token (loc e2 |> name_of_node) (loc term |> name_of_node) |> update_call_site cs 
                 else cs
             in
@@ -1002,6 +1010,8 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
             res_m
         end
     | Rec (f_opt, (x, lx), e1, l) ->
+        if !debug && (loc term) = "148" then print_string "Beginninggg map\n";
+        if !debug && (loc term) = "148" then pr_exec_map Format.std_formatter m;
         (* (if !debug then
         begin
             Format.printf "\n<=== Func ===>\n";
@@ -1019,7 +1029,10 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
         in
         let cs' = cs in
         let is_rec' = Opt.exist f_opt || is_rec in
+        (* if !debug && (loc term) = "128" then (print_string "Table\n"; print_value stdout t; print_string "\n"); *)
         step_func (fun cs (tel, ter) m' -> 
+            if !debug && (loc term) = "148" then print_string ((loc term)^" "^(get_trace_data cs)^" Beginning map\n");
+            if !debug && (loc term) = "148" then pr_exec_map Format.std_formatter m;
             if tel = TEBot then m' |> update false n te
             else if ter = TETop then top_M m' else
             begin
@@ -1095,9 +1108,13 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
                    fun m' -> m' |> update true nf tef' |> update false n (join_VE te1 te2))
                  nf_t2_tf'_opt |> Opt.get_or_else (update false n te1)) 
               in
-              let cs = if is_rec' && x = "_" then cs' else trace in
+              if !debug && (loc term) = "148" then print_string ((loc term)^" "^(get_trace_data cs)^" Intermediate map 1\n");
+              if !debug && (loc term) = "148" then pr_exec_map Format.std_formatter m;
+              let cs = if x = "_" then cs' else trace in
               let ec' = extract_ec tex' in
               let m1' = step e1 env1 x cs ec' ae' assertion is_rec' m1 in
+              if !debug && (loc term) = "148" then print_string ((loc term)^" "^(get_trace_data cs)^" Intermediate map 2\n");
+              if !debug && (loc term) = "148" then pr_exec_map Format.std_formatter m;
               (* let t1 = if x = "_" then find n1 m1' else replace_V (find n1 m1') x var in
               let prop_t = Table (construct_table cs (tx, t1)) in
               let px_t, t1 = prop_scope env1 env' x m1' prop_t t in
@@ -1113,7 +1130,10 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
               let m1' = m1' |> update nx tx' |> update n1 (if x = "_" then t1' else replace_V t1' z x) |>
               (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> update nf tf' |> update n (join_V t1 t2))
                  nf_t2_tf'_opt |> Opt.get_or_else (update n t1)) in *)
-              join_M m1' m'
+            let mm = join_M m1' m' in 
+            if !debug && (loc term) = "148" then print_string ((loc term)^" "^(get_trace_data cs)^" Ending map\n");
+            if !debug && (loc term) = "148" then pr_exec_map Format.std_formatter m;
+            mm
             end
         ) te (m |> update false n te |> Hashtbl.copy)
     | TupleLst (tlst, l) ->
@@ -1330,6 +1350,9 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
                 | _ -> raise (Invalid_argument "Pattern should only be either constant, variable, or list cons")
               ) (update false ne tee m' |> Hashtbl.copy) patlst in
           m''
+    in
+    (* if !debug then (print_string "\n"; print_string ((get_trace_data cs)^" "^(loc term)); pr_value Format.std_formatter (find !node_ref m); print_string "]en\n"); *)
+    m
 
 let step x1 x2 x3 x4 x5 x6 x7 = measure_call "step" (step x1 x2 x3 x4 x5 x6 x7)
           
@@ -1346,7 +1369,7 @@ let narrowing (m1:exec_map_t) (m2:exec_map_t): exec_map_t =
 
 (** Fixpoint loop *)
 let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_map_t =
-  (if !out_put_level = 0 then
+  (if !out_put_level = 0 && (k>=36) then
     begin
       let process = match stage with
       | Widening -> "Wid"
@@ -1365,6 +1388,7 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
              ) env (Relation (top_R Plus)) in
   let m_t = Hashtbl.copy m in
   let eff_i = StateMap.empty in  (*todo: init effect should be loaded from specs *)
+  if (k!=36) then debug := false else debug := true;
   let m' = step e env "" [] eff_i ae assertion false m_t in
   if k < 0 then if k = -1 then "", m' else fix stage env e (k+1) m' assertion else
   (* if k > 2 then Hashtbl.reset !pre_m;

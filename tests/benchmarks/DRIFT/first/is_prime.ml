@@ -15,6 +15,13 @@ let rec multiple_of (on:int) (om:int) =
 	else if on = 0 then true
 	else multiple_of (on - om) om
 
+	let rec multiple_of1 (on:int) (om:int) (oo:int) = 
+		if om < 0 then multiple_of1 on (0 - om) 1
+		else if on < 0 then multiple_of1 (0 - on) 1 om
+		else if om = 0 then false
+		else if on = 0 then true
+		else multiple_of1 (on - om) 1 om
+
 let rec is_prime_helper (hn:int) (hm:int) = 
 	if hn <= 1 then false
 	else if hn = 2 then true

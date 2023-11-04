@@ -407,13 +407,14 @@ module OneSensitive: SemanticsType =
       and pr_table_row ppf (cs, t) = 
         Format.fprintf ppf "@[<2>%s" (get_trace_data cs); Format.fprintf ppf ":@ @[<2>%a@]@]" pr_table t
       in print_table_map ppf t
-    let compare_node comp n1 n2 = match n1, n2 with
-      | SEN (var1, e1), SEN (var2, e2) -> comp_loc var1 var2
-      | SEN (var1, e1), SVN (var2, e2) -> comp_loc var1 var2
-      | SVN (var1, e1), SEN (var2, e2) -> comp_loc var1 var2
-      | SVN (var1, e1), SVN (var2, e2) -> let comp_res = comp_loc var1 var2 in
-          if comp_res = 0 then
-            comp e1 e2 else comp_res
+    let compare_node comp n1 n2 = let comp_res, e1, e2 = match n1, n2 with
+      | SEN (var1, e1), SEN (var2, e2) -> comp_loc var1 var2, e1, e2
+      | SEN (var1, e1), SVN (var2, e2) -> comp_loc var1 var2, e1, e2
+      | SVN (var1, e1), SEN (var2, e2) -> comp_loc var1 var2, e1, e2
+      | SVN (var1, e1), SVN (var2, e2) -> comp_loc var1 var2, e1, e2
+      in
+        if comp_res = 0 then
+          comp e1 e2 else comp_res
               
     let prop_table f g t1 t2 = 
       let t = TableMap.merge (fun cs vio1 vio2 ->
