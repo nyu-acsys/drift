@@ -172,9 +172,12 @@ module NonSensitive: SemanticsType =
     and list_t = (var * var) * (relation_t * value_te)
     and tuple_t = value_te list
     type call_site = None (* Not used *)
-    let temap (f, g) = function 
+    let temap (f, g) te = 
+      let ddp = function TypeAndEff (Bot,EffBot) -> TEBot | TypeAndEff (Top,EffTop) -> TETop | te -> te in
+      let dp = function TEBot -> TypeAndEff (Bot,EffBot) | TETop -> TypeAndEff (Top,EffTop) | te -> te in 
+      match te with 
       | TypeAndEff (v, e) -> TypeAndEff (f v, g e) (* TypeAndEff (apply2 (f, g) ve)  *)      
-      | te -> te
+      |  _ -> dp te |> (function TypeAndEff (v, e) -> TypeAndEff (f v, g e) | te -> te) |> ddp  
     let effmap f = function 
       | Effect eff -> Effect (f eff)
       | e -> e
@@ -306,9 +309,12 @@ module OneSensitive: SemanticsType =
     and table_t = (value_te * value_te) TableMap.t
     and list_t = (var * var) * (relation_t * value_te)
     and tuple_t = value_te list
-    let temap (f, g) = function 
+   let temap (f, g) te = 
+      let ddp = function TypeAndEff (Bot,EffBot) -> TEBot | TypeAndEff (Top,EffTop) -> TETop | te -> te in
+      let dp = function TEBot -> TypeAndEff (Bot,EffBot) | TETop -> TypeAndEff (Top,EffTop) | te -> te in 
+      match te with 
       | TypeAndEff (v, e) -> TypeAndEff (f v, g e) (* TypeAndEff (apply2 (f, g) ve)  *)      
-      | te -> te
+      |  _ -> dp te |> (function TypeAndEff (v, e) -> TypeAndEff (f v, g e) | te -> te) |> ddp
     let effmap f = function 
       | Effect eff -> Effect (f eff)
       | e -> e
@@ -468,9 +474,12 @@ module NSensitive: SemanticsType =
     and table_t = (value_te * value_te) TableMap.t
     and list_t = (var * var) * (relation_t * value_te)
     and tuple_t = value_te list
-    let temap (f, g) = function 
+   let temap (f, g) te = 
+      let ddp = function TypeAndEff (Bot,EffBot) -> TEBot | TypeAndEff (Top,EffTop) -> TETop | te -> te in
+      let dp = function TEBot -> TypeAndEff (Bot,EffBot) | TETop -> TypeAndEff (Top,EffTop) | te -> te in 
+      match te with 
       | TypeAndEff (v, e) -> TypeAndEff (f v, g e) (* TypeAndEff (apply2 (f, g) ve)  *)      
-      | te -> te
+      |  _ -> dp te |> (function TypeAndEff (v, e) -> TypeAndEff (f v, g e) | te -> te) |> ddp
     let effmap f = function 
       | Effect eff -> Effect (f eff)
       | e -> e
