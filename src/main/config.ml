@@ -22,11 +22,11 @@ let use_threshold = ref false
 let trace_len = ref 0
 let sensitive = ref true
 
-let effect_tr = ref false
+let effect_on = ref false
+let ev_trans = ref false
+let prop_file = ref "" 
 
-let effect_aut_file = ref "" 
-
-let usage = "usage: " ^ Sys.argv.(0) ^ " [-file <file name>] [-domain <domain name>] [-sen <true/false>] [-thold <true/false>] [-delay-wid <num>] [-nar <true/false>] [-eff-aut <file name>] [-out <num>] [-debug] [-bt]"
+let usage = "usage: " ^ Sys.argv.(0) ^ " [-file <file name>] [-domain <domain name>] [-sen <true/false>] [-thold <true/false>] [-delay-wid <num>] [-nar <true/false>] [-prop <file name>] [-ev-trans <true/false>] [-out <num>] [-debug] [-bt]"
 
 let cmd_options_spec =
   [("-file", Arg.String (fun s -> parse_file := true; file := s), ": Input file specification");
@@ -42,7 +42,8 @@ let cmd_options_spec =
       \t 2: Output the result only");
    ("-debug", Arg.Set debug, ": Debug mode");
    ("-bt", Arg.Set bt, ": Allow trace back");
-   ("-eff-aut", Arg.String (fun s -> effect_tr := true; effect_aut_file := s), ": Input automaton specification for effect analysis");
+   ("-prop", Arg.String (fun s -> effect_on := true; prop_file := s), ": Automata specification of safety property for effect analysis");
+   ("-ev-trans", Arg.String (fun s -> if s = "true" then ev_trans := true else ev_trans := false), "Translate Ev expressions"); 
    ("-trace-len", Arg.Int (fun s -> trace_len := s), ": Set maximum allowed trace length. 0 -> not context sensitive.");
   ]
 

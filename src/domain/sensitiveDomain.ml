@@ -1,5 +1,6 @@
 open AbstractDomain
 open Syntax
+open EffectAutomataSyntax
 open Util
 open Config
 open TracePartDomain
@@ -84,9 +85,9 @@ module TableMap = struct
   let compare = compare
 end
 
-type state_t = int (* representation of automata state domain*)
+(* type state_t = state *)(* representation of automata state domain*)
 type relation_e = relation_t (* dependent effect *)
-module StateMap = Map.Make(struct type t = state_t let compare = compare end)
+module StateMap = Map.Make(struct type t = state_t let compare (Q q1) (Q q2) = compare q1 q2 end)
 type effect_t = relation_e StateMap.t
 
 module type SemanticsType =

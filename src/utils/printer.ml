@@ -1,4 +1,5 @@
 open Syntax
+open EffectAutomataSyntax
 open AbstractDomain
 open SemanticDomain
 open SemanticsDomain
@@ -132,7 +133,7 @@ and shape_eff = function
   | EffBot -> "Bot"
   | EffTop -> "Top"
   | Effect e -> StateMap.bindings e 
-               |> List.map (fun (q, r) -> (string_of_int q) ^ "|->" ^ 
+               |> List.map (fun ((Q q), r) -> (string_of_int q) ^ "|->" ^ 
                                          (match r with 
                                           | Int _ -> "Int"
                                           | Bool _ -> "Bool"
@@ -162,7 +163,7 @@ and pr_eff ppf e = match e with
      if StateMap.is_empty e then Format.fprintf ppf "Empty" 
      else StateMap.bindings e 
           |> Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_eff_binding ppf
-and pr_eff_binding ppf (q, r) = 
+and pr_eff_binding ppf ((Q q), r) = 
   Format.fprintf ppf "@[<1>(@ %s@ |->@ %a)@]" (string_of_int q) pr_relation r
 and pr_lst ppf lst =
     let (l,e), (rl, ve) = lst in

@@ -135,6 +135,5 @@ binary_exp:
   | TIMES { Mult }
   | MOD { Mod }
   | DIV { Div }
-  | CONS { Cons }
 
 

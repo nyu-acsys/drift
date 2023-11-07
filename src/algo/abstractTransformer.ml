@@ -8,6 +8,7 @@ open TracePartDomain
 open Printer
 open Util
 open Config
+open AbstractEv
 (*
 ** c[M] is a single base refinement type that pulls in all the environment dependencies from M
 M = n1 |-> {v: int | v >= 2}, n2 |-> z:{v: int | v >= 0} -> {v: int | v = z}, n3 |-> {v: bool | v = true}
@@ -1344,24 +1345,13 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
         let te1 = find n1 m1 in
         if te1 = TEBot then m1
         else
-          m1 (* todo: implement abstract transformer for EV *)
-          (*
-            let node_1 = e1 |> loc |> name_of_node in
-          let ted = init_VE_v (Relation (utop_R uop)) in
-          let te = find n m1 in
-          let te' = arrow_VE node_1 ted (extract_v te1) |> temap (id, fun _ -> extract_eff te1) in
-          let te'' = uop_VE uop node_1 te' in
-          let raw_te = get_env_list env sx m1 |> proj_VE te'' in
-          (* if !domain = "Box" then
-             temp_t |> der_V e1 |> der_V e2  (* Deprecated: Solve remaining constraint only for box*)
-             else  *)
-          let _, re_te =
-            if is_Relation (extract_v raw_te)
-            then raw_te, raw_te
-            else prop raw_te te
-          in
-          m1 |> update false n (stren_VE re_te ae)
-          *)
+          let te' = begin match te1 with
+                     | TypeAndEff ((Relation v), (Effect e)) -> TypeAndEff (Relation (Unit ()), Effect (AbstractEv.ev e v))
+                     | _ -> te1
+                     end
+          in 
+          m1 |> update false n (stren_VE te' ae)
+
 let step x1 x2 x3 x4 x5 x6 x7 = measure_call "step" (step x1 x2 x3 x4 x5 x6 x7)
           
 (** Widening **)

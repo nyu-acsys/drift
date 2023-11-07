@@ -4,10 +4,10 @@ open Syntax
 type pos = Syntax.pos
 let fail = Syntax.fail
 
-type q = Q of int
+type state_t = Q of int
   
 type aut_spec = {
-  qset: q list; 
+  qset: state_t list; 
   delta: term; 
   asst: term;
   cfg0: term

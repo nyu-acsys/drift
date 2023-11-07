@@ -328,9 +328,9 @@ let _ =
     List.iter (fun e -> 
       let el = e 
                |> simplify
-               |> (if !Config.effect_tr then
-                     (Printf.printf "\neff_aut_file: %s" !Config.effect_aut_file;
-                     Translation.tr_effect !Config.effect_aut_file)
+               |> (if !Config.effect_on && !Config.ev_trans then
+                     (Printf.printf "\nprop_file: %s" !Config.prop_file;
+                     Translation.tr_effect !Config.prop_file)
                    else 
                      Fun.id)
                |> label in
@@ -340,6 +340,11 @@ let _ =
       print_endline "\n";
       print_endline ("Domain specification: " ^ !Config.domain);
       print_endline "\n";
+      (AbstractEv.property_spec := 
+         if !Config.effect_on then
+           Some (AbstractEv.parse_property_spec !Config.prop_file)
+         else
+           None);
       (* exit 0; *)
       ignore (s el);
       if !out_put_level < 2 then
