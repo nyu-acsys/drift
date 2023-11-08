@@ -57,7 +57,7 @@ class Tool(benchexec.tools.template.BaseTool2):
         if options:
             cmd += options
         if task.property_file:
-            cmd += ["-eff-aut", task.property_file]
+            cmd += ["-prop", task.property_file]
         return cmd
 
     def version(self, executable):

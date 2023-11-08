@@ -12,4 +12,4 @@ let rec sum x =
   if x <= 0 then 0 else x + sum (x - 1)
 
 let main  (v:int) =
-  if v < 0 then sum (-1 * v) else sum v  
+  if v < 0 then sum (0 - v) else sum v  

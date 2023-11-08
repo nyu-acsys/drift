@@ -1,8 +1,8 @@
 (* Events are Even, sink state *)
 { 
-	QSet   = [0,1]; 
+	QSet   = [0;1]; 
 	delta  = fun evx (q, acc) -> 
-        if evx mod 2 = 0 then (0,acc) else (1,acc)
+        if (evx mod 2 = 0) then (0, acc) else (1, acc);
 	assert = fun (q, acc) -> q = 0; 
  	IniCfg = (0, 0) 
 }

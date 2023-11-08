@@ -53,18 +53,36 @@ SPDX-License-Identifier: Apache-2.0
   <propertyfile expectedverdict="true">../../tests/effects/prop-true.eff</propertyfile>
   </tasks>
 
-  <tasks name="sum">
+  <!-- <tasks name="sum-tasks">
+    <include>tasks-sum.yml</include>
+  </tasks> -->
+ 
+  <tasks name="sum1">
     <include>../../tests/effects/mochi-sum.ml</include>
-    <propertyfile expectedverdict="true">../../tests/effects/prop-all-ev-pos.eff</propertyfile>
+    <propertyfile expectedverdict="true">../../tests/effects/prop-all-ev-pos.prp</propertyfile>
   </tasks>
+
+  <tasks name="sum2">
+    <include>../../tests/effects/mochi-sum.ml</include>
+    <propertyfile expectedverdict="false">../../tests/effects/prop-all-ev-even-sink.eff</propertyfile>
+  </tasks>
+
+<!-- need assertFile support: 
+  <tasks name="sum3">
+    <include>../../tests/effects/mochi-sum.ml</include>
+    <propertyfile expectedverdict="true">../../tests/effects/prop-last-ev-even.eff</propertyfile>
+  </tasks>
+-->
 
   <tasks name="traffic">
     <include>../../tests/effects/traffic_light_fo_simple.ml</include>
   <propertyfile expectedverdict="true">../../tests/effects/traffic_light_fo_simple.eff</propertyfile>
   </tasks>
 
-  <!-- <propertyfile>../../tests/effects/traffic_light_fo_simple.eff</propertyfile> -->
-
+  <!-- <tasks name="depend">
+    <include>../../tests/effects/depend.ml</include>
+  <propertyfile expectedverdict="true">../../tests/effects/prop-depend.eff</propertyfile>
+  </tasks> -->
 
   <!-- Use an SV-COMP property file as specification
     (file ALL.prp in the same directory as each source file). -->
