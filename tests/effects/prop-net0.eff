@@ -1,0 +1,8 @@
+(* Net-0 *)
+{ 
+	QSet   = [0]; 
+	delta  = fun evx (q, acc) -> (q,acc + evx);
+    assert = fun (q, acc) -> true;
+	assertFinal = fun (q, acc) -> (acc = 0); 
+ 	IniCfg = (0, 0) 
+}

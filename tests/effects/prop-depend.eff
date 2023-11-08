@@ -1,0 +1,9 @@
+(* Dependent *)
+{ 
+	QSet   = [0]; 
+	delta  = fun evx (q, acc) -> 
+	   if evx > program_x 
+	(q,acc + evx);
+    assert = fun (q, acc) -> (acc >= 0);
+ 	IniCfg = (0, 0) 
+}

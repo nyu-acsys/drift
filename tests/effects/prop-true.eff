@@ -1,0 +1,6 @@
+{ 
+	QSet   = [0]; 
+  delta  = fun x (q, acc) -> (0, acc); 
+	assert = fun (q, acc) -> true; 
+ 	IniCfg = (0, 0) 
+}

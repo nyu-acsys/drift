@@ -22,11 +22,21 @@ SPDX-License-Identifier: Apache-2.0
            memlimit="1000 MB"
            cpuCores="1">
 
-  <rundefinition name="drift-legacy">
+<!--
+  <rundefinition name="drift-evtrans">
     <option name="-out">2</option>
-    <option name="-domain">Oct</option>
+    <option name="-ev-trans">true</option>
+    <option name="-domain">Polka_ls</option>
+    <option name="-sen">true</option> 
+  </rundefinition>
+-->
+
+  <rundefinition name="drift-new">
+    <option name="-out">2</option>
+    <option name="-domain">Polka_ls</option>
     <option name="-sen">true</option> <!-- will be replaced by -trace-len {0,1,2} -->
   </rundefinition>
+
 
 <!--
   <tasks name="all-drift-legacy-benchmarks">
@@ -36,12 +46,22 @@ SPDX-License-Identifier: Apache-2.0
   </tasks>
 -->
 
-  <tasks name="acc-aut">
-    <include>../../tests/effects/traffic_light_fo_simple.ml</include>
+  <tasks name="trivial">
+    <!-- <include>../../tests/effects/traffic_light_fo_simple.ml</include> -->
     <include>../../tests/effects/assert-true.ml</include>
     <!-- <includesfile>programs/ReachSafety-ControlFlow.set</includesfile> -->
+  <propertyfile expectedverdict="true">../../tests/effects/prop-true.eff</propertyfile>
   </tasks>
-  <propertyfile expectedverdict="true">../../tests/effects/assert_true.eff</propertyfile>
+
+  <tasks name="sum">
+    <include>../../tests/effects/mochi-sum.ml</include>
+    <propertyfile expectedverdict="true">../../tests/effects/prop-all-ev-pos.eff</propertyfile>
+  </tasks>
+
+  <tasks name="traffic">
+    <include>../../tests/effects/traffic_light_fo_simple.ml</include>
+  <propertyfile expectedverdict="true">../../tests/effects/traffic_light_fo_simple.eff</propertyfile>
+  </tasks>
 
   <!-- <propertyfile>../../tests/effects/traffic_light_fo_simple.eff</propertyfile> -->
 

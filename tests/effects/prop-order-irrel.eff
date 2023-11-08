@@ -1,0 +1,13 @@
+  (* there are two particular events (let us treat them as integers
+ c and -c for some c) such that at most one of them is permitted 
+ to occur during any execution *)
+{ 
+	QSet   = [0,1]; 
+	delta  = fun evx (q, acc) -> 
+      if q = 1 then (1, acc)
+      else if acc = 0 then (q, evx) 
+      else if acc = evx then (q, acc)
+      else (1,acc);
+	assertFinal = fun (q, acc) -> q = 0; 
+ 	IniCfg = (0, 0) 
+}

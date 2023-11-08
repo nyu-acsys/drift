@@ -1,0 +1,7 @@
+(* Resource Analysis *)
+{ 
+	QSet   = [0]; 
+	delta  = fun evx (q, acc) -> (q,acc + evx);
+    assert = fun (q, acc) -> (acc >= 0);
+ 	IniCfg = (0, 0) 
+}
