@@ -30,7 +30,7 @@ let convert_var_name_apron_not_support s =
 %token PLUS MINUS TIMES DIV MOD 
 %token EQ NE LE LT GE GT
 %token AND OR
-%token ARROW CONS
+%token ARROW
 %token BEGIN END
 %token EMPTYLIST
 %token QSET                                  (* QSet *)
@@ -41,7 +41,6 @@ let convert_var_name_apron_not_support s =
 
 %nonassoc THEN
 %nonassoc ELSE
-%right CONS
 %left PLUS 
 %left MINUS
 %left TIMES DIV MOD
@@ -62,13 +61,13 @@ qset:
 
 delta_fn:
   | DELTA EQ FUN x=var LPAREN q=var COMMA acc=var RPAREN ARROW e=exp 
-      { delta_fn x (q, acc) e }
+      { SemActions.delta_fn x (q, acc) e }
 
 asst:
-  | ASSERT EQ FUN LPAREN q=var COMMA acc=var RPAREN ARROW e=bool_exp { effect_assert (q, acc) e }
+  | ASSERT EQ FUN LPAREN q=var COMMA acc=var RPAREN ARROW e=bool_exp { SemActions.effect_assert (q, acc) e }
 
 config0:
-  | INICFG EQ e=tuple_exp { initial_cfg e }
+  | INICFG EQ LPAREN e1=exp COMMA e2=exp RPAREN { SemActions.initial_cfg (e1, e2) }
 
 exp:
   | c=const_exp { c }

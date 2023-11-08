@@ -155,14 +155,15 @@ let rec pr_value ppf v = match v with
 and pr_value_and_eff ppf ve = match ve with
   | TEBot -> Format.fprintf ppf "_|_"
   | TETop -> Format.fprintf ppf "T"
-  | TypeAndEff (v, e) -> Format.fprintf ppf "@[<1>(@ v:@ %a,@ eff:@ %a)@]" pr_value v pr_eff e
-and pr_eff ppf e = match e with 
+  | TypeAndEff (v, e) -> Format.fprintf ppf "@[<hov 1>(@ v: %a,@,@[<v 1>@ eff: @[<v>%a@]@])@]" pr_value v pr_eff e
+and pr_eff_map ppf e = 
+  if StateMap.is_empty e then Format.fprintf ppf "Empty" 
+  else StateMap.bindings e 
+       |> Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_eff_binding ppf
+and pr_eff ppf eff = match eff with 
   | EffBot -> Format.fprintf ppf "_|_"
   | EffTop -> Format.fprintf ppf "T"
-  | Effect e -> 
-     if StateMap.is_empty e then Format.fprintf ppf "Empty" 
-     else StateMap.bindings e 
-          |> Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_eff_binding ppf
+  | Effect e -> pr_eff_map ppf e
 and pr_eff_binding ppf ((Q q), r) = 
   Format.fprintf ppf "@[<1>(@ %s@ |->@ %a)@]" (string_of_int q) pr_relation r
 and pr_lst ppf lst =

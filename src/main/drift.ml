@@ -341,7 +341,7 @@ let _ =
       print_endline ("Domain specification: " ^ !Config.domain);
       print_endline "\n";
       (AbstractEv.property_spec := 
-         if !Config.effect_on then
+         if !Config.effect_on && (not !Config.ev_trans) then
            Some (AbstractEv.parse_property_spec !Config.prop_file)
          else
            None);

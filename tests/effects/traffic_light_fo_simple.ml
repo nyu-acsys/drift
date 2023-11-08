@@ -8,4 +8,4 @@ let rec loop s =
 
 let main (u: unit) = 
   ev 0;
-  loop 4
+  loop 2

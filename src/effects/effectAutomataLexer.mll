@@ -59,7 +59,6 @@ rule token = parse
 | "<>" { NE }
 | "<" { LT }
 | ">" { GT }
-| "::" { CONS }
 | "[" { LSQBR }
 | "]" { RSQBR }
 | '+' { PLUS }
