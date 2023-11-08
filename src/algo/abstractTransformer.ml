@@ -8,6 +8,7 @@ open TracePartDomain
 open Printer
 open Util
 open Config
+open AbstractEv
 (*
 ** c[M] is a single base refinement type that pulls in all the environment dependencies from M
 M = n1 |-> {v: int | v >= 2}, n2 |-> z:{v: int | v >= 0} -> {v: int | v = z}, n3 |-> {v: bool | v = true}
@@ -497,16 +498,22 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
       (*NodeMap.update n (function
           | None -> v
           | Some v' -> if false && widen then wid_V v' v else (*join_V v'*) v) m*)
-        NodeMap.add n v m
+        (* NodeMap.add n v m *)
+      NodeMap.update n (fun old_v -> match old_v with None -> v | Some v' -> join_VE v' v) m
     in
     let find n m = NodeMap.find_opt n m |> Opt.get_or_else TEBot in
-    let find_ra q e = StateMap.find_opt q e |> Opt.get_or_else (bot_R Plus) in
+    (* let find_ra q e = StateMap.find_opt q e |> Opt.get_or_else (bot_R Plus) in *)
     let init_VE_wec v = TypeAndEff (v, (Effect ec)) in
-    let extract_ec te = match (extract_eff te) with
-      | EffBot | EffTop -> 
-         raise (Invalid_argument "An effect should be observable at this stage of the analysis")
-      | Effect e -> e
-    in   
+    let extract_ec = 
+      if (!Config.effect_on && (not !Config.ev_trans)) then
+           (fun te -> 
+             match (extract_eff te) with
+             | EffBot | EffTop -> 
+                raise (Invalid_argument "An effect should be observable at this stage of the analysis")
+             | Effect e -> e)
+          else
+            (fun te -> StateMap.empty)
+    in
     match term with
     | Const (c, l) ->
         (* (if !debug then
@@ -681,13 +688,13 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
                 res_m
             )
     | BinOp (bop, e1, e2, l) ->
-        (* (if !debug then
+        (if !debug then
         begin
             Format.printf "\n<=== Binop ===>\n";
             pr_exp true Format.std_formatter term;
             Format.printf "\n";
         end
-        ); *)
+        );
         let n1 = loc e1 |> construct_enode env |> construct_snode sx in
         let m1 =
           match bop with
@@ -740,6 +747,8 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
             let raw_te =
               match bop with
               | Cons (* list op *) ->
+                 (pr_value_and_eff Format.std_formatter te1;
+                 pr_value_and_eff Format.std_formatter te2);
                  list_cons_VE te1 te2
               | And | Or (* bool op *) ->
                  bool_op_VE bop te1 te2
@@ -1330,6 +1339,24 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
                 | _ -> raise (Invalid_argument "Pattern should only be either constant, variable, or list cons")
               ) (update false ne tee m' |> Hashtbl.copy) patlst in
           m''
+    | Event (e1, l) ->
+       (if !debug then
+        begin
+            Format.printf "\n<=== EV ===>\n";
+            pr_exp true Format.std_formatter term;
+            Format.printf "\n";
+        end);
+        let n1 = loc e1 |> construct_enode env |> construct_snode sx in
+        let m1 = step e1 env sx cs ec ae assertion is_rec m in
+        let te1 = find n1 m1 in
+        if te1 = TEBot then m1
+        else
+          let te' = begin match te1 with
+                    | TypeAndEff ((Relation v), (Effect e)) -> TypeAndEff (Relation (Unit ()), Effect (AbstractEv.ev e v))
+                    | _ -> te1
+                    end
+          in 
+          m1 |> update false n (stren_VE te' ae)
 
 let step x1 x2 x3 x4 x5 x6 x7 = measure_call "step" (step x1 x2 x3 x4 x5 x6 x7)
           
@@ -1352,7 +1379,7 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
       | Widening -> "Wid"
       | Narrowing -> "Nar"
       in
-      Format.printf "%s step %d\n" process k;
+      Format.printf "\n%s step %d\n" process k;
       print_exec_map m;
     end);
   (* if k > 40 then exit 0 else *)
@@ -1364,7 +1391,13 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
                  arrow_V var ae (extract_v te) else ae
              ) env (Relation (top_R Plus)) in
   let m_t = Hashtbl.copy m in
-  let eff_i = StateMap.empty in  (*todo: init effect should be loaded from specs *)
+  let eff_i = AbstractEv.eff0 () in
+  let pp_eff e = 
+    let ppf = Format.std_formatter in
+    if StateMap.is_empty e then Format.fprintf ppf "Empty\n" 
+    else StateMap.bindings e 
+         |> Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_eff_binding ppf in
+  (if !debug then (Format.printf "\nEff0: "; pp_eff eff_i));
   let m' = step e env "" [] eff_i ae assertion false m_t in
   if k < 0 then if k = -1 then "", m' else fix stage env e (k+1) m' assertion else
   (* if k > 2 then Hashtbl.reset !pre_m;

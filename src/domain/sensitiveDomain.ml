@@ -1,5 +1,6 @@
 open AbstractDomain
 open Syntax
+open EffectAutomataSyntax
 open Util
 open Config
 open TracePartDomain
@@ -84,9 +85,9 @@ module TableMap = struct
   let compare = compare
 end
 
-type state_t = int (* representation of automata state domain*)
+(* type state_t = state *)(* representation of automata state domain*)
 type relation_e = relation_t (* dependent effect *)
-module StateMap = Map.Make(struct type t = state_t let compare = compare end)
+module StateMap = Map.Make(struct type t = state_t let compare (Q q1) (Q q2) = compare q1 q2 end)
 type effect_t = relation_e StateMap.t
 
 module type SemanticsType =
@@ -172,9 +173,12 @@ module NonSensitive: SemanticsType =
     and list_t = (var * var) * (relation_t * value_te)
     and tuple_t = value_te list
     type call_site = None (* Not used *)
-    let temap (f, g) = function 
+    let temap (f, g) te = 
+      let ddp = function TypeAndEff (Bot,EffBot) -> TEBot | TypeAndEff (Top,EffTop) -> TETop | te -> te in
+      let dp = function TEBot -> TypeAndEff (Bot,EffBot) | TETop -> TypeAndEff (Top,EffTop) | te -> te in 
+      match te with 
       | TypeAndEff (v, e) -> TypeAndEff (f v, g e) (* TypeAndEff (apply2 (f, g) ve)  *)      
-      | te -> te
+      |  _ -> dp te |> (function TypeAndEff (v, e) -> TypeAndEff (f v, g e) | te -> te) |> ddp  
     let effmap f = function 
       | Effect eff -> Effect (f eff)
       | e -> e
@@ -306,9 +310,12 @@ module OneSensitive: SemanticsType =
     and table_t = (value_te * value_te) TableMap.t
     and list_t = (var * var) * (relation_t * value_te)
     and tuple_t = value_te list
-    let temap (f, g) = function 
+   let temap (f, g) te = 
+      let ddp = function TypeAndEff (Bot,EffBot) -> TEBot | TypeAndEff (Top,EffTop) -> TETop | te -> te in
+      let dp = function TEBot -> TypeAndEff (Bot,EffBot) | TETop -> TypeAndEff (Top,EffTop) | te -> te in 
+      match te with 
       | TypeAndEff (v, e) -> TypeAndEff (f v, g e) (* TypeAndEff (apply2 (f, g) ve)  *)      
-      | te -> te
+      |  _ -> dp te |> (function TypeAndEff (v, e) -> TypeAndEff (f v, g e) | te -> te) |> ddp
     let effmap f = function 
       | Effect eff -> Effect (f eff)
       | e -> e
@@ -468,9 +475,12 @@ module NSensitive: SemanticsType =
     and table_t = (value_te * value_te) TableMap.t
     and list_t = (var * var) * (relation_t * value_te)
     and tuple_t = value_te list
-    let temap (f, g) = function 
+   let temap (f, g) te = 
+      let ddp = function TypeAndEff (Bot,EffBot) -> TEBot | TypeAndEff (Top,EffTop) -> TETop | te -> te in
+      let dp = function TEBot -> TypeAndEff (Bot,EffBot) | TETop -> TypeAndEff (Top,EffTop) | te -> te in 
+      match te with 
       | TypeAndEff (v, e) -> TypeAndEff (f v, g e) (* TypeAndEff (apply2 (f, g) ve)  *)      
-      | te -> te
+      |  _ -> dp te |> (function TypeAndEff (v, e) -> TypeAndEff (f v, g e) | te -> te) |> ddp
     let effmap f = function 
       | Effect eff -> Effect (f eff)
       | e -> e

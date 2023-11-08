@@ -142,7 +142,7 @@ let parse_aut_spec file =
   EffectAutomataGrammar.top EffectAutomataLexer.token lexbuf
 
 let print_aut_spec (spec:aut_spec) = 
-  print_endline "\nEffect Automaton Spec:";
+  print_endline "\nProperty Automaton Spec:";
   print_endline "\nQSet:";
   print_endline ("[" ^ (String.concat ";" (List.map (fun (Q q) -> string_of_int q) spec.qset)) ^ "]");
   print_endline "\ndelta:";

@@ -236,7 +236,7 @@ module SemanticsDomain =
     let arrow_Eff var e r = match e with 
       | EffBot -> EffBot 
       | Effect _ -> effmapi (fun q e_r -> arrow_R var e_r r) e
-      | EffTop -> raise (Invalid_argument "EffTop should not be inferred")
+      | EffTop -> raise (Invalid_argument "EffTop A should not be inferred")
     let equal_Eff e var = effmapi (fun q r -> equal_R r var) e
     let wid_Eff e1 e2 = match e1, e2 with 
       | Effect e1, Effect e2 -> Effect (StateMap.union (fun q r1 r2 -> Some (wid_R r1 r2)) e1 e2)
@@ -245,7 +245,7 @@ module SemanticsDomain =
     let stren_Eff e ae = match e, ae with
       | EffBot, _ -> EffBot 
       | Effect _, Relation rae -> if is_bot_R rae then EffBot else (effmapi (fun q r -> stren_R r rae) e)
-      | EffTop, Relation rae -> raise (Invalid_argument "EffTop should not be inferred")
+      | EffTop, Relation rae -> EffTop (* raise (Invalid_argument "EffTop B should not be inferred") *)
          (* effmapi (fun q r -> stren_R r) rae) eff_Top; where eff_Top = StateMap.creat (Q.size) (top_R Plus) *)
          (* 
          begin match rae with 
@@ -658,7 +658,7 @@ module SemanticsDomain =
       | Bot, _ | _, Bot -> Bot
       | v, Lst lst -> Lst (list_cons_Lst v lst)
       | _,_ -> raise (Invalid_argument "List construct should be item :: lst")
-    and list_cons_VE ve1 ve2 = match ve1, ve2 with 
+    and list_cons_VE ve1 ve2 =  match ve1, ve2 with 
       | TEBot, _ | _, TEBot -> TEBot
       | (TypeAndEff (v, _)), (TypeAndEff ((Lst lst), e)) -> TypeAndEff ((Lst (list_cons_Lst v lst)), e)
       | _ -> raise (Invalid_argument "reduce length either a list or an array")
