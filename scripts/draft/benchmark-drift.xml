@@ -80,11 +80,34 @@ SPDX-License-Identifier: Apache-2.0
   <propertyfile expectedverdict="true">../../tests/effects/traffic_light_fo_simple.eff</propertyfile>
   </tasks>
 
-  <!-- <tasks name="depend">
+  <tasks name="depend">
     <include>../../tests/effects/depend.ml</include>
   <propertyfile expectedverdict="true">../../tests/effects/prop-depend.eff</propertyfile>
-  </tasks> -->
+  </tasks>
 
-  <!-- Use an SV-COMP property file as specification
-    (file ALL.prp in the same directory as each source file). -->
+  <tasks name="ho-shrink">
+    <include>../../tests/effects/ho-shrink.ml</include>
+  <propertyfile expectedverdict="true">../../tests/effects/prop-ho-shrink.eff</propertyfile>
+  </tasks>
+
+  <tasks name="last-ev-even">
+    <include>../../tests/effects/last-ev-even.ml</include>
+  <propertyfile expectedverdict="true">../../tests/effects/prop-last-ev-even.eff</propertyfile>
+  </tasks>
+
+  <tasks name="max-min">
+    <include>../../tests/effects/max-min.ml</include>
+  <propertyfile expectedverdict="true">../../tests/effects/prop-max-min.eff</propertyfile>
+  </tasks>
+
+  <tasks name="order-irrel">
+    <include>../../tests/effects/order-irrel.ml</include>
+  <propertyfile expectedverdict="true">../../tests/effects/prop-order-irrel.eff</propertyfile>
+  </tasks>
+
+  <tasks name="resource-analysis">
+    <include>../../tests/effects/resource-analysis.ml</include>
+  <propertyfile expectedverdict="true">../../tests/effects/prop-resource-analysis.eff</propertyfile>
+  </tasks>
+
 </benchmark>
