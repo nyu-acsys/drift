@@ -53,10 +53,11 @@ SPDX-License-Identifier: Apache-2.0
   <propertyfile expectedverdict="true">../../tests/effects/prop-true.eff</propertyfile>
   </tasks>
 
-  <!-- <tasks name="sum-tasks">
+<!--
+  <tasks name="sum-tasks">
     <include>tasks-sum.yml</include>
-  </tasks> -->
- 
+  </tasks>
+ -->
   <tasks name="sum1">
     <include>../../tests/effects/mochi-sum.ml</include>
     <propertyfile expectedverdict="true">../../tests/effects/prop-all-ev-pos.prp</propertyfile>
