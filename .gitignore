@@ -47,16 +47,13 @@ tests/benchmark/*.json
 *.status
 *.exe
 
-<<<<<<< HEAD
 
 nohup.out
-scripts/draft/base-drifttoolinfo/build/**/*
-scripts/draft/base-drifttoolinfo/dist/**/*
-scripts/draft/base-drifttoolinfo/drifttoolinfo/__pycache__
-scripts/draft/base-drifttoolinfo/drifttoolinfo.egg-info
+scripts/benchexec-drifttoolinfo/build/**/*
+scripts/benchexec-drifttoolinfo/dist/**/*
+scripts/benchexec-drifttoolinfo/drifttoolinfo/__pycache__
+scripts/benchexec-drifttoolinfo/drifttoolinfo.egg-info
 
-scripts/draft/results/**/*
-=======
+scripts/effects/results/**/*
 nohup.out
 \#*\#
->>>>>>> b011e4396bad5513ac7f65b95857783d9e6e3c28
