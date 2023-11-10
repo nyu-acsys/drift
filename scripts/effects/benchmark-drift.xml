@@ -37,81 +37,9 @@ SPDX-License-Identifier: Apache-2.0
     <option name="-sen">true</option> <!-- will be replaced by -trace-len {0,1,2} -->
   </rundefinition>
 
-
-<!--
-  <tasks name="all-drift-legacy-benchmarks">
-    <include>../../tests/benchmarks/DOrder/first/gcd.ml</include>
-    <include>../../tests/benchmarks/DRIFT/array/a-append.ml</include>
-    <include>../../tests/benchmarks/r_type/array/a-append.ml</include>
+  <tasks name="effects">
+    <include>../../tests/effects/*.yml</include>
+    <propertyfile>${taskdef_path}/${taskdef_name}.prp</propertyfile>
   </tasks>
--->
-
-  <tasks name="trivial">
-    <include>assert-true.yml</include>
-    <propertyfile>../../tests/effects/prop-true.prp</propertyfile>
-  </tasks>
-
-
-<!--
-  <tasks name="trivial">
-    <include>../../tests/effects/assert-true.ml</include>
-  <propertyfile>../../tests/effects/prop-true.eff</propertyfile>
-  </tasks>
-  <tasks name="sum-tasks">
-    <include>tasks-sum.yml</include>
-  </tasks>
-  <tasks name="sum1">
-    <include>../../tests/effects/mochi-sum.ml</include>
-    <propertyfile expectedverdict="true">../../tests/effects/prop-all-ev-pos.prp</propertyfile>
-  </tasks>
-
-  <tasks name="sum2">
-    <include>../../tests/effects/mochi-sum.ml</include>
-    <propertyfile expectedverdict="false">../../tests/effects/prop-all-ev-even-sink.eff</propertyfile>
-  </tasks>
--->
-<!-- need assertFile support: 
-  <tasks name="sum3">
-    <include>../../tests/effects/mochi-sum.ml</include>
-    <propertyfile expectedverdict="true">../../tests/effects/prop-last-ev-even.eff</propertyfile>
-  </tasks>
--->
-
-<!--
-    <tasks name="traffic">
-    <include>../../tests/effects/traffic_light_fo_simple.ml</include>
-  <propertyfile expectedverdict="true">../../tests/effects/traffic_light_fo_simple.eff</propertyfile>
-  </tasks>
-
-  <tasks name="depend">
-    <include>../../tests/effects/depend.ml</include>
-  <propertyfile expectedverdict="true">../../tests/effects/prop-depend.eff</propertyfile>
-  </tasks>
-
-  <tasks name="ho-shrink">
-    <include>../../tests/effects/ho-shrink.ml</include>
-  <propertyfile expectedverdict="true">../../tests/effects/prop-ho-shrink.eff</propertyfile>
-  </tasks>
-
-  <tasks name="last-ev-even">
-    <include>../../tests/effects/last-ev-even.ml</include>
-  <propertyfile expectedverdict="true">../../tests/effects/prop-last-ev-even.eff</propertyfile>
-  </tasks>
-
-  <tasks name="max-min">
-    <include>../../tests/effects/max-min.ml</include>
-  <propertyfile expectedverdict="true">../../tests/effects/prop-max-min.eff</propertyfile>
-  </tasks>
-
-  <tasks name="order-irrel">
-    <include>../../tests/effects/order-irrel.ml</include>
-  <propertyfile expectedverdict="true">../../tests/effects/prop-order-irrel.eff</propertyfile>
-  </tasks>
-
-  <tasks name="resource-analysis">
-    <include>../../tests/effects/resource-analysis.ml</include>
-  <propertyfile expectedverdict="true">../../tests/effects/prop-resource-analysis.eff</propertyfile>
-  </tasks>
--->
 
 </benchmark>
