@@ -55,5 +55,6 @@ scripts/benchexec-drifttoolinfo/drifttoolinfo/__pycache__
 scripts/benchexec-drifttoolinfo/drifttoolinfo.egg-info
 
 scripts/effects/results/**/*
+tests/effects/*.yml
 nohup.out
 \#*\#
