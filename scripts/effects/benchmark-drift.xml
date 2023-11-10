@@ -47,17 +47,19 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
   <tasks name="trivial">
-    <!-- <include>../../tests/effects/traffic_light_fo_simple.ml</include> -->
-    <include>../../tests/effects/assert-true.ml</include>
-    <!-- <includesfile>programs/ReachSafety-ControlFlow.set</includesfile> -->
-  <propertyfile expectedverdict="true">../../tests/effects/prop-true.eff</propertyfile>
+    <include>assert-true.yml</include>
+    <propertyfile>../../tests/effects/prop-true.prp</propertyfile>
   </tasks>
 
+
 <!--
+  <tasks name="trivial">
+    <include>../../tests/effects/assert-true.ml</include>
+  <propertyfile>../../tests/effects/prop-true.eff</propertyfile>
+  </tasks>
   <tasks name="sum-tasks">
     <include>tasks-sum.yml</include>
   </tasks>
- -->
   <tasks name="sum1">
     <include>../../tests/effects/mochi-sum.ml</include>
     <propertyfile expectedverdict="true">../../tests/effects/prop-all-ev-pos.prp</propertyfile>
@@ -67,7 +69,7 @@ SPDX-License-Identifier: Apache-2.0
     <include>../../tests/effects/mochi-sum.ml</include>
     <propertyfile expectedverdict="false">../../tests/effects/prop-all-ev-even-sink.eff</propertyfile>
   </tasks>
-
+-->
 <!-- need assertFile support: 
   <tasks name="sum3">
     <include>../../tests/effects/mochi-sum.ml</include>
@@ -75,7 +77,8 @@ SPDX-License-Identifier: Apache-2.0
   </tasks>
 -->
 
-  <tasks name="traffic">
+<!--
+    <tasks name="traffic">
     <include>../../tests/effects/traffic_light_fo_simple.ml</include>
   <propertyfile expectedverdict="true">../../tests/effects/traffic_light_fo_simple.eff</propertyfile>
   </tasks>
@@ -109,5 +112,6 @@ SPDX-License-Identifier: Apache-2.0
     <include>../../tests/effects/resource-analysis.ml</include>
   <propertyfile expectedverdict="true">../../tests/effects/prop-resource-analysis.eff</propertyfile>
   </tasks>
+-->
 
 </benchmark>
