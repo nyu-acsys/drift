@@ -39,7 +39,7 @@ class Tool(benchexec.tools.template.BaseTool2):
     REQUIRED_PATHS = ["bin", "include", "lib", "share"]
 
     def executable(self,tool_locator):
-        return tool_locator.find_executable("drift.exe", subdir="/tools/home/eric/drift")
+        return tool_locator.find_executable("drift.exe", subdir="/usr/local/bin")
 
     def program_files(self, executable):
         return self._program_files_from_executable(
