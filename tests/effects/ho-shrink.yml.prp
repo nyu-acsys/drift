@@ -1,8 +1,8 @@
-
 (* Dependent *)
-{ 
-	QSet   = [0]; 
-	delta  = fun evx (q, acc) -> (q, (acc+evx));
-    assertFinal = fun (q, acc) -> (acc = t/d);
- 	IniCfg = (0, 0) 
-}
+ 
+ QSet   = [0]; 
+ 
+delta  = fun evx (q, acc) -> (q, (acc+evx));
+     assertFinal = fun (q, acc) -> (acc = t/d);
+ 
+IniCfg = (0, 0)

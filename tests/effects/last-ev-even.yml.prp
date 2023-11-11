@@ -1,7 +1,9 @@
 (* Last event seen is even *)
-{ 
-	QSet   = [0]; 
-	delta  = fun evx (q, acc) -> (q,evx);
-	assertFinal = fun (q, acc) -> acc mod 2 = 0; 
- 	IniCfg = (0, 0) 
-}
+
+QSet   = [0]; 
+
+delta  = fun evx (q, acc) -> (q,evx);
+
+IniCfg = (0, 0);
+
+assertFinal = fun (q, acc) -> acc mod 2 = 0

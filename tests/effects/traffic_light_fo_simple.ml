@@ -6,6 +6,7 @@ let rec loop s =
   if (s > 0) then loop (next s)
   else ()
 
-let main (u: unit) = 
+let main (u: unit(*-:{v:Unit | unit}*)) = 
   ev 0;
-  loop 2
+  loop 4
+

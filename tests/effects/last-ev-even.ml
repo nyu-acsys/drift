@@ -3,7 +3,7 @@ let foo vv f =
     ev f
    else begin ev vv; foo (v-1) f end 
 
-let main (v:int) (final:int) =
+let main (v:int(*-:{v:Int | true}*)) (final:int(*-:{v:Int | true}*)) =
   if (final mod 2 = 0) then 
     foo v final
   else 
