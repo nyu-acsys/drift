@@ -9,6 +9,6 @@ let rec order d c =
      order (d - 2) c
   end else 0
 
-let main (dd:int) (cc:int) = 
+let main (dd:int(*-:{v:Int | true}*)) (cc:int(*-:{v:Int | true}*)) = 
   order dd cc
 

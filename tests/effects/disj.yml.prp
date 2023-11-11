@@ -1,11 +1,14 @@
 (* Disjunctive *)
-{ 
-	QSet   = [0,1,2]; 
-	delta  = fun evx (q, acc) -> 
+
+QSet   = [0,1,2]; 
+
+delta  = fun evx (q, acc) -> 
       if (evx > 0) then (1,acc)
-      else if (evx < 0) then (2,acc)
-         ...
-	  if event is pos, x must  be even ;
-    assert = fun (q, acc) -> (acc >= 0);
- 	IniCfg = (0, 0) 
-}
+       else if (evx < 0) then (2,acc)
+ ...
+
+IniCfg = (0, 0);
+
+(* if event is pos, x must  be even ; *)
+assert = fun (q, acc) -> (acc >= 0)
+

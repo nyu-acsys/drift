@@ -1,14 +1,15 @@
 (* ============================================================================================ *)
 (* ===                         III. 3-State AUTOMATON & Initial CFG                         === *)
 (* ============================================================================================ *)
-{ 
-	QSet   = [0; 1; 2; 3]; 
-  	delta  = fun evx (q, acc) -> 
-	           if (q = 0) then (1, acc) 
-			 else if (q = 1) then (2, acc) 
-			      else if (q = 2) then (3, acc)
-                 	      	   else if (q = 3) then (3, acc) 
-				   	else ((-1), acc); 
-	assert = fun (q, acc) -> q > 0; 
- 	IniCfg = (0, 0) 
-}
+
+QSet   = [0; 1; 2; 3]; 
+
+delta  = fun evx (q, (max, min)) -> 
+       if evx < min then (q, (max,evx)) 
+	   else if evx > max then (q, (evx,min)) 
+	   else (q, (max,min)); 
+
+IniCfg = (0, (0, 0));
+
+assertFinal = fun (q, (max, min)) -> max + min = 0
+

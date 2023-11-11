@@ -36,6 +36,7 @@ let convert_var_name_apron_not_support s =
 %token QSET                                  (* QSet *)
 %token DELTA                                 (* delta *)
 %token ASSERT                                (* assert *)
+%token ASSERTFINAL                           (* assertFinal *)
 %token INICFG                                (* IniCfg *)
 %token EOF
 
@@ -50,24 +51,32 @@ let convert_var_name_apron_not_support s =
 
 /* production rules */
 top:
-  | LBRACE fields=aut_fields RBRACE EOF { effect_aut_spec fields }
+  | fields=aut_fields EOF { effect_aut_spec fields }
   
 aut_fields: 
-  | qs=qset SEMI df=delta_fn SEMI a=asst SEMI c0=config0 { (qs, df, a, c0) }
+  | qs=qset SEMI df=delta_fn SEMI c0=config0 SEMI assts=assts { (qs, df, c0, assts) }
 
 qset:
   | QSET EQ LSQBR qs=separated_nonempty_list(SEMI, q=INTCONST { q }) RSQBR 
       { List.map (fun q -> Q q) qs }
 
 delta_fn:
-  | DELTA EQ FUN x=var LPAREN q=var COMMA acc=var RPAREN ARROW e=exp 
+  | DELTA EQ FUN x=var LPAREN q=var COMMA acc=vars RPAREN ARROW e=exp 
       { SemActions.delta_fn x (q, acc) e }
-
-asst:
-  | ASSERT EQ FUN LPAREN q=var COMMA acc=var RPAREN ARROW e=bool_exp { SemActions.effect_assert (q, acc) e }
 
 config0:
   | INICFG EQ LPAREN e1=exp COMMA e2=exp RPAREN { SemActions.initial_cfg (e1, e2) }
+
+assts:
+  | ea=asst { [ea] }
+  | ea=asst SEMI eas=assts { ea::eas }
+
+asst:
+  | ASSERT EQ af=asst_fun { let (q, acc, e) = af in SemActions.prop_assert (q, acc) e }
+  | ASSERTFINAL EQ af=asst_fun { let (q, acc, e) = af in SemActions.prop_assert_final (q, acc) e } 
+
+asst_fun: 
+  | FUN LPAREN q=var COMMA acc=vars RPAREN ARROW e=bool_exp { (q, acc, e) }
 
 exp:
   | c=const_exp { c }
@@ -77,7 +86,12 @@ exp:
   | e=tuple_exp { e }
   | e=binary_exp { e }
   | e=unary_exp { e }
+  | LPAREN e=exp RPAREN { e }
   | BEGIN e=exp END { e } 
+
+vars:
+  | x=var { [x] }
+  | LPAREN x=var COMMA xs=separated_nonempty_list(COMMA, x=var { x }) RPAREN { x::xs }
 
 var:
   | x=IDENT
@@ -89,10 +103,10 @@ const_exp:
   | b=BOOLCONST { Const (Boolean b, "") }
 
 tuple_exp:
-  | LPAREN es=separated_nonempty_list(COMMA, e=exp { e }) RPAREN { TupleLst (es, "") }
+  | LPAREN e=exp COMMA es=separated_nonempty_list(COMMA, e=exp { e }) RPAREN { TupleLst (e::es, "") }
 
 %inline if_exp:
-  | IF LPAREN be=bool_exp RPAREN THEN e1=exp ELSE e2=exp 
+  | IF be=bool_exp THEN e1=exp ELSE e2=exp 
       { let loc = None |> construct_asst in
         Ite (be, e1, e2, "", loc) }
   | IF LPAREN be=bool_exp RPAREN THEN e1=exp 

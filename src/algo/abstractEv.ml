@@ -20,8 +20,10 @@ let print_aut_spec (spec:aut_spec) =
   print_endline ("[" ^ (String.concat ";" (List.map (fun (Q q) -> string_of_int q) spec.qset)) ^ "]");
   print_endline "\ndelta:";
   print_exp stdout spec.delta;
-  print_endline "\n\nassert:";
-  print_exp stdout spec.asst;
+   print_endline "\nassert:";
+  (match spec.asst with Some asst -> print_exp stdout asst | None -> Format.printf "None");
+  print_endline "\nassertFinal:";
+  (match spec.asstFinal with Some asst -> print_exp stdout asst | None -> Format.printf "None");
   print_endline "\n\ninitial config:";
   print_exp stdout spec.cfg0;
   print_endline "\n<-------------------->\n"

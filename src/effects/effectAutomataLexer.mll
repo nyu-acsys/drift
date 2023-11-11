@@ -13,6 +13,7 @@ let _ =
       ("end", END);
       ("false", BOOLCONST false);
       ("assert", ASSERT);
+      ("assertFinal", ASSERTFINAL);
       ("fun", FUN);
       ("if", IF);
       ("mod", MOD);

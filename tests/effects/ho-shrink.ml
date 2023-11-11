@@ -6,6 +6,6 @@ let rec shrink t f d =
     let t' = f() - d in
     shrink t' (fun x -> t') d end
 
-let main (gl_t:int) (gl_d:int) =   
+let main (gl_t:int(*-:{v:Int | true}*)) (gl_d:int(*-:{v:Int | true}*)) =   
     ev (t/d);
     shrink t (fun x -> t) d

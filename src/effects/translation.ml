@@ -148,12 +148,19 @@ let print_aut_spec (spec:aut_spec) =
   print_endline "\ndelta:";
   print_exp stdout spec.delta;
   print_endline "\nassert:";
-  print_exp stdout spec.asst;
+  (match spec.asst with Some asst -> print_exp stdout asst | None -> Format.printf "None");
+  print_endline "\nassertFinal:";
+  (match spec.asstFinal with Some asst -> print_exp stdout asst | None -> Format.printf "None");
   print_endline "\ninitial config:";
   print_exp stdout spec.cfg0;
   print_endline "\n<-------------------->\n"
 
 let tr_effect spec e = 
   let aspec = parse_aut_spec spec in
+  let asst = match aspec.asstFinal with
+    | Some asst -> asst
+    | None -> mk_lambda (mk_fresh_var "cfg") (Const ((Boolean true), ""))
+  in 
   print_aut_spec (aspec);
-  tr e aspec.delta aspec.cfg0 aspec.asst
+  tr e aspec.delta aspec.cfg0 asst
+
