@@ -69,6 +69,8 @@ class Tool(benchexec.tools.template.BaseTool2):
     def determine_result(self, run): 
         if "The input program is safe" in run.output:
             status = result.RESULT_TRUE_PROP
+        elif "NoneThe input program is safe" in run.output:
+            status = result.RESULT_TRUE_PROP
         elif "The program may not be safe" in run.output:
             status = result.RESULT_UNKNOWN
             # if "BRUNCH_STAT Termination" in output:
