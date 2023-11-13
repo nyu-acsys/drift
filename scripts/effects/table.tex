@@ -1,0 +1,54 @@
+\documentclass[11pt, oneside]{article}   	% use "amsart" instead of "article" for AMSLaTeX format
+\usepackage{geometry}                		% See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   		% ... or a4paper or a5paper or ... 
+%\geometry{landscape}                		% Activate for rotated page geometry
+%\usepackage[parfill]{parskip}    		% Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}				% Use pdf, png, jpg, or eps§ with pdflatex; use eps in DVI mode
+								% TeX will automatically convert eps --> pdf in pdflatex		
+\usepackage{amssymb}
+
+%SetFonts
+
+%SetFonts
+
+
+\title{Brief Article}
+\author{The Author}
+%\date{}							% Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+%\section{}
+%\subsection{}
+\footnotesize
+\hspace{-1.5in}
+\begin{tabular}{|l|c|rrr|c|rrr|}
+\hline
+                & \multicolumn{4}{c|}{\bf New Drift} & \multicolumn{4}{c|}{\bf Drift+Trans} \\
+{\bf Benchmark} & {\bf Res.} & {\bf CPU (s)} & {\bf Wall (s)} & {\bf Mem (MB)} & {\bf Res.} & {\bf CPU (s)} & {\bf Wall (s)} & {\bf Mem (MB)} \\
+\hline
+\hline
+\texttt{acc-pos-net0.ml}     & true     & 0.03 & 0.03 & 9.72 & ERROR (1) & 0.01 & 0.01 & 2.38 \\
+\hline
+\texttt{all-ev-even-sink.ml} & true     & 0.05 & 0.05 & 9.98 & true     & 0.25 & 0.26 & 13.10 \\
+\hline
+\texttt{depend.ml}           & true     & 0.01 & 0.01 & 3.17 & true     & 0.03 & 0.03 & 7.22 \\
+\hline
+\texttt{disj.ml}             & true     & 0.32 & 0.33 & 19.27 & ERROR (1) & 0.01 & 0.02 & 5.14 \\
+\hline
+\texttt{ho-shrink.ml}        & ERROR (1) & 0.01 & 0.01 & 5.04 & ERROR (1) & 0.02 & 0.02 & 5.39 \\
+\hline
+\texttt{last-ev-even.ml}     & true     & 0.11 & 0.11 & 11.81 & ERROR (1) & 0.03 & 0.03 & 7.75 \\
+\hline
+\texttt{max-min.ml}          & true     & 0.14 & 0.14 & 12.33 & ERROR (1) & 0.05 & 0.05 & 9.58 \\
+\hline
+\texttt{order-irrel.ml}      & true     & 0.16 & 0.16 & 15.48 & ERROR (1) & 0.01 & 0.01 & 3.02 \\
+\hline
+\texttt{resource-analysis.ml} & true     & 0.04 & 0.04 & 10.37 & true     & 0.16 & 0.16 & 12.99 \\
+\hline
+\texttt{sum-of-ev-even.ml}   & true     & 0.04 & 0.04 & 8.43 & ERROR (1) & 0.04 & 0.04 & 7.88 \\
+\hline
+\texttt{traffic\_light\_fo\_simple.ml} & true     & 0.03 & 0.03 & 9.45 & ERROR (1) & 0.01 & 0.01 & 3.04 \\
+\hline
+\end{tabular}
+\end{document}  

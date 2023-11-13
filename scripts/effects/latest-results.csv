@@ -1,0 +1,14 @@
+tool		drift 0.0.todo	drift 0.0.todo	drift 0.0.todo	drift 0.0.todo	drift 0.0.todo	drift 0.0.todo	drift 0.0.todo	drift 0.0.todo
+run set		drift-new.effects	drift-new.effects	drift-new.effects	drift-new.effects	drift-trans.effects	drift-trans.effects	drift-trans.effects	drift-trans.effects
+../../tests/effects/		status	cputime (s)	walltime (s)	memory (MB)	status	cputime (s)	walltime (s)	memory (MB)
+acc-pos-net0.yml	acc-pos-net0.yml	true	0.03226048	0.03315986809320748	9.715712	ERROR (1)	0.006596643	0.008025498827919364	2.375680
+all-ev-even-sink.yml	all-ev-even-sink.yml	true	0.047496369	0.04897947213612497	9.977856	true	0.254785404	0.2569419560022652	13.103104
+depend.yml	depend.yml	true	0.008928854	0.010126479901373386	3.166208	true	0.02950917	0.030834435019642115	7.221248
+disj.yml	disj.yml	true	0.323684831	0.32523958990350366	19.271680	ERROR (1)	0.01373112	0.0150322241242975	5.144576
+ho-shrink.yml	ho-shrink.yml	ERROR (1)	0.01218415	0.013345783110707998	5.042176	ERROR (1)	0.016139037	0.017260101856663823	5.390336
+last-ev-even.yml	last-ev-even.yml	true	0.109095318	0.11040512495674193	11.808768	ERROR (1)	0.029125387	0.03029212588444352	7.749632
+max-min.yml	max-min.yml	true	0.13832236	0.13958632200956345	12.333056	ERROR (1)	0.048369314	0.049289874965325	9.584640
+order-irrel.yml	order-irrel.yml	true	0.157706589	0.1588219590485096	15.482880	ERROR (1)	0.007794248	0.008604528149589896	3.022848
+resource-analysis.yml	resource-analysis.yml	true	0.037291875	0.038868441013619304	10.366976	true	0.155970496	0.15841862093657255	12.988416
+sum-of-ev-even.yml	sum-of-ev-even.yml	true	0.035259032	0.03646060288883746	8.429568	ERROR (1)	0.038449255	0.03979073488153517	7.876608
+traffic_light_fo_simple.yml	traffic_light_fo_simple.yml	true	0.026880808	0.027940724976360798	9.445376	ERROR (1)	0.006727459	0.007600470911711454	3.035136
