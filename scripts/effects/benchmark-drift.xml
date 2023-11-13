@@ -37,6 +37,13 @@ SPDX-License-Identifier: Apache-2.0
     <option name="-sen">true</option> <!-- will be replaced by -trace-len {0,1,2} -->
   </rundefinition>
 
+  <rundefinition name="drift-trans">
+    <option name="-out">2</option>
+    <option name="-domain">Polka_ls</option>
+    <option name="-ev-trans">true</option>
+    <option name="-sen">true</option> <!-- will be replaced by -trace-len {0,1,2} -->
+  </rundefinition>
+
   <tasks name="effects">
     <include>../../tests/effects/*.yml</include>
     <propertyfile>${taskdef_path}/${taskdef_name}.prp</propertyfile>
