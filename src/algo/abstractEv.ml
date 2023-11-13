@@ -20,7 +20,9 @@ let print_aut_spec (spec:aut_spec) =
   print_endline ("[" ^ (String.concat ";" (List.map (fun (Q q) -> string_of_int q) spec.qset)) ^ "]");
   print_endline "\ndelta:";
   print_exp stdout spec.delta;
-   print_endline "\nassert:";
+  print_endline "\nenv:";
+  print_endline ("{" ^ (String.concat ";" spec.env) ^ "}");
+  print_endline "\nassert:";
   (match spec.asst with Some asst -> print_exp stdout asst | None -> Format.printf "None");
   print_endline "\nassertFinal:";
   (match spec.asstFinal with Some asst -> print_exp stdout asst | None -> Format.printf "None");
@@ -69,12 +71,10 @@ let ev eff t =
   in
 
   let add_tran vq va ts = (arrow_R "q'" va vq)::ts in
-  let env0 = EmptyEvEnv 
-             |> extend_env "q" (top_R Plus)
-             |> extend_env "acc" (top_R Plus) 
-             |> extend_env "evx" (top_R Plus) 
-             |> extend_env "q'" (top_R Plus)
-  in
+  let env0 = EmptyEvEnv |> extend_env "q" (top_R Plus) |> extend_env "q'" (top_R Plus) 
+             |> (List.fold_right (fun v e -> extend_env v (top_R Plus) e) spec.env)
+             |> (VarDefMap.fold (fun v _ e -> extend_env v (top_R Plus) e) !pre_vars) 
+  in 
   let name_of_node l = "ze" ^ l in
   let get_env_vars env = fold_env (fun id v lst -> id::lst) env [] in
   let eff_bot = eff_bot spec in
