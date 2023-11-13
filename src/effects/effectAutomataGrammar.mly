@@ -24,7 +24,7 @@ let convert_var_name_apron_not_support s =
 %token <string> IDENT
 %token <int> INTCONST
 %token <bool> BOOLCONST
-%token LPAREN RPAREN LBRACE RBRACE
+%token LPAREN RPAREN
 %token SEMI COMMA LSQBR RSQBR  
 %token IF THEN ELSE FUN
 %token PLUS MINUS TIMES DIV MOD 
@@ -69,11 +69,13 @@ config0:
 
 assts:
   | ea=asst { [ea] }
-  | ea=asst SEMI eas=assts { ea::eas }
+  | ea=asst eas=assts { ea::eas }
 
 asst:
-  | ASSERT EQ af=asst_fun { let (q, acc, e) = af in SemActions.prop_assert (q, acc) e }
-  | ASSERTFINAL EQ af=asst_fun { let (q, acc, e) = af in SemActions.prop_assert_final (q, acc) e } 
+  | ASSERT EQ af=asst_fun SEMI 
+    { let (q, acc, e) = af in SemActions.prop_assert (q, acc) e }
+  | ASSERTFINAL EQ af=asst_fun SEMI 
+    { let (q, acc, e) = af in SemActions.prop_assert_final (q, acc) e } 
 
 asst_fun: 
   | FUN LPAREN q=var COMMA acc=vars RPAREN ARROW e=bool_exp { (q, acc, e) }
@@ -109,12 +111,13 @@ tuple_exp:
   | IF be=bool_exp THEN e1=exp ELSE e2=exp 
       { let loc = None |> construct_asst in
         Ite (be, e1, e2, "", loc) }
-  | IF LPAREN be=bool_exp RPAREN THEN e1=exp 
+  | IF be=bool_exp THEN e1=exp 
       { let loc = None |> construct_asst in
         let else_term = Const (UnitLit, "") in
         Ite (be, e1, else_term, "", loc) }
 
 bool_exp:
+  | b=BOOLCONST { Const (Boolean b, "") }
   | e=comp_exp { e }
   | e1=comp_exp bop=bool_op e2=bool_exp { BinOp (bop, e1, e2, "") }
 
@@ -124,6 +127,7 @@ bool_op:
 
 comp_exp:
   | e1=exp op=comp_op e2=exp { BinOp (op, e1, e2, "") } 
+  | LPAREN e=comp_exp RPAREN { e }
 
 %inline comp_op:
   | EQ { Eq }

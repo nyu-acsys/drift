@@ -7,4 +7,4 @@ delta  = fun evx (q, acc) ->
 
 IniCfg = (0, 0);
 
-assert = fun (q, acc) -> q = 0 
+assert = fun (q, acc) -> q = 0; 

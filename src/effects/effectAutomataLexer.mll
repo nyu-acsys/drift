@@ -68,8 +68,6 @@ rule token = parse
 | '*' { TIMES }
 | '(' { LPAREN }
 | ')' { RPAREN }
-| '{' { LBRACE }
-| '}' { RBRACE }
 | ident as kw
     { try
       Hashtbl.find keyword_table kw

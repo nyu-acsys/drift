@@ -8,5 +8,5 @@ IniCfg = (0, 0);
 
 assert = fun (q, acc) -> (acc >= 0);
 
-assertFinal = fun (q, acc) -> (acc = 0)
+assertFinal = fun (q, acc) -> (acc = 0);
 

@@ -1,6 +1,6 @@
 
 
-let f x pos neg = 
+let rec f x pos neg = 
   if x mod 2 = 0 then 
     ev pos
   else
@@ -10,6 +10,6 @@ let f x pos neg =
 
 let main (v:int(*-:{v:Int | true}*)) (p:int(*-:{v:Int | true}*)) (n:int(*-:{v:Int | true}*)) =
   if p > 0 && n < 0 then
-    f x p n
+    f v p n
   else 0 
   

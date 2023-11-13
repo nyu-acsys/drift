@@ -6,4 +6,4 @@ delta  = fun evx (q, acc) -> (q,acc + evx);
 
 IniCfg = (0, 0);
 
-assert = fun (q, acc) -> (acc >= 0) 
+assert = fun (q, acc) -> (acc >= 0);
