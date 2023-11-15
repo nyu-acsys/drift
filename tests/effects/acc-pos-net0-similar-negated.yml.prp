@@ -1,0 +1,24 @@
+(* 
+
+   NEGATED(SIMILAR TO(Accumulation stays positive && ends at 0))
+   =
+   NEGATED(Accumulation stays non-positive && ends at 0)
+   =
+     Accumulation goes above 0 at some point (sink q1)
+     OR
+     Accumulation ends at non-zero
+*)
+
+QSet   = [0,1]; 
+
+delta  = fun evx (q, acc) ->
+    if (q=1) then (1, acc+evx)
+    else if (acc+evx > 0) then (1, acc+evx)
+    else (q, acc+evx);
+
+IniCfg = (0, 0); 
+
+assert = fun (q, acc) -> true;
+
+assertFinal = fun (q, acc) -> (q = 1 || acc > 0 || acc < 0);
+

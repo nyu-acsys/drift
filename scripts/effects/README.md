@@ -26,7 +26,9 @@ PATH=$PATH:/tools/home/eric/drift/ python3 -m benchexec.test_tool_info drifttool
 # 3. Running benchmarking
 
 ```
+export DRIFT_REPO=/tools/home/eric/drift
 cd $DRIFT_REPO/scripts/effects
+perl makeYamls.pl
 sudo benchexec benchmark-drift.xml --read-only-dir / --limitCores 2 --timelimit 15s --numOfThreads 8
 ```
 
