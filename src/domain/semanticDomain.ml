@@ -190,61 +190,105 @@ module SemanticsDomain =
     (********************************************
      ** Abstract domain for Effects            **
      ********************************************)
-    let alpha_rename_Eff e prevar var = effmapi (fun q r -> alpha_rename_R r prevar var) e
+    let union_eff f eff1 eff2 = 
+      StateMap.union 
+        (fun q acc1 acc2 -> Some (VarMap.union (fun v r1 r2 -> Some (f r1 r2)) acc1 acc2)) 
+        eff1 eff2
+    let merge_eff f eff1 eff2 = 
+      StateMap.merge
+        (fun q macc1 macc2 ->
+          match macc1, macc2 with 
+          | None, _ | _, None -> None
+          | Some acc1, Some acc2 -> 
+             Some (VarMap.merge 
+                     (fun v mr1 mr2 ->
+                       match mr1, mr2 with 
+                       | None, _ | _, None -> None
+                       | Some r1, Some r2 -> Some (f r1 r2)) 
+                     acc1 acc2)) 
+        eff1 eff2
+    let fold_eff: (relation_e option -> relation_e option -> 'a) -> 
+                  ('a -> bool) ->
+      (relation_e VarMap.t StateMap.t) -> (relation_e VarMap.t StateMap.t) ->
+      'a -> 'a = 
+      fun f g eff1 eff2 res -> 
+      StateMap.merge 
+        (fun k macc1 macc2 -> match macc1, macc2 with None, None -> None | _, _ -> Some (macc1, macc2))
+        eff1 eff2
+      |> (fun ea -> StateMap.fold 
+                   (fun q (macc1, macc2) res -> 
+                     if g res
+                     then res
+                     else match macc1, macc2 with
+                          | Some acc1, None -> VarMap.fold
+                                                (fun v r1 res -> 
+                                                  if g res 
+                                                  then res
+                                                  else f (Some r1) None) acc1 res
+                          | None, Some acc2 -> VarMap.fold
+                                                (fun v r2 res ->
+                                                  if g res
+                                                  then res
+                                                  else f None (Some r2)) acc2 res
+                          | Some acc1, Some acc2 -> 
+                             VarMap.merge 
+                               (fun v mr1 mr2 -> match mr1, mr2 with
+                                              | None, None -> None
+                                              | _, _ -> Some (mr1, mr2))
+                               acc1 acc2
+                             |> (fun mra -> VarMap.fold
+                                           (fun v (mr1, mr2) res -> 
+                                             if g res 
+                                             then res
+                                             else f mr1 mr2) mra res)
+                          | None, None -> res
+                   ) ea res)     
+    let alpha_rename_Eff e prevar var = 
+      effmapi (fun q eff -> VarMap.mapi (fun _ r -> alpha_rename_R r prevar var) eff) e
     let join_Eff e1 e2 = match e1, e2 with 
       | EffBot, _ | _, EffTop -> e2 
-      | Effect e1, Effect e2 -> Effect (StateMap.union (fun q r1 r2 -> Some (join_R r1 r2)) e1 e2)
+      | Effect e1, Effect e2 -> Effect (union_eff join_R e1 e2)
       | EffTop, _ | _, EffBot -> e1 
     let meet_Eff e1 e2 = match e1, e2 with 
       | EffBot, _ | _, EffTop -> e1
-      | Effect e1, Effect e2 -> 
-         Effect (StateMap.merge 
-                   (fun q mr1 mr2 -> 
-                     match mr1, mr2 with 
-                     | None, _  | _, None -> None
-                     | Some r1, Some r2 -> Some (meet_R r1 r2)) 
-                   e1 e2) 
+      | Effect e1, Effect e2 -> Effect (merge_eff meet_R e1 e2) 
       | EffTop, _ | _, EffBot -> e2 
     let leq_Eff e1 e2 = match e1, e2 with 
       | EffBot, _  | _, EffTop -> true
       | Effect e1, Effect e2 -> 
-         StateMap.merge (fun k mr1 mr2 -> 
-             match mr1, mr2 with None, None -> None | _, _ -> Some (mr1, mr2)) e1 e2
-         |> (fun ea -> StateMap.fold (fun k (mr1, mr2) res ->
-                        if not res then res 
-                        else match mr1, mr2 with
-                             | Some r1, Some r2 -> leq_R r1 r2
-                             | None, Some _ -> res
-                             | Some _, None -> false
-                             | None, None -> res
-                      ) ea true)  
+         fold_eff 
+           (fun mr1 mr2 -> match mr1, mr2 with
+                        | Some r1, Some r2 -> leq_R r1 r2
+                        | None, Some _ -> true
+                        | Some _, None -> false
+                        | None, None -> true) 
+           (not) e1 e2 true           
       | _,  _ -> false
     let eq_Eff e1 e2 = match e1, e2 with 
       | EffBot, EffBot | EffTop, EffTop -> true
       | Effect e1, Effect e2 -> 
-         StateMap.merge (fun k mr1 mr2 -> 
-             match mr1, mr2 with None, None -> None | _, _ -> Some (mr1, mr2)) e1 e2
-         |> (fun ea -> StateMap.fold (fun k (mr1, mr2) res ->
-                        if not res then res 
-                        else match mr1, mr2 with
-                             | Some r1, Some r2 -> eq_R r1 r2
-                             | None, None -> res
-                             | _, _ -> false
-                      ) ea true)
+         fold_eff 
+           (fun mr1 mr2 -> match mr1, mr2 with
+                        | Some r1, Some r2 -> eq_R r1 r2
+                        | None, None -> true
+                        | _, _ -> false)
+           (not) e1 e2 true
       | _, _ -> false
-    let forget_Eff var e = effmapi (fun q r -> forget_R var r) e
+    let forget_Eff var e = effmapi (fun q acc -> VarMap.mapi (fun v r -> forget_R var r) acc) e
     let arrow_Eff var e r = match e with 
       | EffBot -> EffBot 
-      | Effect _ -> effmapi (fun q e_r -> arrow_R var e_r r) e
+      | Effect _ -> effmapi (fun q acc -> VarMap.mapi (fun v e_r -> arrow_R var e_r r) acc) e
       | EffTop -> raise (Invalid_argument "EffTop A should not be inferred")
-    let equal_Eff e var = effmapi (fun q r -> equal_R r var) e
+    let equal_Eff e var = effmapi (fun q acc -> VarMap.mapi (fun v r -> equal_R r var) acc) e
     let wid_Eff e1 e2 = match e1, e2 with 
-      | Effect e1, Effect e2 -> Effect (StateMap.union (fun q r1 r2 -> Some (wid_R r1 r2)) e1 e2)
+      | Effect e1, Effect e2 -> Effect (union_eff wid_R e1 e2)
       | _, _ -> join_Eff e1 e2
-    let replace_Eff e var x = effmapi (fun q r -> replace_R r var x) e
+    let replace_Eff e var x = effmapi (fun q acc -> VarMap.mapi (fun v r -> replace_R r var x) acc) e
     let stren_Eff e ae = match e, ae with
       | EffBot, _ -> EffBot 
-      | Effect _, Relation rae -> if is_bot_R rae then EffBot else (effmapi (fun q r -> stren_R r rae) e)
+      | Effect _, Relation rae -> if is_bot_R rae 
+                                 then EffBot 
+                                 else (effmapi (fun q acc -> VarMap.mapi (fun v r -> stren_R r rae) acc) e)
       | EffTop, Relation rae -> EffTop (* raise (Invalid_argument "EffTop B should not be inferred") *)
          (* effmapi (fun q r -> stren_R r) rae) eff_Top; where eff_Top = StateMap.creat (Q.size) (top_R Plus) *)
          (* 
@@ -255,8 +299,8 @@ module SemanticsDomain =
       | _, Top -> e
       | _, Bot -> EffBot
       | _ -> raise (Invalid_argument "ae should not be a table") 
-    let proj_Eff e vars = effmapi (fun q r -> proj_R r vars) e
-    let bot_R_Eff e = effmapi (fun q r -> bot_R Plus) e
+    let proj_Eff e vars = effmapi (fun q acc -> VarMap.mapi (fun v r -> proj_R r vars) acc) e
+    let bot_R_Eff e = effmapi (fun q acc -> VarMap.mapi (fun v r -> bot_R Plus) acc) e
     let bot_Eff = EffBot 
     let empty_eff = Effect (StateMap.empty)  (* todo: must revisit. it should be  a map where all states map to Bot *)
     let extract_v = function
@@ -461,7 +505,7 @@ module SemanticsDomain =
                                                        "Relation should be relation")))
                | TETop -> er')
           in
-          effmapi (fun q er -> arrow_EffR er) eff
+          effmapi (fun q acc -> VarMap.mapi (fun v er -> arrow_EffR er) acc) eff
       in
       match e, v' with 
       | EffBot,  _ -> EffBot

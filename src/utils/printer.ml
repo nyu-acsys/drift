@@ -132,12 +132,16 @@ let rec shape_value = function
 and shape_eff = function 
   | EffBot -> "Bot"
   | EffTop -> "Top"
-  | Effect e -> StateMap.bindings e 
-               |> List.map (fun ((Q q), r) -> (string_of_int q) ^ "|->" ^ 
-                                         (match r with 
-                                          | Int _ -> "Int"
-                                          | Bool _ -> "Bool"
-                                          | Unit _ -> "Unit"))
+  | Effect e -> StateMap.bindings e
+               |> List.map (fun ((Q q), acc) ->
+                      (string_of_int q) ^ "|-> {" ^
+                        (VarMap.bindings acc 
+                         |> List.map (fun (v, r) -> v ^ ":" ^
+                                                   (match r with 
+                                                    | Int _ -> "Int"
+                                                    | Bool _ -> "Bool"
+                                                    | Unit _ -> "Unit"))
+                         |> String.concat " ; ") ^ "}")
                |> String.concat " ; "
 and shape_value_and_eff = function 
   | TEBot -> "Bot"
@@ -164,8 +168,14 @@ and pr_eff ppf eff = match eff with
   | EffBot -> Format.fprintf ppf "_|_"
   | EffTop -> Format.fprintf ppf "T"
   | Effect e -> pr_eff_map ppf e
-and pr_eff_binding ppf ((Q q), r) = 
-  Format.fprintf ppf "@[<1>(@ %s@ |->@ %a)@]" (string_of_int q) pr_relation r
+and pr_eff_acc ppf acc = 
+  if VarMap.is_empty acc then Format.fprintf ppf "()"
+  else VarMap.bindings acc
+       |> Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_eff_acc_binding ppf
+and pr_eff_acc_binding ppf (v, r) =
+  Format.fprintf ppf "@[<1>(@ %s@ |->@ %a)@]" v pr_relation r
+and pr_eff_binding ppf ((Q q), acc) = 
+  Format.fprintf ppf "@[<1>(@ %s@ |->@ @[<v>%a@])@]" (string_of_int q) pr_eff_acc acc
 and pr_lst ppf lst =
     let (l,e), (rl, ve) = lst in
     Format.fprintf ppf "@[<1>{@ cur_v:@ %s List (%s, %s)@ |@ len:@ %a,@ item:@ %a@ }@]" (shape_value_and_eff ve) l e pr_agg_val rl pr_value_and_eff ve

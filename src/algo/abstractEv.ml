@@ -35,7 +35,9 @@ let parse_property_spec prop_file =
   (print_aut_spec spec);
   spec
 
+type evv_t = Val of relation_e | Tpl of evv_t list
 type evenv = EmptyEvEnv | ExtendEvEnv of var * relation_e * evenv
+
 let empty_env () = EmptyEvEnv
 let extend_env id v env = ExtendEvEnv (id, v, env)
 let rec apply_env var = function
@@ -45,66 +47,128 @@ let rec fold_env f env acc = match env with
   | EmptyEvEnv -> acc
   | ExtendEvEnv (id, v, tail) -> f id v (fold_env f tail acc) 
 
-let eff_minimize = StateMap.filter (fun _ a -> not @@ is_bot_R a)
-let eff_bot spec = List.fold_right (fun q e -> StateMap.add q (bot_R Plus) e) spec.qset (StateMap.empty)
-let eff0 () =
+let pr_acc ppf acc = 
+  let pr_acc_comp ppf (var, va) = Format.fprintf ppf "%s |-> %a" var pr_relation va in
+  VarMap.bindings acc 
+  |> Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_acc_comp ppf 
+ 
+let is_bot_acc acc = VarMap.fold (fun _ va res -> if res then is_bot_R va else res) acc true
+let eff_minimize = StateMap.filter (fun _ acc -> not @@ is_bot_acc acc)
+let eff_bot spec = 
+  let acc_vars = List.filter (fun v -> v != "evx") spec.env in
+  let bot_acc = List.fold_right (fun v acc -> VarMap.add v (bot_R Plus) acc) acc_vars VarMap.empty in
+  List.fold_right (fun q e -> StateMap.add q bot_acc e) spec.qset (StateMap.empty)
+let eff0 () = 
+  let acc0_of_exp spec e =
+    let acc_vars = List.filter (fun v -> v <> "evx") spec.env in
+    let accv_of_idx i = List.nth acc_vars i in 
+    match e with 
+    | Const (acc0, _) -> 
+       List.fold_right (fun accv acc -> VarMap.add accv (init_R_c acc0) acc) acc_vars VarMap.empty
+    | TupleLst (es, _) -> 
+       List.mapi (fun i e -> ((accv_of_idx i), e)) es
+       |> (fun ves -> List.fold_right
+                     (fun (accv, e) acc -> match e with
+                                        | Const (acc0, _) -> VarMap.add accv (init_R_c acc0) acc
+                                        | _ -> acc)
+                     ves VarMap.empty)
+    | _ -> VarMap.empty
+  in
   Option.map 
     (fun spec -> 
       match spec.cfg0 with 
               | TupleLst ([e1; e2], _) -> 
-                 begin match e1, e2 with
-                 | Const ((Integer q0), _), Const (acc0, _) -> 
-                    StateMap.mapi (fun (Q q) acc -> if q = q0 then init_R_c acc0 else acc) (eff_bot spec)
-                 | _, _ -> eff_bot spec
+                 begin match e1 with
+                 | Const ((Integer q0), _) -> StateMap.add (Q q0) (acc0_of_exp spec e2) StateMap.empty
+                 | _ -> eff_bot spec
                  end
               | _ -> eff_bot spec
     ) (!property_spec) 
   |> (fun mspec -> Option.value mspec ~default:(StateMap.empty))
   |> eff_minimize
 
-(* todo: use memoization for traversing only once the transition function expression tree  *)
-let ev eff t = 
+let ev: effect_t -> relation_t -> effect_t = fun eff t -> 
   
   let spec = match !property_spec with 
     | Some s -> s
     | None -> raise (Invalid_argument "Property spec file not found")
   in
-
-  let add_tran vq va ts = (arrow_R "q'" va vq)::ts in
-  let env0 = EmptyEvEnv |> extend_env "q" (top_R Plus) |> extend_env "q'" (top_R Plus) 
-             |> (List.fold_right (fun v e -> extend_env v (top_R Plus) e) spec.env)
-             |> (VarDefMap.fold (fun v _ e -> extend_env v (top_R Plus) e) !pre_vars) 
+  let absv_of_val = function 
+    | Val v -> v
+    | _ -> raise (Invalid_argument "Expected an abstract value")
+  in
+  let find v acc = VarMap.find_opt v acc |> Opt.get_or_else (top_R Plus) in
+  let acc_vars = List.filter (fun v -> v <> "evx") spec.env in
+  let get_env0 q acc t = EmptyEvEnv 
+                         |> extend_env "q" (init_R_c (Integer q))
+                         |> extend_env "evx" t
+                         |> (List.fold_right (fun v e -> extend_env v (find v acc) e) acc_vars)
+                         |> (VarDefMap.fold (fun v _ e -> extend_env v (top_R Plus) e) !pre_vars) 
+  in
+  let bot_acc = List.fold_right (fun v acc -> VarMap.add v (bot_R Plus) acc) acc_vars VarMap.empty in
+  let arrow_acc var acc v = VarMap.map (fun va -> arrow_R var va v) acc in
+  let join_acc acc1 acc2 = VarMap.merge 
+                             (fun v mva1 mva2 -> match mva1, mva2 with 
+                                              | Some va1, Some va2 -> Some (join_R va1 va2) 
+                                              | _, _ -> None)
+                             acc1 acc2
   in 
+  let forget_acc v acc = VarMap.map (fun va -> forget_R v va) acc in
+  let accvar_of_idx i = List.nth acc_vars i in
+  let acc_of_evv = function
+    | Val va -> VarMap.map (fun _ -> va) bot_acc
+    | Tpl vvs -> 
+       begin
+         List.mapi (fun i vva -> ((accvar_of_idx i), vva)) vvs
+         |> List.fold_left 
+              (fun acc (accv, vva) -> match vva with 
+                                   | Val va -> VarMap.add accv va acc
+                                   | _ -> acc) 
+              VarMap.empty
+         |> (fun acc' -> join_acc acc' bot_acc) 
+       end 
+  in
+  let add_tran vq vva ts =
+    let rec arrow_va_q' = function
+      | Val va -> Val (arrow_R "q'" va vq)
+      | Tpl vvs -> Tpl (List.map arrow_va_q' vvs)
+    in
+    let vva' = arrow_va_q' vva in
+    (acc_of_evv vva')::ts
+  in
   let name_of_node l = "ze" ^ l in
   let get_env_vars env = fold_env (fun id v lst -> id::lst) env [] in
   let eff_bot = eff_bot spec in
-  let rec eval e env ae ts = 
+  let rec eval e env ae tftpl ts = 
     match e with
     | Const (c, _) -> 
-       let v = init_R_c c |> (fun v -> stren_R v ae) in (v, ts)
+       let v = init_R_c c |> (fun v -> stren_R v ae) in (Val v, ts)
     | Var (x, _) -> 
        let v = apply_env x env
                |> (fun v -> if sat_equal_R v x then v else equal_R (forget_R x v) x)
                |> (fun v -> stren_R v ae)
        in 
-       (v, ts)
+       (Val v, ts)
     | Ite (e0, e1, e2, _, _) -> 
-       let v0, ts' = eval e0 env ae ts in
+       let vv0, ts' = eval e0 env ae tftpl ts in
+       let v0 = absv_of_val vv0 in
        (* (if !Config.debug then Format.printf "\nITE_e0: "; pr_relation Format.std_formatter v0; Format.printf "\n";); *)
        begin match v0 with
        | Bool _ -> 
           let aet = meet_R ae (extrac_bool_R v0 true) in
-          let v1, ts'' = eval e1 env aet ts' in
+          let vv1, ts'' = eval e1 env aet tftpl ts' in
+          let v1 = absv_of_val vv1 in
           (* (if !Config.debug then Format.fprintf Format.std_formatter "\nITE_e1: %a\nv: " (pr_exp true) e1; 
            pr_relation Format.std_formatter v1; Format.printf "\n";); *)
           let aef = meet_R ae (extrac_bool_R v0 false) in 
-          let v2, ts''' = eval e2 env aef ts'' in
+          let vv2, ts''' = eval e2 env aef tftpl ts'' in
+          let v2 = absv_of_val vv2 in
           (* (if !Config.debug then Format.fprintf Format.std_formatter "\nITE_e2: %a\nv: " (pr_exp true) e2; 
            pr_relation Format.std_formatter v2; Format.printf "\n";); *)
           begin match v1, v2 with 
-          | Unit _, Unit _ -> (Unit (), ts''') 
-          | Int _, Int _ -> ((join_R v1 v2), ts''')
-          | Bool _, Bool _ -> ((join_R v1 v2), ts''')
+          | Unit _, Unit _ -> (Val (Unit ()), ts''') 
+          | Int _, Int _ -> (Val (join_R v1 v2), ts''')
+          | Bool _, Bool _ -> (Val (join_R v1 v2), ts''')
           | _, _ -> raise (Invalid_argument ("Branches should either both evaluate to "^
                                               "values or pairs of next state and new acc"))
           end
@@ -124,9 +188,11 @@ let ev eff t =
              pr_exp true Format.std_formatter e;
              Format.printf "\n";
            end); *)
-        let v1, ts' = eval e1 env ae ts in 
+        let vv1, ts' = eval e1 env ae tftpl ts in
+        let v1 = absv_of_val vv1 in  
         (* (if !Config.debug then Format.printf "\nBinOp_e1: "; pr_relation Format.std_formatter v1; Format.printf "\n";);  *)
-        let v2, ts'' = eval e2 env ae ts' in
+        let vv2, ts'' = eval e2 env ae tftpl ts' in
+        let v2 = absv_of_val vv2 in
         (* (if !Config.debug then Format.printf "\nBinOp_e2: "; pr_relation Format.std_formatter v2; Format.printf "\n";); *)
         if is_unit_R v1 || is_unit_R v2 then 
           raise (Invalid_argument ("Binary operator " ^ (string_of_op bop) ^ " is not defined for tuples"))
@@ -160,12 +226,13 @@ let ev eff t =
                   v'''
               end
             in
-            ((stren_R raw_v ae), ts'')
+            (Val (stren_R raw_v ae), ts'')
           end 
     | UnOp (uop, e1, _) ->
-       let v1, ts' = eval e1 env ae ts in
+       let vv1, ts' = eval e1 env ae tftpl ts in
        (* (if !Config.debug then Format.printf "\nUOp_e1: "; pr_relation Format.std_formatter v1; Format.printf "\n";); *)
-       
+       let v1 = absv_of_val vv1 in
+ 
        if is_unit_R v1 then
          raise (Invalid_argument ("Unary operator " ^ (string_of_unop uop) ^ " is not defined for tuples"))
        else begin
@@ -179,65 +246,78 @@ let ev eff t =
            let raw_v = get_env_vars env |> proj_R v'' in
            (* (if !Config.debug then Format.printf "\nUOp_Proj_env:"; 
             pr_relation Format.std_formatter raw_v; Format.printf "\n";); *)
-           ((stren_R raw_v ae), ts')
+           (Val (stren_R raw_v ae), ts')
          end
     | TupleLst ([e1; e2], _) ->
-       let vq, _ = eval e1 env ae ts in
-       let va, _ = eval e2 env ae ts in
+       let tftpl' = if tftpl then false else tftpl in
+
+       let vvq, _ = eval e1 env ae tftpl' ts in
+       let vva, _ = eval e2 env ae tftpl' ts in
        (* (Format.fprintf Format.std_formatter "\ne: %a,@ vq: %a,@ va: %a" (pr_exp true) e pr_relation vq pr_relation va); *)
-       let ts' = begin match vq with 
-                   | Unit _ -> ts 
-                   | _ -> add_tran vq va ts 
-                 end 
+       let vv', ts' = begin match tftpl with 
+                 | true -> begin
+                     let vq = absv_of_val vvq in
+                     match vq with
+                          | Unit _ -> (Val (Unit ()), ts)
+                          | _ -> (Val (Unit ()), (add_tran vq vva ts))
+                          end
+                 | false -> (Tpl [vvq;vva], ts)
+                 end
        in
        (* ( Format.printf "\nts: ";
          Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_relation Format.std_formatter ts';
          Format.printf "\n";); *)
-       (Unit (), ts')
-    | _ -> (Unit (), ts) 
+       (vv', ts')
+    | TupleLst (es, _) ->
+       let vv' = List.map (fun e -> let ve, _ = eval e env ae tftpl ts in ve) es in
+       (Tpl vv', ts)
+    | _ -> (Val (Unit ()), ts) 
   in
-  let _, ts = eval spec.delta env0 (top_R Plus) [] in  (* memoize this *)
+  (* let _, ts = eval spec.delta env0 (top_R Plus) [] in  (* memoize this *) *)
   (* let pp_eff e = 
     let ppf = Format.std_formatter in
     if StateMap.is_empty e then Format.fprintf ppf "Empty\n" 
     else StateMap.bindings e 
          |> Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_eff_binding ppf
   in *)
-  ( if !Config.debug then
-      begin 
-        Format.printf "\nts: ";
-        Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_relation Format.std_formatter ts;
-        Format.printf "\n";
-      end);
+ 
   (* (Format.printf "\neff_bot: "; (pp_eff eff_bot););
   (Format.printf "\neff: "; (pp_eff eff)); *)
   eff_minimize @@ StateMap.mapi (fun (Q q') _ -> 
       let ra' = 
         StateMap.fold 
-          (fun (Q q) a res ->
+          (fun (Q q) acc res' ->
+            let env0 = get_env0 q acc t in
+            let _, ts = eval spec.delta env0 (top_R Plus) true [] in
+            ( if !Config.debug then
+                begin 
+                  Format.printf "\nts: ";
+                  Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_acc Format.std_formatter ts;
+                  Format.printf "\n";
+                end);
             (* (Format.fprintf Format.std_formatter "\na: %a,@ res: %a" pr_relation a pr_relation res); *)
-            let a' = 
-              List.fold_right (fun va res' -> 
+            let acc' = 
+              List.fold_right (fun acc'' res'' -> 
                   (* (Format.fprintf Format.std_formatter "\nres(init): %a,@,va(init): %a" pr_relation res' pr_relation va); *)
-                  let va' = arrow_R "acc" va a in
+                  (* let va' = arrow_R "acc" va a in *)
                   (* (Format.fprintf Format.std_formatter "\nva[acc <- a]: %a" pr_relation va');*)
-                  let va' = arrow_R "q" va' (init_R_c (Integer q)) in
+                  (* let va' = arrow_R "q" va' (init_R_c (Integer q)) in *)
                   (* (Format.fprintf Format.std_formatter "\nva[acc <- q(%d)]: %a" q  pr_relation va'); *)
-                  let va' = arrow_R "evx" va' t in
+                  (* let va' = arrow_R "evx" va' t in *)
                   (* (Format.fprintf Format.std_formatter "\nva[acc <- evx]: %a" pr_relation va'); *)
-                  let va' = arrow_R "q'" va' (init_R_c (Integer q')) in
+                  let acc'' = arrow_acc "q'" acc'' (init_R_c (Integer q')) in
                   (* (Format.fprintf Format.std_formatter "\nva[acc <- q'(%d)]: %a" q' pr_relation va');*)
-                  let res'' = join_R res' va' in
+                  let res'' = join_acc res'' acc'' in
                   (* (Format.fprintf Format.std_formatter "\nres(final): %a" pr_relation res'');*)
                   res''
-                ) ts (bot_R Plus)
+                ) ts bot_acc
             in
             (* (Format.fprintf Format.std_formatter "\nq(%d) -> q'(%d): %a" q q' pr_relation a'); *)
-            join_R res a'
-          ) eff (bot_R Plus)
-        |> forget_R "q"
-        |> forget_R "q'" 
+            join_acc res' acc'
+          ) eff bot_acc
+        |> forget_acc "q"
+        |> forget_acc "q'" 
       in
-      (if !Config.debug then Format.fprintf Format.std_formatter "\nq'(%d): %a" q' pr_relation ra');
+      (if !Config.debug then Format.fprintf Format.std_formatter "\nq'(%d): %a" q' pr_acc ra');
       ra'
     ) eff_bot
