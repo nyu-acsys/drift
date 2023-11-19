@@ -44,12 +44,12 @@ let rec pr_exp pl ppf = function
       (pr_exp pl) e2
       (pr_label pl) l
 | Rec (None, (x, lx), e, l) ->
-    Format.fprintf ppf "Rec @[<3>(lambda %s%a.@ %a)%a@]"
+    Format.fprintf ppf "Rec @[<2>(lambda %s%a.@ %a)%a@]"
       x (pr_label pl) lx
       (pr_exp pl) e
       (pr_label pl) l
 | Rec (Some (f, lf), (x, lx), e, l) ->
-    Format.fprintf ppf "Rec @[<3>(mu %s%a %s%a.@ %a)%a@]"
+    Format.fprintf ppf "Rec @[<2>(mu %s%a %s%a.@ %a)%a@]"
       f (pr_label pl) lf
       x (pr_label pl) lx
       (pr_exp pl) e
@@ -61,13 +61,13 @@ let rec pr_exp pl ppf = function
       (pr_exp pl) e3
       (pr_label pl) l
 | BinOp (bop, e1, e2, l) ->
-    Format.fprintf ppf "BinOp @[<3>(%a@ %a@ %a)%a@]"
+    Format.fprintf ppf "BinOp @[<2>(%a@ %a@ %a)%a@]"
     (pr_exp pl) e1
     pr_op bop
     (pr_exp pl) e2
     (pr_label pl) l
 | UnOp (uop, e1, l) ->
-    Format.fprintf ppf "UnOp @[<3>(%a@ %a)%a@]"
+    Format.fprintf ppf "UnOp @[<2>(%a@ %a)%a@]"
     pr_unop uop
     (pr_exp pl) e1
     (pr_label pl) l
@@ -159,7 +159,7 @@ let rec pr_value ppf v = match v with
 and pr_value_and_eff ppf ve = match ve with
   | TEBot -> Format.fprintf ppf "_|_"
   | TETop -> Format.fprintf ppf "T"
-  | TypeAndEff (v, e) -> Format.fprintf ppf "@[<hov 1>(@ v: %a,@,@[<v 1>@ eff: @[<v>%a@]@])@]" pr_value v pr_eff e
+  | TypeAndEff (v, e) -> Format.fprintf ppf "@[<hov 1>(@ t: %a,@,@[<v 1>@ eff: @[<v>%a@]@])@]" pr_value v pr_eff e
 and pr_eff_map ppf e = 
   if StateMap.is_empty e then Format.fprintf ppf "Empty" 
   else StateMap.bindings e 

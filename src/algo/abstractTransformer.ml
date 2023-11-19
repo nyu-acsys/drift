@@ -294,7 +294,7 @@ let get_env_list (env: env_t) (sx: var) (m: exec_map_t) =
       in
       x :: lst'
     in
-    List.fold_left helper [] env_l
+    (List.fold_left helper [] env_l) @ (AbstractEv.spec_env ())
 
 let get_env_list e sx = measure_call "get_env_list" (get_env_list e sx)
       
@@ -548,16 +548,17 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
         ); *)
         m |> update false n te' (* {v = c ^ aE}*)
     | Var (x, l) ->
-        (* (if !debug then
+        (if !debug then
         begin
             Format.printf "\n<=== Var ===>\n";
             pr_exp true Format.std_formatter term;
             Format.printf "\n";
         end
-        ); *)
+        );
         let (nx, recnb) = VarMap.find x env in
         let envx, lx, lcs = get_vnode nx in
         let nx = construct_snode sx nx in
+        
         let tex = find nx m 
                   |> temap ((fun tx -> if is_Relation tx then
                                       if sat_equal_V tx x then tx
@@ -566,18 +567,18 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
                             (fun _ -> Effect ec))
         in
         let te = find n m in  (* M[env*l] *)
-        (* (if l = "10" || l = "14" then
+        (*(if l = "5" || l = "22" then
            begin
            Format.printf "\n<=== Prop Var %s %b ===> %s\n" x recnb lx;
-           Format.printf "cs %s, %s \n" varcs lcs;
-           pr_value Format.std_formatter tx;
+           (* Format.printf "cs %s \n" lcs; *)
+           pr_value_and_eff Format.std_formatter tex;
            Format.printf "\n<<~~~~>> %s\n" l;
-           pr_value Format.std_formatter t;
+           pr_value_and_eff Format.std_formatter te;
            Format.printf "\n<<~~ae~~>> %s\n" l;
            pr_value Format.std_formatter ae;
            Format.printf "\n";
            end
-           ); *)
+           );*)
         let tex', te' = 
           if List.mem lx !pre_def_func then
             let tex0 = find nx m0 in
@@ -586,16 +587,27 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
           else 
             prop_scope envx env sx m tex te
         in
-        (* (if l = "10" || l = "14" then
+        (*(if l = "5" || l = "22" then
         begin
             Format.printf "\nRES for prop:\n";
-            pr_value Format.std_formatter tx';
+            pr_value_and_eff Format.std_formatter tex';
             Format.printf "\n<<~~~~>>\n";
-            pr_value Format.std_formatter t';
+            pr_value_and_eff Format.std_formatter te';
             Format.printf "\n";
         end
-        ); *)
-        m |> update false nx tex' |> update false n (stren_VE te' ae) (* t' ^ ae *)
+        );*)
+        let m' = m |> update false nx tex' |> update false n (stren_VE te' ae) (* t' ^ ae *)
+        in 
+        (*(
+            if l = "5" || l = "22" then
+              begin
+                Format.printf "\ntex[post]"; 
+                find nx m' |> pr_value_and_eff Format.std_formatter;
+                Format.printf "\nte[post]"; 
+                find n m' |> pr_value_and_eff Format.std_formatter;
+              end
+          );*)
+           m'
     | App (e1, e2, l) ->
         (if !debug then
         begin
@@ -1349,10 +1361,12 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
         let n1 = loc e1 |> construct_enode env |> construct_snode sx in
         let m1 = step e1 env sx cs ec ae assertion is_rec m in
         let te1 = find n1 m1 in
+        let penv = get_env_list env sx m1 in
         if te1 = TEBot then m1
         else
           let te' = begin match te1 with
-                    | TypeAndEff ((Relation v), (Effect e)) -> TypeAndEff (Relation (Unit ()), Effect (AbstractEv.ev e v))
+                    | TypeAndEff ((Relation v), (Effect e)) -> 
+                       TypeAndEff (Relation (Unit ()), Effect (AbstractEv.ev penv e v))
                     | _ -> te1
                     end
           in 
@@ -1399,6 +1413,7 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
          |> Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_eff_binding ppf in
   (if !debug then (Format.printf "\nEff0: "; pp_eff eff_i));
   let m' = step e env "" [] eff_i ae assertion false m_t in
+
   if k < 0 then if k = -1 then "", m' else fix stage env e (k+1) m' assertion else
   (* if k > 2 then Hashtbl.reset !pre_m;
   pre_m := m; *)

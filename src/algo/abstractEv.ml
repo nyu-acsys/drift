@@ -38,6 +38,10 @@ let parse_property_spec prop_file =
 type evv_t = Val of relation_e | Tpl of evv_t list
 type evenv = EmptyEvEnv | ExtendEvEnv of var * relation_e * evenv
 
+let spec_env: unit -> var list = fun () -> 
+  Option.map (fun spec -> spec.env) (!property_spec)
+  |> (fun mspec -> Option.value mspec ~default:[])
+
 let empty_env () = EmptyEvEnv
 let extend_env id v env = ExtendEvEnv (id, v, env)
 let rec apply_env var = function
@@ -51,17 +55,33 @@ let pr_acc ppf acc =
   let pr_acc_comp ppf (var, va) = Format.fprintf ppf "%s |-> %a" var pr_relation va in
   VarMap.bindings acc 
   |> Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_acc_comp ppf 
- 
+
+let pr_delta_trans ppf ts =
+  let rec pr_ts i ppf = function
+    | [] -> Format.fprintf ppf ""
+    | t_acc::ts' -> Format.fprintf ppf "@[ts(%d) |-> @[<v>%a,@]@]@ %a" i pr_acc t_acc (pr_ts (i+1)) ts'
+  in
+  Format.fprintf ppf "\ndelta_trans: @[<v>%a@]@." (pr_ts 1) ts
+
+let pr_ev_env ppf env =
+  let rec pr_env ppf = function
+    | EmptyEvEnv -> Format.fprintf ppf ""
+    | ExtendEvEnv (id, v, tail) -> Format.fprintf ppf "@[<hov 0>%s |-> %a,@]@ %a" id pr_relation v pr_env tail
+  in
+  Format.fprintf ppf "[ @[<v>%a@] ]@." pr_env env
+
 let is_bot_acc acc = VarMap.fold (fun _ va res -> if res then is_bot_R va else res) acc true
 let eff_minimize = StateMap.filter (fun _ acc -> not @@ is_bot_acc acc)
 let eff_bot spec = 
   let acc_vars = List.filter (fun v -> v != "evx") spec.env in
   let bot_acc = List.fold_right (fun v acc -> VarMap.add v (bot_R Plus) acc) acc_vars VarMap.empty in
   List.fold_right (fun q e -> StateMap.add q bot_acc e) spec.qset (StateMap.empty)
+
 let eff0 () = 
   let acc0_of_exp spec e =
     let acc_vars = List.filter (fun v -> v <> "evx") spec.env in
-    let accv_of_idx i = List.nth acc_vars i in 
+   
+ let accv_of_idx i = List.nth acc_vars i in 
     match e with 
     | Const (acc0, _) -> 
        List.fold_right (fun accv acc -> VarMap.add accv (init_R_c acc0) acc) acc_vars VarMap.empty
@@ -87,8 +107,13 @@ let eff0 () =
   |> (fun mspec -> Option.value mspec ~default:(StateMap.empty))
   |> eff_minimize
 
-let ev: effect_t -> relation_t -> effect_t = fun eff t -> 
-  
+let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t -> 
+   
+  (Format.fprintf Format.std_formatter "\nEV (penv, eff, t) = \npenv:{%s}\neff:%a\nt:%a@."
+   (String.concat ";" penv)
+   pr_eff_map eff
+   pr_relation t);
+   
   let spec = match !property_spec with 
     | Some s -> s
     | None -> raise (Invalid_argument "Property spec file not found")
@@ -137,22 +162,34 @@ let ev: effect_t -> relation_t -> effect_t = fun eff t ->
     (acc_of_evv vva')::ts
   in
   let name_of_node l = "ze" ^ l in
-  let get_env_vars env = fold_env (fun id v lst -> id::lst) env [] in
+  let get_env_vars env = 
+    fold_env (fun id _ lst -> if not @@ List.mem id lst then id::lst else lst) env penv 
+  in
   let eff_bot = eff_bot spec in
   let rec eval e env ae tftpl ts = 
+    (*( Format.printf "\n>>>exp:"; pr_exp true Format.std_formatter e;
+      Format.printf "\n>>>ae:"; pr_relation Format.std_formatter ae; Format.printf "\n";
+      Format.printf "\n>>>env: "; pr_ev_env Format.std_formatter env); *)
     match e with
     | Const (c, _) -> 
-       let v = init_R_c c |> (fun v -> stren_R v ae) in (Val v, ts)
+       let v = init_R_c c |> (fun v -> 
+           let v' = stren_R v ae in 
+           (Format.printf "\nc:"; pr_const Format.std_formatter c; 
+            Format.printf "\t c_post:"; pr_relation Format.std_formatter v'); v') 
+       in (Val v, ts)
     | Var (x, _) -> 
        let v = apply_env x env
                |> (fun v -> if sat_equal_R v x then v else equal_R (forget_R x v) x)
-               |> (fun v -> stren_R v ae)
+               |> (fun v -> (*(Format.printf "\nvar_pre[%s]:" x; pr_relation Format.std_formatter v); *)
+                         let v'= stren_R v ae in 
+                         (* (Format.printf "\nvar_post[%s]:" x; pr_relation Format.std_formatter v'); *)
+                         v')
        in 
        (Val v, ts)
     | Ite (e0, e1, e2, _, _) -> 
        let vv0, ts' = eval e0 env ae tftpl ts in
        let v0 = absv_of_val vv0 in
-       (* (if !Config.debug then Format.printf "\nITE_e0: "; pr_relation Format.std_formatter v0; Format.printf "\n";); *)
+       (*(if !Config.debug then Format.fprintf Format.std_formatter "\nITE_e0: %a" (pr_exp false) e0; pr_relation Format.std_formatter v0; Format.printf "\n";); *)
        begin match v0 with
        | Bool _ -> 
           let aet = meet_R ae (extrac_bool_R v0 true) in
@@ -190,10 +227,10 @@ let ev: effect_t -> relation_t -> effect_t = fun eff t ->
            end); *)
         let vv1, ts' = eval e1 env ae tftpl ts in
         let v1 = absv_of_val vv1 in  
-        (* (if !Config.debug then Format.printf "\nBinOp_e1: "; pr_relation Format.std_formatter v1; Format.printf "\n";);  *)
+       (* (if !Config.debug then Format.printf "\nBinOp_e1: "; pr_relation Format.std_formatter v1; Format.printf "\n";); *)
         let vv2, ts'' = eval e2 env ae tftpl ts' in
         let v2 = absv_of_val vv2 in
-        (* (if !Config.debug then Format.printf "\nBinOp_e2: "; pr_relation Format.std_formatter v2; Format.printf "\n";); *)
+        (*(if !Config.debug then Format.printf "\nBinOp_e2: "; pr_relation Format.std_formatter v2; Format.printf "\n";); *)
         if is_unit_R v1 || is_unit_R v2 then 
           raise (Invalid_argument ("Binary operator " ^ (string_of_op bop) ^ " is not defined for tuples"))
         else begin
@@ -215,13 +252,13 @@ let ev: effect_t -> relation_t -> effect_t = fun eff t ->
                  let op1 = e1 |> loc |> name_of_node in
                  let op2 = e2 |> loc |> name_of_node in
                  let v' = top_R Plus |> (fun v -> arrow_R op1 v v1) |> (fun v -> arrow_R op2 v v2) in
-                 (* (if !Config.debug then Format.printf "\nBinOp_[op1 <- v1, op2 <- v2]:"; 
+                 (*(if !Config.debug then Format.printf "\nBinOp_[op1 <- v1, op2 <- v2]:"; 
                   pr_relation Format.std_formatter v'; Format.printf "\n";); *)
                  let v'' = op_R "" op1 op2 bop false v' in
-                 (* (if !Config.debug then Format.printf "\nBinOp_op_result:"; 
-                  pr_relation Format.std_formatter v''; Format.printf "\n";);   *)
+                 (*(if !Config.debug then Format.printf "\nBinOp_op_result:"; 
+                  pr_relation Format.std_formatter v''; Format.printf "\n";); *)
                  let v''' = get_env_vars env |> proj_R v'' in
-                 (* (if !Config.debug then Format.printf "\nBinOp_Proj_env:"; 
+                 (*(if !Config.debug then Format.printf "\nBinOp_Proj_env:"; 
                     pr_relation Format.std_formatter v'''; Format.printf "\n";); *)
                   v'''
               end
@@ -287,37 +324,32 @@ let ev: effect_t -> relation_t -> effect_t = fun eff t ->
       let ra' = 
         StateMap.fold 
           (fun (Q q) acc res' ->
+            ( if !Config.debug then
+                Format.fprintf Format.std_formatter "\n@[EV(pre):@ q[%d] |->@ %a@]@." q pr_acc acc);
             let env0 = get_env0 q acc t in
             let _, ts = eval spec.delta env0 (top_R Plus) true [] in
             ( if !Config.debug then
-                begin 
-                  Format.printf "\nts: ";
-                  Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_acc Format.std_formatter ts;
-                  Format.printf "\n";
-                end);
-            (* (Format.fprintf Format.std_formatter "\na: %a,@ res: %a" pr_relation a pr_relation res); *)
+                pr_delta_trans Format.std_formatter ts
+            );
             let acc' = 
               List.fold_right (fun acc'' res'' -> 
-                  (* (Format.fprintf Format.std_formatter "\nres(init): %a,@,va(init): %a" pr_relation res' pr_relation va); *)
-                  (* let va' = arrow_R "acc" va a in *)
-                  (* (Format.fprintf Format.std_formatter "\nva[acc <- a]: %a" pr_relation va');*)
-                  (* let va' = arrow_R "q" va' (init_R_c (Integer q)) in *)
-                  (* (Format.fprintf Format.std_formatter "\nva[acc <- q(%d)]: %a" q  pr_relation va'); *)
-                  (* let va' = arrow_R "evx" va' t in *)
-                  (* (Format.fprintf Format.std_formatter "\nva[acc <- evx]: %a" pr_relation va'); *)
+                  (*(Format.fprintf Format.std_formatter "\nres(init): %a,@,acc(init): %a" pr_acc res' pr_acc acc);*)
                   let acc'' = arrow_acc "q'" acc'' (init_R_c (Integer q')) in
                   (* (Format.fprintf Format.std_formatter "\nva[acc <- q'(%d)]: %a" q' pr_relation va');*)
                   let res'' = join_acc res'' acc'' in
-                  (* (Format.fprintf Format.std_formatter "\nres(final): %a" pr_relation res'');*)
+                  (*(Format.fprintf Format.std_formatter "\nres(final): %a" pr_acc res''); *)
                   res''
                 ) ts bot_acc
             in
-            (* (Format.fprintf Format.std_formatter "\nq(%d) -> q'(%d): %a" q q' pr_relation a'); *)
-            join_acc res' acc'
+            (* (Format.fprintf Format.std_formatter "\nq(%d) -> q'(%d): %a" q q' pr_acc acc'); *)
+            let res' = join_acc res' acc' in 
+            (if !Config.debug then 
+               Format.fprintf Format.std_formatter "\n@[EV(post):@ q[%d] |-> %a@]" q' pr_acc res');
+            res'
           ) eff bot_acc
         |> forget_acc "q"
         |> forget_acc "q'" 
-      in
-      (if !Config.debug then Format.fprintf Format.std_formatter "\nq'(%d): %a" q' pr_acc ra');
+      in 
+      (* (if !Config.debug then Format.fprintf Format.std_formatter "\nq'(%d): %a" q' pr_acc ra'); *)
       ra'
     ) eff_bot
