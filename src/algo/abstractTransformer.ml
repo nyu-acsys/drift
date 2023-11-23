@@ -759,8 +759,8 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
             let raw_te =
               match bop with
               | Cons (* list op *) ->
-                 (pr_value_and_eff Format.std_formatter te1;
-                 pr_value_and_eff Format.std_formatter te2);
+                 (* (pr_value_and_eff Format.std_formatter te1;
+                 pr_value_and_eff Format.std_formatter te2); *)
                  list_cons_VE te1 te2
               | And | Or (* bool op *) ->
                  bool_op_VE bop te1 te2
@@ -904,7 +904,7 @@ let rec step term (env: env_t) (sx: var) (cs: trace_t) (ec: effect_t) (ae: value
         begin
             let { isast = isast; ps = pos } = asst in
             if assertion && isast && not (is_bool_bot_V (extract_v te0)) && 
-                 not (is_bool_false_V (extract_v te0))
+                 not (is_bool_false_V (extract_v te0)) && not (only_shape_V ae)
             then print_loc pos else
             let t_true = meet_V (extrac_bool_V (extract_v te0) true) ae in (* Meet with ae*)
             let t_false = meet_V (extrac_bool_V (extract_v te0) false) ae in
