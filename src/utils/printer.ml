@@ -192,7 +192,7 @@ and pr_tuple ppf u =
 let sort_list (m: exec_map_t) =
   let lst = (NodeMap.bindings m) in
   List.sort (fun (n1,_) (n2,_) -> 
-    compare_node comp_trace n1 n2) lst 
+    compare_node n1 n2) lst 
 
 let print_value out_ch v = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" pr_value v
 

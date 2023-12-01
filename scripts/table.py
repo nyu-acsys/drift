@@ -56,8 +56,8 @@ def read_info_from_file(file_name):
         elif error_regexp.search(plain_d):
             res_data.append('ER')
         else:
-            print(file_name+" File data error: \n")
-            sys.exit(data)
+            print(file_name+" File data error: \n", data)
+            # sys.exit(data)
     try:
         time = float(timing) / 1000
         res_data.append(round(time,2))
@@ -96,8 +96,8 @@ def read_false_info_from_file(file_name):
         elif timeout_regexp.search(plain_d):
             res_data.append('F')
         else:
-            print("File data error: \n")
-            sys.exit(data)
+            print("File data error: \n", data)
+            # sys.exit(data)
     try:
         time = float(timing) / 1000
         res_data.append(round(time,2))

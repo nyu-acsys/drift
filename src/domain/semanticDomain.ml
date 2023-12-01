@@ -1205,7 +1205,7 @@ module SemanticsDomain =
     let top_M m = NodeMap.map (fun a -> TETop) m
     let array_M env m = 
       let n_make = construct_vnode env "Array.make" [] in
-      let s_make = construct_snode "" n_make in
+      let s_make = construct_snode (create_singleton_trace_loc "") n_make in
       let te_make = (* make *)
         (* make |-> zm: {v:int | v >= 0} -> ex: {v:int | top} -> 
            {v: Int Array (l, e) | len: [| l=zm; zm>=0; |] item: [| l=zm; zm>=0; e = ex; |]} *)
@@ -1229,7 +1229,7 @@ module SemanticsDomain =
         init_VE_v t
       in
       let n_len = construct_vnode env "Array.length" [] in
-      let s_len = construct_snode "" n_len in
+      let s_len = construct_snode (create_singleton_trace_loc "") n_len in
       let te_len = (* len *)
         (* len |-> zl: { v: Int Array (l, e) | len: [| l>=0; |] item: [| true; |] } 
            -> { v: Int | [| v=l |] } *)
@@ -1250,7 +1250,7 @@ module SemanticsDomain =
         init_VE_v t
       in
       let n_get = construct_vnode env "Array.get" [] in
-      let s_get = construct_snode "" n_get in
+      let s_get = construct_snode (create_singleton_trace_loc "") n_get in
       let te_get = (* get *)
         (* get |-> zg: { v: Int Array (l, e) | l: [| l>=0; |] e: [| true; |] } 
             -> zi: {v: int | 0 <= v < l} -> {v: int | v = e; }  *)
@@ -1275,7 +1275,7 @@ module SemanticsDomain =
         init_VE_v t
       in
       let n_set = construct_vnode env "Array.set" [] in
-      let s_set = construct_snode "" n_set in
+      let s_set = construct_snode (create_singleton_trace_loc "") n_set in
       let te_set = (* set *)
         (* set |-> zs: { v: Int Array (l, e) | len: [| l>=0; |] item: [| true; |] } -> 
            zi: {v: int | 0 <= v < l} -> ex: {v: int | top } -> unit *)
@@ -1315,7 +1315,7 @@ module SemanticsDomain =
       env', m'
     let list_M env m = 
       let n_len = construct_vnode env "List.length" [] in
-      let s_len = construct_snode "" n_len in
+      let s_len = construct_snode (create_singleton_trace_loc "") n_len in
       let te_len = (* len *)
         (* len |-> zl: { v: 'a List (l, e) | len: [| l>=0; |] item: true } 
            -> { v: Int | [| v=l |] } *)
@@ -1335,7 +1335,7 @@ module SemanticsDomain =
         in init_VE_v t
       in
       let n_hd = construct_vnode env "List.hd" [] in
-      let s_hd = construct_snode "" n_hd in
+      let s_hd = construct_snode (create_singleton_trace_loc "") n_hd in
       let te_hd = (* hd *)
         (* hd |-> zh: { v: 'a List (l, e) | l: [| l>=0; |] e: true } 
            -> true  *)
@@ -1354,7 +1354,7 @@ module SemanticsDomain =
         init_VE_v t
       in
       let n_tl = construct_vnode env "List.tl" [] in
-      let s_tl = construct_snode "" n_tl in
+      let s_tl = construct_snode (create_singleton_trace_loc "") n_tl in
       let te_tl = (* tl *)
         (* tl |-> zt: { v: Int List (l, e) | l: [| l>=0; |] e: true } -> 
            { v: Int List (l1, e1) | l1: [| l1=l-1; |] e1: e } *)
@@ -1380,7 +1380,7 @@ module SemanticsDomain =
         init_VE_v t
       in
       let n_cons = construct_vnode env "List.cons" [] in
-      let s_cons = construct_snode "" n_cons in
+      let s_cons = construct_snode (create_singleton_trace_loc "") n_cons in
       let te_cons = (* cons *)
         (* cons |-> zc: true -> xs: { v: Int List (l, e) | l: [| l>=0; |] e: true } -> 
            { v: Int List (l1, e1) | l': [| l1=l+1; |] e': e ⊔ zc |] }
@@ -1426,7 +1426,7 @@ module SemanticsDomain =
         else 
           VarDefMap.fold (fun var (domain: pre_exp) (m, env) -> 
               let n_var = construct_vnode env var [] in
-              let s_var = construct_snode "" n_var in
+              let s_var = construct_snode (create_singleton_trace_loc "") n_var in
               let t_var = match domain with
                 | {name = n; dtype = Int; left = l; op = bop; right = r} -> 
                    let rm = if l = "true" then 

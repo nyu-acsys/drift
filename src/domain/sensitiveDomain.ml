@@ -133,7 +133,7 @@ module type SemanticsType =
     val get_label_snode: node_s_t -> string
     val construct_vnode: env_t -> var -> trace_t -> node_t
     val construct_enode: env_t -> var -> node_t
-    val construct_snode: var -> node_t -> node_s_t
+    val construct_snode: trace_t -> node_t -> node_s_t
     val construct_table: trace_t -> value_te * value_te -> table_t
     val io_T: trace_t -> value_te -> value_te * value_te
     val get_vnode: node_t -> env_t * var * trace_t
@@ -141,7 +141,7 @@ module type SemanticsType =
     val get_table_T: value_te -> table_t
     val print_node: node_t -> Format.formatter -> (Format.formatter -> (string * (node_t * bool)) list -> unit) -> unit
     val print_table: table_t -> Format.formatter -> (Format.formatter -> value_te -> unit) -> unit
-    val compare_node: (trace_t -> trace_t -> int) -> node_s_t -> node_s_t -> int
+    val compare_node: node_s_t -> node_s_t -> int
     val prop_table: (trace_t -> value_te * value_te -> value_te * value_te -> (value_te * value_te) * (value_te * value_te)) -> (value_te -> var -> var -> value_te) -> table_t -> table_t -> table_t * table_t
     val step_func: (trace_t -> value_te * value_te -> 'a -> 'a) -> value_te -> 'a -> 'a
     val get_full_table_T: table_t -> trace_t * (value_te * value_te)
@@ -149,7 +149,7 @@ module type SemanticsType =
     val update_table: trace_t -> value_te * value_te -> table_t -> table_t
     val table_isempty: table_t -> bool
     val table_mapi: (trace_t -> value_te * value_te -> value_te * value_te) -> table_t -> table_t
-    val update_call_site: (trace_t -> loc_token_t -> trace_t)
+    val update_trace: (trace_t -> loc_token_t -> trace_t)
   end
 
 module NonSensitive: SemanticsType =
@@ -235,7 +235,7 @@ module NonSensitive: SemanticsType =
     let get_label_snode n = let SN (_, e1) = n in e1
     let construct_vnode env label _ = EN (env, label)
     let construct_enode env label = EN (env, label)
-    let construct_snode var_trace (EN (_, label)) = SN (true, label)
+    let construct_snode trace (EN (_, label)) = SN (true, label)
     let construct_table z (vi,vo) = get_trace_data z, vi, vo
     let io_T _ v = match v with
       | TypeAndEff (Table (_, vi, vo), _) -> vi, vo
@@ -252,10 +252,10 @@ module NonSensitive: SemanticsType =
       | EN (env, l) -> Format.fprintf ppf "@[<1><[%a],[%s] " f (VarMap.bindings env) l ; Format.fprintf ppf ">@]"
     let print_table t ppf f = let (z, vi, vo) = t in
       Format.fprintf ppf "@[%s" z; Format.fprintf ppf ": (%a ->@ %a)@]" f vi f vo
-    let compare_node comp n1 n2 = 
+    let compare_node n1 n2 = 
       let SN (_, e1) = n1 in
       let SN (_, e2) = n2 in
-      comp (create_singleton_trace_loc e1) (create_singleton_trace_loc e2)
+      comp_trace (create_singleton_trace_loc e1) (create_singleton_trace_loc e2)
     let prop_table f g (t1:table_t) (t2:table_t) = 
       let alpha_rename t1 t2 = let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
         if z1 = z2 then t1, t2
@@ -284,7 +284,7 @@ module NonSensitive: SemanticsType =
     let bot_shape_T f t = 
       let (z, vi, vo) = t in
       (z, f vi, f vo)
-    let update_call_site call_site new_token = add_token_to_trace new_token call_site 1
+    let update_trace trace new_token = add_token_to_trace new_token trace 1
   end
 
 module OneSensitive: SemanticsType =
@@ -375,12 +375,8 @@ module OneSensitive: SemanticsType =
       | SEN(var, l) -> var, l
     let construct_vnode env label call_site = VN (env, label, call_site)
     let construct_enode env label = EN (env, label)
-    let construct_snode x (n:node_t): node_s_t = match n with
-    | EN (env, l) -> if VarMap.is_empty env || x = "" then SEN (l, create_singleton_trace_loc "") else
-      let _, _, va = 
-        let n, _ = VarMap.find x env in
-        get_var_env_node n in
-      SEN (l, va)
+    let construct_snode cs (n:node_t): node_s_t = match n with
+    | EN (env, l) -> SEN (l, cs)
     | VN (env, xl, cl) -> SVN (xl, cl)
     let construct_table cs (vi,vo) = TableMap.singleton cs (vi, vo)
     let get_vnode = function
@@ -415,13 +411,13 @@ module OneSensitive: SemanticsType =
       and pr_table_row ppf (cs, t) = 
         Format.fprintf ppf "@[<2>%s" (get_trace_data cs); Format.fprintf ppf ":@ @[<2>%a@]@]" pr_table t
       in print_table_map ppf t
-    let compare_node comp n1 n2 = match n1, n2 with
+    let compare_node n1 n2 = match n1, n2 with
       | SEN (var1, e1), SEN (var2, e2) -> comp_loc var1 var2
       | SEN (var1, e1), SVN (var2, e2) -> comp_loc var1 var2
       | SVN (var1, e1), SEN (var2, e2) -> comp_loc var1 var2
       | SVN (var1, e1), SVN (var2, e2) -> let comp_res = comp_loc var1 var2 in
           if comp_res = 0 then
-            comp e1 e2 else comp_res
+            comp_trace e1 e2 else comp_res
               
     let prop_table f g t1 t2 = 
       let t = TableMap.merge (fun cs vio1 vio2 ->
@@ -449,7 +445,7 @@ module OneSensitive: SemanticsType =
     let bot_shape_T f t = 
       TableMap.mapi (fun cs (vi, vo) -> 
         (f vi, f vo)) t
-    let update_call_site call_site new_token = add_token_to_trace new_token call_site 1
+    let update_trace trace new_token = add_token_to_trace new_token trace 1
   end
 
 module NSensitive: SemanticsType =
@@ -540,12 +536,8 @@ module NSensitive: SemanticsType =
       | SEN(var, l) -> var, l
     let construct_vnode env label call_site = VN (env, label, call_site)
     let construct_enode env label = EN (env, label)
-    let construct_snode x (n:node_t): node_s_t = match n with
-    | EN (env, l) -> if VarMap.is_empty env || x = "" then SEN (l, create_singleton_trace_loc "") else
-      let _, _, va = 
-        let n, _ = VarMap.find x env in
-        get_var_env_node n in
-      SEN (l, va)
+    let construct_snode cs (n:node_t): node_s_t = match n with
+    | EN (env, l) -> SEN (l, cs)
     | VN (env, xl, cl) -> SVN (xl, cl)
     let construct_table cs (vi,vo) = TableMap.singleton cs (vi, vo)
     let get_vnode = function
@@ -580,13 +572,13 @@ module NSensitive: SemanticsType =
       and pr_table_row ppf (cs, t) = 
         Format.fprintf ppf "@[<2>%s" (get_trace_data cs); Format.fprintf ppf ":@ @[<2>%a@]@]" pr_table t
       in print_table_map ppf t
-    let compare_node comp n1 n2 = match n1, n2 with
+    let compare_node n1 n2 = match n1, n2 with
       | SEN (var1, e1), SEN (var2, e2) -> comp_loc var1 var2
       | SEN (var1, e1), SVN (var2, e2) -> comp_loc var1 var2
       | SVN (var1, e1), SEN (var2, e2) -> comp_loc var1 var2
       | SVN (var1, e1), SVN (var2, e2) -> let comp_res = comp_loc var1 var2 in
           if comp_res = 0 then
-            comp e1 e2 else comp_res
+            comp_trace e1 e2 else comp_res
               
     let prop_table f g t1 t2 = 
       let t = TableMap.merge (fun cs vio1 vio2 ->
@@ -614,7 +606,7 @@ module NSensitive: SemanticsType =
     let bot_shape_T f t = 
       TableMap.mapi (fun cs (vi, vo) -> 
         (f vi, f vo)) t
-    let update_call_site call_site new_token = add_token_to_trace new_token call_site !trace_len
+    let update_trace trace new_token = add_token_to_trace new_token trace !trace_len
   end
 
 (*module NSensitive: SemanticsType =
