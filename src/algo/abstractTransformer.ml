@@ -571,6 +571,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       let envx, lx, lcs = get_vnode nx in
       let nx = construct_snode trace nx in
       
+      let effx0 = find nx m |> extract_eff in
       let tex = find nx m 
                 |> temap ((fun tx -> if is_Relation tx then
                                     if sat_equal_V tx x then tx
@@ -599,6 +600,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
         else 
           prop_scope envx env trace m tex te
       in
+      let tex' = temap (id, (fun _ -> effx0)) tex' in
       (*(if l = "5" || l = "22" then
       begin
           Format.printf "\nRES for prop:\n";
