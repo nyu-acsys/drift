@@ -247,7 +247,7 @@ module SemanticsDomain =
       effmapi (fun q eff -> VarMap.mapi (fun _ r -> alpha_rename_R r prevar var) eff) e
     let join_Eff e1 e2 = match e1, e2 with 
       | EffBot, _ | _, EffTop -> e2 
-      | Effect e1, Effect e2 -> Effect (union_eff join_R e1 e2)
+      | Effect eff1, Effect eff2 -> Effect (union_eff join_R eff1 eff2)
       | EffTop, _ | _, EffBot -> e1 
     let meet_Eff e1 e2 = match e1, e2 with 
       | EffBot, _ | _, EffTop -> e1

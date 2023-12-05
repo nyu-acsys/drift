@@ -56,12 +56,15 @@ let pr_acc ppf acc =
   VarMap.bindings acc 
   |> Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_acc_comp ppf 
 
+
+let pr_delta_tran ppf t_acc =
+  Format.fprintf ppf "\ntran added:@,  @[%a@]@." pr_acc t_acc
 let pr_delta_trans ppf ts =
   let rec pr_ts i ppf = function
     | [] -> Format.fprintf ppf ""
-    | t_acc::ts' -> Format.fprintf ppf "@[ts(%d) |-> @[<v>%a,@]@]@ %a" i pr_acc t_acc (pr_ts (i+1)) ts'
+    | t_acc::ts' -> Format.fprintf ppf "@[ts(%d) |-> @[<v>%a,@]@]@,%a" i pr_acc t_acc (pr_ts (i+1)) ts'
   in
-  Format.fprintf ppf "\ndelta_trans: @[<v>%a@]@." (pr_ts 1) ts
+  Format.fprintf ppf "\ndelta_trans:@,  @[@[<v>%a@]@]@." (pr_ts 1) ts
 
 let pr_ev_env ppf env =
   let rec pr_env ppf = function
@@ -109,7 +112,7 @@ let eff0 () =
 
 let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t -> 
    
-  (Format.fprintf Format.std_formatter "\nEV (penv, eff, t) = \npenv:{%s}\neff:%a\nt:%a@."
+  (Format.fprintf Format.std_formatter "\nEV (env, eff, t) =@.  @[env:@[{%s}@]@]@.  @[eff:@[%a@]@]@.  @[t:@[%a@]@]@."
    (String.concat ";" penv)
    pr_eff_map eff
    pr_relation t);
@@ -154,12 +157,15 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
        end 
   in
   let add_tran vq vva ts =
+    let forget_acc_vars va = List.fold_right (fun accx va -> forget_R accx va) acc_vars va in 
     let rec arrow_va_q' = function
-      | Val va -> Val (arrow_R "q'" va vq)
+      | Val va -> Val (forget_acc_vars (arrow_R "q'" va vq))
       | Tpl vvs -> Tpl (List.map arrow_va_q' vvs)
     in
     let vva' = arrow_va_q' vva in
-    (acc_of_evv vva')::ts
+    let vva_acc = acc_of_evv vva' in
+    (pr_delta_tran Format.std_formatter vva_acc);
+    (vva_acc)::ts 
   in
   let name_of_node l = "ze" ^ l in
   let get_env_vars env = 
@@ -174,22 +180,28 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
     | Const (c, _) -> 
        let v = init_R_c c |> (fun v -> 
            let v' = stren_R v ae in 
-           (Format.printf "\nc:"; pr_const Format.std_formatter c; 
-            Format.printf "\t c_post:"; pr_relation Format.std_formatter v'); v') 
+           (*(Format.printf "\nc:"; pr_const Format.std_formatter c; 
+            Format.printf "\t c_post:"; pr_relation Format.std_formatter v'); *) v')
        in (Val v, ts)
     | Var (x, _) -> 
        let v = apply_env x env
-               |> (fun v -> if sat_equal_R v x then v else equal_R (forget_R x v) x)
+               |> (fun v -> if sat_equal_R v x then v else equal_R v x) (* equal_R (forget_R x v) x) *)
                |> (fun v -> (*(Format.printf "\nvar_pre[%s]:" x; pr_relation Format.std_formatter v); *)
                          let v'= stren_R v ae in 
-                         (* (Format.printf "\nvar_post[%s]:" x; pr_relation Format.std_formatter v'); *)
+                         (*(Format.printf "\nvar_post[%s]:" x; pr_relation Format.std_formatter v'); *)
                          v')
-       in 
+       
+       (* let v = apply_env x env |> (fun v -> stren_R v ae) *)
+       in  
        (Val v, ts)
     | Ite (e0, e1, e2, _, _) -> 
        let vv0, ts' = eval e0 env ae tftpl ts in
        let v0 = absv_of_val vv0 in
-       (*(if !Config.debug then Format.fprintf Format.std_formatter "\nITE_e0: %a" (pr_exp false) e0; pr_relation Format.std_formatter v0; Format.printf "\n";); *)
+       (*(if !Config.debug then 
+          begin 
+            Format.fprintf Format.std_formatter "\nITE_e0: %a@." (pr_exp false) e0; 
+            pr_relation Format.std_formatter v0; Format.printf "\n"; 
+          end); *)
        begin match v0 with
        | Bool _ -> 
           let aet = meet_R ae (extrac_bool_R v0 true) in
@@ -325,7 +337,7 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
         StateMap.fold 
           (fun (Q q) acc res' ->
             ( if !Config.debug then
-                Format.fprintf Format.std_formatter "\n@[EV(pre):@ q[%d] |->@ %a@]@." q pr_acc acc);
+                Format.fprintf Format.std_formatter "\n@[EV(pre):@.  @[q[%d] |-> @[%a@]@]@]@." q pr_acc acc);
             let env0 = get_env0 q acc t in
             let _, ts = eval spec.delta env0 (top_R Plus) true [] in
             ( if !Config.debug then
@@ -344,7 +356,7 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
             (* (Format.fprintf Format.std_formatter "\nq(%d) -> q'(%d): %a" q q' pr_acc acc'); *)
             let res' = join_acc res' acc' in 
             (if !Config.debug then 
-               Format.fprintf Format.std_formatter "\n@[EV(post):@ q[%d] |-> %a@]" q' pr_acc res');
+               Format.fprintf Format.std_formatter "\n@[EV(post):@.  @[q[%d] |-> @[%a@]@]@]" q' pr_acc res');
             res'
           ) eff bot_acc
         |> forget_acc "q"

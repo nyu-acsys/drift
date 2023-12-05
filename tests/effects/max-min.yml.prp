@@ -1,11 +1,11 @@
 (* Max == -1 * Min *)
  
-QSet   = [0]; 
+QSet   = [0;1]; 
 
 delta  = fun evx (q, (max,min)) -> 
-   if evx < min then (q, (max,evx)) 
-   else if evx > max then (q, (evx,min)) 
-   else (q, (max,min));
+   if evx < min then (1, (max,evx)) 
+   else if evx > max then (1, (evx,min)) 
+   else (1, (max,min));
 
 IniCfg = (0, (0,0));
 
