@@ -20,6 +20,7 @@ let domain = ref "Oct" (*Default: Octagon domain*)
 let use_threshold = ref false
 
 let trace_len = ref 0
+let if_part = ref false
 let sensitive = ref true
 
 let effect_on = ref false
@@ -44,7 +45,8 @@ let cmd_options_spec =
    ("-bt", Arg.Set bt, ": Allow trace back");
    ("-prop", Arg.String (fun s -> effect_on := true; prop_file := s), ": Automata specification of safety property for effect analysis");
    ("-ev-trans", Arg.String (fun s -> if s = "true" then ev_trans := true else ev_trans := false), "Translate Ev expressions"); 
-   ("-trace-len", Arg.Int (fun s -> trace_len := s), ": Set maximum allowed trace length. 0 -> not context sensitive.");
+   ("-trace-len", Arg.Int (fun s -> trace_len := s), ": Set maximum allowed trace length. 0 -> not context sensitive");
+   ("-if-part", Arg.String (fun s -> if s = "true" then if_part:=true else if_part:=false), ": Partition traces on if tokens");
   ]
 
 (* Parse auxiliary 'command line options' that are set during parsing of the input file *)

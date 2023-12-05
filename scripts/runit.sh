@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# ./runit.sh -set call/unv -domain Oct [-nar | -dwid 0 | -thold] [-sen]
+# ./runit.sh -set call/unv -domain Oct [-trace-len <trace_length>] [-nar | -dwid 0 | -thold] [-if-part]
 # Domain for benchmarks: Oct, Polka_st, Polka_ls
 opam switch 4.08.1
 OUTDIR="../outputs/DRIFT"
@@ -13,7 +13,7 @@ if [ $# -gt 1 ]; then
     DOMAIN=$4
 else
     echo "ERROR!!! The command should be:"
-    echo "./runit.sh -set call/unv -domain <domain_name> [-sen <trace_length>] [-dwid <delay_steps> | -nar]"
+    echo "./runit.sh -trace-len call/unv -domain <domain_name> [-trace-len <trace_length>] [-dwid <delay_steps> | -nar] [-if-part]"
     exit 0
 fi
 shift
@@ -25,8 +25,9 @@ wid=0
 nar=false
 thold=false
 trace_len=0
+if_part=false
 
-if [[ $# -ge 1 && ($1 = "-sen")]]; then
+if [[ $# -ge 2 && ($1 = "-trace-len")]]; then
     trace_len=$2;
     echo "Use $trace_len sensitive"
     shift
@@ -37,20 +38,30 @@ if [ $# -ge 1 ] && [ $1 = "-nar" ]; then
     echo "Wid + Nar..."
     wid=0;
     nar=true;
+    shift
 elif [ $# -ge 1 ] && [ $1 = "-thold" ]; then
     echo "Wid with threshold..."
     thold=true;
     nar=false;
     wid=0;
+    shift
 else 
     if [ $# -ge 2 ] && [ $1 = "-dwid" ]; then
         echo "Delay widening + Nar. Widen steps occur after $2"
         nar=true;
         wid=$2;
+        shift
+        shift
     else 
         echo "Default. Standard widening..."
     fi
 fi
+
+if [ $# -ge 1 ] && [ $1 = "-if-part" ]; then
+    echo "If Paritioning"
+    if_part=true;
+fi
+
 echo "outdir=<$OUTDIR> prog=<$PROG>"
 
 if [ $SET = "call" ]; then

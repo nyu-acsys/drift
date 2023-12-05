@@ -149,7 +149,8 @@ module type SemanticsType =
     val update_table: trace_t -> value_te * value_te -> table_t -> table_t
     val table_isempty: table_t -> bool
     val table_mapi: (trace_t -> value_te * value_te -> value_te * value_te) -> table_t -> table_t
-    val update_trace: (trace_t -> loc_token_t -> trace_t)
+    val append_trace: (loc_token_t -> trace_t -> trace_t)
+    val extend_trace: (trace_t -> trace_t -> trace_t)
   end
 
 module NonSensitive: SemanticsType =
@@ -284,7 +285,8 @@ module NonSensitive: SemanticsType =
     let bot_shape_T f t = 
       let (z, vi, vo) = t in
       (z, f vi, f vo)
-    let update_trace trace new_token = add_token_to_trace new_token trace 1
+    let append_trace new_token trace = add_token_to_trace new_token trace 1
+    let extend_trace tail trace = add_tail_to_trace tail trace 1
   end
 
 module OneSensitive: SemanticsType =
@@ -445,7 +447,8 @@ module OneSensitive: SemanticsType =
     let bot_shape_T f t = 
       TableMap.mapi (fun cs (vi, vo) -> 
         (f vi, f vo)) t
-    let update_trace trace new_token = add_token_to_trace new_token trace 1
+    let append_trace new_token trace = add_token_to_trace new_token trace 1
+    let extend_trace tail trace = add_tail_to_trace tail trace !trace_len
   end
 
 module NSensitive: SemanticsType =
@@ -606,7 +609,8 @@ module NSensitive: SemanticsType =
     let bot_shape_T f t = 
       TableMap.mapi (fun cs (vi, vo) -> 
         (f vi, f vo)) t
-    let update_trace trace new_token = add_token_to_trace new_token trace !trace_len
+    let append_trace new_token trace = add_token_to_trace new_token trace !trace_len
+    let extend_trace tail trace = add_tail_to_trace tail trace !trace_len
   end
 
 (*module NSensitive: SemanticsType =

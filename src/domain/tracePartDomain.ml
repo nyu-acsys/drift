@@ -34,16 +34,20 @@ let rec print_trace ppf trace = match trace with
 
 let create_loc_token loc = Loc_Token loc
 
-let create_if_token cond_loc block_loc = If_Case (cond_loc, block_loc)
+let create_if_token if_loc block_loc = If_Case (if_loc, block_loc)
 
 let create_singleton_trace_loc loc = List.init 1 (fun _ -> Loc_Token loc)
 
 let create_singleton_trace_token token = List.init 1 (fun _ -> token)
 
 let rec remove_last trace = match trace with
-  | [] -> raise (Invalid_argument "remove_last: empty list")
+  | [] -> []
   | head :: [] -> []
   | head :: tail -> head :: (remove_last tail)
+
+let rec prune_trace trace limit = if List.length trace > limit 
+  then prune_trace (remove_last trace) limit
+  else trace
 
 let get_token_loc loc_token = match loc_token with
   | Loc_Token loc | If_Case (loc,_) | Pat_Case (loc,_) -> loc
@@ -123,7 +127,14 @@ let rec get_trace_data trace = match trace with
 let add_token_to_trace token trace limit = 
   (* print_trace Format.std_formatter trace; print_string "->"; *)
   let new_trace = token :: trace in
-  let new_trace = if List.length new_trace > limit then remove_last new_trace else new_trace in 
+  let new_trace = prune_trace new_trace limit in 
+  (* print_trace Format.std_formatter new_trace; print_newline (); *)
+  new_trace
+
+let add_tail_to_trace tail trace limit = 
+  (* print_trace Format.std_formatter trace; print_string "->"; *)
+  let new_trace = tail @ trace in
+  let new_trace = prune_trace new_trace limit in 
   (* print_trace Format.std_formatter new_trace; print_newline (); *)
   new_trace
 
