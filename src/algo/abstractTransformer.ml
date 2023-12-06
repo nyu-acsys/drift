@@ -835,7 +835,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           in
           m1' |> update false n (stren_VE re_te ae), tail
       ) m1 tails
-  | Ite (e0, e1, e2, l, asst) ->
+  | Ite (e0, e1, e2, l) ->
       (* (if !debug then
       begin
           Format.printf "\n<=== Ite ===>\n";
@@ -857,17 +857,17 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             m0' |> update false n TETop, [tail0]
           else
             begin
-              let { isast = isast; ps = pos } = asst in
+              (* let { isast = isast; ps = pos } = asst in
               if assertion && isast && not (is_bool_bot_V (extract_v te0)) && 
                   not (is_bool_false_V (extract_v te0)) && not (only_shape_V ae)
-              then print_loc pos else
+              then print_loc pos else *)
               let t_true = meet_V (extrac_bool_V (extract_v te0) true) ae in (* Meet with ae*)
               let t_false = meet_V (extrac_bool_V (extract_v te0) false) ae in
-              (if assertion && isast then 
+              (* (if assertion && isast then 
                   let i, j = AssertionPosMap.find_opt pos !sens |> Opt.get_or_else (0,0) in
                   sens := AssertionPosMap.add pos ((if is_bool_bot_V (extract_v te0) && 
                   (is_asst_false e0 = false && only_shape_V ae = false) 
-                  then i + 1 else i), j + 1) !sens);
+                  then i + 1 else i), j + 1) !sens); *)
               let ec' = extract_ec te0 in
               let m1, tails1 = step e1 env trace ec' t_true assertion is_rec m0 in
               let m2, tails2 = step e2 env trace ec' t_false assertion is_rec m1 in
@@ -1264,9 +1264,9 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
   | Event (e1, l) ->
     (if !debug then
       begin
-          Format.printf "\n<=== EV ===>\n";
-          pr_exp true Format.std_formatter term;
-          Format.printf "\n";
+        Format.printf "\n<=== EV ===>\n";
+        pr_exp true Format.std_formatter term;
+        Format.printf "\n";
       end);
       let m1, tails1 = step e1 env trace ec ae assertion is_rec m in
       List.fold_left 
@@ -1286,7 +1286,16 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             in 
             m |> update false n (stren_VE te' ae)
         ) m1 tails1, tails1
+  | Assert (e1, _, l) ->
+     (if !debug then
+      begin
+        Format.printf "\n<=== ASSERT ===>\n";
+        pr_exp true Format.std_formatter term;
+        Format.printf "\n";
+      end);
+     step e1 env trace ec ae assertion is_rec m
 
+  end
 
 let step x1 x2 x3 x4 x5 x6 x7 = measure_call "step" (step x1 x2 x3 x4 x5 x6 x7)
           
@@ -1353,6 +1362,75 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
   else (fix stage env e (k+1) m'' assertion) (*Hashtbl.reset m; *)
 
       
+(** Check assertion **)
+type failed_asst_t = RegularAsst of exp * pos | PropEvAsst of loc | PropFinalAsst of loc
+let add_failed_assertion (fasst: failed_asst_t) fassts = fasst::fassts
+
+let rec check_assert term (env: env_t) (trace: trace_t) (ae: value_tt) m fassts =
+  let n = loc term |> construct_enode env |> construct_snode trace in
+  let find n m = NodeMap.find_opt n m |> Opt.get_or_else TEBot in
+  match term with
+  | Const (_, _) | Var (_, _) -> fassts
+  | BinOp (_, e1, e2, _) -> 
+     check_assert e1 env trace ae m fassts
+     |> check_assert e2 env trace ae m fassts'
+  | UnOp (_, e1, _) -> 
+     check_assert e1 env trace ae m fassts
+  | Ite (e0, e1, e2, l) ->
+     let n0 = loc e0 |> construct_enode env |> construct_snode trace in
+     let te0 = find n0 m in
+     let t0 = extract_v te0 in
+     if is_bool_V (extract_v te0) then 
+       let t_true = meet_V (extract_bool_V t0 true) ae in
+       let t_false = meet_V (extract_bool_V t0 false) ae in
+       check_assert e1 env trace t_true m fassts 
+       |> check_assert e2 env trace t_false m
+     else 
+       fassts
+  | App (e1, e2, _) ->
+     check_assert e1 env trace ae m fassts
+     |> check_assert e2 env trace ae m fassts'
+  | Rec (f_opt, (x, lx), e1, _) ->
+     let te = find n m in
+     if te = TEBot then fassts
+     else begin
+         step_func (fun trace (tel, ter) f -> 
+             if tel = TEBot then f
+             else 
+               let nx = construct_vnode env lx trace in
+               let env1 = VarMap.add x (nx, false) env in
+               let nx = construct_snode trace nx in
+               let n1 = loc e1 |> construct_enode env1 |> construct_snode trace in
+               let tex = find nx m in
+               let tx = extract_v tex in 
+               let ae' = if (x != "_" && is_Relation tx) || is_list tx then arrow_V x ae tx else ae in
+               check_assert e1 env1 trace ae' m f
+           ) te fassts
+       end
+  | TupleLst (tlst, _) -> 
+     let te = find n m in
+     if te = TEBot then fassts
+     else List.fold_right (fun e f -> check_assert e env trace ae m f) tlst fassts
+  | PatMat (_, _, _) -> fassts
+  | Assert (e1, pos, l) ->
+     let n1 = loc e1 |> construct_enode env |> construct_snode trace in
+     let te1 = find n1 m in 
+     let t1 = extract_v te1 in
+     if not (is_bool_bot_V t1) && not (is_bool_false_V t1) && not (only_shape_V ae) 
+     then
+       add_failed_assertion (RegularAsst (e1, pos)) fassts 
+     else if is_bool_bot_V t1 && is_asst_false e1 && only_shape_V ae = false then 
+       add_failed_assertion (RegularAsst (e1, pos)) fassts
+     else 
+       fassts
+  | Event (e, l) -> 
+     let te = find n m in
+     if te = TEBot then 
+       add_failed_assertion (PropEvAsst l) fassts 
+     else 
+       
+          
+
 (** Semantic function *)
 let s e =
     (* (if !debug then
@@ -1380,23 +1458,23 @@ let s e =
   thresholdsSet := !thresholdsSet |> ThresholdsSetType.add 0 |> ThresholdsSetType.add 111 |> ThresholdsSetType.add 101
   |> ThresholdsSetType.add 2 |> ThresholdsSetType.add 4 |> ThresholdsSetType.add (-1) |> ThresholdsSetType.add (-2);
   (* pre_m := m0'; *)
-    let check_str, m =
-      let s1, m1 = (fix Widening envt e 0 m0' false) in
-        if !narrow then
-            begin
-            narrow := false;
-            (*let _, m1 = fix envt e (-10) m1 false in (* step^10(fixw) <= fixw *)*)
-            let m1 = m1 |> reset in
-            let s2, m2 = fix Narrowing envt e 0 m1 false in
-            if eq_PM m0 m2 then s2, m2 
-            else exit 0
-            end
-        else s1, m1
-    in
-    if !out_put_level = 1 then
-        begin
-        Format.printf "Final step \n";
-        print_exec_map m;
-        end;
-    Format.printf "%s" check_str;
-    m
+  let check_str, m =
+    let s1, m1 = (fix Widening envt e 0 m0' false) in
+    if !narrow then
+      begin
+        narrow := false;
+        (*let _, m1 = fix envt e (-10) m1 false in (* step^10(fixw) <= fixw *)*)
+        let m1 = m1 |> reset in
+        let s2, m2 = fix Narrowing envt e 0 m1 false in
+        if eq_PM m0 m2 then s2, m2 
+        else exit 0
+      end
+    else s1, m1
+  in
+  if !out_put_level = 1 then
+    begin
+      Format.printf "Final step \n";
+      print_exec_map m;
+    end;
+  Format.printf "%s" check_str;
+  m

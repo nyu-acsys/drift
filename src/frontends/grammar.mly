@@ -141,8 +141,10 @@ app_term: /* term@6 := term@6 term@7 | term@7 */
 | basic_term { $1 }
 | app_term basic_term { App ($1, $2, "") }
 | ASSERT basic_term { 
-  let loc = Some (mklocation $startpos $endpos) |> construct_asst in
-  Ite ($2, Const (UnitLit, ""), Const (UnitLit, ""), "", loc)}
+  (* let loc = mklocation $startpos $endpos) |> construct_asst in
+  Ite ($2, Const (UnitLit, ""), Const (UnitLit, ""), "", loc) *)
+  let loc = mklocation $startpos $endpos in 
+  mk_assert $2 loc }
 ;
 
 unary_term:
@@ -222,13 +224,11 @@ tuple_term:
 %inline if_term_:
 | tuple_term { $1 }
 | IF seq_term THEN term {
-  let loc = None |> construct_asst in
   let else_term = Const (UnitLit, "") in
-  Ite ($2, $4, else_term, "", loc) 
+  Ite ($2, $4, else_term, "") 
 }
 | IF seq_term THEN term ELSE term { 
-  let loc = None |> construct_asst in
-  Ite ($2, $4, $6, "", loc) 
+  Ite ($2, $4, $6, "") 
 }
 ;
 

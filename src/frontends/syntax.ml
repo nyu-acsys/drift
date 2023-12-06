@@ -10,7 +10,7 @@ let mk_default_loc = {pl=0;pc=0}
 type var = string
 type loc = string
 
-type asst = { isast: bool; ps: pos }
+(* type asst = { isast: bool; ps: pos } *)
 
 exception Input_Assert_failure of string
 
@@ -22,9 +22,9 @@ let print_loc pos =
   ("The program may not be safe, assertion failed at line "^(string_of_int pos.pl)^" col "^
   (string_of_int pos.pc)^".\n" ))
 
-let construct_asst ps = match ps with
+(* let construct_asst ps = match ps with
   | None -> { isast = false; ps = mk_default_loc }
-  | Some ps -> { isast = true; ps = ps }
+  | Some ps -> { isast = true; ps = ps } *)
 
 exception Main_not_found of string
 
@@ -151,9 +151,10 @@ type term =
   | UnOp of unop * term * loc          (* uop t (unary operator) *)
   | BinOp of binop * term * term * loc (* t1 bop t2 (binary infix operator) *)
   | PatMat of term * patcase list * loc     (* match t1 with t2 -> t3 | ... *)
-  | Ite of term * term * term * loc * asst    (* if t1 then t2 else t3 (conditional) *)
+  | Ite of term * term * term * loc    (* if t1 then t2 else t3 (conditional) *)
   | Rec of (var * loc) option * (var * loc) * term * loc (*lambda and recursive function*)
   | Event of term * loc                (* event *)
+  | Assert of term * pos * loc
 and patcase = 
   | Case of term * term
 
@@ -164,10 +165,11 @@ let loc = function
   | App (_, _, l)
   | BinOp (_, _, _, l)
   | UnOp (_, _, l)
-  | Ite (_, _, _, l, _)
+  | Ite (_, _, _, l)
   | PatMat (_, _, l)
   | Rec (_, _, _, l)
   | Event (_, l) -> l
+  | Assert (_, _, l) -> l
 
 let cond_op = function
   | Plus | Mult | Div | Mod | Modc | Minus | And | Or | Cons | Seq -> false
@@ -270,11 +272,11 @@ let label e =
           let px', kx' = (x, string_of_int k1), k1 + 1 in
           let e1', k2 = l kx' e1 in
         Rec (fopt', px', e1', string_of_int k2), k2 + 1
-      | Ite (e0, e1, e2, _, b) ->
+      | Ite (e0, e1, e2, _) ->
           let e0', k0 = l k e0 in
           let e1', k1 = l k0 e1 in
           let e2', k2 = l k1 e2 in
-          Ite (e0', e1', e2', string_of_int k2, b), k2 + 1
+          Ite (e0', e1', e2', string_of_int k2), k2 + 1
       | PatMat (e, patlst, _) ->
           let e', k' = l k e in
           let patlst', k'' = lp k' patlst in
@@ -289,6 +291,9 @@ let label e =
       | Event (e1, _) -> 
          let e1', k1 = l k e1 in 
          Event (e1', string_of_int k1), k1 + 1
+      | Assert (e1, ps, _) ->
+         let e1', k1 = l k e1 in
+         Assert (e1', ps, string_of_int k1), k1 + 1
     and lp k = function
       | [] -> [], k
       | Case (e1, e2) :: tl -> 
@@ -329,7 +334,7 @@ let fv_acc acc e =
     | App (e1, e2, _) 
     | BinOp (_, e1, e2, _) -> List.fold_left (fv bvs) acc [e1; e2]
     | UnOp (_, e, _) -> fv bvs acc e
-    | Ite (b, t, e, _, _) -> List.fold_left (fv bvs) acc [b; t; e]
+    | Ite (b, t, e, _) -> List.fold_left (fv bvs) acc [b; t; e]
     | PatMat (t, ps, _) ->
         let acc1 = fv bvs acc t in
         List.fold_left (fun acc (Case (p, t)) ->
@@ -342,6 +347,7 @@ let fv_acc acc e =
         let d = StringSet.of_list (x :: (f_opt |> Opt.map fst |> Opt.to_list)) in
         fv (StringSet.union bvs d) acc e
     | Event (e, _) -> fv bvs acc e
+    | Assert (e, _, _) -> fv bvs acc e
   in
   fv StringSet.empty acc e
 
@@ -358,7 +364,7 @@ let fo e =
     | App (e1, e2, _) 
     | BinOp (_, e1, e2, _) -> List.fold_left (fv bvs) acc [e1; e2]
     | UnOp (_, e, _) -> fv bvs acc e
-    | Ite (b, t, e, _, _) -> List.fold_left (fv bvs) acc [b; t; e]
+    | Ite (b, t, e, _) -> List.fold_left (fv bvs) acc [b; t; e]
     | PatMat (t, ps, _) ->
         let acc1 = fv bvs acc t in
         List.fold_left (fun acc (Case (p, t)) ->
@@ -371,6 +377,7 @@ let fo e =
         let bvs1 = List.fold_left inc bvs (x :: (f_opt |> Opt.map fst |> Opt.to_list)) in
         fv bvs1 acc e
     | Event (e, _) -> fv bvs acc e
+    | Assert (e, _, _) -> fv bvs acc e
   in
   fv StringMap.empty StringMap.empty e
     
@@ -388,7 +395,8 @@ let mk_rec f x e =
     if StringSet.mem f (fv e) then Some (f, "") else None
   in
   Rec (f_opt, (x, ""), e, "")
-let mk_ite e0 e1 e2 = Ite (e0, e1, e2, "", construct_asst None)
+let mk_ite e0 e1 e2 = Ite (e0, e1, e2, "")
+
 let mk_op op e1 e2 = BinOp (op, e1, e2, "")
 let mk_unop uop e1 = UnOp (uop, e1, "")
 
@@ -449,6 +457,8 @@ let mk_pattern_let_in t def e = mk_app (mk_pattern_lambda t e) def
 
 let mk_event e = Event (e, "")
 
+let mk_assert e ps = Assert (e, ps, "")
+
 (** Substitute closed term c for free occurrences of x in e (not capture avoiding if c is not closed) *)
 let subst sm =
   let update_sm bvs sm =
@@ -486,8 +496,8 @@ let subst sm =
             UnOp (uop, s e, l)
         | TupleLst (ts, l) ->
             TupleLst (List.map s ts, l)
-        | Ite (b, t, e, l, a) ->
-            Ite (s b, s t, s e, l, a)
+        | Ite (b, t, e, l) ->
+            Ite (s b, s t, s e, l)
         | Rec (f_opt, y, e, l) as r ->
             let bvs = fst y :: (f_opt |> Opt.map fst |> Opt.to_list) |> StringSet.of_list in
             let sm1 = update_sm bvs sm in
@@ -508,6 +518,7 @@ let subst sm =
             in
             PatMat (s t, ps1, l)
         | Event (e, l) -> Event (s e, l)
+        | Assert (e, ps, l) -> Assert (s e, ps, l)
   in subst sm
     
 let simplify =
@@ -541,7 +552,8 @@ let simplify =
   | PatMat (e1, ps, l) ->
       let ps' = List.map (function Case (p, t) -> Case (p, simp t)) ps in
       PatMat (simp e1, ps', l)
-  | Ite (b, t, e, l, a) ->
-      Ite (simp b, simp t, simp e, l, a)
+  | Ite (b, t, e, l) ->
+      Ite (simp b, simp t, simp e, l)
   | Event (e, l) -> Event (simp e, l)
+  | Assert (e, ps, l) -> Assert (simp e, ps, l)
   in simp

@@ -98,21 +98,22 @@ let tr (e: term) (a: term) (acfg: term) (asst: term) =
                    ], ""))
             ], "")
       end
-    | Ite (b, et, ef, l, asst) -> 
+    | Ite (b, et, ef, l) -> 
       let tr_b = tr_ b acfg in
       begin match tr_b with
         | TupleLst ([b'; ecfg1], "") ->
-          Ite (b', tr_ et ecfg1, tr_ ef ecfg1, l, asst)
+          Ite (b', tr_ et ecfg1, tr_ ef ecfg1, l)
         | _ ->
           let e1x, acfg1x = mk_fresh_var "x", mk_fresh_var "cfg" in
           PatMat (tr_b, [
               mk_pattern_case 
                 (TupleLst ([e1x; acfg1x], ""))
-                (Ite (e1x, tr_ et acfg1x, tr_ ef acfg1x, l, asst))
+                (Ite (e1x, tr_ et acfg1x, tr_ ef acfg1x, l))
             ], "")
       end
     | Event (e1, l) -> 
       ret (Const (UnitLit, "")) (mk_app (mk_app ev_ e1) acfg)
+    | Assert (_, _, _) -> ret e acfg
     | PatMat (e1, patlist, l) ->
       let tr_e1 = tr_ e1 acfg in
       begin match tr_e1 with

@@ -2,7 +2,7 @@
 let rec compute vv bound inc = 
     if vv = bound then 0 else begin
       ev vv; 
-      compute (inc vv) bound
+      compute (inc vv) bound inc
     end
 
 let main (v:int(*-:{v:Int | true}*)) (w:int(*-:{v:Int | true}*)) (m:int(*-:{v:Int | true}*)) =

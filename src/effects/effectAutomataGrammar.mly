@@ -109,12 +109,10 @@ tuple_exp:
 
 %inline if_exp:
   | IF be=bool_exp THEN e1=exp ELSE e2=exp 
-      { let loc = None |> construct_asst in
-        Ite (be, e1, e2, "", loc) }
+      { Ite (be, e1, e2, "") }
   | IF be=bool_exp THEN e1=exp 
-      { let loc = None |> construct_asst in
-        let else_term = Const (UnitLit, "") in
-        Ite (be, e1, else_term, "", loc) }
+      { let else_term = Const (UnitLit, "") in
+        Ite (be, e1, else_term, "") }
 
 bool_exp:
   | b=BOOLCONST { Const (Boolean b, "") }

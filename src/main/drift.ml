@@ -315,7 +315,7 @@ let add x = x + 1 in f add 0"
 let tests = []
   
 let _ =
-  Format.set_geometry 98 100;
+  Format.set_geometry 190 200;
   try
     Config.parse;
     Printexc.record_backtrace !Config.bt;

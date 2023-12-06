@@ -41,7 +41,6 @@ module EvTrSemActions : SemActionsSig = struct
 
   let prop_assert (q, acc) e = 
     let pcfg = mk_fresh_var "cfg" in
-    let loc = {isast = true; ps = mk_default_loc} in (* TOOD: replace default_loc a relevant loc *)
     let eacc = match acc with
       | [] -> raise (Invalid_argument "Accumulator expression expecter")
       | [x] -> x
@@ -50,14 +49,13 @@ module EvTrSemActions : SemActionsSig = struct
     let asst = mk_lambda pcfg (PatMat (pcfg, [  
                                      mk_pattern_case 
                                        (TupleLst ([q; eacc], ""))
-                                       (Ite (e, Const (UnitLit, ""), Const (UnitLit, ""), "", loc))
+                                       (Assert (e, mk_default_loc, ""))
                                    ], ""))
     in (asst, PerTran)
 
   
   let prop_assert_final (q, acc) e = 
     let pcfg = mk_fresh_var "cfg" in
-    let loc = {isast = true; ps = mk_default_loc} in (* TOOD: replace default_loc a relevant loc *)
     let eacc = match acc with
       | [] -> raise (Invalid_argument "Accumulator expression expecter")
       | [x] -> x
@@ -66,7 +64,7 @@ module EvTrSemActions : SemActionsSig = struct
     let asst = mk_lambda pcfg (PatMat (pcfg, [  
                                      mk_pattern_case 
                                        (TupleLst ([q; eacc], ""))
-                                       (Ite (e, Const (UnitLit, ""), Const (UnitLit, ""), "", loc))
+                                       (Assert (e, mk_default_loc, ""))
                                    ], ""))
     in (asst, Final)
 end

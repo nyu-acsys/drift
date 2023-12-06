@@ -157,7 +157,8 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
        end 
   in
   let add_tran vq vva ts =
-    let forget_acc_vars va = List.fold_right (fun accx va -> forget_R accx va) acc_vars va in 
+    let delta_vars = "evx"::acc_vars in 
+    let forget_acc_vars = List.fold_right (fun accx va -> forget_R accx va) delta_vars in  
     let rec arrow_va_q' = function
       | Val va -> Val (forget_acc_vars (arrow_R "q'" va vq))
       | Tpl vvs -> Tpl (List.map arrow_va_q' vvs)
@@ -173,7 +174,7 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
   in
   let eff_bot = eff_bot spec in
   let rec eval e env ae tftpl ts = 
-    (*( Format.printf "\n>>>exp:"; pr_exp true Format.std_formatter e;
+    (* ( Format.printf "\n>>>exp:"; pr_exp true Format.std_formatter e;
       Format.printf "\n>>>ae:"; pr_relation Format.std_formatter ae; Format.printf "\n";
       Format.printf "\n>>>env: "; pr_ev_env Format.std_formatter env); *)
     match e with
@@ -185,8 +186,8 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
        in (Val v, ts)
     | Var (x, _) -> 
        let v = apply_env x env
-               |> (fun v -> if sat_equal_R v x then v else equal_R v x) (* equal_R (forget_R x v) x) *)
-               |> (fun v -> (*(Format.printf "\nvar_pre[%s]:" x; pr_relation Format.std_formatter v); *)
+               |> (fun v -> if sat_equal_R v x then v else equal_R (forget_R x v) x)
+               |> (fun v -> (* (Format.printf "\nvar_pre[%s]:" x; pr_relation Format.std_formatter v); *)
                          let v'= stren_R v ae in 
                          (*(Format.printf "\nvar_post[%s]:" x; pr_relation Format.std_formatter v'); *)
                          v')
@@ -194,7 +195,7 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
        (* let v = apply_env x env |> (fun v -> stren_R v ae) *)
        in  
        (Val v, ts)
-    | Ite (e0, e1, e2, _, _) -> 
+    | Ite (e0, e1, e2, _) -> 
        let vv0, ts' = eval e0 env ae tftpl ts in
        let v0 = absv_of_val vv0 in
        (*(if !Config.debug then 
@@ -242,7 +243,7 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
        (* (if !Config.debug then Format.printf "\nBinOp_e1: "; pr_relation Format.std_formatter v1; Format.printf "\n";); *)
         let vv2, ts'' = eval e2 env ae tftpl ts' in
         let v2 = absv_of_val vv2 in
-        (*(if !Config.debug then Format.printf "\nBinOp_e2: "; pr_relation Format.std_formatter v2; Format.printf "\n";); *)
+        (* (if !Config.debug then Format.printf "\nBinOp_e2: "; pr_relation Format.std_formatter v2; Format.printf "\n";); *)
         if is_unit_R v1 || is_unit_R v2 then 
           raise (Invalid_argument ("Binary operator " ^ (string_of_op bop) ^ " is not defined for tuples"))
         else begin
@@ -265,12 +266,12 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
                  let op2 = e2 |> loc |> name_of_node in
                  let v' = top_R Plus |> (fun v -> arrow_R op1 v v1) |> (fun v -> arrow_R op2 v v2) in
                  (*(if !Config.debug then Format.printf "\nBinOp_[op1 <- v1, op2 <- v2]:"; 
-                  pr_relation Format.std_formatter v'; Format.printf "\n";); *)
+                  pr_relation Format.std_formatter v'; Format.printf "\n";);*)
                  let v'' = op_R "" op1 op2 bop false v' in
-                 (*(if !Config.debug then Format.printf "\nBinOp_op_result:"; 
+                 (* (if !Config.debug then Format.printf "\nBinOp_op_result:"; 
                   pr_relation Format.std_formatter v''; Format.printf "\n";); *)
                  let v''' = get_env_vars env |> proj_R v'' in
-                 (*(if !Config.debug then Format.printf "\nBinOp_Proj_env:"; 
+                 (* (if !Config.debug then Format.printf "\nBinOp_Proj_env:"; 
                     pr_relation Format.std_formatter v'''; Format.printf "\n";); *)
                   v'''
               end
@@ -345,11 +346,11 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
             );
             let acc' = 
               List.fold_right (fun acc'' res'' -> 
-                  (*(Format.fprintf Format.std_formatter "\nres(init): %a,@,acc(init): %a" pr_acc res' pr_acc acc);*)
+                  (* (Format.fprintf Format.std_formatter "\nres(init): %a,@,acc(init): %a" pr_acc res' pr_acc acc);*)
                   let acc'' = arrow_acc "q'" acc'' (init_R_c (Integer q')) in
-                  (* (Format.fprintf Format.std_formatter "\nva[acc <- q'(%d)]: %a" q' pr_relation va');*)
+                  (* (Format.fprintf Format.std_formatter "\nva[acc <- q'(%d)]: %a" q' pr_acc acc''); *)
                   let res'' = join_acc res'' acc'' in
-                  (*(Format.fprintf Format.std_formatter "\nres(final): %a" pr_acc res''); *)
+                  (* (Format.fprintf Format.std_formatter "\nres(final): %a" pr_acc res''); *)
                   res''
                 ) ts bot_acc
             in

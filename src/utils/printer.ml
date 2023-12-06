@@ -54,7 +54,7 @@ let rec pr_exp pl ppf = function
       x (pr_label pl) lx
       (pr_exp pl) e
       (pr_label pl) l
-| Ite (e1, e2, e3, l, _) ->
+| Ite (e1, e2, e3, l) ->
     Format.fprintf ppf "Ite @[<2>(%a@ ?@ %a@ :@ %a)%a@]"
       (pr_exp pl) e1
       (pr_exp pl) e2
@@ -78,6 +78,10 @@ let rec pr_exp pl ppf = function
     (pr_label pl) l
 | Event (e, l) -> 
    Format.fprintf ppf "@[<2>(event@ %a)%a@]"
+     (pr_exp pl) e
+     (pr_label pl) l
+| Assert (e, _, l) ->
+   Format.fprintf ppf "@[<2>(assert@ %a)%a@]"
      (pr_exp pl) e
      (pr_label pl) l
 and pr_pm pl ppf = function
@@ -159,7 +163,7 @@ let rec pr_value ppf v = match v with
 and pr_value_and_eff ppf ve = match ve with
   | TEBot -> Format.fprintf ppf "_|_"
   | TETop -> Format.fprintf ppf "T"
-  | TypeAndEff (v, e) -> Format.fprintf ppf "@[<hov 1>(@ t: %a,@,@[<v 1>@ eff: @[<v>%a@]@])@]" pr_value v pr_eff e
+  | TypeAndEff (v, e) -> Format.fprintf ppf "@[(@ @[<v>@[t: %a@],@ @[<v>eff: @[<v>%a@]@]@])@]" pr_value v pr_eff e
 and pr_eff_map ppf e = 
   if StateMap.is_empty e then Format.fprintf ppf "Empty" 
   else StateMap.bindings e 
