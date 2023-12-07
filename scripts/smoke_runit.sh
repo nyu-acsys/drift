@@ -58,7 +58,7 @@ else
 fi
 
 if [ $# -ge 1 ] && [ $1 = "-if-part" ]; then
-    echo "If Paritioning"
+    echo "If Partitioning"
     if_part=true;
 fi
 
@@ -71,7 +71,7 @@ else
 fi
 
 DIRS=" DRIFT DOrder r_type"
-INS=" array list first high negative termination " # 
+INS=" array list first high negative " # 
 timeout="300"
 OUTPRE="out"
 DATE="gdate"
@@ -102,9 +102,9 @@ for hdir in ${DIRS}; do
                 if [[ "$OSTYPE" != "darwin"* ]]; then
                     f=${f#*./}
                 fi
-                echo "${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -trace-len ${trace_len} -if-part ${if_part}"
+                echo "${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -trace-len ${trace_len}"
                 ts=$(${DATE} +%s%N)
-                timeout ${timeout} ${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -trace-len ${trace_len} -if-part ${if_part} &> ${OUTDIR}/${dir}/${OUTPRE}_${f}
+                timeout ${timeout} ${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -trace-len ${trace_len} &> ${OUTDIR}/${dir}/${OUTPRE}_${f}
                 if [[ $? -ne 0 ]]; then
                     echo "Time: timeout" >> ${OUTDIR}/${dir}/${OUTPRE}_${f}
                 else
@@ -119,11 +119,7 @@ done
 csv_name="res"
 
 if [[ $trace_len > 0 ]]; then
-    if [[ $if_part == true ]]; then
-        csv_name="${csv_name}${trace_len}tr-"
-    else
-        csv_name="${csv_name}${trace_len}-"
-    fi
+    csv_name="${csv_name}${trace_len}-"
 else
     csv_name="${csv_name}-"
 fi
@@ -142,11 +138,7 @@ else
 fi
 
 if [[ $trace_len > 0 ]]; then
-    if [[ $if_part == true ]]; then
-        RESDIR="${trace_len}-sensitive-trace"
-    else
-        RESDIR="${trace_len}-sensitive"
-    fi
+    RESDIR="${trace_len}-sensitive"
 else
     RESDIR="non-sensitive"
 fi
