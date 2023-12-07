@@ -84,7 +84,7 @@ let eff0 () =
   let acc0_of_exp spec e =
     let acc_vars = List.filter (fun v -> v <> "evx") spec.env in
    
- let accv_of_idx i = List.nth acc_vars i in 
+    let accv_of_idx i = List.nth acc_vars i in 
     match e with 
     | Const (acc0, _) -> 
        List.fold_right (fun accv acc -> VarMap.add accv (init_R_c acc0) acc) acc_vars VarMap.empty
@@ -366,3 +366,74 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
       (* (if !Config.debug then Format.fprintf Format.std_formatter "\nq'(%d): %a" q' pr_acc ra'); *)
       ra'
     ) eff_bot
+
+let rec eval_assert term env =
+  match term with
+    | Const (c, _) -> init_R_c c 
+    | Var (x, _) -> 
+       apply_env x env
+       |> (fun v -> if sat_equal_R v x then v else equal_R (forget_R x v) x)        
+    | BinOp (bop, e1, e2, _) -> 
+       let v1 = eval_assert e1 env in
+       let v2 = eval_assert e2 env in
+       if is_unit_R v1 || is_unit_R v2 then 
+         raise (Invalid_argument ("Binary operator " ^ (string_of_op bop) ^ " is not defined for units"))
+       else begin
+           let bop = begin match bop, e1, e2 with
+                     | Mod, Const _, Const _ -> Mod
+                     | Mod, _, Const _ -> Modc
+                     | _ -> bop
+                     end 
+           in
+           let raw_v = 
+             begin match bop with
+             | And | Or -> bool_op_R bop v1 v2
+             | Modc ->
+                let op1 = e1 |> loc |> name_of_node in
+                let v' = top_R Plus |> (fun v -> arrow_R op1 v v1) in
+                let v'' = op_R "" op1 (str_of_const e2) bop false v' in
+                v''
+             | _ ->
+                let op1 = e1 |> loc |> name_of_node in
+                let op2 = e2 |> loc |> name_of_node in
+                let v' = top_R Plus |> (fun v -> arrow_R op1 v v1) |> (fun v -> arrow_R op2 v v2) in
+                let v'' = op_R "" op1 op2 bop false v' in
+                v''
+              end
+           in
+            raw_v
+         end 
+    | UnOp (uop, e1, _) ->
+       let v1 = eval_assert e1 env in
+ 
+       if is_unit_R v1 then
+         raise (Invalid_argument ("Unary operator " ^ (string_of_unop uop) ^ " is not defined for units"))
+       else begin
+           let op1 = e1 |> loc |> name_of_node in
+           let v' = top_R Plus |> (fun v -> arrow_R op1 v v1) in
+           let v'' = uop_R "" uop op1 false v' in
+           v''
+         end
+    | _ -> bot_R Eq
+
+let check_assert eff = 
+  let find v acc = VarMap.find_opt v acc |> Opt.get_or_else (top_R Plus) in
+  Opt.map (fun spec -> 
+      let acc_vars = List.filter (fun v -> v <> "evx") spec.env in
+      match spec.asst with
+      | None -> true
+      | Some term ->
+         StateMap.fold (fun (Q q) acc res ->
+             if not res then res 
+             else begin
+                 let env = EmptyEvEnv 
+                           |> extend_env "q" (init_R_c (Integer q))
+                           |> (List.fold_right (fun v e -> extend_env v (find v acc) e) acc_vars)
+                 in
+                 let r = eval_assert term env in
+                 if not (is_bool_bot_R r) && not (is_bool_false_R r) then false
+                 else if (is_bool_bot_R r) && (is_asst_false term) then false
+                 else true
+               end) eff true ) !property_spec
+  |> Opt.get_or_else true
+  
