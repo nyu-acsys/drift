@@ -42,12 +42,16 @@ type ev_asst_t = node_s_t list
 let regassts: regular_asst_t AsstsMap.t ref = ref AsstsMap.empty
 let evassts: ev_asst_t AsstsMap.t ref = ref AsstsMap.empty
 let add_reg_asst l ae n = 
+  (Format.fprintf Format.std_formatter "\nassert_regular added: @[<v>@[l:%s@]@,@[ae:%a@]@,@[n:%a@]@]"
+   l pr_value ae pr_node n);
   regassts := AsstsMap.update l 
                 (function | None -> Some [(n, ae)] 
                           | Some assts -> if not @@ List.mem (n, ae) assts then Some ((n, ae)::assts)
                                          else Some assts
                 ) !regassts
 let add_ev_asst l n = 
+  (Format.fprintf Format.std_formatter "\nassert_ev added: @[<v>@[l:%s@]@,@[n:%a@]@]"
+   l pr_node n);
   evassts := AsstsMap.update l 
                (function | None -> Some [n] 
                          | Some assts -> if not @@ List.mem n assts then Some (n::assts)
@@ -1313,7 +1317,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
         Format.printf "\n";
       end);
      (if assertion then 
-        loc term |> construct_enode env |> construct_snode trace |> add_reg_asst (loc term) ae
+        loc e1 |> construct_enode env |> construct_snode trace |> add_reg_asst (loc term) ae
       else ());
      step e1 env trace ec ae assertion is_rec m
      
@@ -1376,13 +1380,23 @@ let rec check_assert term m fassts =
             List.fold_right (fun (n, ae) fs ->
                 let te = find n m in
                 let t = extract_v te in
-                if not (is_bool_bot_V t) && not (is_bool_false_V t) && (only_shape_V ae) then
-                  add_failed_assertion (RegularAsst pos) fassts
-                else if (is_bool_bot_V t) && (is_asst_false e1) && (only_shape_V ae) then
-                  add_failed_assertion (RegularAsst pos) fassts
+                (Format.fprintf Format.std_formatter "\nAssertion checking (regular): @[<v>@[n:%a@]@,@[te:%a@]@]"
+                 pr_node n pr_value_and_eff te); 
+                if not (is_bool_bot_V t) && not (is_bool_false_V t) && not (only_shape_V ae) then
+                  begin
+                    (Format.fprintf Format.std_formatter "\nFailed reason 1");
+                    add_failed_assertion (RegularAsst pos) fassts
+                  end
+                else if (is_bool_bot_V t) && (is_asst_false e1 = false && only_shape_V ae = false) then
+                  begin
+                    (Format.fprintf Format.std_formatter "\nFailed reason 2");
+                    add_failed_assertion (RegularAsst pos) fassts
+                  end
                 else
                   fassts) ns fassts)
-     |> Opt.get_or_else (add_failed_assertion (RegularAsst pos) fassts)
+     |> Opt.get_or_else (
+            (Format.fprintf Format.std_formatter "\nAssertion checking (regular): not evaluated");
+            add_failed_assertion (RegularAsst pos) fassts)
 
 (** Fixpoint loop **)
 let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_map_t =
@@ -1424,7 +1438,7 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
     begin
       if assertion (* || !narrow *) then 
         let fassts = check_assert e m [] in 
-        (Format.fprintf Format.std_formatter "\nnb of fassts: %d" (List.length fassts));
+        (Format.fprintf Format.std_formatter "\nnb of fassts: %d\n" (List.length fassts));
         let s1, s2 = List.fold_right 
                        (fun fasst (s1, s2) -> match fasst with
                                            | RegularAsst pos -> 
