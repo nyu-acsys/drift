@@ -1,8 +1,6 @@
 open Syntax
 open EffectAutomataSyntax
 open AbstractDomain
-open SemanticDomain
-open SemanticsDomain
 open SensitiveDomain
 open SenSemantics
 open TracePartDomain

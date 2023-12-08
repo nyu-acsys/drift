@@ -58,3 +58,4 @@ scripts/effects/results/**/*
 tests/effects/*.yml
 nohup.out
 \#*\#
+drift.native1
