@@ -4,6 +4,7 @@ open Util
 open SensitiveDomain
 open SenSemantics
 open TracePartDomain
+open Printer
 
 (*
 **********************************
