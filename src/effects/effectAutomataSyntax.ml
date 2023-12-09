@@ -78,8 +78,8 @@ module EvInterpSemActions : SemActionsSig = struct
 
   let delta_fn x (q, acc) e = (label e, add_vars acc [] |> add_vars [x])
   let initial_cfg (e1, e2) = TupleLst ([e1; e2], "")
-  let prop_assert (q, acc) e = (e, PerTran)
-  let prop_assert_final (q, acc) e = (e, Final)
+  let prop_assert (q, acc) e = (label e, PerTran)
+  let prop_assert_final (q, acc) e = (label e, Final)
 
 end
 

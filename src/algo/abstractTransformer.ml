@@ -42,16 +42,22 @@ type ev_asst_t = node_s_t list
 let regassts: regular_asst_t AsstsMap.t ref = ref AsstsMap.empty
 let evassts: ev_asst_t AsstsMap.t ref = ref AsstsMap.empty
 let add_reg_asst l ae n = 
-  (Format.fprintf Format.std_formatter "\nassert_regular added: @[<v>@[l:%s@]@,@[ae:%a@]@,@[n:%a@]@]"
-   l pr_value ae pr_node n);
+  (if !debug then 
+     begin 
+       Format.fprintf Format.std_formatter "\nassert_regular added: @[<v>@[l:%s@]@,@[ae:%a@]@,@[n:%a@]@]"
+         l pr_value ae pr_node n
+     end);
   regassts := AsstsMap.update l 
                 (function | None -> Some [(n, ae)] 
                           | Some assts -> if not @@ List.mem (n, ae) assts then Some ((n, ae)::assts)
                                          else Some assts
                 ) !regassts
 let add_ev_asst l n = 
-  (Format.fprintf Format.std_formatter "\nassert_ev added: @[<v>@[l:%s@]@,@[n:%a@]@]"
-   l pr_node n);
+  (if !debug then 
+     begin 
+       Format.fprintf Format.std_formatter "\nassert_ev added: @[<v>@[l:%s@]@,@[n:%a@]@]"
+         l pr_node n
+     end);
   evassts := AsstsMap.update l 
                (function | None -> Some [n] 
                          | Some assts -> if not @@ List.mem n assts then Some (n::assts)
@@ -1336,7 +1342,7 @@ let narrowing (m1:exec_map_t) (m2:exec_map_t): exec_map_t =
   meet_M m1 m2 
 
 (** Check assertion **)
-type failed_asst_t = RegularAsst of pos | PropEvAsst of loc | PropFinalAsst of loc
+type failed_asst_t = RegularAsst of pos | PropEvAsst of loc | PropFinalAsst
 let add_failed_assertion (fasst: failed_asst_t) fassts = fasst::fassts
 
 let rec check_assert term m fassts = 
@@ -1360,18 +1366,18 @@ let rec check_assert term m fassts =
      |> List.fold_right (fun (Case (e1, e2)) fs -> check_assert e1 m fs |> check_assert e2 m) patlst
   | Event _ ->
      let l = loc term in
+     let report_fasst fs = function
+       | true -> fs
+       | false -> add_failed_assertion (PropEvAsst l) fs
+     in
      AsstsMap.find_opt l !evassts 
      |> Opt.map (fun ns -> 
             List.fold_right (fun n fs ->
               let te = find n m in
               match (extract_eff te) with
-                | EffBot -> add_failed_assertion (PropEvAsst l) fs
-                | Effect eff -> 
-                   if not @@ AbstractEv.check_assert eff then 
-                     add_failed_assertion (PropEvAsst l) fs
-                   else fs
-                | EffTop -> fs
-              ) ns fassts)
+              | EffBot -> AbstractEv.check_assert_bot (EvAssert l) |> report_fasst fs
+              | Effect eff -> AbstractEv.check_assert (EvAssert l) eff |> report_fasst fs
+              | EffTop -> AbstractEv.check_assert_top (EvAssert l) |> report_fasst fs ) ns fassts)
      |> Opt.get_or_else (add_failed_assertion (PropEvAsst l) fassts)
   | Assert (e1, pos, l) ->
      let l = loc term in
@@ -1380,24 +1386,46 @@ let rec check_assert term m fassts =
             List.fold_right (fun (n, ae) fs ->
                 let te = find n m in
                 let t = extract_v te in
-                (Format.fprintf Format.std_formatter "\nAssertion checking (regular): @[<v>@[n:%a@]@,@[te:%a@]@]"
-                 pr_node n pr_value_and_eff te); 
+                (if !debug then
+                   begin 
+                     Format.fprintf Format.std_formatter "\nASSERTION CHECKING (regular):@,@[<v>@[n:%a@]@,@[te:%a@]@]"
+                       pr_node n pr_value_and_eff te
+                   end); 
                 if not (is_bool_bot_V t) && not (is_bool_false_V t) && not (only_shape_V ae) then
                   begin
-                    (Format.fprintf Format.std_formatter "\nFailed reason 1");
+                    (if !debug then 
+                       begin 
+                         Format.fprintf Format.std_formatter "\nFailed reason 1"
+                       end);
                     add_failed_assertion (RegularAsst pos) fassts
                   end
                 else if (is_bool_bot_V t) && (is_asst_false e1 = false && only_shape_V ae = false) then
                   begin
-                    (Format.fprintf Format.std_formatter "\nFailed reason 2");
+                    (if !debug then 
+                       begin 
+                         Format.fprintf Format.std_formatter "\nFailed reason 2"
+                       end);
                     add_failed_assertion (RegularAsst pos) fassts
                   end
                 else
                   fassts) ns fassts)
      |> Opt.get_or_else (
-            (Format.fprintf Format.std_formatter "\nAssertion checking (regular): not evaluated");
+            (if !debug then 
+               begin 
+                 Format.fprintf Format.std_formatter "\nAssertion checking (regular): not evaluated"
+               end);
             add_failed_assertion (RegularAsst pos) fassts)
 
+let check_assert_final_eff te fassts = 
+  let report_fasst fs = function 
+    | true -> fs
+    | false -> add_failed_assertion PropFinalAsst fs
+  in 
+  match (extract_eff te) with
+    | EffBot -> AbstractEv.check_assert_bot (FinalAssert) |> report_fasst fassts
+    | Effect eff -> AbstractEv.check_assert FinalAssert eff |> report_fasst fassts 
+    | EffTop -> AbstractEv.check_assert_top (FinalAssert) |> report_fasst fassts 
+ 
 (** Fixpoint loop **)
 let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_map_t =
   (if !out_put_level = 0 then
@@ -1436,9 +1464,14 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
   let comp = if stage = Widening then leq_M m'' m else leq_M m m'' in
   if comp then
     begin
-      if assertion (* || !narrow *) then 
-        let fassts = check_assert e m [] in 
-        (Format.fprintf Format.std_formatter "\nnb of fassts: %d\n" (List.length fassts));
+      if assertion (* || !narrow *) then
+        let prog_n = loc e |> construct_enode env |> construct_snode [] in
+        let prog_te = NodeMap.find_opt prog_n m |> Opt.get_or_else TEBot in
+        let fassts = check_assert e m [] |> check_assert_final_eff prog_te in
+        (if !debug then 
+           begin 
+             Format.fprintf Format.std_formatter "\n# failed assertionsf: %d\n" (List.length fassts)
+           end);
         let s1, s2 = List.fold_right 
                        (fun fasst (s1, s2) -> match fasst with
                                            | RegularAsst pos -> 
@@ -1447,16 +1480,18 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
                                               in (s1', s2)
                                            | PropEvAsst l -> 
                                               let s2' = "The program may not be safe, " ^ 
-                                                          "effect assertion failed at location " ^ 
+                                                          "effect (post ev) assertion failed at location " ^ 
                                                             l ^ ".\n" in
                                               (s1, s2')
-                                           | PropFinalAsst _ ->
+                                           | PropFinalAsst ->
                                               let s2' = "The program may not be safe, " ^
-                                                          "effect final assertion failed" in
+                                                          "effect (final) assertion failed" in
                                               (s1, s2')
-                       ) fassts ("The input program is safe\n", "")
+                       ) fassts ("", "")
         in 
-        (s1 ^ s2), m
+        let s = s1 ^ s2 in 
+        let s = if (String.length s) = 0 then "The input program is safe\n" else s in
+        s, m
       else 
         fix stage env e k m true (* Final step to check assertions *)
     end

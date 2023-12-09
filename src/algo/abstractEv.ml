@@ -1,3 +1,4 @@
+open Config
 open Syntax
 open EffectAutomataSyntax
 open Printer
@@ -416,11 +417,17 @@ let rec eval_assert term env =
          end
     | _ -> bot_R Eq
 
-let check_assert eff = 
+type eff_assert_class = EvAssert of loc | FinalAssert 
+let check_assert eac eff = 
   let find v acc = VarMap.find_opt v acc |> Opt.get_or_else (top_R Plus) in
+  let pr_eff_assert_class ppf = function
+      | EvAssert l -> Format.fprintf ppf "ev^%s" l
+      | FinalAssert -> Format.fprintf ppf "final-eff"
+  in
+  let asst_term spec = match eac with | EvAssert _ -> spec.asst | FinalAssert -> spec.asstFinal in
   Opt.map (fun spec -> 
       let acc_vars = List.filter (fun v -> v <> "evx") spec.env in
-      match spec.asst with
+      match asst_term spec with
       | None -> true
       | Some term ->
          StateMap.fold (fun (Q q) acc res ->
@@ -428,12 +435,43 @@ let check_assert eff =
              else begin
                  let env = EmptyEvEnv 
                            |> extend_env "q" (init_R_c (Integer q))
-                           |> (List.fold_right (fun v e -> extend_env v (find v acc) e) acc_vars)
+                           |> (List.fold_right (fun v env -> extend_env v (find v acc) env) acc_vars)
                  in
                  let r = eval_assert term env in
-                 if not (is_bool_bot_R r) && not (is_bool_false_R r) then false
-                 else if (is_bool_bot_R r) && (is_asst_false term) then false
-                 else true
-               end) eff true ) !property_spec
+                 (if !debug then 
+                    begin 
+                      Format.fprintf Format.std_formatter 
+                        "\nASSERTION CHECKING (%a):@,@[<v>@[asst: %a@]@,@[env: %a@]@,@[res: %a@]@]@." 
+                        pr_eff_assert_class eac (pr_exp true) term pr_ev_env env pr_relation r
+                    end);
+                 if not (is_bool_bot_R r) && not (is_bool_false_R r) then 
+                   begin 
+                     (if !debug then begin Format.fprintf Format.std_formatter "\nFailed reason 1@." end); false
+                   end
+                 else if (is_bool_bot_R r) && (is_asst_false term) = false then 
+                   begin
+                     (if !debug then begin Format.fprintf Format.std_formatter "\nFailed reson 2@." end); false
+                   end
+                 else 
+                   begin 
+                     (if !debug then begin Format.fprintf Format.std_formatter "\nValid@." end); true
+                   end 
+               end) eff true 
+    ) !property_spec
   |> Opt.get_or_else true
   
+let check_assert_bot eac = 
+  Opt.map (fun spec -> 
+      match eac with 
+      | EvAssert _ -> begin match spec.asst with None -> true | Some _ -> false end
+      | FinalAssert -> begin match spec.asstFinal with None -> true | Some _ -> false end
+    ) !property_spec
+  |> Opt.get_or_else true
+
+let check_assert_top eac = 
+  Opt.map (fun spec -> 
+      match eac with 
+      | EvAssert _ -> true
+      | FinalAssert -> true
+    ) !property_spec
+  |> Opt.get_or_else true
