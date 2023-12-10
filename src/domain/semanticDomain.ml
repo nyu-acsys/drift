@@ -1189,10 +1189,7 @@ module SemanticsDomain =
           Format.printf "\n";
           end
         ); *)
-        if get_label_snode n = "EN: 18,z19" then debug := true;
-        let res = wid_VE v1 v2 in
-        if get_label_snode n = "EN: 18,z19" then debug := false;
-        res
+        wid_VE v1 v2
         ) m1 m2
     let leq_M (m1: exec_map_t) (m2: exec_map_t) : bool =
       NodeMap.for_all (fun n v1 (*untie to node -> value*) -> 
