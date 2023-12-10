@@ -433,6 +433,11 @@ module BaseDomain(Manager : DomainManager) : Domain =
       let complex = if Array.length int_vars < 10 then true else false in
       licons_earray env lst complex
 
+    let print_abs ppf v = Abstract1.print ppf v
+
+    let print_env ppf v = let env = Abstract1.env v in
+        Environment.print ppf env
+
     let widening v1 v2 = 
       if is_bot v2 then v1 else
       if eq v1 v2 then v2 else
@@ -445,6 +450,7 @@ module BaseDomain(Manager : DomainManager) : Domain =
         else
           Abstract1.widening man v1' v2'
       in
+      if !debug then (Format.printf "\n Widening res \n"; print_abs Format.std_formatter res);
       Abstract1.minimize_environment man res
       (* res *)
 
@@ -578,11 +584,6 @@ module BaseDomain(Manager : DomainManager) : Domain =
         end); *)
       Abstract1.minimize_environment man res
       (* res *)
-
-    let print_abs ppf v = Abstract1.print ppf v
-
-    let print_env ppf v = let env = Abstract1.env v in
-        Environment.print ppf env
 
     let derived expr v = 
       (* (if !debug then

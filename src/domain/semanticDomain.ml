@@ -5,6 +5,7 @@ open SensitiveDomain
 open SenSemantics
 open TracePartDomain
 open Printer
+open Config
 
 (*
 **********************************
@@ -1188,7 +1189,10 @@ module SemanticsDomain =
           Format.printf "\n";
           end
         ); *)
-        wid_VE v1 v2
+        if get_label_snode n = "EN: 18,z19" then debug := true;
+        let res = wid_VE v1 v2 in
+        if get_label_snode n = "EN: 18,z19" then debug := false;
+        res
         ) m1 m2
     let leq_M (m1: exec_map_t) (m2: exec_map_t) : bool =
       NodeMap.for_all (fun n v1 (*untie to node -> value*) -> 
