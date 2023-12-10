@@ -1414,7 +1414,7 @@ let rec check_assert term m fassts =
                begin 
                  Format.fprintf Format.std_formatter "\nAssertion checking (regular): not evaluated"
                end);
-            add_failed_assertion (RegularAsst pos) fassts)
+            fassts)
      |> check_assert e1 m
 
 let check_assert_final_eff te fassts = 
