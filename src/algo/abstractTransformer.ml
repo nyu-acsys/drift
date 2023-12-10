@@ -1383,7 +1383,7 @@ let rec check_assert term m fassts =
      let l = loc term in
      AsstsMap.find_opt l !regassts 
      |> Opt.map (fun ns -> 
-            List.fold_right (fun (n, ae) fs ->
+            List.fold_right (fun (n, ae) fassts ->
                 let te = find n m in
                 let t = extract_v te in
                 (if !debug then
