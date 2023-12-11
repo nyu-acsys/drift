@@ -1317,15 +1317,27 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
         ) m1 tails1, tails1
   | Assert (e1, pos, l) ->
      (if !debug then
-      begin
-        Format.printf "\n<=== ASSERT ===>\n";
-        pr_exp true Format.std_formatter term;
-        Format.printf "\n";
-      end);
-     (if assertion then 
-        loc e1 |> construct_enode env |> construct_snode trace |> add_reg_asst (loc term) ae
-      else ());
-     step e1 env trace ec ae assertion is_rec m
+        begin
+          Format.printf "\n<=== ASSERT ===>\n";
+          pr_exp true Format.std_formatter term;
+          Format.printf "\n";
+        end);
+      let m1, tails1 = step e1 env trace ec ae assertion is_rec m in
+      List.fold_left 
+        (fun m tail1 ->
+          let trace = extend_trace tail1 trace in
+          let n = loc term |> construct_enode env |> construct_snode trace in
+          let te = find n m in 
+          let n1 = loc e1 |> construct_enode env |> construct_snode trace 
+                   |> (fun n -> (if assertion then add_reg_asst (loc term) ae n else ()); n) in
+          let te1 = find n1 m in
+          let ec' = extract_eff te1 in 
+          let te' = if te = TEBot then TypeAndEff (Relation (Unit ()), ec') 
+                    else temap (id, fun _ -> ec') te 
+          in
+          m |> update false n te'
+        ) m1 tails1, tails1
+         
      
 
 let step x1 x2 x3 x4 x5 x6 x7 = measure_call "step" (step x1 x2 x3 x4 x5 x6 x7)
@@ -1383,7 +1395,7 @@ let rec check_assert term m fassts =
      let l = loc term in
      AsstsMap.find_opt l !regassts 
      |> Opt.map (fun ns -> 
-            List.fold_right (fun (n, ae) fassts ->
+            List.fold_right (fun (n, ae) fs ->
                 let te = find n m in
                 let t = extract_v te in
                 (if !debug then
@@ -1397,7 +1409,7 @@ let rec check_assert term m fassts =
                        begin 
                          Format.fprintf Format.std_formatter "\nFailed reason 1"
                        end);
-                    add_failed_assertion (RegularAsst pos) fassts
+                    add_failed_assertion (RegularAsst pos) fs
                   end
                 else if (is_bool_bot_V t) && (is_asst_false e1 = false && only_shape_V ae = false) then
                   begin
@@ -1405,10 +1417,10 @@ let rec check_assert term m fassts =
                        begin 
                          Format.fprintf Format.std_formatter "\nFailed reason 2"
                        end);
-                    add_failed_assertion (RegularAsst pos) fassts
+                    add_failed_assertion (RegularAsst pos) fs
                   end
                 else
-                  fassts) ns fassts)
+                  fs) ns fassts)
      |> Opt.get_or_else (
             (if !debug then 
                begin 
