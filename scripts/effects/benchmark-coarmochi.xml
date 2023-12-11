@@ -29,7 +29,7 @@ SPDX-License-Identifier: Apache-2.0
 
 
   <tasks name="mochibenchmarks">
-    <include>../../tests/effects/mochi-sum.ml</include>
+    <include>../../tests/effects/mochi-test.ml</include>
   </tasks>
 
   <!-- Use an SV-COMP property file as specification
