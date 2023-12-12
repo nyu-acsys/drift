@@ -885,17 +885,8 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             m0' |> update false n TETop, [tail0]
           else
             begin
-              (* let { isast = isast; ps = pos } = asst in
-              if assertion && isast && not (is_bool_bot_V (extract_v te0)) && 
-                  not (is_bool_false_V (extract_v te0)) && not (only_shape_V ae)
-              then print_loc pos else *)
               let t_true = meet_V (extrac_bool_V (extract_v te0) true) ae in (* Meet with ae*)
               let t_false = meet_V (extrac_bool_V (extract_v te0) false) ae in
-              (* (if assertion && isast then 
-                  let i, j = AssertionPosMap.find_opt pos !sens |> Opt.get_or_else (0,0) in
-                  sens := AssertionPosMap.add pos ((if is_bool_bot_V (extract_v te0) && 
-                  (is_asst_false e0 = false && only_shape_V ae = false) 
-                  then i + 1 else i), j + 1) !sens); *)
               let ec' = extract_ec te0 in
               let m1, tails1 = step e1 env trace ec' t_true assertion is_rec m0 in
               let m2, tails2 = step e2 env trace ec' t_false assertion is_rec m1 in
@@ -1106,7 +1097,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       let tee = merge_traces e tails' m' in
       let ec' = extract_ec tee in
       let m' = update false ne tee m' in
-      if tee = TEBot || only_shape_V (extract_v tee) then m', tails'
+      if tee = TEBot || (extract_v tee) = Bot || only_shape_V (extract_v tee) then m', tails'
       else
         let m'' = 
           List.fold_left 
@@ -1253,7 +1244,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                         init_VE_wec (Tuple u') 
                 in
                 let tee = find ne m in
-                let tee, te1 = alpha_rename_VEs tee te1 in
+                let tee, te1 = alpha_rename_VEs tee te1 in 
                 let tlst = get_tuple_list_VE te1 in
                 let tllst = tee |> get_tuple_list_VE in
                 let env', m', tlst', tllst' = 
@@ -1480,30 +1471,29 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
       if assertion (* || !narrow *) then
         let prog_n = loc e |> construct_enode env |> construct_snode [] in
         let prog_te = NodeMap.find_opt prog_n m |> Opt.get_or_else TEBot in
-        let fassts = check_assert e m [] |> check_assert_final_eff prog_te in
+        let fassts = List.rev (check_assert e m [] |> check_assert_final_eff prog_te) in
         (if !debug then 
            begin 
              Format.fprintf Format.std_formatter "\n# failed assertionsf: %d\n" (List.length fassts)
            end);
-        let s1, s2 = List.fold_right 
-                       (fun fasst (s1, s2) -> match fasst with
-                                           | RegularAsst pos -> 
-                                              let s1' =  try print_loc pos with
-                                                           Input_Assert_failure s -> s 
-                                              in (s1', s2)
-                                           | PropEvAsst l -> 
-                                              let s2' = "The program may not be safe, " ^ 
-                                                          "effect (post ev) assertion failed at location " ^ 
-                                                            l ^ ".\n" in
-                                              (s1, s2')
-                                           | PropFinalAsst ->
-                                              let s2' = "The program may not be safe, " ^
-                                                          "effect (final) assertion failed" in
-                                              (s1, s2')
-                       ) fassts ("", "")
+        let sr, sf = List.fold_right 
+                       (fun fasst (sr,sf) -> match fasst with
+                                          | RegularAsst pos -> 
+                                             let s' =  try print_loc pos with
+                                                         Input_Assert_failure s -> s 
+                                             in (s'::sr,sf)
+                                          | PropEvAsst l -> 
+                                             let s' = "effect (post ev) assertion failed at location " ^ l in
+                                             (sr, s'::sf)
+                                          | PropFinalAsst ->
+                                             let s' = "effect (final) assertion failed" in
+                                             (sr, s'::sf)
+                       ) fassts ([],[])
         in 
-        let s = s1 ^ s2 in 
-        let s = if (String.length s) = 0 then "The input program is safe\n" else s in
+        let s = (String.concat ", " sr) ^ (String.concat ", " sf) in 
+        let s = if (String.length s) = 0 then 
+                  "The input program is safe.\n"  
+                else "The program may not be safe: " ^ s ^ ".\n" in
         s, m
       else 
         fix stage env e k m true (* Final step to check assertions *)

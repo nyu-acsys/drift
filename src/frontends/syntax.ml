@@ -19,8 +19,8 @@ let fail pos msg =
 
 let print_loc pos = 
   raise (Input_Assert_failure 
-  ("The program may not be safe, assertion failed at line "^(string_of_int pos.pl)^" col "^
-  (string_of_int pos.pc)^".\n" ))
+  ("assertion failed at line "^(string_of_int pos.pl)^" col "^
+  (string_of_int pos.pc) ))
 
 (* let construct_asst ps = match ps with
   | None -> { isast = false; ps = mk_default_loc }

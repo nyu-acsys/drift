@@ -42,7 +42,7 @@ module EvTrSemActions : SemActionsSig = struct
   let prop_assert (q, acc) e = 
     let pcfg = mk_fresh_var "cfg" in
     let eacc = match acc with
-      | [] -> raise (Invalid_argument "Accumulator expression expecter")
+      | [] -> raise (Invalid_argument "Accumulator expression expected")
       | [x] -> x
       | _ -> TupleLst (acc, "")
     in
