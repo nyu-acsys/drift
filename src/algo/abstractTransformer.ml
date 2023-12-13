@@ -1345,7 +1345,7 @@ let narrowing (m1:exec_map_t) (m2:exec_map_t): exec_map_t =
   meet_M m1 m2 
 
 (** Check assertion **)
-type failed_asst_t = RegularAsst of pos | PropEvAsst of loc | PropFinalAsst
+type failed_asst_t = RegularAsst of loc * pos | PropEvAsst of loc | PropFinalAsst
 let add_failed_assertion (fasst: failed_asst_t) fassts = fasst::fassts
 
 let rec check_assert term m fassts = 
@@ -1385,39 +1385,50 @@ let rec check_assert term m fassts =
   | Assert (e1, pos, l) ->
      let l = loc term in
      AsstsMap.find_opt l !regassts 
-     |> Opt.map (fun ns -> 
+     |> Opt.map (fun ns ->  
             List.fold_right (fun (n, ae) fs ->
                 let te = find n m in
                 let t = extract_v te in
-                (if !debug then
-                   begin 
-                     Format.fprintf Format.std_formatter "\nASSERTION CHECKING (regular):@,@[<v>@[n:%a@]@,@[te:%a@]@]"
-                       pr_node n pr_value_and_eff te
-                   end); 
                 if not (is_bool_bot_V t) && not (is_bool_false_V t) && not (only_shape_V ae) then
                   begin
                     (if !debug then 
-                       begin 
-                         Format.fprintf Format.std_formatter "\nFailed reason 1"
+                       begin
+                          Format.fprintf Format.std_formatter 
+                            "\nASSERTION CHECKING (regular) @@LOC %s ***FAILED***:@,@[<v>@[n:%a@]@,@[te:%a@]@]@."
+                            (loc term) pr_node n pr_value_and_eff te
                        end);
-                    add_failed_assertion (RegularAsst pos) fs
+                    add_failed_assertion (RegularAsst (loc term, pos)) fs
                   end
                 else if (is_bool_bot_V t) && (is_asst_false e1 = false && only_shape_V ae = false) then
                   begin
                     (if !debug then 
                        begin 
-                         Format.fprintf Format.std_formatter "\nFailed reason 2"
+                         Format.fprintf Format.std_formatter 
+                           "\nASSERTION CHECKING (regular) @@LOC %s ***FAILED***:@,@[<v>@[n:%a@]@,@[te:%a@]@]@."
+                           (loc term) pr_node n pr_value_and_eff te
                        end);
-                    add_failed_assertion (RegularAsst pos) fs
-                  end
+                    add_failed_assertion (RegularAsst (loc term, pos)) fs
+                  end 
                 else
-                  fs) ns fassts)
-     |> Opt.get_or_else (
-            (if !debug then 
+                  begin
+                    (if !debug then 
+                       begin 
+                         Format.fprintf Format.std_formatter 
+                           "\nASSERTION CHECKING (regular) @@LOC %s ===VALID===:@,@[<v>@[n:%a@]@,@[te:%a@]@]@."
+                           (loc term) pr_node n pr_value_and_eff te
+                       end);
+                    fs
+                  end
+              ) ns fassts)
+     |> (function 
+         | None -> 
+            ((if !debug then 
                begin 
-                 Format.fprintf Format.std_formatter "\nAssertion checking (regular): not evaluated"
-               end);
-            fassts)
+                 Format.fprintf Format.std_formatter "\nASSERTION CHECHING (regular) @@LOC %s: (vacuously holds)@."
+                   (loc term)
+               end); fassts)
+         | Some fs -> fs)
+
      |> check_assert e1 m
 
 let check_assert_final_eff te fassts = 
@@ -1476,19 +1487,28 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
            begin 
              Format.fprintf Format.std_formatter "\n# failed assertionsf: %d\n" (List.length fassts)
            end);
-        let sr, sf = List.fold_right 
+        let sr, sf = (List.fold_right 
                        (fun fasst (sr,sf) -> match fasst with
-                                          | RegularAsst pos -> 
-                                             let s' =  try print_loc pos with
-                                                         Input_Assert_failure s -> s 
-                                             in (s'::sr,sf)
+                                          | RegularAsst (l, pos) ->
+                                             begin match List.assoc_opt l sr with
+                                             | None -> 
+                                                let s' =  try print_loc pos with
+                                                            Input_Assert_failure s -> s ^ " label " ^ l in 
+                                                ((l,s')::sr,sf)
+                                             | Some _ -> (sr,sf)
+                                             end
                                           | PropEvAsst l -> 
-                                             let s' = "effect (post ev) assertion failed at location " ^ l in
-                                             (sr, s'::sf)
+                                             begin match List.assoc_opt l sf with
+                                             | None -> 
+                                                 let s' = "effect (post ev) assertion failed at label " ^ l in
+                                                 (sr, (l,s')::sf)
+                                             | Some _ -> (sr, sf)
+                                             end
                                           | PropFinalAsst ->
                                              let s' = "effect (final) assertion failed" in
-                                             (sr, s'::sf)
-                       ) fassts ([],[])
+                                             (sr, (loc e, s')::sf)
+                       ) fassts ([],[]))
+                     |> (fun (sr, sf) -> (List.map (fun (_, s) -> s) sr, List.map (fun (_,s) -> s) sf))
         in 
         let s = (String.concat ", " sr) ^ (String.concat ", " sf) in 
         let s = if (String.length s) = 0 then 
