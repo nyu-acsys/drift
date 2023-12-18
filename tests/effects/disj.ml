@@ -5,7 +5,7 @@ let rec f x pos neg =
     ev pos
   else
     ev neg;
-  if (x <= 0) then 0 else f (x-1) pos neg
+  if (x <= 0) then 0 else f (x-2) pos neg
 
 
 let main (v:int(*-:{v:Int | true}*)) (p:int(*-:{v:Int | true}*)) (n:int(*-:{v:Int | true}*)) =
