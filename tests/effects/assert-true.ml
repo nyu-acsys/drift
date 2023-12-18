@@ -1,2 +1,2 @@
-let main (u: unit(*-:{v:Unit | unit}*) = 
+let main (u: unit(*-:{v:Unit | unit}*)) = 
   0
