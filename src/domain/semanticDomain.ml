@@ -735,6 +735,7 @@ module SemanticsDomain =
       | Relation r -> is_bot_R r
       | Lst lst -> only_shape_Lst lst
       | Ary ary -> only_shape_Ary ary
+      | Tuple u -> only_shape_Tuple u
       | _ -> false
     and cons_temp_lst_V t = function
       | Lst lst -> Lst (cons_temp_lst_Lst t lst)
@@ -776,7 +777,8 @@ module SemanticsDomain =
       | _ -> raise (Invalid_argument "extract tuple should be a tuple")
     and get_tuple_list_VE = function
       | TypeAndEff ((Tuple u), _) -> get_tuple_list u
-      | _ -> raise (Invalid_argument "extract tuple should be a tuple")
+      | tee -> raise (Invalid_argument ("CCCC" ^ (shape_value_and_eff tee)))
+      | _ -> raise (Invalid_argument "AAAA extract tuple should be a tuple")
     and pattern_empty_lst_V = function
       | Lst lst -> Lst (pattern_empty_Lst lst)
       | _ -> raise (Invalid_argument "pattern x::[] should give a list")
@@ -1163,6 +1165,8 @@ module SemanticsDomain =
       List.map (fun v -> bot_shape_VE v) u
     and get_tuple_list u = 
       u
+    and only_shape_Tuple u =
+      List.fold_right (fun ve is_bot -> if is_bot then ve = TEBot else is_bot) u true 
 
     (*
       ***************************************

@@ -33,7 +33,7 @@ let print_aut_spec (spec:aut_spec) =
 
 let parse_property_spec prop_file = 
   let spec = parse_aut_spec prop_file in
-  (print_aut_spec spec);
+  (if !out_put_level < 2 then print_aut_spec spec);
   spec
 
 type evv_t = Val of relation_e | Tpl of evv_t list
@@ -113,10 +113,14 @@ let eff0 () =
 
 let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t -> 
   
-  (Format.fprintf Format.std_formatter "\nEV (env, eff, t) =@.  @[env:@[{%s}@]@]@.  @[eff:@[%a@]@]@.  @[t:@[%a@]@]@."
-     (String.concat ";" penv)
-     pr_eff_map eff
-     pr_relation t);
+  (if !debug then
+     begin
+     Format.fprintf Format.std_formatter 
+       "\nEV (env, eff, t) =@.  @[env:@[{%s}@]@]@.  @[eff:@[%a@]@]@.  @[t:@[%a@]@]@."
+       (String.concat ";" penv)
+       pr_eff_map eff
+       pr_relation t
+     end);
   
   let spec = match !property_spec with 
     | Some s -> s
@@ -167,7 +171,7 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
     in
     let vva' = arrow_va_q' vva in
     let vva_acc = acc_of_evv vva' in
-    (pr_delta_tran Format.std_formatter vva_acc);
+    (if !debug then begin pr_delta_tran Format.std_formatter vva_acc end);
     (vva_acc)::ts 
   in
   let name_of_node l = "ze" ^ l in
@@ -339,12 +343,14 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
                       let ra' = 
                         StateMap.fold 
                           (fun (Q q) acc res' ->
-                            ( if !Config.debug then
-                                Format.fprintf Format.std_formatter "\n@[EV(pre):@.  @[q[%d] |-> @[%a@]@]@]@." q pr_acc acc);
+                            (if !debug then
+                               Format.fprintf Format.std_formatter 
+                                 "\n@[EV(pre):@.  @[q[%d] |-> @[%a@]@]@]@." q pr_acc acc
+                            );
                             let env0 = get_env0 q acc t in
                             let _, ts = eval spec.delta env0 (top_R Plus) true [] in
-                            ( if !Config.debug then
-                                pr_delta_trans Format.std_formatter ts
+                            (if !debug then
+                               pr_delta_trans Format.std_formatter ts
                             );
                             let acc' = 
                               List.fold_right (fun acc'' res'' -> 
@@ -359,7 +365,9 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
                             (* (Format.fprintf Format.std_formatter "\nq(%d) -> q'(%d): %a" q q' pr_acc acc'); *)
                             let res' = join_acc res' acc' in 
                             (if !Config.debug then 
-                               Format.fprintf Format.std_formatter "\n@[EV(post):@.  @[q[%d] |-> @[%a@]@]@]" q' pr_acc res');
+                               Format.fprintf Format.std_formatter 
+                                 "\n@[EV(post):@.  @[q[%d] |-> @[%a@]@]@]" q' pr_acc res'
+                            );
                             res'
                           ) eff bot_acc
                         |> forget_acc "q"

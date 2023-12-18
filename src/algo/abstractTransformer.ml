@@ -1098,8 +1098,13 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       let ec' = extract_ec tee in
       let m' = update false ne tee m' in
       if tee = TEBot || (extract_v tee) = Bot || only_shape_V (extract_v tee) then m', tails'
-      else
+      else 
         let m'' = 
+          (if !debug && (loc e) = "131" then 
+             begin
+               let pr = Format.fprintf Format.std_formatter in
+               pr "\nLOC 131:@,tee:@[%a@]" pr_value_and_eff tee
+             end);
           List.fold_left 
             (fun m (Case (e1, e2)) -> 
               (* (if !debug then
@@ -1239,14 +1244,42 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                 let n1 = l' |> construct_enode env |> construct_snode trace in
                 let te1 = 
                   let raw_te1 = find n1 m in
+                  (if !debug && (loc e) = "131" then 
+                    begin
+                      let pr = Format.fprintf Format.std_formatter in
+                      pr "\nLOC :%s@, raw_te1:@[%a@]" (l') pr_value_and_eff raw_te1
+                    end);
                   if is_tuple_VE raw_te1 then raw_te1
                   else let u' = List.init (List.length termlst) (fun _ -> TEBot) in 
                         init_VE_wec (Tuple u') 
-                in
+                in 
+                 (if !debug && (loc e) = "131" then 
+                    begin
+                      let pr = Format.fprintf Format.std_formatter in
+                      pr "\nLOC :%s@, te1:@[%a@]" (l') pr_value_and_eff te1
+                    end);
                 let tee = find ne m in
                 let tee, te1 = alpha_rename_VEs tee te1 in 
                 let tlst = get_tuple_list_VE te1 in
+                (if !debug && (loc e) = "131" then 
+                    begin
+                      let pr = Format.fprintf Format.std_formatter in
+                      pr "\nLOC :%s@, tee:@[%a@]" (l') pr_value_and_eff tee
+                    end);
+                (if !debug && (loc e) = "131" then
+                   begin
+                     let pr = Format.fprintf Format.std_formatter in
+                     pr "\nshape of tee: %s" (shape_value_and_eff tee)
+                   end);
                 let tllst = tee |> get_tuple_list_VE in
+                (if !debug && (loc e) = "131" then
+                   begin
+                     let pr = Format.fprintf Format.std_formatter in
+                     List.iter (fun teei -> 
+                         pr "\ntlst:ntee1:@[%a@]" pr_value_and_eff teei) tlst;
+                     List.iter (fun teei -> 
+                         pr "\ntllst:ntee1:@[%a@]" pr_value_and_eff teei) tllst;
+                   end);
                 let env', m', tlst', tllst' = 
                   List.fold_left2 (fun (env, m, li, llst) e (tei, telsti) -> 
                       match e with
@@ -1255,6 +1288,11 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                           let env1 = env |> VarMap.add x (nx, false) in
                           let nx = construct_snode trace nx in
                           let tex = find nx m in
+                          (if !debug then
+                             begin
+                               let pr = Format.fprintf Format.std_formatter in
+                               pr "\ntei: %a, tex: %a" pr_value_and_eff tei pr_value_and_eff tex
+                             end); 
                           let tei', tex' = prop tei tex in
                           let telsti', tei'' = prop telsti tei in
                           let m' = m |> update false nx tex' in
