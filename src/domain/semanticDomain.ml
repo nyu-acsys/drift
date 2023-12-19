@@ -1165,8 +1165,8 @@ module SemanticsDomain =
       List.map (fun v -> bot_shape_VE v) u
     and get_tuple_list u = 
       u
-    and only_shape_Tuple u =
-      List.fold_right (fun ve is_bot -> if is_bot then ve = TEBot else is_bot) u true 
+    and only_shape_Tuple u = 
+      List.fold_right (fun ve is_bot -> if is_bot then ve = TEBot else is_bot) u true
 
     (*
       ***************************************

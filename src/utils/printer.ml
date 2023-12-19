@@ -121,7 +121,7 @@ let rec shape_value = function
     | Bool _ -> "Bool"
     | Unit _ -> "Unit")
   | Table t -> let (_, (vei,veo)) = get_full_table_T t in 
-    (shape_value_and_eff vei)^"->"^(shape_value_and_eff veo)
+              (shape_value_and_eff vei)^"->"^(shape_value_and_eff veo)
   | Tuple u -> if List.length u = 0 then "Unit"
     else 
       let rec shape_tuple = function
