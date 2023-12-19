@@ -191,5 +191,5 @@ let print_aut_spec (spec:aut_spec) =
 
 let tr_effect spec e = 
   let aspec = parse_aut_spec spec in 
-  print_aut_spec (aspec);
+  (if !Config.out_put_level < 2 then print_aut_spec (aspec));
   tr e aspec.delta aspec.cfg0 aspec.asst aspec.asstFinal

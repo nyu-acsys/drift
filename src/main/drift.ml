@@ -330,8 +330,7 @@ let _ =
       let el = e 
                |> simplify
                |> (if !Config.effect_on && !Config.ev_trans then
-                     (Printf.printf "\nprop_file: %s" !Config.prop_file;
-                     Translation.tr_effect !Config.prop_file)
+                     Translation.tr_effect !Config.prop_file
                    else 
                      Fun.id)
                |> label in
