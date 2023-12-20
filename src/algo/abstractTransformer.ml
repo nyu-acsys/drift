@@ -1264,7 +1264,14 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                           let telsti', tei'' = prop telsti tei in
                           let m' = m |> update false nx tex' in
                           env1, m', (join_VE tei' tei'') :: li, telsti' :: llst
-                      | _ -> raise (Invalid_argument "Tuple only for variables now")
+                      | _ -> begin 
+                          (if !debug then 
+                             begin 
+                               let pr = Format.fprintf Format.std_formatter in 
+                               pr "LINE 1269, e: @[%a@]@." (pr_exp true) e
+                             end); 
+                          raise (Invalid_argument "Tuple only for variables now")
+                        end
                     ) (env, m, [], []) termlst (zip_list tlst tllst) in
                 let tlst', tllst' = List.rev tlst', List.rev tllst' in
                 let te1', tee' = TypeAndEff (Tuple tlst', (extract_eff te1)), 

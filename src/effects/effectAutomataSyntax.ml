@@ -28,45 +28,90 @@ module EvTrSemActions : SemActionsSig = struct
 
   let delta_fn x (q, acc) e =
     let pcfg = mk_fresh_var "cfg" in
-    let eacc = match acc with
-      | [] -> raise (Invalid_argument "Accumulator expression expecter")
-      | [x] -> x
-      | _ -> TupleLst (acc, "")
-    in
-    let term = mk_lambda x @@ 
-                 mk_lambda pcfg (PatMat (pcfg, [ mk_pattern_case (TupleLst ([q; eacc], "")) e ], "")) 
-    in (term, [])
+    let delta_term = match acc with
+      | [] -> raise (Invalid_argument "Accumulator expression expected")
+      | [p] -> mk_lambda x @@ 
+                mk_lambda pcfg 
+                  (PatMat (pcfg, [ mk_pattern_case (TupleLst ([q; p], "")) e ], ""))
+      | ps -> 
+         begin
+           let pacc = mk_fresh_var "acc" in
+           mk_lambda x @@
+             mk_lambda pcfg
+               (PatMat 
+                  (pcfg, 
+                   [ mk_pattern_case 
+                       (TupleLst ([q; pacc], ""))
+                       (PatMat 
+                          (pacc, 
+                           [ mk_pattern_case (TupleLst (ps, "")) e ], 
+                           ""))], ""))
+         end
+    in 
+    (delta_term, [])
 
   let initial_cfg (e1, e2) = TupleLst ([e1; e2], "")
 
   let prop_assert (q, acc) e = 
     let pcfg = mk_fresh_var "cfg" in
-    let eacc = match acc with
+    let asst_term = match acc with
       | [] -> raise (Invalid_argument "Accumulator expression expected")
-      | [x] -> x
-      | _ -> TupleLst (acc, "")
+      | [p] ->
+         mk_lambda pcfg 
+           (PatMat 
+              (pcfg, 
+               [ mk_pattern_case 
+                   (TupleLst ([q; p], ""))
+                   (Assert (e, mk_default_loc, ""))
+               ], ""))
+      | ps -> 
+         begin
+           let pacc = mk_fresh_var "acc" in
+           mk_lambda pcfg 
+             (PatMat 
+                (pcfg, 
+                 [ mk_pattern_case 
+                     (TupleLst ([q; pacc], ""))
+                     (PatMat 
+                        (pacc,
+                         [ mk_pattern_case
+                           (TupleLst (ps, ""))
+                           (Assert (e, mk_default_loc, "")) ], ""))
+                 ], ""))
+         end
     in
-    let asst = mk_lambda pcfg (PatMat (pcfg, [  
-                                     mk_pattern_case 
-                                       (TupleLst ([q; eacc], ""))
-                                       (Assert (e, mk_default_loc, ""))
-                                   ], ""))
-    in (asst, PerTran)
+    (asst_term, PerTran)
 
   
   let prop_assert_final (q, acc) e = 
     let pcfg = mk_fresh_var "cfg" in
-    let eacc = match acc with
-      | [] -> raise (Invalid_argument "Accumulator expression expecter")
-      | [x] -> x
-      | _ -> TupleLst (acc, "")
+    let asst_term = match acc with
+      | [] -> raise (Invalid_argument "Accumulator expression expected")
+      | [p] ->
+         mk_lambda pcfg 
+           (PatMat 
+              (pcfg, 
+               [ mk_pattern_case 
+                   (TupleLst ([q; p], ""))
+                   (Assert (e, mk_default_loc, ""))
+               ], ""))
+      | ps -> 
+         begin
+           let pacc = mk_fresh_var "acc" in
+           mk_lambda pcfg 
+             (PatMat 
+                (pcfg, 
+                 [ mk_pattern_case 
+                     (TupleLst ([q; pacc], ""))
+                     (PatMat 
+                        (pacc,
+                         [ mk_pattern_case
+                           (TupleLst (ps, ""))
+                           (Assert (e, mk_default_loc, "")) ], ""))
+                 ], ""))
+         end
     in
-    let asst = mk_lambda pcfg (PatMat (pcfg, [  
-                                     mk_pattern_case 
-                                       (TupleLst ([q; eacc], ""))
-                                       (Assert (e, mk_default_loc, ""))
-                                   ], ""))
-    in (asst, Final)
+    (asst_term, Final)
 end
 
 module EvInterpSemActions : SemActionsSig = struct

@@ -777,8 +777,7 @@ module SemanticsDomain =
       | _ -> raise (Invalid_argument "extract tuple should be a tuple")
     and get_tuple_list_VE = function
       | TypeAndEff ((Tuple u), _) -> get_tuple_list u
-      | tee -> raise (Invalid_argument ("CCCC" ^ (shape_value_and_eff tee)))
-      | _ -> raise (Invalid_argument "AAAA extract tuple should be a tuple")
+      | _ -> raise (Invalid_argument "extract tuple should be a tuple")
     and pattern_empty_lst_V = function
       | Lst lst -> Lst (pattern_empty_Lst lst)
       | _ -> raise (Invalid_argument "pattern x::[] should give a list")
