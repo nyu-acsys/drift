@@ -445,6 +445,7 @@ let check_assert eac eff =
                  let env = EmptyEvEnv 
                            |> extend_env "q" (init_R_c (Integer q))
                            |> (List.fold_right (fun v env -> extend_env v (find v acc) env) acc_vars)
+                           |> (VarDefMap.fold (fun v _ e -> extend_env v (top_R Plus) e) !pre_vars)
                  in
                  let r = eval_assert term env in
                  

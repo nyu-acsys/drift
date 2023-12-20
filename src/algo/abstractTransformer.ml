@@ -721,114 +721,121 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             m1 |> update false n1 te1', [[]]
         | _ -> step e1 env trace ec ae assertion is_rec m
       in
-      let map, tails = List.fold_left_map 
-        (fun m1' tail1 ->
-          let trace1 = extend_trace tail1 trace in
-          let n1 = loc e1 |> construct_enode env |> construct_snode trace1 in
-          let ec' = find n1 m1 |> extract_ec in
-          let m2, tails2 = step e2 env trace ec' ae assertion is_rec m1 in
-          let te1 = find n1 m2 in
-          let map, tails = List.fold_left_map 
-            (fun m2' tail2 ->
-              let trace2 = extend_trace tail2 trace in
-              let extended_tail = extend_trace tail2 tail1 in
-              let trace = extend_trace extended_tail trace in
-              let n2 = loc e2 |> construct_enode env |> construct_snode trace2 in
-              let n = loc term |> construct_enode env |> construct_snode trace in
-              let te2 = find n2 m2 in
-              if te1 = TEBot || te2 = TEBot then m2', extended_tail
-              else
-                begin
-                  let bop =
-                    match bop, e1, e2 with
-                    | Mod, Const _, Const _ -> Mod
-                    | Mod, _, Const _ -> Modc
-                    | _ -> bop
-                  in
-                  let te = find n m2 in
-                  let raw_te =
-                    match bop with
-                    | Cons (* list op *) ->
-                      (* (pr_value_and_eff Format.std_formatter te1;
-                      pr_value_and_eff Format.std_formatter te2); *)
-                        list_cons_VE te1 te2
-                    | And | Or (* bool op *) ->
-                        bool_op_VE bop te1 te2
-                    | Modc ->
-                      (* {v:int | a(t) ^ v = n1 mod const }[n1 <- t1] *)
-                        let ted = init_VE_v (Relation (top_R bop)) in
-                        let node_1 = e1 |> loc |> name_of_node in
-                        let te' = arrow_VE node_1 ted (extract_v te1) 
-                                  |> temap (id, fun _ -> extract_eff te1) in
-                        let te''' = op_VE node_1 (str_of_const e2) bop te' 
-                                    |> temap (id, fun _ -> extract_eff te2) in
-                        let te = get_env_list env trace m2 |> proj_VE te''' in
-                        te
-                    | Seq ->
-                        te2
-                    | _ ->
-                        (* {v:int | a(t) ^ v = n1 op n2 }[n1 <- t1, n2 <- t2] *)
-                        let ted = init_VE_v (Relation (top_R bop)) in
-                        let node_1 = e1 |> loc |> name_of_node in
-                        let node_2 = e2 |> loc |> name_of_node in
-                        let te' = arrow_VE node_1 ted (extract_v te1) |> temap (id, fun _ -> extract_eff te1) in
-                        let te'' = arrow_VE node_2 te' (extract_v te2) |> temap (id, fun _ -> extract_eff te2) in
-                        (* (if !debug then
+      let map, tails = 
+        List.fold_left_map 
+          (fun m1' tail1 ->
+            let trace1 = extend_trace tail1 trace in
+            let n1 = loc e1 |> construct_enode env |> construct_snode trace1 in
+            let te1 = find n1 m1 in
+            if te1 = TEBot then (m1', [tail1]) 
+            else 
+              begin
+                let ec' = find n1 m1 |> extract_ec in
+                let m2, tails2 = step e2 env trace ec' ae assertion is_rec m1 in
+                let te1 = find n1 m2 in
+                let map, tails = 
+                  List.fold_left_map 
+                    (fun m2' tail2 ->
+                      let trace2 = extend_trace tail2 trace in
+                      let extended_tail = extend_trace tail2 tail1 in
+                      let trace = extend_trace extended_tail trace in
+                      let n2 = loc e2 |> construct_enode env |> construct_snode trace2 in
+                      let n = loc term |> construct_enode env |> construct_snode trace in
+                      let te2 = find n2 m2 in
+                      if te1 = TEBot || te2 = TEBot then m2', extended_tail
+                      else
                         begin
-                            Format.printf "\n<=== Op binop ===> %s\n" (loc e1);
-                            pr_value Format.std_formatter t';
-                            Format.printf "\n<<~~~~>>\n";
-                            pr_value Format.std_formatter t'';
-                            Format.printf "\n";
+                          let bop =
+                            match bop, e1, e2 with
+                            | Mod, Const _, Const _ -> Mod
+                            | Mod, _, Const _ -> Modc
+                            | _ -> bop
+                          in
+                          let te = find n m2 in
+                          let raw_te =
+                            match bop with
+                            | Cons (* list op *) ->
+                               (* (pr_value_and_eff Format.std_formatter te1;
+                                  pr_value_and_eff Format.std_formatter te2); *)
+                               list_cons_VE te1 te2
+                            | And | Or (* bool op *) ->
+                               bool_op_VE bop te1 te2
+                            | Modc ->
+                               (* {v:int | a(t) ^ v = n1 mod const }[n1 <- t1] *)
+                               let ted = init_VE_v (Relation (top_R bop)) in
+                               let node_1 = e1 |> loc |> name_of_node in
+                               let te' = arrow_VE node_1 ted (extract_v te1) 
+                                         |> temap (id, fun _ -> extract_eff te1) in
+                               let te''' = op_VE node_1 (str_of_const e2) bop te' 
+                                           |> temap (id, fun _ -> extract_eff te2) in
+                               let te = get_env_list env trace m2 |> proj_VE te''' in
+                               te
+                            | Seq ->
+                               te2
+                            | _ ->
+                               (* {v:int | a(t) ^ v = n1 op n2 }[n1 <- t1, n2 <- t2] *)
+                               let ted = init_VE_v (Relation (top_R bop)) in
+                               let node_1 = e1 |> loc |> name_of_node in
+                               let node_2 = e2 |> loc |> name_of_node in
+                               let te' = arrow_VE node_1 ted (extract_v te1) |> temap (id, fun _ -> extract_eff te1) in
+                               let te'' = arrow_VE node_2 te' (extract_v te2) |> temap (id, fun _ -> extract_eff te2) in
+                               (* (if !debug then
+                                  begin
+                                  Format.printf "\n<=== Op binop ===> %s\n" (loc e1);
+                                  pr_value Format.std_formatter t';
+                                  Format.printf "\n<<~~~~>>\n";
+                                  pr_value Format.std_formatter t'';
+                                  Format.printf "\n";
+                                  end
+                                  ); *)
+                               let te''' = op_VE node_1 node_2 bop te'' in
+                               (* (if !debug then
+                                  begin
+                                  Format.printf "\n<=== RES Op binop ===> \n";
+                                  pr_value Format.std_formatter t''';
+                                  Format.printf "\n";
+                                  end
+                                  ); *)
+                               let temp_te = get_env_list env trace m2 |> proj_VE te''' in
+                               (* if !domain = "Box" then
+                                  temp_t |> der_V e1 |> der_V e2  (* Deprecated: Solve remaining constraint only for box*)
+                                  else  *)
+                               temp_te
+                          in
+                          let _, re_te =
+                            if is_Relation (extract_v raw_te) then raw_te,raw_te else 
+                              (* let t, raw_t = alpha_rename_Vs t raw_t in *)
+                              prop raw_te te
+                          in
+                          (* (if l = "18" then
+                             begin
+                             Format.printf "\nRES binop for prop:\n";
+                             pr_value Format.std_formatter re_t;
+                             Format.printf "\n<-- ae -->\n";
+                             pr_value Format.std_formatter ae;
+                             Format.printf "\n";
+                             end
+                             ); *)
+                          let m2'', re_te =
+                            match bop with
+                            | Cons ->
+                               let te1l = cons_temp_lst_VE te1 re_te in
+                               let te1l', re_te' = prop te1l re_te in
+                               let te1' = extrac_item_VE (get_env_list env trace1 m2) te1l' in
+                               let te2', re_te'' = prop te2 re_te' in
+                               m2' |> update false n1 te1' |> update false n2 te2', re_te'
+                            | Seq ->
+                               let te2', re_te' = prop te2 re_te in
+                               m2' |> update false n2 te2', re_te' 
+                            | _ -> m2', re_te 
+                          in
+                          m2'' |> update false n (stren_VE re_te ae), extended_tail
                         end
-                        ); *)
-                        let te''' = op_VE node_1 node_2 bop te'' in
-                        (* (if !debug then
-                        begin
-                            Format.printf "\n<=== RES Op binop ===> \n";
-                            pr_value Format.std_formatter t''';
-                            Format.printf "\n";
-                        end
-                        ); *)
-                        let temp_te = get_env_list env trace m2 |> proj_VE te''' in
-                        (* if !domain = "Box" then
-                          temp_t |> der_V e1 |> der_V e2  (* Deprecated: Solve remaining constraint only for box*)
-                          else  *)
-                        temp_te
-                  in
-                  let _, re_te =
-                    if is_Relation (extract_v raw_te) then raw_te,raw_te else 
-                    (* let t, raw_t = alpha_rename_Vs t raw_t in *)
-                    prop raw_te te
-                  in
-                  (* (if l = "18" then
-                      begin
-                          Format.printf "\nRES binop for prop:\n";
-                          pr_value Format.std_formatter re_t;
-                          Format.printf "\n<-- ae -->\n";
-                          pr_value Format.std_formatter ae;
-                          Format.printf "\n";
-                      end
-                  ); *)
-                  let m2'', re_te =
-                    match bop with
-                    | Cons ->
-                        let te1l = cons_temp_lst_VE te1 re_te in
-                        let te1l', re_te' = prop te1l re_te in
-                        let te1' = extrac_item_VE (get_env_list env trace1 m2) te1l' in
-                        let te2', re_te'' = prop te2 re_te' in
-                        m2' |> update false n1 te1' |> update false n2 te2', re_te'
-                    | Seq ->
-                        let te2', re_te' = prop te2 re_te in
-                        m2' |> update false n2 te2', re_te' 
-                    | _ -> m2', re_te 
-                  in
-                  m2'' |> update false n (stren_VE re_te ae), extended_tail
-                end
-            ) m2 tails2
-          in
-          join_M map m1', tails
-        ) m1 tails1
+                    ) m2 tails2
+                in
+                join_M map m1', tails
+              end
+          ) m1 tails1
       in
       map, List.flatten tails |> List.sort_uniq comp_trace
   | UnOp (uop, e1, l) ->
