@@ -8,6 +8,12 @@ open AbstractDomain
 open SemanticDomain
 open SemanticsDomain
 
+
+type evv_t = Val of relation_e | Tpl of evv_t list
+type evenv = EmptyEvEnv | ExtendEvEnv of var * relation_e * evenv
+
+type eff_assert_class = EvAssert of loc | FinalAssert 
+
 let property_spec: aut_spec option ref = ref None
 
 let parse_aut_spec file = 
@@ -35,9 +41,6 @@ let parse_property_spec prop_file =
   let spec = parse_aut_spec prop_file in
   (if !out_put_level < 2 then print_aut_spec spec);
   spec
-
-type evv_t = Val of relation_e | Tpl of evv_t list
-type evenv = EmptyEvEnv | ExtendEvEnv of var * relation_e * evenv
 
 let spec_env: unit -> var list = fun () -> 
   Option.map (fun spec -> spec.env) (!property_spec)
@@ -116,8 +119,8 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
   (if !debug then
      begin
      Format.fprintf Format.std_formatter 
-       "\nEV (env, eff, t) =@.  @[env:@[{%s}@]@]@.  @[eff:@[%a@]@]@.  @[t:@[%a@]@]@."
-       (String.concat ";" penv)
+       "\nEV (env, eff, t) =@.  @[env_vars:@[{ %s }@]@]@.  @[eff:@[%a@]@]@.  @[t:@[%a@]@]@."
+       (String.concat "; " penv)
        pr_eff_map eff
        pr_relation t
      end);
@@ -426,13 +429,14 @@ let rec eval_assert term env =
          end
     | _ -> bot_R Eq
 
-type eff_assert_class = EvAssert of loc | FinalAssert 
-let check_assert eac eff = 
+let check_assert eac envE eff = 
   let find v acc = VarMap.find_opt v acc |> Opt.get_or_else (top_R Plus) in
   let pr_eff_assert_class ppf = function
       | EvAssert l -> Format.fprintf ppf "ev^%s" l
       | FinalAssert -> Format.fprintf ppf "final-eff"
   in
+  let find_pre v = VarMap.find_opt v envE
+                   |> Opt.get_or_else (top_R Plus) in 
   let asst_term spec = match eac with | EvAssert _ -> spec.asst | FinalAssert -> spec.asstFinal in
   Opt.map (fun spec -> 
       let acc_vars = List.filter (fun v -> v <> "evx") spec.env in
@@ -445,7 +449,7 @@ let check_assert eac eff =
                  let env = EmptyEvEnv 
                            |> extend_env "q" (init_R_c (Integer q))
                            |> (List.fold_right (fun v env -> extend_env v (find v acc) env) acc_vars)
-                           |> (VarDefMap.fold (fun v _ e -> extend_env v (top_R Plus) e) !pre_vars)
+                           |> (VarDefMap.fold (fun v _ e -> extend_env v (find_pre v) e) !pre_vars)
                  in
                  let r = eval_assert term env in
                  

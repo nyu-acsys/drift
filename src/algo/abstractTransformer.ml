@@ -38,7 +38,7 @@ let sens : asst_map_t ref = ref AssertionPosMap.empty
 
 module AsstsMap = Map.Make (struct type t = loc let compare = compare end) 
 type regular_asst_t = (node_s_t * value_tt) list
-type ev_asst_t = node_s_t list
+type ev_asst_t = (node_s_t * env_t * trace_t) list
 let regassts: regular_asst_t AsstsMap.t ref = ref AsstsMap.empty
 let evassts: ev_asst_t AsstsMap.t ref = ref AsstsMap.empty
 let add_reg_asst l ae n = 
@@ -52,15 +52,16 @@ let add_reg_asst l ae n =
                           | Some assts -> if not @@ List.mem (n, ae) assts then Some ((n, ae)::assts)
                                          else Some assts
                 ) !regassts
-let add_ev_asst l n = 
+let add_ev_asst l (n, env, trace) = 
   (if !debug then 
      begin 
        Format.fprintf Format.std_formatter "\nassert_ev added: @[<v>@[l:%s@]@,@[n:%a@]@]"
          l pr_node n
      end);
   evassts := AsstsMap.update l 
-               (function | None -> Some [n] 
-                         | Some assts -> if not @@ List.mem n assts then Some (n::assts)
+               (function | None -> Some [(n, env, trace)] 
+                         | Some assts -> if not @@ List.mem (n, env, trace) assts then 
+                                          Some ((n, env, trace)::assts)
                                         else Some assts
                ) !evassts
 
@@ -1311,7 +1312,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
         (fun m tail1 ->
           let trace = extend_trace tail1 trace in
           let n = loc term |> construct_enode env |> construct_snode trace 
-                  |> (fun n -> (if assertion then add_ev_asst (loc term) n else ()); n) in
+                  |> (fun n -> (if assertion then add_ev_asst (loc term) (n, env, trace) else ()); n) in
           let n1 = loc e1 |> construct_enode env |> construct_snode trace in
           let te1 = find n1 m1 in
           let penv = get_env_list env trace m1 in
@@ -1369,6 +1370,13 @@ let add_failed_assertion (fasst: failed_asst_t) fassts = fasst::fassts
 
 let rec check_assert term m fassts = 
   let find n m = NodeMap.find_opt n m |> Opt.get_or_else TEBot in
+  let envOfE env trace = 
+    VarMap.fold (fun x (nx, _) envE -> 
+        let nx = construct_snode trace nx in
+        match (find nx m |> extract_v) with
+        | Relation r -> VarMap.add x r envE
+        | _ -> envE) env (VarMap.empty)
+  in
   match term with
   | Const _ | Var _ -> fassts
   | BinOp (_, e1, e2, _) ->
@@ -1394,12 +1402,13 @@ let rec check_assert term m fassts =
      in
      AsstsMap.find_opt l !evassts 
      |> Opt.map (fun ns -> 
-            List.fold_right (fun n fs ->
-              let te = find n m in
-              match (extract_eff te) with
-              | EffBot -> AbstractEv.check_assert_bot (EvAssert l) |> report_fasst fs
-              | Effect eff -> AbstractEv.check_assert (EvAssert l) eff |> report_fasst fs
-              | EffTop -> AbstractEv.check_assert_top (EvAssert l) |> report_fasst fs ) ns fassts)
+            List.fold_right (fun (n, env, trace) fs ->
+                let te = find n m in
+                let envE = envOfE env trace in
+                match (extract_eff te) with
+                | EffBot -> AbstractEv.check_assert_bot (EvAssert l) |> report_fasst fs
+                | Effect eff -> AbstractEv.check_assert (EvAssert l) envE eff |> report_fasst fs
+                | EffTop -> AbstractEv.check_assert_top (EvAssert l) |> report_fasst fs ) ns fassts)
      |> Opt.get_or_else (add_failed_assertion (PropEvAsst l) fassts)
   | Assert (e1, pos, l) ->
      let l = loc term in
@@ -1450,14 +1459,22 @@ let rec check_assert term m fassts =
 
      |> check_assert e1 m
 
-let check_assert_final_eff te fassts = 
+let check_assert_final_eff te env m fassts =
+  let find_v n m = NodeMap.find_opt n m |> Opt.get_or_else TEBot |> extract_v in
   let report_fasst fs = function 
     | true -> fs
     | false -> add_failed_assertion PropFinalAsst fs
   in 
+  let envE = VarMap.fold (fun x (n_var, _) envE -> 
+                 let s_var = construct_snode (create_singleton_trace_loc "") n_var in
+                 match find_v s_var m with
+                 | Relation r -> VarMap.add x r envE
+                 | _ -> envE
+               ) env VarMap.empty
+  in 
   match (extract_eff te) with
     | EffBot -> AbstractEv.check_assert_bot (FinalAssert) |> report_fasst fassts
-    | Effect eff -> AbstractEv.check_assert FinalAssert eff |> report_fasst fassts 
+    | Effect eff -> AbstractEv.check_assert FinalAssert envE eff |> report_fasst fassts 
     | EffTop -> AbstractEv.check_assert_top (FinalAssert) |> report_fasst fassts 
  
 (** Fixpoint loop **)
@@ -1501,32 +1518,33 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
       if assertion (* || !narrow *) then
         let prog_n = loc e |> construct_enode env |> construct_snode [] in
         let prog_te = NodeMap.find_opt prog_n m |> Opt.get_or_else TEBot in
-        let fassts = List.rev (check_assert e m [] |> check_assert_final_eff prog_te) in
+        let fassts = List.rev (check_assert e m [] |> check_assert_final_eff prog_te env m) in
         (if !debug then 
            begin 
              Format.fprintf Format.std_formatter "\n# failed assertionsf: %d\n" (List.length fassts)
            end);
         let sr, sf = (List.fold_right 
-                       (fun fasst (sr,sf) -> match fasst with
-                                          | RegularAsst (l, pos) ->
-                                             begin match List.assoc_opt l sr with
-                                             | None -> 
-                                                let s' =  try print_loc pos with
-                                                            Input_Assert_failure s -> s ^ " label " ^ l in 
-                                                ((l,s')::sr,sf)
-                                             | Some _ -> (sr,sf)
-                                             end
-                                          | PropEvAsst l -> 
-                                             begin match List.assoc_opt l sf with
-                                             | None -> 
-                                                 let s' = "effect (post ev) assertion failed at label " ^ l in
-                                                 (sr, (l,s')::sf)
-                                             | Some _ -> (sr, sf)
-                                             end
-                                          | PropFinalAsst ->
-                                             let s' = "effect (final) assertion failed" in
-                                             (sr, (loc e, s')::sf)
-                       ) fassts ([],[]))
+                        (fun fasst (sr,sf) -> 
+                          match fasst with
+                          | RegularAsst (l, pos) ->
+                             begin match List.assoc_opt l sr with
+                             | None -> 
+                                let s' =  try print_loc pos with
+                                            Input_Assert_failure s -> s ^ " label " ^ l in 
+                                ((l,s')::sr,sf)
+                             | Some _ -> (sr,sf)
+                             end
+                          | PropEvAsst l -> 
+                             begin match List.assoc_opt l sf with
+                             | None -> 
+                                let s' = "effect (post ev) assertion failed at label " ^ l in
+                                (sr, (l,s')::sf)
+                             | Some _ -> (sr, sf)
+                             end
+                          | PropFinalAsst ->
+                             let s' = "effect (final) assertion failed" in
+                             (sr, (loc e, s')::sf)
+                        ) fassts ([],[]))
                      |> (fun (sr, sf) -> (List.map (fun (_, s) -> s) sr, List.map (fun (_,s) -> s) sf))
         in 
         let s = (String.concat ", " sr) ^ (String.concat ", " sf) in 
