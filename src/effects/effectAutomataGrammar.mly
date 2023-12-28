@@ -102,7 +102,6 @@ var:
 
 const_exp:
   | i=INTCONST { Const (Integer i, "") }
-  | b=BOOLCONST { Const (Boolean b, "") }
 
 tuple_exp:
   | LPAREN e=exp COMMA es=separated_nonempty_list(COMMA, e=exp { e }) RPAREN { TupleLst (e::es, "") }
@@ -114,10 +113,14 @@ tuple_exp:
       { let else_term = Const (UnitLit, "") in
         Ite (be, e1, else_term, "") }
 
-bool_exp:
+bool_exp: 
+  | e1=bool_exp bop=bool_op e2=bool_exp1 { BinOp (bop, e1, e2, "") } 
+  | e=bool_exp1 { e }
+
+bool_exp1:
   | b=BOOLCONST { Const (Boolean b, "") }
   | e=comp_exp { e }
-  | e1=comp_exp bop=bool_op e2=bool_exp { BinOp (bop, e1, e2, "") }
+  | LPAREN e=bool_exp RPAREN { e }
 
 bool_op:
   | AND { And }
@@ -125,7 +128,6 @@ bool_op:
 
 comp_exp:
   | e1=exp op=comp_op e2=exp { BinOp (op, e1, e2, "") } 
-  | LPAREN e=comp_exp RPAREN { e }
 
 %inline comp_op:
   | EQ { Eq }

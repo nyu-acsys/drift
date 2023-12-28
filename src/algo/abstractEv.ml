@@ -55,18 +55,13 @@ let rec fold_env f env acc = match env with
   | EmptyEvEnv -> acc
   | ExtendEvEnv (id, v, tail) -> f id v (fold_env f tail acc) 
 
-let pr_acc ppf acc = 
-  let pr_acc_comp ppf (var, va) = Format.fprintf ppf "%s |-> %a" var pr_relation va in
-  VarMap.bindings acc 
-  |> Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_acc_comp ppf 
-
 
 let pr_delta_tran ppf t_acc =
-  Format.fprintf ppf "\ntran added:@,  @[%a@]@." pr_acc t_acc
+  Format.fprintf ppf "\ntran added:@,  @[%a@]@." pr_eff_acc t_acc
 let pr_delta_trans ppf ts =
   let rec pr_ts i ppf = function
     | [] -> Format.fprintf ppf ""
-    | t_acc::ts' -> Format.fprintf ppf "@[ts(%d) |-> @[<v>%a,@]@]@,%a" i pr_acc t_acc (pr_ts (i+1)) ts'
+    | t_acc::ts' -> Format.fprintf ppf "@[ts(%d) |-> @[<v>%a,@]@]@,%a" i pr_eff_acc t_acc (pr_ts (i+1)) ts'
   in
   Format.fprintf ppf "\ndelta_trans:@,  @[@[<v>%a@]@]@." (pr_ts 1) ts
 
@@ -77,8 +72,6 @@ let pr_ev_env ppf env =
   in
   Format.fprintf ppf "[ @[<v>%a@] ]@." pr_env env
 
-let is_bot_acc acc = VarMap.fold (fun _ va res -> if res then is_bot_R va else res) acc true
-let eff_minimize = StateMap.filter (fun _ acc -> not @@ is_bot_acc acc)
 let eff_bot spec = 
   let acc_vars = List.filter (fun v -> v != "evx") spec.env in
   let bot_acc = List.fold_right (fun v acc -> VarMap.add v (bot_R Plus) acc) acc_vars VarMap.empty in
@@ -112,7 +105,7 @@ let eff0 () =
               | _ -> eff_bot spec
     ) (!property_spec) 
   |> (fun mspec -> Option.value mspec ~default:(StateMap.empty))
-  |> eff_minimize
+  |> minimize_eff
 
 let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t -> 
   
@@ -174,7 +167,7 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
     in
     let vva' = arrow_va_q' vva in
     let vva_acc = acc_of_evv vva' in
-    (if !debug then begin pr_delta_tran Format.std_formatter vva_acc end);
+    (* (if !debug then begin pr_delta_tran Format.std_formatter vva_acc end); *)
     (vva_acc)::ts 
   in
   let name_of_node l = "ze" ^ l in
@@ -342,43 +335,48 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
   
   (* (Format.printf "\neff_bot: "; (pp_eff eff_bot););
      (Format.printf "\neff: "; (pp_eff eff)); *)
-  eff_minimize @@ StateMap.mapi (fun (Q q') _ -> 
-                      let ra' = 
-                        StateMap.fold 
-                          (fun (Q q) acc res' ->
-                            (if !debug then
-                               Format.fprintf Format.std_formatter 
-                                 "\n@[EV(pre):@.  @[q[%d] |-> @[%a@]@]@]@." q pr_acc acc
-                            );
-                            let env0 = get_env0 q acc t in
-                            let _, ts = eval spec.delta env0 (top_R Plus) true [] in
-                            (if !debug then
-                               pr_delta_trans Format.std_formatter ts
-                            );
-                            let acc' = 
-                              List.fold_right (fun acc'' res'' -> 
-                                  (* (Format.fprintf Format.std_formatter "\nres(init): %a,@,acc(init): %a" pr_acc res' pr_acc acc);*)
-                                  let acc'' = arrow_acc "q'" acc'' (init_R_c (Integer q')) in
-                                  (* (Format.fprintf Format.std_formatter "\nva[acc <- q'(%d)]: %a" q' pr_acc acc''); *)
-                                  let res'' = join_acc res'' acc'' in
-                                  (* (Format.fprintf Format.std_formatter "\nres(final): %a" pr_acc res''); *)
-                                  res''
-                                ) ts bot_acc
-                            in
-                            (* (Format.fprintf Format.std_formatter "\nq(%d) -> q'(%d): %a" q q' pr_acc acc'); *)
-                            let res' = join_acc res' acc' in 
-                            (if !Config.debug then 
-                               Format.fprintf Format.std_formatter 
-                                 "\n@[EV(post):@.  @[q[%d] |-> @[%a@]@]@]" q' pr_acc res'
-                            );
-                            res'
-                          ) eff bot_acc
-                        |> forget_acc "q"
-                        |> forget_acc "q'" 
-                      in 
-                      (* (if !Config.debug then Format.fprintf Format.std_formatter "\nq'(%d): %a" q' pr_acc ra'); *)
-                      ra'
-                    ) eff_bot
+  minimize_eff @@ 
+    StateMap.mapi 
+      (fun (Q q') _ -> 
+        let ra' = 
+          StateMap.fold 
+            (fun (Q q) acc res' ->
+              (*(if !debug then
+                 Format.fprintf Format.std_formatter 
+                   "\n@[EV(pre):@.  @[q[%d] |-> @[%a@]@]@]@." q pr_eff_acc acc
+              );*)
+              let env0 = get_env0 q acc t in
+              let _, ts = eval spec.delta env0 (top_R Plus) true [] in
+              (*(if !debug then
+                 pr_delta_trans Format.std_formatter ts
+              );*)
+              let acc' = 
+                List.fold_right (fun acc'' res'' -> 
+                    (* (Format.fprintf Format.std_formatter "\nres(init): %a,@,acc(init): %a" pr_acc res' pr_acc acc);*)
+                    let acc'' = arrow_acc "q'" acc'' (init_R_c (Integer q')) in
+                    (* (Format.fprintf Format.std_formatter "\nva[acc <- q'(%d)]: %a" q' pr_acc acc''); *)
+                    let res'' = join_acc res'' acc'' in
+                    (* (Format.fprintf Format.std_formatter "\nres(final): %a" pr_acc res''); *)
+                    res''
+                  ) ts bot_acc
+              in
+              (* (Format.fprintf Format.std_formatter "\nq(%d) -> q'(%d): %a" q q' pr_acc acc'); *)
+              let res' = join_acc res' acc' in 
+              (*(if !Config.debug then 
+                 Format.fprintf Format.std_formatter 
+                   "\n@[EV(post):@.  @[q[%d] |-> @[%a@]@]@]" q' pr_eff_acc res'
+              );*)
+              res'
+            ) eff bot_acc
+          |> forget_acc "q"
+          |> forget_acc "q'" 
+        in 
+        (* (if !Config.debug then Format.fprintf Format.std_formatter "\nq'(%d): %a" q' pr_acc ra'); *)
+        ra'
+      ) eff_bot
+  |> (fun eff -> 
+    (if !debug then Format.fprintf Format.std_formatter "\nEff(post):@,@[%a@]@." pr_eff_map eff);
+    eff)
 
 let rec eval_assert term env =
   match term with
