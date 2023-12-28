@@ -102,9 +102,9 @@ for hdir in ${DIRS}; do
                 if [[ "$OSTYPE" != "darwin"* ]]; then
                     f=${f#*./}
                 fi
-                echo "${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -trace-len ${trace_len}"
+                echo "${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -trace-len ${trace_len} -if-part ${if_part}"
                 ts=$(${DATE} +%s%N)
-                timeout ${timeout} ${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -trace-len ${trace_len} &> ${OUTDIR}/${dir}/${OUTPRE}_${f}
+                timeout ${timeout} ${PROG} -file ${TESTDIR}/${hdir}/${dir}/${f} -out 2 -domain ${DOMAIN} -delay-wid ${wid} -nar ${nar} -thold ${thold} -trace-len ${trace_len} -if-part ${if_part} &> ${OUTDIR}/${dir}/${OUTPRE}_${f}
                 if [[ $? -ne 0 ]]; then
                     echo "Time: timeout" >> ${OUTDIR}/${dir}/${OUTPRE}_${f}
                 else
@@ -119,7 +119,11 @@ done
 csv_name="res"
 
 if [[ $trace_len > 0 ]]; then
-    csv_name="${csv_name}${trace_len}-"
+    if [[ $if_part == true ]]; then
+        csv_name="${csv_name}${trace_len}tr-"
+    else
+        csv_name="${csv_name}${trace_len}-"
+    fi
 else
     csv_name="${csv_name}-"
 fi
@@ -138,7 +142,11 @@ else
 fi
 
 if [[ $trace_len > 0 ]]; then
-    RESDIR="${trace_len}-sensitive"
+    if [[ $if_part == true ]]; then
+        RESDIR="${trace_len}-sensitive-trace"
+    else
+        RESDIR="${trace_len}-sensitive"
+    fi
 else
     RESDIR="non-sensitive"
 fi
