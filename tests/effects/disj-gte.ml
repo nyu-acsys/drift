@@ -1,8 +1,11 @@
 let rec f x pos neg =
   if x > 0 then
     ev pos
-  else
-    ev neg;
+  else if x < 0 then  
+    ev neg
+  else 
+    ();
+
   if x > 0 then
     f (x-1) pos neg
   else 
