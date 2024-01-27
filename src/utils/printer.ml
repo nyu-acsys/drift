@@ -249,3 +249,63 @@ let print_node_by_label m l =
   with Failure s -> ()
   in
   Format.fprintf Format.std_formatter "%a@?" pr_map_nst_node m
+
+
+(* CPS conversion *)
+let pr_cps_params ppf ps = Format.pp_print_list 
+                             ~pp_sep:(fun ppf () -> Format.fprintf ppf " ") 
+                             (fun ppf x -> Format.fprintf ppf "%s" x) ppf ps 
+let pr_cps_acc ppf acc = pr_cps_params ppf acc
+
+let pr_cps_op ppf op =
+  match op with 
+  | Mod -> Format.fprintf ppf "%s" "mod"
+  | _ -> pr_op ppf op
+
+let rec pr_cps_term ppf = function
+  | Const (c, _) -> Format.fprintf ppf "%a" pr_const c
+  | Var (x, _) -> Format.fprintf ppf "%s" x
+  | App (e1, e2, _) -> Format.fprintf ppf "%a %a" pr_cps_term e1 pr_cps_term e2
+  | Rec (None, (x, lx), e, _) -> Format.fprintf ppf "fun %s -> @[<v 2>%a@]" x pr_cps_term e
+  | Rec (Some (f, _), (x, _), e, _) -> Format.fprintf ppf "rec fun %s %s -> @[<v 2>%a@]" f x pr_cps_term e
+  | Ite (e0, e1, e2, _) -> Format.fprintf ppf "if @[%a@] then @[<v>%a@] @;else @[<v>%a@]"
+                            pr_cps_term e0 pr_cps_term e1 pr_cps_term e2
+  | BinOp (bop, e1, e2, _) -> Format.fprintf ppf "(@[%a@] %a @[%a@])" 
+                               pr_cps_term e1 pr_op bop pr_cps_term e2
+  | UnOp (uop, e1, _) -> Format.fprintf ppf "(%a @[%a@])" pr_unop uop pr_cps_term e1
+  | _ -> raise (Invalid_argument "Expression not supported in ev")
+ 
+let rec pr_cps_kterm ppf = function
+  | KLetVal (x, v, kt) -> Format.fprintf ppf "@[<v>@[<v 2>let %s = %a@] in @;@[%a@]@]" x pr_cps_kval v pr_cps_kterm kt
+  | KLetCont (k, q, acc, x, kdef, kt) -> 
+     Format.fprintf ppf "@[<v>@[<v 2>let %s %s %a %s =@ %a@] in @;@[%a@]@]" 
+       k q pr_cps_acc acc x pr_cps_kterm kdef pr_cps_kterm kt
+  | KContApp (k, q, acc, x) -> 
+     Format.fprintf ppf "@[%s %s %a %s@]" k q pr_cps_acc acc x
+  | KApp (f, k, q, acc, x) -> 
+     Format.fprintf ppf "@[%s %s %s %a %s@]" f k q pr_cps_acc acc x
+  | KIte (xcond, kt1, kt2) -> 
+     Format.fprintf ppf "@[if %s@ then@ @[<2>%a@]@ else@ @[%a@]@]" xcond pr_cps_kterm kt1 pr_cps_kterm kt2 
+  | KFix (f, k, q, acc, x, fdef, kt) ->
+     Format.fprintf ppf "@[<v>@[<v 2>let rec %s %s %s %a %s =@;@[%a@]@] in @;@[%a@]@]" 
+       f k q pr_cps_acc acc x pr_cps_kterm fdef pr_cps_kterm kt
+  | KLetUnOp (x, op, o, kt) -> 
+     Format.fprintf ppf "@[let %s = %a %s in @;@[%a@]@]" x pr_unop op o pr_cps_kterm kt
+  | KLetBinOp (x, op, o1, o2, kt) -> 
+     Format.fprintf ppf "@[let %s = %s %a %s in @;@[%a@]@]" x o1 pr_cps_op op o2 pr_cps_kterm kt
+  | KEvApp (k, q, acc, x) -> 
+     Format.fprintf ppf "@[%s %s %s %a %s@]" "ev" k q pr_cps_acc acc x
+  | KEvAssertApp (k, q, acc, x) ->
+     Format.fprintf ppf "@[%s %s %s %a %s@]" "ev_assert" k q pr_cps_acc acc x
+  | KAssert (x, kt) ->  
+     Format.fprintf ppf "@[assert(%s);@[%a@]@]" x pr_cps_kterm kt
+  | KExp (e) -> 
+     Format.fprintf ppf "@[<v>%a@]" pr_cps_term e
+  | KExit x -> Format.fprintf ppf "%s" x
+  | KMainDef (main_params, main_body) -> 
+     Format.fprintf ppf "@[<v 2>let main %a = @;@[%a@]@]"
+       pr_cps_params main_params pr_cps_kterm main_body
+and pr_cps_kval ppf = function 
+  | KConst c -> pr_const ppf c
+  | KFn (k, q, acc, x, def) -> 
+     Format.fprintf ppf "@[<v 2>fun %s %s %a %s ->@;@[%a@]@]" k q pr_cps_acc acc x pr_cps_kterm def

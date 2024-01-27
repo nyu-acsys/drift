@@ -19,7 +19,10 @@ let property_spec: aut_spec option ref = ref None
 let parse_aut_spec file = 
   let chan = open_in file in
   let lexbuf = Lexing.from_channel chan in
-  EffectAutomataGrammar.top EffectAutomataLexer.token lexbuf
+  let a = EffectAutomataGrammar.top EffectAutomataLexer.token lexbuf in 
+  let _ = close_in chan in
+  a
+
 
 let print_aut_spec (spec:aut_spec) = 
   print_endline "\nProperty Automaton Spec:";

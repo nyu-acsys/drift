@@ -2,6 +2,7 @@ open AbstractDomain
 open SemanticDomain
 open AbstractTransformer
 open Syntax
+open CPSConversion
 open Config
 open Util
 open Parser
@@ -326,31 +327,44 @@ let _ =
         [parse_from_file !Config.file]
       end
     else tests in
-    List.iter (fun e -> 
-      let el = e 
-               |> simplify
-               |> (if !Config.effect_on && !Config.ev_trans then
-                     Translation.tr_effect !Config.prop_file
-                   else 
-                     Fun.id)
-               |> label in
-      if !out_put_level < 2 then
-        (print_endline "Executing:";
-         print_exp stdout el);
-      print_endline "\n";
-      print_endline ("Domain specification: " ^ !Config.domain);
-      print_endline "\n";
-      (AbstractEv.property_spec := 
-         if !Config.effect_on && (not !Config.ev_trans) then
-           Some (AbstractEv.parse_property_spec !Config.prop_file)
-         else
-           None);
-      (* exit 0; *)
-      ignore (s el);
-      if !out_put_level < 2 then
-        print_exp stdout el;
-      print_newline ()) t;
-    if !Config.debug then print_measures ()
+    if !Config.convert_to_cps then begin
+        CPSConversion.(property_spec := 
+                         if !Config.effect_on then Some (parse_property_spec !Config.prop_file)
+                         else None);
+        (List.iter (fun (prog, e) ->
+            CPSConversion.run e
+            |> Format.fprintf Format.std_formatter 
+                 ("(* CPS conversion. Source Program: @.@.@[%s@]@.@." ^^
+                    "Property: @.@.@[%s@]@.@.*)" ^^ 
+                      "@.@.@[%a@]")
+                 prog (Option.map fst !CPSConversion.property_spec |> Option.value ~default:"") 
+                 pr_cps_kterm) t) 
+      end
+    else begin
+        List.iter (fun (_, e) -> 
+            let el = e 
+                     |> simplify
+                     |> (if !Config.effect_on && !Config.ev_trans then
+                           Translation.tr_effect !Config.prop_file
+                         else Fun.id)
+                     |> label in
+            if !out_put_level < 2 then
+              (print_endline "Executing:";
+               print_exp stdout el);
+            print_endline "\n";
+            print_endline ("Domain specification: " ^ !Config.domain);
+            print_endline "\n";
+            (AbstractEv.property_spec := 
+               if !Config.effect_on && (not !Config.ev_trans) then
+                 Some (AbstractEv.parse_property_spec !Config.prop_file)
+               else None);
+            (* exit 0; *)
+            ignore (s el);
+            if !out_put_level < 2 then
+              print_exp stdout el;
+            print_newline ()) t;
+        if !Config.debug then print_measures ()
+      end
   with
   | Sys_error s | Failure s -> 
       let bs = if !Config.debug then Printexc.get_backtrace () else "" in
