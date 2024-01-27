@@ -3,12 +3,6 @@ open Syntax
 open EffectAutomataSyntax
 open Printer
 
-(* What do I need?
-   1. string of the property spec
-   2. acc var names
-   3. terms for C0, delta, assert post event, and final assert
- *)
-
 let property_spec: (string * aut_spec) option ref = ref None
 
 let evfn_var = "ev"

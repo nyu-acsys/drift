@@ -2,7 +2,7 @@ open AbstractDomain
 open SemanticDomain
 open AbstractTransformer
 open Syntax
-open CPSConversion
+open CpsConversion
 open Config
 open Util
 open Parser
@@ -328,16 +328,16 @@ let _ =
       end
     else tests in
     if !Config.convert_to_cps then begin
-        CPSConversion.(property_spec := 
+        CpsConversion.(property_spec := 
                          if !Config.effect_on then Some (parse_property_spec !Config.prop_file)
                          else None);
         (List.iter (fun (prog, e) ->
-            CPSConversion.run e
+            CpsConversion.run e
             |> Format.fprintf Format.std_formatter 
                  ("(* CPS conversion. Source Program: @.@.@[%s@]@.@." ^^
                     "Property: @.@.@[%s@]@.@.*)" ^^ 
                       "@.@.@[%a@]")
-                 prog (Option.map fst !CPSConversion.property_spec |> Option.value ~default:"") 
+                 prog (Option.map fst !CpsConversion.property_spec |> Option.value ~default:"") 
                  pr_cps_kterm) t) 
       end
     else begin
