@@ -7,7 +7,7 @@ open Printer
  * Translation any program e is given by:
  *   tr e simpl_ev simpl_cfg0   
  *)
-let tr (e: term) (a: term) (acfg: term) (asst: term) = 
+let tr (e: term) (a: term) (acfg: term) (asst: term option) (asstFinal: term option) = 
   let ev_ = mk_fresh_var "ev_" in
   let ret e cfg = TupleLst ([e; cfg], "") in
   let rec tr_ (e: term) (acfg: term) = 
@@ -112,8 +112,38 @@ let tr (e: term) (a: term) (acfg: term) (asst: term) =
             ], "")
       end
     | Event (e1, l) -> 
-      ret (Const (UnitLit, "")) (mk_app (mk_app ev_ e1) acfg)
-    | Assert (_, _, _) -> ret e acfg
+       let tr_e1 = tr_ e1 acfg in
+       begin match tr_e1, asst with
+         | TupleLst ([e1'; e1cfg], ""), None -> 
+            ret (Const (UnitLit, "")) (mk_app (mk_app ev_ e1') e1cfg)
+         | TupleLst ([e1'; e1cfg], ""), Some asst ->
+            let acfgx = mk_fresh_var "cfg" in
+            mk_app 
+              (mk_lambda acfgx (mk_op Seq (mk_app asst acfgx) (ret (Const (UnitLit, "")) acfgx)))
+            (mk_app (mk_app ev_ e1') e1cfg)
+             
+         | _, None -> 
+            let e1x, e1cfg = mk_fresh_var "x", mk_fresh_var "cfg" in
+            PatMat (tr_e1, [
+                  mk_pattern_case 
+                    (TupleLst ([e1x; e1cfg], ""))
+                    (ret (Const (UnitLit, "")) (mk_app (mk_app ev_ e1x) e1cfg))
+                ], "")
+         | _, Some asst -> 
+            let acfgx = mk_fresh_var "cfg" in
+            let e1x, e1cfg = mk_fresh_var "x", mk_fresh_var "cfg" in
+            PatMat (tr_e1, [
+                  mk_pattern_case 
+                    (TupleLst ([e1x; e1cfg], ""))
+                    (mk_app 
+                       (mk_lambda acfgx 
+                          (mk_op Seq (mk_app asst acfgx) (ret (Const (UnitLit, "")) acfgx)))
+                       (mk_app (mk_app ev_ e1x) e1cfg))
+                ], "")
+             
+        end
+    | Assert (_, _, _) -> 
+       ret e acfg
     | PatMat (e1, patlist, l) ->
       let tr_e1 = tr_ e1 acfg in
       begin match tr_e1 with
@@ -128,19 +158,24 @@ let tr (e: term) (a: term) (acfg: term) (asst: term) =
             ], "")
       end
   in
-  let e', acfg' = mk_fresh_var "e", mk_fresh_var "acfg" in
-  let tr_e_asst = PatMat (tr_ e acfg, [
-      mk_pattern_case
-        (TupleLst ([e'; acfg'], ""))
-        (mk_app asst acfg')
-    ], "")
+  let tr_e = match asstFinal with
+    | None -> tr_ e acfg
+    | Some asst -> 
+       let e', acfg' = mk_fresh_var "e", mk_fresh_var "acfg" in
+       PatMat (tr_ e acfg, [
+             mk_pattern_case
+               (TupleLst ([e'; acfg'], ""))
+               (mk_app asst acfg')
+           ], "")
   in
-  mk_app (mk_lambda ev_ tr_e_asst) a
+  mk_app (mk_lambda ev_ tr_e) a
 
 let parse_aut_spec file = 
   let chan = open_in file in
   let lexbuf = Lexing.from_channel chan in
-  EffectAutomataGrammar.top EffectAutomataLexer.token lexbuf
+  let a =  EffectAutomataGrammar.top EffectAutomataLexer.token lexbuf in
+  let _ = close_in chan in
+  a
 
 let print_aut_spec (spec:aut_spec) = 
   print_endline "\nProperty Automaton Spec:";
@@ -157,11 +192,6 @@ let print_aut_spec (spec:aut_spec) =
   print_endline "\n<-------------------->\n"
 
 let tr_effect spec e = 
-  let aspec = parse_aut_spec spec in
-  let asst = match aspec.asstFinal with
-    | Some asst -> asst
-    | None -> mk_lambda (mk_fresh_var "cfg") (Const ((Boolean true), ""))
-  in 
-  print_aut_spec (aspec);
-  tr e aspec.delta aspec.cfg0 asst
-
+  let aspec = parse_aut_spec spec in 
+  (if !Config.out_put_level < 2 then print_aut_spec (aspec));
+  tr e aspec.delta aspec.cfg0 aspec.asst aspec.asstFinal

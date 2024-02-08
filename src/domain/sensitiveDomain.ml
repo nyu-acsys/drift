@@ -361,8 +361,8 @@ module OneSensitive: SemanticsType =
       in
       f vi vars, f vo vars_o) mt
     let get_label_snode n = match n with 
-      | SEN (x, l) -> "EN: "^x^","^get_trace_data l
-      | SVN (x, cl) -> "VN: "^x^","^get_trace_data cl
+      | SEN (x, l) -> "EN: "^x^";"^get_trace_data l
+      | SVN (x, cl) -> "VN: "^x^";"^get_trace_data cl
     let get_var_env_node = function
     | VN(env, var, l) -> env, var, l
     | EN(env, l) -> raise (Invalid_argument ("Expected variable node at "^l))
@@ -523,8 +523,8 @@ module NSensitive: SemanticsType =
       in
       f vi vars, f vo vars_o) mt
     let get_label_snode n = match n with 
-      | SEN (x, l) -> "EN: "^x^","^get_trace_data l
-      | SVN (x, cl) -> "VN: "^x^","^get_trace_data cl
+      | SEN (x, l) -> "EN: "^x^";"^get_trace_data l
+      | SVN (x, cl) -> "VN: "^x^";"^get_trace_data cl
     let get_var_env_node = function
     | VN(env, var, l) -> env, var, l
     | EN(env, l) -> raise (Invalid_argument ("Expected variable node at "^l))

@@ -286,11 +286,15 @@ module SemanticsDomain =
       | Effect e1, Effect e2 -> Effect (union_eff wid_R e1 e2)
       | _, _ -> join_Eff e1 e2
     let replace_Eff e var x = effmapi (fun q acc -> VarMap.mapi (fun v r -> replace_R r var x) acc) e
+    let is_bot_acc acc = VarMap.fold (fun _ va res -> if res then is_bot_R va else res) acc true
+    let minimize_eff = StateMap.filter (fun _ acc -> not @@ is_bot_acc acc)
     let stren_Eff e ae = match e, ae with
       | EffBot, _ -> EffBot 
-      | Effect _, Relation rae -> if is_bot_R rae 
-                                 then EffBot 
-                                 else (effmapi (fun q acc -> VarMap.mapi (fun v r -> stren_R r rae) acc) e)
+      | Effect _, Relation rae -> 
+         if is_bot_R rae 
+         then EffBot 
+         else (effmapi (fun q acc -> VarMap.mapi (fun v r -> stren_R r rae) acc) e
+               |> effmap minimize_eff)
       | EffTop, Relation rae -> EffTop (* raise (Invalid_argument "EffTop B should not be inferred") *)
          (* effmapi (fun q r -> stren_R r) rae) eff_Top; where eff_Top = StateMap.creat (Q.size) (top_R Plus) *)
          (* 
@@ -735,6 +739,7 @@ module SemanticsDomain =
       | Relation r -> is_bot_R r
       | Lst lst -> only_shape_Lst lst
       | Ary ary -> only_shape_Ary ary
+      | Tuple u -> only_shape_Tuple u
       | _ -> false
     and cons_temp_lst_V t = function
       | Lst lst -> Lst (cons_temp_lst_Lst t lst)
@@ -1163,6 +1168,8 @@ module SemanticsDomain =
       List.map (fun v -> bot_shape_VE v) u
     and get_tuple_list u = 
       u
+    and only_shape_Tuple u = 
+      List.fold_right (fun ve is_bot -> if is_bot then ve = TEBot else is_bot) u true
 
     (*
       ***************************************

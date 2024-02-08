@@ -19,8 +19,8 @@ let fail pos msg =
 
 let print_loc pos = 
   raise (Input_Assert_failure 
-  ("The program may not be safe, assertion failed at line "^(string_of_int pos.pl)^" col "^
-  (string_of_int pos.pc)^".\n" ))
+  ("assertion failed at line "^(string_of_int pos.pl)^" col "^
+  (string_of_int pos.pc) ))
 
 (* let construct_asst ps = match ps with
   | None -> { isast = false; ps = mk_default_loc }
@@ -141,6 +141,7 @@ let type_to_string = function
   | Bool -> "Bool"
   | Int -> "Int"
   | Unit -> "Unit"
+
 
 (** Terms *)
 type term =
@@ -557,3 +558,30 @@ let simplify =
   | Event (e, l) -> Event (simp e, l)
   | Assert (e, ps, l) -> Assert (simp e, ps, l)
   in simp
+
+(******************)
+(* CPS Conversion *)
+(******************)
+
+type kvar = string
+type qvar = string
+type accvar = string list
+type kterm = 
+  | KLetVal of var * kval * kterm
+  | KLetCont of kvar * qvar * accvar * var * kterm * kterm
+  | KContApp of kvar * qvar * accvar * var
+  | KApp of var * kvar * qvar * accvar * var
+  | KIte of var * kterm * kterm 
+  | KFix of var * kvar * qvar * accvar * var * kterm * kterm
+  | KLetUnOp of var * unop * var * kterm
+  | KLetBinOp of var * binop * var * var * kterm 
+  | KEvApp of kvar * qvar * accvar * var
+  | KEvAssertApp of kvar * qvar * accvar * var
+  | KAssert of var * kterm
+  | KExit of var
+  | KExp of term
+  | KMainDef of (var list) * kterm 
+and kval = 
+  | KConst of value
+  | KFn of kvar * qvar * accvar * var * kterm
+

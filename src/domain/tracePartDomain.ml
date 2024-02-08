@@ -50,7 +50,8 @@ let rec prune_trace trace limit = if List.length trace > limit
   else trace
 
 let get_token_loc loc_token = match loc_token with
-  | Loc_Token loc | If_Case (loc,_) | Pat_Case (loc,_) -> loc
+  | Loc_Token loc -> loc 
+  | If_Case (loc1,loc2) | Pat_Case (loc1,loc2) -> loc1^"-"^loc2
   | None_Token -> raise(Invalid_argument "get_token_loc: None token")
 
 let get_trace_tree_token tree : loc_token_t = match tree with

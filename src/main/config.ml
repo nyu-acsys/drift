@@ -27,7 +27,9 @@ let effect_on = ref false
 let ev_trans = ref false
 let prop_file = ref "" 
 
-let usage = "usage: " ^ Sys.argv.(0) ^ " [-file <file name>] [-domain <domain name>] [-sen <true/false>] [-thold <true/false>] [-delay-wid <num>] [-nar <true/false>] [-prop <file name>] [-ev-trans <true/false>] [-out <num>] [-debug] [-bt]"
+let convert_to_cps = ref false
+
+let usage = "usage: " ^ Sys.argv.(0) ^ " [-file <file name>] [-domain <domain name>] [-sen <true/false>] [-thold <true/false>] [-delay-wid <num>] [-nar <true/false>] [-prop <file name>] [-ev-trans <true/false>] [-cps-convert <true/false>] [-out <num>] [-debug] [-bt]"
 
 let cmd_options_spec =
   [("-file", Arg.String (fun s -> parse_file := true; file := s), ": Input file specification");
@@ -47,6 +49,8 @@ let cmd_options_spec =
    ("-ev-trans", Arg.String (fun s -> if s = "true" then ev_trans := true else ev_trans := false), "Translate Ev expressions"); 
    ("-trace-len", Arg.Int (fun s -> trace_len := s), ": Set maximum allowed trace length. 0 -> not context sensitive");
    ("-if-part", Arg.String (fun s -> if s = "true" then if_part:=true else if_part:=false), ": Partition traces on if tokens");
+   ("-cps-convert", Arg.String (fun s -> if s = "true" then (convert_to_cps:=true; ev_trans := false) 
+                                      else convert_to_cps:=false), ": Convert prog to CPS");
   ]
 
 (* Parse auxiliary 'command line options' that are set during parsing of the input file *)

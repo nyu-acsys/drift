@@ -59,3 +59,4 @@ tests/effects/*.yml
 nohup.out
 \#*\#
 drift.native1
+scripts/compare_results_explicit_match.py
