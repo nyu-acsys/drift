@@ -14,6 +14,7 @@ import benchexec.tools.template
 import benchexec.result as result
 
 import os
+import re
 
 
 # drift.exe -file trafficlight.ml -domain Polka_ls -sen true -out 2 
@@ -67,9 +68,13 @@ class Tool(benchexec.tools.template.BaseTool2):
     #returncode, returnsignal, output, isTimeout):
     # see: https://github.com/sosy-lab/benchexec/blob/fde8a997ea8b522a73fedd3c2256140e635243ef/benchexec/result.py#L58
     def determine_result(self, run): 
-        if "The input program is safe" in run.output:
-            status = result.RESULT_TRUE_PROP
-        elif "NoneThe input program is safe" in run.output:
+
+        p_notsfe = re.compile('The program may not be safe')
+        for line in reversed(run.output):
+            if p_notsfe.match(line):
+                return result.RESULT_UNKNOWN
+            
+        if "The input program is safe." in run.output:
             status = result.RESULT_TRUE_PROP
         elif "The program may not be safe" in run.output:
             status = result.RESULT_UNKNOWN
