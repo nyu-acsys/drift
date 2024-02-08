@@ -113,6 +113,10 @@ and prop_v (v1: value_tt) (v2: value_tt): (value_tt * value_tt) = match v1, v2 w
         Relation r1, Relation (join_R r1 r2)
     | Table t1, Table t2 ->
        let prop_table_entry cs (ve1i, ve1o) (ve2i, ve2o) =
+        (if !debug then
+          let pr = Format.fprintf Format.std_formatter in
+          pr "@.@.LINE 116, @,ve1i: @[%a@]@. \n @,ve1o: @[%a@]@. \n @,ve2i: @[%a@]@. \n @,ve2o: @[%a@]@." 
+            pr_value_and_eff ve1i pr_value_and_eff ve1o pr_value_and_eff ve2i pr_value_and_eff ve2o);
          let destruct_VE = function 
            | TEBot -> Bot, EffBot
            | TypeAndEff (v, e) -> v, e
@@ -151,8 +155,17 @@ and prop_v (v1: value_tt) (v2: value_tt): (value_tt * value_tt) = match v1, v2 w
                | TETop -> Top 
              in
              if opt_o then ve1ot, ve2o else
-               prop (arrow_VE z ve1ot v2ip) (arrow_VE z ve2o v2ip)
+              (
+              (if !debug then
+                let pr = Format.fprintf Format.std_formatter in
+                pr "@.@.LINE 159, @,ve2o: @[%a@]@. @,v2ip: @[%a@]@." 
+                  pr_value_and_eff (arrow_VE z ve1ot v2ip) pr_value_and_eff ve2ip);
+               prop (arrow_VE z ve1ot v2ip) (arrow_VE z ve2o v2ip))
            in
+           (if !debug then
+            let pr = Format.fprintf Format.std_formatter in
+            pr "@.@.LINE 165, @,ve2o': @[%a@]@." 
+              pr_value_and_eff ve2o');
            let v1i', e1i' = destruct_VE ve1i' in
            let v2i', e2i' = destruct_VE ve2i' in
            let ve1o' =
@@ -196,6 +209,10 @@ and prop_v (v1: value_tt) (v2: value_tt): (value_tt * value_tt) = match v1, v2 w
            let ve1o', ve2o' = 
               if opt_o then ve1o', ve2o' else (join_VE ve1o ve1o', join_VE ve2o ve2o')
            in
+           (if !debug then
+             let pr = Format.fprintf Format.std_formatter in
+             pr "@.@.LINE 207, @,ve2o': @[%a@]@." 
+               pr_value_and_eff ve2o');
            ve1i', ve2i', ve1o', ve2o'
          in
          (ve1i', ve1o'), (ve2i', ve2o') 
@@ -334,6 +351,10 @@ let prop_scope (env1: env_t) (env2: env_t) (cs: trace_t) (m: exec_map_t) (ve1: v
     (* let v1'',_  = prop v1 (proj_V v2 env1)in
     let _, v2'' = prop (proj_V v1 env2) v2 in *)
     let ve1', ve2' = prop ve1 ve2 in
+    (if !debug then
+      let pr = Format.fprintf Format.std_formatter in
+      pr "@.@.LINE 336, cs:%s, @,ve1': @[%a@]@. \n @,ve2': @[%a@]@." 
+        (get_trace_data cs) pr_value_and_eff ve1' pr_value_and_eff ve2');
     let ve1'' = proj_VE ve1' env1 in
     let ve2'' = proj_VE ve2' env2 in
     ve1'', ve2''
@@ -537,7 +558,11 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
         (fun te -> 
           match (extract_eff te) with
           | EffBot | EffTop -> 
-              raise (Invalid_argument "An effect should be observable at this stage of the analysis")
+            (if !debug then
+              let pr = Format.fprintf Format.std_formatter in
+              pr "@.LINE 560, trace: %s An effect should be observable at this stage of the analysis"
+                (get_trace_data trace));
+              StateMap.empty
           | Effect e -> e)
         else
           (fun te -> StateMap.empty)
@@ -954,9 +979,10 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             begin
               let t_true = meet_V (extrac_bool_V (extract_v te0) true) ae in (* Meet with ae*)
               let t_false = meet_V (extrac_bool_V (extract_v te0) false) ae in
-              let ec' = extract_ec te0 in
-              let m1, tails1 = step e1 env trace ec' t_true assertion is_rec m0 in
-              let m2, tails2 = step e2 env trace ec' t_false assertion is_rec m1 in
+              let ec_true = temap (id, fun eff -> stren_Eff eff t_true) te0 |> extract_ec in
+              let ec_false = temap (id, fun eff -> stren_Eff eff t_false) te0 |> extract_ec in
+              let m1, tails1 = step e1 env trace ec_true t_true assertion is_rec m0 in
+              let m2, tails2 = step e2 env trace ec_false t_false assertion is_rec m1 in
               let (map_true, te_true), tails1 = List.fold_left_map 
                 (fun (m1', _) tail1 ->
                   let trace1 = extend_trace tail1 trace in
@@ -1017,6 +1043,10 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
            (get_trace_data trace) pr_eff_map ec);
       let n = loc term |> construct_enode env |> construct_snode trace in
       let te0 = find n m in
+      (if !debug then
+        let pr = Format.fprintf Format.std_formatter in
+        pr "@.LINE 1020, Func, @,te0: @[%a@]@."
+          pr_value_and_eff te0);
       let te =
         match te0 with
         | TEBot ->
@@ -1049,6 +1079,10 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             in
             let n1 = loc e1 |> construct_enode env1 |> construct_snode trace in
             let tex = find nx m in
+            (if !debug then
+              let pr = Format.fprintf Format.std_formatter in
+              pr "@.@.LINE 1120, trace:%s, @,tex: @[%a@]@." 
+                (get_trace_data trace) pr_value_and_eff tex);
             let ae' = if (x <> "_" && is_Relation (extract_v tex)) || is_List (extract_v tex) then 
               (* if only_shape_V tx then ae else  *)
               (arrow_V x ae (extract_v tex)) else ae in
@@ -1100,6 +1134,22 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                       end
                 ); *)
                 let te2, tef' = prop_scope env' envf trace m te tef in
+                (if !debug then
+                  let pr = Format.fprintf Format.std_formatter in
+                  pr "@.@.LINE 1130, trace:%s, @,te: @[%a@]@." 
+                    (get_trace_data trace) pr_value_and_eff te);
+                (if !debug then
+                  let pr = Format.fprintf Format.std_formatter in
+                  pr "@.@.LINE 1130, trace:%s, @,tef: @[%a@]@." 
+                    (get_trace_data trace) pr_value_and_eff tef);
+                (if !debug then
+                  let pr = Format.fprintf Format.std_formatter in
+                  pr "@.@.LINE 1130, trace:%s, @,te2: @[%a@]@." 
+                    (get_trace_data trace) pr_value_and_eff te2);
+                (if !debug then
+                  let pr = Format.fprintf Format.std_formatter in
+                  pr "@.@.LINE 1130, trace:%s, @,tef': @[%a@]@." 
+                    (get_trace_data trace) pr_value_and_eff tef');
                 (* let t2, tf' = prop t tf in *)
                 (* (if lf = "4" then
                   begin
