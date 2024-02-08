@@ -654,7 +654,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                 let t =
                   append_trace (fresh_z () |> create_loc_token) trace1 |> init_T
                 in
-                let te1 = Table t |> init_VE_v in
+                let te1 = Table t |> init_VE_wec in
                 te1, m0 |> update false n1 te1
             | _ -> te0, m0
           in
