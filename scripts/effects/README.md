@@ -7,6 +7,8 @@ sudo ln -s $DRIFT_REPO/drift.exe /usr/local/bin
 ```
 # 1. Building the python package
 
+Note: This package includes toolinfo for both DRIFT and COARMOCHI
+
 ```
 # AS ROOT!
 export DRIFT_REPO=/tools/home/eric/drift
@@ -30,6 +32,12 @@ export DRIFT_REPO=/tools/home/eric/drift
 cd $DRIFT_REPO/scripts/effects
 perl makeYamls.pl
 sudo benchexec benchmark-drift.xml --read-only-dir / --limitCores 2 --timelimit 15s --numOfThreads 8
+```
+
+### Running MoChi
+
+```
+sudo benchexec benchmark-coarmochi.xml --read-only-dir / --limitCores 2 --timelimit 15s --numOfThreads 8
 ```
 
 It will then tell you what `table-generator` command to run.
