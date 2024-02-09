@@ -1086,6 +1086,8 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             let ae' = if (x <> "_" && is_Relation (extract_v tex)) || is_List (extract_v tex) then 
               (* if only_shape_V tx then ae else  *)
               (arrow_V x ae (extract_v tex)) else ae in
+            (* MN: in the line below, z seems to be the name of the dependency variable. 
+                   Is it correct to be the same as the current trace. see line 1068 *)
             let te1 = if x = "_" then find n1 m else replace_VE (find n1 m) x z in               
             let prop_t = Table (construct_table trace (tex, te1)) in
             let prop_te = TypeAndEff (prop_t, (extract_eff te)) in
@@ -1133,7 +1135,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                           Format.printf "\n";
                       end
                 ); *)
-                let te2, tef' = prop_scope env' envf trace m te tef in
+                let te2, tef' = prop_scope env' envf trace m te1 tef in
                 (if !debug then
                   let pr = Format.fprintf Format.std_formatter in
                   pr "@.@.LINE 1130, trace:%s, @,te: @[%a@]@." 
