@@ -31,18 +31,45 @@ SPDX-License-Identifier: Apache-2.0
   </rundefinition>
 -->
 
-  <rundefinition name="drift-new">
+  <rundefinition name="drift-new-len0">
+    <option name="-ev-trans">false</option>
+    <option name="-trace-len">0</option>
+    <option name="-if-part">false</option>
     <option name="-out">2</option>
     <option name="-domain">Polka_ls</option>
-    <option name="-sen">true</option> <!-- will be replaced by -trace-len {0,1,2} -->
   </rundefinition>
 
-  <rundefinition name="drift-trans">
+  <rundefinition name="drift-new-len1">
+    <option name="-ev-trans">false</option>
+    <option name="-trace-len">1</option>
+    <option name="-if-part">false</option>
     <option name="-out">2</option>
     <option name="-domain">Polka_ls</option>
-    <option name="-ev-trans">true</option>
-    <option name="-sen">true</option> <!-- will be replaced by -trace-len {0,1,2} -->
   </rundefinition>
+
+
+  <rundefinition name="drift-trans-len0">
+    <option name="-ev-trans">true</option>
+    <option name="-trace-len">0</option>
+    <option name="-if-part">false</option>
+    <option name="-out">2</option>
+    <option name="-domain">Polka_ls</option>
+  </rundefinition>
+
+  <rundefinition name="drift-trans-len1">
+    <option name="-ev-trans">true</option>
+    <option name="-trace-len">1</option>
+    <option name="-if-part">false</option>
+    <option name="-out">2</option>
+    <option name="-domain">Polka_ls</option>
+  </rundefinition>
+<!-- 
+  <rundefinition name="drift-trans">
+    <option name="-ev-trans">true</option>
+    <option name="-if-part">false</option>
+    <option name="-out">2</option>
+    <option name="-domain">Polka_ls</option>
+  </rundefinition> -->
 
   <tasks name="effects">
     <include>../../tests/effects/*.yml</include>
