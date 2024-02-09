@@ -1067,7 +1067,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           begin
             let z = get_trace_data trace in
             let f_nf_opt =
-              Opt.map (fun (f, lf) -> f, (construct_vnode env lf trace, true)) f_opt
+              Opt.map (fun (f, lf) -> f, (construct_vnode env lf trace', true)) f_opt
             in
             let nx = construct_vnode env lx trace in
             let env' = env |> VarMap.add x (nx, false) in
