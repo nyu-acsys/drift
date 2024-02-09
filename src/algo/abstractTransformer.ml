@@ -1171,7 +1171,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                      |> (Opt.map (fun (nf, te2, tef') -> 
                              fun m' -> m' 
                                     |> update true nf tef' 
-                                    |> update false n (join_VE te1 te2)) nf_t2_tf'_opt 
+                                    |> update false n te2) nf_t2_tf'_opt 
                          |> Opt.get_or_else (update false n te1)) 
             in
             let trace = if is_rec' && x = "_" then trace' else trace in
