@@ -27,17 +27,20 @@ PATH=$PATH:/tools/home/eric/drift/ python3 -m benchexec.test_tool_info drifttool
 
 # 3. Running benchmarking
 
+## 3.a Running Drift (including via translation and via our new analysis)
 ```
 export DRIFT_REPO=/tools/home/eric/drift
 cd $DRIFT_REPO/scripts/effects
 perl makeYamls.pl
-sudo benchexec benchmark-drift.xml --read-only-dir / --limitCores 2 --timelimit 15s --numOfThreads 8
+sudo benchexec benchmark-drift.xml --read-only-dir / --limitCores 2 --timelimit 900s --numOfThreads 8
 ```
 
-### Running MoChi
+## 3.b Running MoChi
 
 ```
-sudo benchexec benchmark-coarmochi.xml --read-only-dir / --limitCores 2 --timelimit 15s --numOfThreads 8
+export DRIFT_REPO=/tools/home/eric/drift
+cd $DRIFT_REPO/scripts/effects
+sudo benchexec benchmark-coarmochi.xml --read-only-dir / --limitCores 2 --timelimit 900s --numOfThreads 8
 ```
 
 It will then tell you what `table-generator` command to run.
