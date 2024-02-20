@@ -6,8 +6,8 @@ def convert_to_dict(lines):
 
 	return d
 
-new = open("../result/1-sensitive/unv/res1-oct-standard.csv").readlines()[1:]
-old = open("1-baseline.csv").readlines()[1:]
+new = open("../result/non-sensitive/unv/res-polka_st-standard.csv").readlines()[1:]
+old = open("0-baseline.csv").readlines()[1:]
 
 minimum = 1e9
 maximum = 0

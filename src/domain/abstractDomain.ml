@@ -450,7 +450,6 @@ module BaseDomain(Manager : DomainManager) : Domain =
         else
           Abstract1.widening man v1' v2'
       in
-      if !debug then (Format.printf "\n Widening res \n"; print_abs Format.std_formatter res);
       Abstract1.minimize_environment man res
       (* res *)
 

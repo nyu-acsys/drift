@@ -4,7 +4,7 @@
 # Domain for benchmarks: Oct, Polka_st, Polka_ls
 opam switch 4.08.1
 OUTDIR="../outputs/DRIFT"
-PROG="../drift.native"
+PROG="../drift.exe"
 PROGNAME="DRIFT"
 SET=$2
 DOMAIN=$4
@@ -13,7 +13,7 @@ if [ $# -gt 1 ]; then
     DOMAIN=$4
 else
     echo "ERROR!!! The command should be:"
-    echo "./runit.sh -trace-len call/unv -domain <domain_name> [-trace-len <trace_length>] [-dwid <delay_steps> | -nar] [-if-part]"
+    echo "./runit.sh -set call/unv -domain <domain_name> [-trace-len <trace_length>] [-dwid <delay_steps> | -nar] [-if-part]"
     exit 0
 fi
 shift

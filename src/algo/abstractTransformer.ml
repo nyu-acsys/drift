@@ -113,10 +113,6 @@ and prop_v (v1: value_tt) (v2: value_tt): (value_tt * value_tt) = match v1, v2 w
         Relation r1, Relation (join_R r1 r2)
     | Table t1, Table t2 ->
        let prop_table_entry cs (ve1i, ve1o) (ve2i, ve2o) =
-        (if !debug then
-          let pr = Format.fprintf Format.std_formatter in
-          pr "@.@.LINE 116, @,ve1i: @[%a@]@. \n @,ve1o: @[%a@]@. \n @,ve2i: @[%a@]@. \n @,ve2o: @[%a@]@." 
-            pr_value_and_eff ve1i pr_value_and_eff ve1o pr_value_and_eff ve2i pr_value_and_eff ve2o);
          let destruct_VE = function 
            | TEBot -> Bot, EffBot
            | TypeAndEff (v, e) -> v, e
@@ -155,17 +151,8 @@ and prop_v (v1: value_tt) (v2: value_tt): (value_tt * value_tt) = match v1, v2 w
                | TETop -> Top 
              in
              if opt_o then ve1ot, ve2o else
-              (
-              (if !debug then
-                let pr = Format.fprintf Format.std_formatter in
-                pr "@.@.LINE 159, @,ve2o: @[%a@]@. @,v2ip: @[%a@]@." 
-                  pr_value_and_eff (arrow_VE z ve1ot v2ip) pr_value_and_eff ve2ip);
-               prop (arrow_VE z ve1ot v2ip) (arrow_VE z ve2o v2ip))
+              prop (arrow_VE z ve1ot v2ip) (arrow_VE z ve2o v2ip)
            in
-           (if !debug then
-            let pr = Format.fprintf Format.std_formatter in
-            pr "@.@.LINE 165, @,ve2o': @[%a@]@." 
-              pr_value_and_eff ve2o');
            let v1i', e1i' = destruct_VE ve1i' in
            let v2i', e2i' = destruct_VE ve2i' in
            let ve1o' =
@@ -209,10 +196,6 @@ and prop_v (v1: value_tt) (v2: value_tt): (value_tt * value_tt) = match v1, v2 w
            let ve1o', ve2o' = 
               if opt_o then ve1o', ve2o' else (join_VE ve1o ve1o', join_VE ve2o ve2o')
            in
-           (if !debug then
-             let pr = Format.fprintf Format.std_formatter in
-             pr "@.@.LINE 207, @,ve2o': @[%a@]@." 
-               pr_value_and_eff ve2o');
            ve1i', ve2i', ve1o', ve2o'
          in
          (ve1i', ve1o'), (ve2i', ve2o') 
@@ -351,10 +334,6 @@ let prop_scope (env1: env_t) (env2: env_t) (cs: trace_t) (m: exec_map_t) (ve1: v
     (* let v1'',_  = prop v1 (proj_V v2 env1)in
     let _, v2'' = prop (proj_V v1 env2) v2 in *)
     let ve1', ve2' = prop ve1 ve2 in
-    (if !debug then
-      let pr = Format.fprintf Format.std_formatter in
-      pr "@.@.LINE 336, cs:%s, @,ve1': @[%a@]@. \n @,ve2': @[%a@]@." 
-        (get_trace_data cs) pr_value_and_eff ve1' pr_value_and_eff ve2');
     let ve1'' = proj_VE ve1' env1 in
     let ve2'' = proj_VE ve2' env2 in
     ve1'', ve2''
@@ -576,7 +555,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
         join_VE tee te_acc
       ) TEBot tails
   in
-  if only_shape_V ae then m, [[]] else
+  if only_shape_V ae || (!Config.effect_on && StateMap.is_empty ec) then m, [[]] else
   match term with
   | Const (c, l) ->
       (* (if !debug then
@@ -606,7 +585,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           pr_exp true Format.std_formatter term;
           Format.printf "\n";
       end);
-      (if !debug && (l = "34" || l = "35") then
+      (if !debug && (l = "27" || l = "39") then
          let pr = Format.fprintf Format.std_formatter in
          pr "@.LINE 586, Var[%s], trace: %s, @,ec: @[%a@]@."
            x (get_trace_data trace) pr_eff_map ec); 
@@ -624,7 +603,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                           (fun _ -> Effect ec))
       in
       let te = find n m in  (* M[env*l] *)
-      (if !debug && (l = "34" || l = "35") then
+      (if !debug && (l = "27" || l = "39") then
          let pr = Format.fprintf Format.std_formatter in
          pr "@.LINE 602, Var[%s](prop-pre), trace: %s, @,te: @[%a@]@."
            x (get_trace_data trace) pr_value_and_eff te);
@@ -651,10 +630,10 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
            x (get_trace_data trace)
            pr_value_and_eff tex'
            pr_value_and_eff te'); *)
-      (if !debug && (l = "34" || l = "35") then
+      (if !debug && (l = "27" || l = "39") then
          let pr = Format.fprintf Format.std_formatter in
-         pr "@.LINE 630, Var[%s](prop-post), trace: %s, @,te': @[%a@]@."
-           x (get_trace_data trace) pr_value_and_eff te');
+         pr "@.LINE 630, Var[%s](prop-post), trace: %s, @,te': @[%a@]@, @,tex': @[%a@]@."
+           x (get_trace_data trace) pr_value_and_eff te' pr_value_and_eff tex');
       m |> update false nx tex' |> update false n te', [[]] (* t' ^ ae *)
   | App (e1, e2, l) ->
       (if !debug then
@@ -1079,10 +1058,6 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             in
             let n1 = loc e1 |> construct_enode env1 |> construct_snode trace in
             let tex = find nx m in
-            (if !debug then
-              let pr = Format.fprintf Format.std_formatter in
-              pr "@.@.LINE 1120, trace:%s, @,tex: @[%a@]@." 
-                (get_trace_data trace) pr_value_and_eff tex);
             let ae' = if (x <> "_" && is_Relation (extract_v tex)) || is_List (extract_v tex) then 
               (* if only_shape_V tx then ae else  *)
               (arrow_V x ae (extract_v tex)) else ae in
@@ -1138,19 +1113,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                 let te2, tef' = prop_scope env' envf trace m te1 tef in
                 (if !debug then
                   let pr = Format.fprintf Format.std_formatter in
-                  pr "@.@.LINE 1130, trace:%s, @,te: @[%a@]@." 
-                    (get_trace_data trace) pr_value_and_eff te);
-                (if !debug then
-                  let pr = Format.fprintf Format.std_formatter in
-                  pr "@.@.LINE 1130, trace:%s, @,tef: @[%a@]@." 
-                    (get_trace_data trace) pr_value_and_eff tef);
-                (if !debug then
-                  let pr = Format.fprintf Format.std_formatter in
-                  pr "@.@.LINE 1130, trace:%s, @,te2: @[%a@]@." 
-                    (get_trace_data trace) pr_value_and_eff te2);
-                (if !debug then
-                  let pr = Format.fprintf Format.std_formatter in
-                  pr "@.@.LINE 1130, trace:%s, @,tef': @[%a@]@." 
+                  pr "@.LINE 1114, @,trace: @[%s@]@  @,tef': @[%a@]@."
                     (get_trace_data trace) pr_value_and_eff tef');
                 (* let t2, tf' = prop t tf in *)
                 (* (if lf = "4" then
@@ -1181,6 +1144,19 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                pr "@.@.LINE 11083, Lambda(before eval body), trace:%s, @,tex': @[%a@]@." 
                  (get_trace_data trace) pr_value_and_eff tex');
             let m1', tails = step e1 env1 trace ec' ae' assertion is_rec' m1 in
+            let body_val = List.fold_left 
+              (fun acc_val tail ->
+                let trace = extend_trace tail trace in
+                let node = loc e1 |> construct_enode env1 |> construct_snode trace in
+                let node_val = find node m1' in
+                (if !debug && (loc term = "53") && (get_trace_data trace = "z43") then
+                  let pr = Format.fprintf Format.std_formatter in
+                  pr "@.@.LINE 1150, Lambda(before eval body), trace:%s, @,tex': @[%a@]@." 
+                    (get_trace_data trace) pr_value_and_eff tex');
+                join_VE acc_val node_val
+              ) TEBot tails
+            in
+            let m1' = update false n1 body_val m1' in
             (* let t1 = if x = "_" then find n1 m1' else replace_V (find n1 m1') x var in
             let prop_t = Table (construct_table cs (tx, t1)) in
             let px_t, t1 = prop_scope env1 env' x m1' prop_t t in
