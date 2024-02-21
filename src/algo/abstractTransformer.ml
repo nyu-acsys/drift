@@ -1064,7 +1064,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                 pr_value ae pr_value_and_eff tex);
             let ae' = if (x <> "_" && is_Relation (extract_v tex)) || is_List (extract_v tex) then 
               (* if only_shape_V tx then ae else  *)
-              (arrow_V x ae (extract_v tex)) else ae in
+              (arrow_V x ae (proj_V (extract_v tex) [])) else ae in
             (if !debug && ((get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
               let pr = Format.fprintf Format.std_formatter in
               pr "@.LINE 1068, ae': @[%a@]@."
