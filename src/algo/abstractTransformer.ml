@@ -84,6 +84,10 @@ let sat_equal_V e = measure_call "sat_equal_V" (sat_equal_V e)
 
 
 let rec prop (ve1: value_te) (ve2: value_te): (value_te * value_te) = 
+  (if !debug then
+    let pr = Format.fprintf Format.std_formatter in
+    pr "@.LINE 87, ve1: %a, ve2: %a"
+      pr_value_and_eff ve1 pr_value_and_eff ve2);
     match ve1, ve2 with
     | TEBot, _ -> TEBot, ve2 
     | TypeAndEff _, TETop -> TETop, TETop
@@ -150,6 +154,10 @@ and prop_v (v1: value_tt) (v2: value_tt): (value_tt * value_tt) = match v1, v2 w
                | TypeAndEff (v, _) -> v
                | TETop -> Top 
              in
+             (if !debug then
+               let pr = Format.fprintf Format.std_formatter in
+               pr "@.LINE 157, ve1ot: %a, v2ip: %a"
+                 pr_value_and_eff ve1ot pr_value v2ip);
              if opt_o then ve1ot, ve2o else
               prop (arrow_VE z ve1ot v2ip) (arrow_VE z ve2o v2ip)
            in
@@ -539,8 +547,8 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           | EffBot | EffTop -> 
             (if !debug then
               let pr = Format.fprintf Format.std_formatter in
-              pr "@.LINE 560, trace: %s An effect should be observable at this stage of the analysis"
-                (get_trace_data trace));
+              pr "@.LINE 560, trace: %s, node: %a An effect should be observable at this stage of the analysis"
+                (get_trace_data trace) pr_value_and_eff te);
               StateMap.empty
           | Effect e -> e)
         else
@@ -555,7 +563,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
         join_VE tee te_acc
       ) TEBot tails
   in
-  if only_shape_V ae || (!Config.effect_on && StateMap.is_empty ec) then m, [[]] else
+  if only_shape_V ae then m, [[]] else
   match term with
   | Const (c, l) ->
       (* (if !debug then
@@ -958,8 +966,8 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             begin
               let t_true = meet_V (extrac_bool_V (extract_v te0) true) ae in (* Meet with ae*)
               let t_false = meet_V (extrac_bool_V (extract_v te0) false) ae in
-              let ec_true = temap (id, fun eff -> stren_Eff eff t_true) te0 |> extract_ec in
-              let ec_false = temap (id, fun eff -> stren_Eff eff t_false) te0 |> extract_ec in
+              let ec_true = if only_shape_V t_true then StateMap.empty else temap (id, fun eff -> stren_Eff eff t_true) te0 |> extract_ec in
+              let ec_false = if only_shape_V t_false then StateMap.empty else  temap (id, fun eff -> stren_Eff eff t_false) te0 |> extract_ec in
               let m1, tails1 = step e1 env trace ec_true t_true assertion is_rec m0 in
               let m2, tails2 = step e2 env trace ec_false t_false assertion is_rec m1 in
               let (map_true, te_true), tails1 = List.fold_left_map 
@@ -1058,20 +1066,22 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             in
             let n1 = loc e1 |> construct_enode env1 |> construct_snode trace in
             let tex = find nx m in
-            (if !debug && ((get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
+            (if !debug && ((get_label_snode nx = "VN: 6;z13") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
               let pr = Format.fprintf Format.std_formatter in
               pr "@.LINE 1061, ae: @[%a@]@, tex: @[%a@]@."
                 pr_value ae pr_value_and_eff tex);
             let ae' = if (x <> "_" && is_Relation (extract_v tex)) || is_List (extract_v tex) then 
               (* if only_shape_V tx then ae else  *)
-              (arrow_V x ae (proj_V (extract_v tex) [])) else ae in
-            (if !debug && ((get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
+              (arrow_V x ae (extract_v tex)) else ae in
+            (if !debug && ((get_label_snode nx = "VN: 6;z13") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
               let pr = Format.fprintf Format.std_formatter in
               pr "@.LINE 1068, ae': @[%a@]@."
                 pr_value ae');
             (* MN: in the line below, z seems to be the name of the dependency variable. 
                    Is it correct to be the same as the current trace. see line 1068 *)
-            let te1 = if x = "_" then find n1 m else replace_VE (find n1 m) x z in               
+            let te1 = if x = "_" then find n1 m else replace_VE (find n1 m) x z in
+
+            (* let tex = TypeAndEff (proj_V (extract_v tex) [] |> meet_V ae', extract_eff tex) in *)
             let prop_t = Table (construct_table trace (tex, te1)) in
             let prop_te = TypeAndEff (prop_t, (extract_eff te)) in
             (* (if l = "20" then
@@ -1089,6 +1099,10 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                  pr_value_and_eff prop_te
                  pr_value_and_eff te); *)
             let px_te, te1 = prop_scope env1 env' trace m prop_te te in
+            (if !debug && ((get_label_snode nx = "VN: 6;z13") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
+              let pr = Format.fprintf Format.std_formatter in
+              pr "@.LINE 1068, px_te: @[%a@]@, te1: @[%a@]@."
+                pr_value_and_eff px_te pr_value_and_eff te1);
             (* (if !debug && l = "49" then
                let pr = Format.fprintf Format.std_formatter in
                pr "@.LINE 1004, Lambda, trace: %s, @,px_te: @[%a@]@,te1: @[%a@]@."
@@ -1119,10 +1133,10 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                       end
                 ); *)
                 let te2, tef' = prop_scope env' envf trace m te1 tef in
-                (if !debug then
+                (* (if !debug then
                   let pr = Format.fprintf Format.std_formatter in
                   pr "@.LINE 1114, @,trace: @[%s@]@  @,tef': @[%a@]@."
-                    (get_trace_data trace) pr_value_and_eff tef');
+                    (get_trace_data trace) pr_value_and_eff tef'); *)
                 (* let t2, tf' = prop t tf in *)
                 (* (if lf = "4" then
                   begin
@@ -1147,10 +1161,10 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             in
             let trace = if is_rec' && x = "_" then trace' else trace in
             let ec' = extract_ec tex' in
-            (if !debug && ((get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then
+            (if !debug && ((get_label_snode nx = "VN: 6;z13") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then
                let pr = Format.fprintf Format.std_formatter in
-               pr "@.@.LINE 11083, Lambda(before eval body), trace:%s, @,tex': @[%a@]@, @,ae': @[%a@]@." 
-                 (get_trace_data trace) pr_value_and_eff tex' pr_value ae');
+               pr "@.@.LINE 11083, Lambda(before eval body), trace:%s, @,tex': @[%a@]@." 
+                 (get_trace_data trace) pr_value_and_eff tex');
             let m1', tails = step e1 env1 trace ec' ae' assertion is_rec' m1 in
             let body_val = List.fold_left 
               (fun acc_val tail ->
@@ -1462,6 +1476,10 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                       | _ -> te1
                       end
             in 
+            (if !debug then
+              let pr = Format.fprintf Format.std_formatter in
+              pr "@.LINE 1471, @,te': @[%a@]@."
+                pr_value_and_eff te');
             m |> update false n (stren_VE te' ae)
         ) m1 tails1, tails1
   | Assert (e1, pos, l) ->

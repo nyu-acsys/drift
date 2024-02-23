@@ -593,12 +593,12 @@ module NSensitive: SemanticsType =
             Some (t1', t2')
          | _, _ -> None
         ) t1 t2 in
-        let t1' = TableMap.map (fun (vio1, _) -> vio1) t in
-        let t2' = 
-            let temp_mt2 = TableMap.map (fun (_, vio2) -> vio2) t in
-            TableMap.filter (fun cs (v2i, v2o) -> v2i <> TEBot || v2o <> TEBot) temp_mt2
-            (*Q: How to detect node scoping?*)
-       in t1', t2'
+      let t1' = TableMap.map (fun (vio1, _) -> vio1) t in
+      let t2' = 
+          let temp_mt2 = TableMap.map (fun (_, vio2) -> vio2) t in
+          TableMap.filter (fun cs (v2i, v2o) -> v2i <> TEBot || v2o <> TEBot) temp_mt2
+          (*Q: How to detect node scoping?*)
+      in t1', t2'
     let step_func f v m = let t = get_table_T v in
       TableMap.fold f t m
     let get_full_table_T t = TableMap.min_binding t
