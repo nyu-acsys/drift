@@ -1544,10 +1544,12 @@ let rec check_assert term m fassts =
                 let te = find n m in
                 let envE = envOfE env trace in
                 match (extract_eff te) with
-                | EffBot -> AbstractEv.check_assert_bot (EvAssert l) |> report_fasst fs
+                (* | EffBot -> AbstractEv.check_assert_bot (EvAssert l) |> report_fasst fs *)
                 | Effect eff -> AbstractEv.check_assert (EvAssert l) envE eff |> report_fasst fs
-                | EffTop -> AbstractEv.check_assert_top (EvAssert l) |> report_fasst fs ) ns fassts)
-     |> Opt.get_or_else (add_failed_assertion (PropEvAsst l) fassts)
+                (* | EffTop -> AbstractEv.check_assert_top (EvAssert l) |> report_fasst fs *)
+                | EffBot | EffTop -> report_fasst fs true
+                ) ns fassts)
+     |> Opt.get_or_else fassts
   | Assert (e1, pos, l) ->
      let l = loc term in
      AsstsMap.find_opt l !regassts 
