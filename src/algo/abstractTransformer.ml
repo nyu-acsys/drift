@@ -156,8 +156,8 @@ and prop_v (v1: value_tt) (v2: value_tt): (value_tt * value_tt) = match v1, v2 w
              in
              (if !debug then
                let pr = Format.fprintf Format.std_formatter in
-               pr "@.LINE 157, ve1ot: %a, v2ip: %a"
-                 pr_value_and_eff ve1ot pr_value v2ip);
+               pr "@.LINE 157, ve1ot: %a, v2ip: %a, ve2o: %a"
+                 pr_value_and_eff ve1ot pr_value v2ip pr_value_and_eff ve2o);
              if opt_o then ve1ot, ve2o else
               prop (arrow_VE z ve1ot v2ip) (arrow_VE z ve2o v2ip)
            in
@@ -593,7 +593,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           pr_exp true Format.std_formatter term;
           Format.printf "\n";
       end);
-      (if !debug && (l = "15" || l = "39") then
+      (if !debug && (l = "15" || l = "31") then
          let pr = Format.fprintf Format.std_formatter in
          pr "@.LINE 586, Var[%s], trace: %s, @,ec: @[%a@]@, @,ae: @[%a@]@."
            x (get_trace_data trace) pr_eff_map ec pr_value ae); 
@@ -611,7 +611,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                           (fun _ -> Effect ec))
       in
       let te = find n m in  (* M[env*l] *)
-      (if !debug && (l = "15" || l = "39") then
+      (if !debug && (l = "15" || l = "31") then
          let pr = Format.fprintf Format.std_formatter in
          pr "@.LINE 602, Var[%s](prop-pre), trace: %s, @,te: @[%a@]@."
            x (get_trace_data trace) pr_value_and_eff te);
@@ -629,7 +629,10 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
            x (get_trace_data trace)
            pr_value_and_eff tex'
            pr_value_and_eff te'); *)
-
+      (if !debug && (l = "15" || l = "31") then
+        let pr = Format.fprintf Format.std_formatter in
+        pr "@.LINE 630, Var[%s](prop-post), trace: %s, @,te': @[%a@]@, @,tex': @[%a@]@."
+          x (get_trace_data trace) pr_value_and_eff te' pr_value_and_eff tex');
       let tex' = temap (id, (fun _ -> effx0)) tex' in
       let te' = stren_VE te' ae in
       (* (if !debug && (l = "34" || l = "35") then
@@ -638,7 +641,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
            x (get_trace_data trace)
            pr_value_and_eff tex'
            pr_value_and_eff te'); *)
-      (if !debug && (l = "15" || l = "39") then
+      (if !debug && (l = "15" || l = "31") then
          let pr = Format.fprintf Format.std_formatter in
          pr "@.LINE 630, Var[%s](prop-post), trace: %s, @,te': @[%a@]@, @,tex': @[%a@]@."
            x (get_trace_data trace) pr_value_and_eff te' pr_value_and_eff tex');
@@ -686,6 +689,11 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                  let pr = Format.fprintf Format.std_formatter in
                  pr "\nLINE 645, App, te1: @[%a@]@." pr_value_and_eff te1); *)
               let ec' = extract_ec te1 in            
+              (if !debug then
+                 let pr = Format.fprintf Format.std_formatter in
+                 pr "@.LINE 688, App, @,te1:@[%a@]@,@,ec':@[%a@]@."
+                 pr_value_and_eff te1 pr_eff_map ec'
+              );
               let m2, tails2 = step e2 env trace ec' ae assertion is_rec m1 in
               let map, tails = List.fold_left_map 
                 (fun m2' tail2 -> 
@@ -713,6 +721,13 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                       in
                       let te_temp = Table (construct_table trace (te2, te)) |> init_VE_v 
                       in
+                      (if !debug then
+                         let pr = Format.fprintf Format.std_formatter in
+                         pr "@.LINE 721, App, trace: %s,@,te1: @[%a@]@,te_temp: @[%a@]@."
+                           (get_trace_data trace)
+                           pr_value_and_eff te1
+                           pr_value_and_eff te_temp
+                      );
                       let te1', te0 = 
                         (* if optmization m2 n1 find && optmization m2 n2 find && optmization m2 n find then t1, t_temp else *)
                         prop te1 te_temp
@@ -1101,7 +1116,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             let px_te, te1 = prop_scope env1 env' trace m prop_te te in
             (if !debug && ((get_label_snode nx = "VN: 6;z13") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
               let pr = Format.fprintf Format.std_formatter in
-              pr "@.LINE 1068, px_te: @[%a@]@, te1: @[%a@]@."
+              pr "@.LINE 1104, px_te: @[%a@]@, te1: @[%a@]@."
                 pr_value_and_eff px_te pr_value_and_eff te1);
             (* (if !debug && l = "49" then
                let pr = Format.fprintf Format.std_formatter in
