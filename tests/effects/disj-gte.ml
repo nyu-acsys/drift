@@ -15,7 +15,7 @@ let rec f x pos neg =
        0)
   
 let main (v:int(*-:{v:Int | true}*)) (p:int(*-:{v:Int | true}*)) (n:int(*-:{v:Int | true}*)) =
-  if p > 0 && n < 0 && v=100 then
+  if p > 0 && n < 0 then
     f v p n
   else 0 
     
