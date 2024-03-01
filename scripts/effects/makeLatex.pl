@@ -64,13 +64,18 @@ sub parseResultsFile {
 parseResultsFile("results/benchmark-coarmochi.2024-02-25_10-16-09.results.default.mochibenchmarks.csv");
 parseResultsFile("results/results.2024-02-25_12-18-59.table.csv");
 
-my @TOOLS = qw/drift-new-len0.effects drift-new-len1.effects drift-trans-len1.effects drift-trans-len1.effects default.mochibenchmarks/;
-print "{\\bf Bench} ";
+my @TOOLS = qw/drift-new-len0.effects drift-new-len1.effects drift-trans-len0.effects drift-trans-len1.effects default.mochibenchmarks/;
+print "     ";
 foreach my $tool (@TOOLS) {
-    print " & \\multicolumn{3}{|c|}{$run2tool{$tool}}";
+    print " & \\multicolumn{3}{|c||}{$run2tool{$tool}}";
 }
 print "\\\\ \n";
-print "\\hline\\\\\n";
+print "{\\bf Bench} ";
+foreach my $tool (@TOOLS) {
+    print " & {\\bf Res} & {\\bf CPU} & {\\bf Mem} ";
+}
+print "\\\\ \n";
+print "\\hline\n";
 foreach my $b (keys %$d) {
     my $tt = $b; $tt =~ s/\_/\\_/g;
     $tt =~ s/negated/neg/;
@@ -84,6 +89,8 @@ foreach my $b (keys %$d) {
     }
     print "\\\\ \n";
 }
+
+print "\\hline\n";
 
 # while(<DATA>) {
 #     next if /^tool/;
