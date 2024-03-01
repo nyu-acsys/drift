@@ -45,3 +45,13 @@ sudo benchexec benchmark-coarmochi.xml --read-only-dir / --limitCores 2 --timeli
 
 It will then tell you what `table-generator` command to run.
 
+# 4. Generating LaTeX
+
+Run `table-generator` as instructed by the output of `benchexec`. You will then have two CSV files with names like:
+
+ * `results/benchmark-coarmochi.2024-02-25_10-16-09.results.default.mochibenchmarks.csv`
+ * `results/results.2024-02-25_12-18-59.table.csv`
+
+Edit `makeLatex.pl` and provide these as arguments to `parseResultsFile`
+
+Run `perl makeLatex.pl`
