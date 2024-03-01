@@ -288,6 +288,10 @@ module SemanticsDomain =
     let replace_Eff e var x = effmapi (fun q acc -> VarMap.mapi (fun v r -> replace_R r var x) acc) e
     let is_bot_acc acc = VarMap.fold (fun _ va res -> if res then is_bot_R va else res) acc true
     let minimize_eff = StateMap.filter (fun _ acc -> not @@ is_bot_acc acc)
+    let is_bot_Eff e = match e with
+      | EffBot -> true
+      | Effect map -> minimize_eff map |> StateMap.is_empty
+      | EffTop -> false
     let stren_Eff e ae = match e, ae with
       | EffBot, _ -> EffBot 
       | Effect _, Relation rae -> 
@@ -740,6 +744,7 @@ module SemanticsDomain =
       | Lst lst -> only_shape_Lst lst
       | Ary ary -> only_shape_Ary ary
       | Tuple u -> only_shape_Tuple u
+      | Bot -> true
       | _ -> false
     and cons_temp_lst_V t = function
       | Lst lst -> Lst (cons_temp_lst_Lst t lst)

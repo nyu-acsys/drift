@@ -162,11 +162,17 @@ and prop_v (v1: value_tt) (v2: value_tt): (value_tt * value_tt) = match v1, v2 w
 
              let ve1o', ve2o' = if opt_o then ve1ot, ve2o else
                                   prop (arrow_VE z ve1ot v2ip) (arrow_VE z ve2o v2ip) in
+              
+             let ve2o' = 
+              if extract_v ve2o' |> only_shape_V |> not && extract_eff ve2o' |> is_bot_Eff
+                then temap (id, (fun _ -> arrow_EffV z e2ip v2ip)) ve2o'
+                else ve2o'
+             in
 
-             let ve2o' = match ve2o with 
+             (* let ve2o' = match ve2o with 
                | TEBot -> temap (id, (fun _ -> arrow_EffV z e2ip v2ip)) ve2o'
                | _ -> ve2o' 
-             in
+             in *)
              (if !debug then
                let pr = Format.fprintf Format.std_formatter in
                pr "@.Prop Table Outputs (Post):@[<2>@[<v>@[ve1o': @[%a@]@],@,@[ve2o': @[%a@]@]@]@]"
@@ -1119,17 +1125,10 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             in
             let n1 = loc e1 |> construct_enode env1 |> construct_snode trace in
             let tex = find nx m in
-            (if !debug && ((get_label_snode nx = "VN: 6;z13") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
+            (if !debug && ((get_label_snode nx = "VN: 10;z24") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
               let pr = Format.fprintf Format.std_formatter in
               pr "@.LINE 1061, ae: @[%a@]@, tex: @[%a@]@."
                 pr_value ae pr_value_and_eff tex);
-            let ae' = if (x <> "_" && is_Relation (extract_v tex)) || is_List (extract_v tex) then 
-              (* if only_shape_V tx then ae else  *)
-              (arrow_V x ae (extract_v tex)) else ae in
-            (if !debug && ((get_label_snode nx = "VN: 6;z13") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
-              let pr = Format.fprintf Format.std_formatter in
-              pr "@.LINE 1068, ae': @[%a@]@."
-                pr_value ae');
             (* MN: in the line below, z seems to be the name of the dependency variable. 
                    Is it correct to be the same as the current trace. see line 1068 *)
             let te1 = if x = "_" then find n1 m else replace_VE (find n1 m) x z in
@@ -1152,7 +1151,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                  pr_value_and_eff prop_te
                  pr_value_and_eff te); *)
             let px_te, te1 = prop_scope env1 env' trace m prop_te te in
-            (if !debug && ((get_label_snode nx = "VN: 6;z13") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
+            (if !debug && ((get_label_snode nx = "VN: 10;z24") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
               let pr = Format.fprintf Format.std_formatter in
               pr "@.LINE 1104, px_te: @[%a@]@, te1: @[%a@]@."
                 pr_value_and_eff px_te pr_value_and_eff te1);
@@ -1213,15 +1212,22 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                          |> Opt.get_or_else (update false n te1)) 
             in
             let trace = if is_rec' && x = "_" then trace' else trace in
-            let ec' = extract_ec tex' 
-                      |> (fun ec' -> if (x <> "_" && is_Relation (extract_v tex')) || 
-                                       is_List (extract_v tex') then 
-                                    (arrow_EffV x (Effect ec') (extract_v tex')) else Effect ec')
-                      |> (function Effect ec' -> ec' | EffBot | EffTop -> StateMap.empty) in
-            (if !debug && ((get_label_snode nx = "VN: 6;z13") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then
+            (if !debug && ((get_label_snode nx = "VN: 10;z24") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then
                let pr = Format.fprintf Format.std_formatter in
                pr "@.@.LINE 11083, Lambda(before eval body), trace:%s, @,tex': @[%a@]@." 
                  (get_trace_data trace) pr_value_and_eff tex'); 
+            let ae' = if (x <> "_" && is_Relation (extract_v tex')) || is_List (extract_v tex') then 
+              (* if only_shape_V tx then ae else  *)
+              (arrow_V x ae (extract_v tex')) else ae in
+            let ec' = extract_ec tex' 
+                |> (fun ec' -> if (x <> "_" && is_Relation (extract_v tex')) || 
+                                  is_List (extract_v tex') then 
+                              (arrow_EffV x (Effect ec') (extract_v tex')) else Effect ec')
+                |> (function Effect ec' -> ec' | EffBot | EffTop -> StateMap.empty) in
+            (if !debug && ((get_label_snode nx = "VN: 10;z24") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
+              let pr = Format.fprintf Format.std_formatter in
+              pr "@.LINE 1068, ae': @[%a@]@, ec': @[%a@]@."
+                pr_value ae' pr_eff_map ec');
             let m1', tails = step e1 env1 trace ec' ae' assertion is_rec' m1 in
             let body_val = List.fold_left 
               (fun acc_val tail ->
