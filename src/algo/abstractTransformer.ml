@@ -613,7 +613,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           pr_exp true Format.std_formatter term;
           Format.printf "\n";
       end);
-      (if !debug && (l = "21") then
+      (if !debug && ((loc term)="18") then
          let pr = Format.fprintf Format.std_formatter in
          pr "@.LINE 586, Var[%s], trace: %s, @,ec: @[%a@]@, @,ae: @[%a@]@."
            x (get_trace_data trace) pr_eff_map ec pr_value ae); 
@@ -621,7 +621,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       let (nx, recnb) = VarMap.find x env in
       let envx, lx, lcs = get_vnode nx in
       let nx = construct_snode trace nx in      
-      (if !debug & (l = "21") then
+      (if !debug & ((loc term) = "18") then
          find nx m |> (fun tex0 ->
          Format.fprintf Format.std_formatter "@.Pre_prog -> Var[%s]: @[%a@]" x pr_value_and_eff tex0)
       );
@@ -637,7 +637,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       in
  
       let te = find n m in  (* M[env*l] *)
-      (if !debug && (l = "21") then
+      (if !debug && (loc term == "18") then
          let pr = Format.fprintf Format.std_formatter in
          pr "@.LINE 602, Var[%s](prop-pre), trace: %s, @,te: @[%a@]@."
            x (get_trace_data trace) pr_value_and_eff te);
@@ -655,7 +655,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
            x (get_trace_data trace)
            pr_value_and_eff tex'
            pr_value_and_eff te'); *)
-      (if !debug && (l = "21") then
+      (if !debug && (loc term == "18") then
         let pr = Format.fprintf Format.std_formatter in
         pr "@.LINE 630, Var[%s](prop-post), trace: %s, @,te': @[%a@]@, @,tex': @[%a@]@."
           x (get_trace_data trace) pr_value_and_eff te' pr_value_and_eff tex');
@@ -667,7 +667,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
            x (get_trace_data trace)
            pr_value_and_eff tex'
            pr_value_and_eff te'); *)
-      (if !debug && (l = "21") then
+      (if !debug && (loc term == "18") then
          let pr = Format.fprintf Format.std_formatter in
          pr "@.LINE 630, Var[%s](prop-post), trace: %s, @,te': @[%a@]@, @,tex': @[%a@]@."
            x (get_trace_data trace) pr_value_and_eff te' pr_value_and_eff tex');
@@ -729,7 +729,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                   let n = loc term |> construct_enode env |> construct_snode trace in
                   let n2 = loc e2 |> construct_enode env |> construct_snode trace2 in
                   let te2 = find n2 m2 in (* M[env*l2] *)
-                  (if !debug && l = "38" then
+                  (if !debug then
                      let pr = Format.fprintf Format.std_formatter in
                      pr "@.LINE 659, App, trace: %s,@,te2:@[%a@]@."
                        (get_trace_data trace2) pr_value_and_eff te2
@@ -768,12 +768,14 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                         io_T trace te0
                       in
                       let te' = get_env_list env trace m |> proj_VE raw_te' in
-                      (if !debug && l = "38" then
+                      (if !debug then
                          let pr = Format.fprintf Format.std_formatter in
-                         pr "@.LINE 691, App, trace: %s,@,te1': @[%a@]@,te2': @[%a@]@."
+                         pr "@.LINE 691, App, trace: %s,@,te1': @[%a@]@,te2': @[%a@]@,te': @[%a@]@,new te': @[%a@]@."
                            (get_trace_data trace)
                            pr_value_and_eff te1'
                            pr_value_and_eff te2'
+                           pr_value_and_eff te'
+                           pr_value_and_eff (stren_VE te' ae)
                       );
                       m2' |> update false n1 te1' |> update false n2 te2' |> update false n (stren_VE te' ae), extended_tail
                       (* if is_array_set e1 && only_shape_V t2' = false then
@@ -799,8 +801,8 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       end);
       (if !debug then
          let pr = Format.fprintf Format.std_formatter in
-         pr "@.LINE 748, BinOp, trace: %s, @,ec: @[%a@]@."
-           (get_trace_data trace) pr_eff_map ec);
+         pr "@.LINE 748, BinOp, trace: %s, @,ec: @[%a@]@, @,ae: @[%a@]@."
+           (get_trace_data trace) pr_eff_map ec pr_value ae);
       let n1 = loc e1 |> construct_enode env |> construct_snode trace in
       let m1, tails1 =
         match bop with
@@ -989,8 +991,8 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       end);
       (if !debug then
          let pr = Format.fprintf Format.std_formatter in
-         pr "@.LINE 934, Ite, trace: %s, @,ec: @[%a@]@."
-           (get_trace_data trace) pr_eff_map ec);
+         pr "@.LINE 934, Ite, trace: %s, @,ec: @[%a@]@, @,ae: @[%a@]@."
+           (get_trace_data trace) pr_eff_map ec pr_value ae);
       let m0, tails0 = 
         (* if optmization m n0 find then m else  *)
         step e0 env trace ec ae assertion is_rec m in
@@ -1098,7 +1100,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
         | TEBot ->
             let tee = append_trace (fresh_z () |> create_loc_token) trace |> init_T in
             Table tee |> init_VE_wec
-        | _ -> te0
+        | _ -> temap (id, fun _ -> Effect ec) te0
       in
       (if !debug && l = "49" then
          let pr = Format.fprintf Format.std_formatter in
@@ -1224,7 +1226,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                                   is_List (extract_v tex') then 
                               (arrow_EffV x (Effect ec') (extract_v tex')) else Effect ec')
                 |> (function Effect ec' -> ec' | EffBot | EffTop -> StateMap.empty) in
-            (if !debug && ((get_label_snode nx = "VN: 10;z24") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
+            (if !debug && ((get_label_snode nx = "VN: 10;z18") || (get_label_snode nx = "VN: 11;z22") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
               let pr = Format.fprintf Format.std_formatter in
               pr "@.LINE 1068, ae': @[%a@]@, ec': @[%a@]@."
                 pr_value ae' pr_eff_map ec');

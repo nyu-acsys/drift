@@ -1201,7 +1201,10 @@ module SemanticsDomain =
           Format.printf "\n";
           end
         ); *)
-        wid_VE v1 v2
+        let v = wid_VE v1 v2 in
+        if !debug && get_label_snode n = "EN: 22;z32" then
+          Format.fprintf Format.std_formatter "@,v: @[%a@]@, @,v1: @[%a@]@, @,v2: @[%a@]@" pr_value_and_eff v pr_value_and_eff v1 pr_value_and_eff v2;
+        v
         ) m1 m2
     let leq_M (m1: exec_map_t) (m2: exec_map_t) : bool =
       NodeMap.for_all (fun n v1 (*untie to node -> value*) -> 
