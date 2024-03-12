@@ -574,6 +574,8 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
         else
           (fun te -> StateMap.empty)
   in
+  let get_effmap = function Effect ec -> ec | EffBot | EffTop -> StateMap.empty
+  in
   let merge_traces e tails m = 
     List.fold_left 
       (fun te_acc tail -> 
@@ -621,11 +623,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       let (nx, recnb) = VarMap.find x env in
       let envx, lx, lcs = get_vnode nx in
       let nx = construct_snode trace nx in      
-<<<<<<< Updated upstream
       (if !debug && ((loc term) = "18") then
-=======
-      (if !debug && (l = "21") then
->>>>>>> Stashed changes
          find nx m |> (fun tex0 ->
          Format.fprintf Format.std_formatter "@.Pre_prog -> Var[%s]: @[%a@]" x pr_value_and_eff tex0)
       );
@@ -1014,16 +1012,8 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
               let t_true = meet_V (extrac_bool_V (extract_v te0) true) ae in (* Meet with ae*)
               let t_false = meet_V (extrac_bool_V (extract_v te0) false) ae in
               let ec' = extract_ec te0 in
-              let ec_true = extrac_bool_V (extract_v te0) true
-                            |> stren_Eff (Effect ec') 
-                            |> (function Effect ec' -> ec' 
-                                       | EffBot | EffTop -> StateMap.empty)
-              in
-              let ec_false = extrac_bool_V (extract_v te0) false
-                             |> stren_Eff (Effect ec') 
-                             |> (function Effect ec' -> ec'
-                                        | EffBot | EffTop -> StateMap.empty)
-              in
+              let ec_true = extrac_bool_V (extract_v te0) true |> stren_Eff (Effect ec') |> get_effmap in
+              let ec_false = extrac_bool_V (extract_v te0) false |> stren_Eff (Effect ec') |> get_effmap in
               (if !debug && l = "23" then
                  Format.fprintf Format.std_formatter 
                    "@.EfectContext (ITE): @[<v>@[ec': @[%a@]@],@,@[te0: @[%a@]@],\
@@ -1740,27 +1730,17 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
       print_exec_map m;
     end);
   (* if k > 40 then exit 0 else *)
-<<<<<<< Updated upstream
-  let ae = VarMap.fold (fun var (n, b) ae ->
-               let n = construct_snode create_empty_trace n in
-               let find n m = NodeMap.find_opt n m |> Opt.get_or_else TEBot in
-               let te = find n m in
-               if is_Relation (extract_v te) then
-                 arrow_V var ae (extract_v te) else ae
-             ) env (Relation (top_R Plus)) in
-=======
 
   (* let eff_i = AbstractEv.eff0 () in *)
   let arrow_ec var ec v = match (arrow_EffV var (Effect ec) v) with Effect ec' -> ec' | _ -> ec in
   let ae, eff_i = VarMap.fold (fun var (n, b) (ae, ec) ->
-                      let n = construct_snode (create_singleton_trace_loc "") n in
+                      let n = construct_snode create_empty_trace n in
                       let find n m = NodeMap.find_opt n m |> Opt.get_or_else TEBot in
                       let te = find n m in
                       if is_Relation (extract_v te) then
                         extract_v te |> (fun v -> (arrow_V var ae v, arrow_ec var ec v))
                       else (ae, ec)
                     ) env (Relation (top_R Plus), AbstractEv.eff0 ()) in
->>>>>>> Stashed changes
   let m_t = Hashtbl.copy m in
   (if !debug then
      let pr = Format.fprintf Format.std_formatter in
