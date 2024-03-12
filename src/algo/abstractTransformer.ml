@@ -507,7 +507,7 @@ let rec prop_predef l ve0 ve =
   | TypeAndEff (v0, _), TypeAndEff (v, e) -> TypeAndEff ((prop_predef_v l v0 v), e)
   | _, _ -> ve
 and prop_predef_v l v0 v = 
-    let l = l |> name_of_node |> create_singleton_trace_loc in
+    let l = l |> name_of_node |> create_singleton_trace_call_loc in
     let rec alpha_rename ve0 ve = 
       match ve0, ve with
       | (TypeAndEff (v0, e0)), (TypeAndEff (v, e)) -> TypeAndEff ((alpha_rename_v v0 v), e)
@@ -583,7 +583,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
         join_VE tee te_acc
       ) TEBot tails
   in
-  if only_shape_V ae then m, [[]] else
+  if only_shape_V ae then m, [create_empty_trace] else
   match term with
   | Const (c, l) ->
       (* (if !debug then
@@ -605,7 +605,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       in
       let update_e eff = join_Eff eff (stren_Eff (Effect ec) ae) in
       let te' = temap (update_t, update_e) te in
-      m |> update false n te', [[]] (* {v = c ^ aE}*)
+      m |> update false n te', [create_empty_trace] (* {v = c ^ aE}*)
   | Var (x, l) ->
       (if !debug then
       begin
@@ -621,7 +621,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       let (nx, recnb) = VarMap.find x env in
       let envx, lx, lcs = get_vnode nx in
       let nx = construct_snode trace nx in      
-      (if !debug & ((loc term) = "18") then
+      (if !debug && ((loc term) = "18") then
          find nx m |> (fun tex0 ->
          Format.fprintf Format.std_formatter "@.Pre_prog -> Var[%s]: @[%a@]" x pr_value_and_eff tex0)
       );
@@ -671,7 +671,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
          let pr = Format.fprintf Format.std_formatter in
          pr "@.LINE 630, Var[%s](prop-post), trace: %s, @,te': @[%a@]@, @,tex': @[%a@]@."
            x (get_trace_data trace) pr_value_and_eff te' pr_value_and_eff tex');
-      m |> update false nx tex' |> update false n te', [[]] (* t' ^ ae *)
+      m |> update false nx tex' |> update false n te', [create_empty_trace] (* t' ^ ae *)
   | App (e1, e2, l) ->
       (if !debug then
       begin
@@ -693,7 +693,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             match te0 with
             | TEBot when false ->
                 let t =
-                  append_trace (fresh_z () |> create_loc_token) trace1 |> init_T
+                  append_call_trace (fresh_z ()) trace1 |> init_T
                 in
                 let te1 = Table t |> init_VE_wec in
                 te1, m0 |> update false n1 te1
@@ -742,7 +742,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                       let trace =
                         if !trace_len > 0 then
                           if is_rec && is_func e1 then trace
-                          else append_trace (loc e1 |> name_of_node |> create_loc_token) trace
+                          else append_call_trace (loc e1 |> name_of_node) trace
                         else dx_T te1
                       in
                       let te_temp = Table (construct_table trace (te2, te)) |> init_VE_v 
@@ -823,7 +823,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             let len, te1', m1 = cons_list_items ec m e1 in
             let te1 = find n1 m1 in
             let te1', _ = prop te1 te1' in
-            m1 |> update false n1 te1', [[]]
+            m1 |> update false n1 te1', [create_empty_trace]
         | _ -> step e1 env trace ec ae assertion is_rec m
       in
       let map, tails = 
@@ -1034,7 +1034,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
               let (map_true, te_true), tails1 = List.fold_left_map 
                 (fun (m1', _) tail1 ->
                   let trace1 = extend_trace tail1 trace in
-                  let tail1 = if !if_part then append_trace (create_if_token (loc term) (loc e1)) tail1 else tail1 in
+                  let tail1 = if !if_part then append_part_trace (create_if_token (loc term) (loc e1)) tail1 else tail1 in
                   let trace = extend_trace tail1 trace in
                   let n = loc term |> construct_enode env |> construct_snode trace in
                   let te = find n m0 in
@@ -1053,7 +1053,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
               let (map_false, te_false), tails2 = List.fold_left_map
                 (fun (m2', _) tail2 ->
                   let trace2 = extend_trace tail2 trace in
-                  let tail2 = if !if_part then append_trace (create_if_token (loc term) (loc e2)) tail2 else tail2 in
+                  let tail2 = if !if_part then append_part_trace (create_if_token (loc term) (loc e2)) tail2 else tail2 in
                   let trace = extend_trace tail2 trace in
                   let n = loc term |> construct_enode env |> construct_snode trace in
                   let te = find n m0 in
@@ -1071,7 +1071,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
               if !trace_len = 0 || not !if_part then
                 let n = loc term |> construct_enode env |> construct_snode trace in
                 let te_n' = join_VE (stren_VE te_true ae) (stren_VE te_false ae) in
-                map_false |> update false n te_n', [[]]
+                map_false |> update false n te_n', [create_empty_trace]
               else
                 join_M m0' map_false, tails1 @ tails2
             end
@@ -1098,7 +1098,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       let te =
         match te0 with
         | TEBot ->
-            let tee = append_trace (fresh_z () |> create_loc_token) trace |> init_T in
+            let tee = append_call_trace (fresh_z ()) trace |> init_T in
             Table tee |> init_VE_wec
         | _ -> temap (id, fun _ -> Effect ec) te0
       in
@@ -1261,7 +1261,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
               nf_t2_tf'_opt |> Opt.get_or_else (update n t1)) in *)
             join_M m1' m'
           end
-      ) te (m |> update false n te |> Hashtbl.copy), [[]]
+      ) te (m |> update false n te |> Hashtbl.copy), [create_empty_trace]
       in
       (if !debug && l = "49" then
          let pr = Format.fprintf Format.std_formatter in
@@ -1290,7 +1290,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
         let te' = 
           let cte = init_VE_v (init_V_c UnitLit) in
           join_VE te cte in
-        m |> update false n te', [[]]
+        m |> update false n te', [create_empty_trace]
       else
         let tp, m', _ = List.fold_right 
           (fun e (te, m, ec) -> 
@@ -1302,7 +1302,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           ) tlst (Tuple [], m, ec) in
         let tep = TypeAndEff (tp, extract_eff te) in
         let _, te' = prop tep te in
-        m' |> update false n te', [[]]
+        m' |> update false n te', [create_empty_trace]
   | PatMat (e, patlst, l) ->
       (if !debug then
       begin
@@ -1540,7 +1540,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                 m2 |> update false n2 te2' |> update false n te'
               | _ -> raise (Invalid_argument "Pattern should only be either constant, variable, or list cons")
             ) (update false ne tee m' |> Hashtbl.copy) patlst in
-        m'', [[]]
+        m'', [create_empty_trace]
   | Event (e1, l) ->
     (if !debug then
       begin
@@ -1713,7 +1713,7 @@ let check_assert_final_eff te env m fassts =
     | false -> add_failed_assertion PropFinalAsst fs
   in 
   let envE = VarMap.fold (fun x (n_var, _) envE -> 
-                 let s_var = construct_snode (create_singleton_trace_loc "") n_var in
+                 let s_var = construct_snode create_empty_trace n_var in
                  match find_v s_var m with
                  | Relation r -> VarMap.add x r envE
                  | _ -> envE
@@ -1737,7 +1737,7 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
     end);
   (* if k > 40 then exit 0 else *)
   let ae = VarMap.fold (fun var (n, b) ae ->
-               let n = construct_snode (create_singleton_trace_loc "") n in
+               let n = construct_snode create_empty_trace n in
                let find n m = NodeMap.find_opt n m |> Opt.get_or_else TEBot in
                let te = find n m in
                if is_Relation (extract_v te) then
@@ -1751,7 +1751,7 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
     else StateMap.bindings e 
          |> Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_eff_binding ppf in
   (if !debug then (Format.printf "\nEff0: "; pp_eff eff_i));
-  let m', _ = step e env [] eff_i ae assertion false m_t in
+  let m', _ = step e env create_empty_trace eff_i ae assertion false m_t in
 
   if k < 0 then if k = -1 then "", m' else fix stage env e (k+1) m' assertion else
   (* if k > 2 then Hashtbl.reset !pre_m;
@@ -1763,7 +1763,7 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
   if comp then
     begin
       if assertion (* || !narrow *) then
-        let prog_n = loc e |> construct_enode env |> construct_snode [] in
+        let prog_n = loc e |> construct_enode env |> construct_snode create_empty_trace in
         let prog_te = NodeMap.find_opt prog_n m |> Opt.get_or_else TEBot in
         let fassts = List.rev (check_assert e m [] |> check_assert_final_eff prog_te env m) in
         (if !debug then 
@@ -1825,7 +1825,7 @@ let s e =
       (fun x (n, _) ->
         if StringSet.mem x fv_e then true
         else
-          let n = construct_snode (create_singleton_trace_loc "") n in
+          let n = construct_snode create_empty_trace n in
           (Hashtbl.remove m0' n; false)) envt
   in
   thresholdsSet := !thresholdsSet |> ThresholdsSetType.add 0 |> ThresholdsSetType.add 111 |> ThresholdsSetType.add 101

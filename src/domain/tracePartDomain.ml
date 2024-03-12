@@ -6,58 +6,47 @@ open Format
 
 exception Trace_larger_than_tree
 
-type loc_token_t = 
-  | None_Token
-  | Loc_Token of loc
+type partition_token_t = 
   | If_Case of loc * loc
   | Pat_Case of loc * loc
 
-type trace_t = loc_token_t list
+type trace_t = loc list * partition_token_t list
 
-type loc_tree = 
-  | Empty
-  | Leaf of loc_token_t
-  | Node of loc_token_t * (loc_tree list)
-
-type loc_tree_t = loc * loc_tree
-
-let print_loc_token ppf loc_token = match loc_token with
-  | None_Token -> Format.fprintf ppf "@[%s@]" "None"
-  | Loc_Token loc -> Format.fprintf ppf "@[<2>%s: %s@]" "Loc" loc
+let print_part_token ppf loc_token = match loc_token with
   | If_Case (loc1, loc2) -> Format.fprintf ppf "@[<2>%s:%s %s@]" "If" loc1 loc2
   | Pat_Case (loc1, loc2) -> Format.fprintf ppf "@[<2>%s:%s %s@]" "PatMatch" loc1 loc2
 
-let rec print_trace ppf trace = match trace with
+let rec print_part_trace ppf trace = match trace with
   | [] -> ()
-  | head :: [] -> print_loc_token ppf head
-  | head :: tail -> (print_loc_token ppf head; print_string ","; print_trace ppf tail)
+  | head :: [] -> print_part_token ppf head
+  | head :: tail -> (print_part_token ppf head; print_string ","; print_part_trace ppf tail)
 
-let create_loc_token loc = Loc_Token loc
+let rec print_call_trace ppf trace = match trace with
+  | [] -> ()
+  | head :: [] -> Format.fprintf ppf "@[<2>%s@]" head
+  | head :: tail -> Format.fprintf ppf "@[<2>%s@]" head; print_call_trace ppf tail
+
+let print_trace ppf (call_trace, part_trace) = Format.fprintf ppf "Callsite trace: %a * Partition trace: %a" print_call_trace call_trace print_part_trace part_trace
 
 let create_if_token if_loc block_loc = If_Case (if_loc, block_loc)
 
-let create_singleton_trace_loc loc = List.init 1 (fun _ -> Loc_Token loc)
+let create_empty_trace = [], []
 
-let create_singleton_trace_token token = List.init 1 (fun _ -> token)
+let create_singleton_trace_call_loc loc = List.init 1 (fun _ -> loc), []
 
-let rec remove_last trace = match trace with
+let create_singleton_trace_part_token token = [], List.init 1 (fun _ -> token)
+
+let rec remove_last semi_trace = match semi_trace with
   | [] -> []
   | head :: [] -> []
   | head :: tail -> head :: (remove_last tail)
 
-let rec prune_trace trace limit = if List.length trace > limit 
-  then prune_trace (remove_last trace) limit
-  else trace
+let rec prune_semi_trace semi_trace limit = if List.length semi_trace > limit 
+  then prune_semi_trace (remove_last semi_trace) limit
+  else semi_trace
 
-let get_token_loc loc_token = match loc_token with
-  | Loc_Token loc -> loc 
+let get_part_token_loc loc_token = match loc_token with
   | If_Case (loc1,loc2) | Pat_Case (loc1,loc2) -> loc1^"-"^loc2
-  | None_Token -> raise(Invalid_argument "get_token_loc: None token")
-
-let get_trace_tree_token tree : loc_token_t = match tree with
-  | Empty -> raise (Invalid_argument "get_trace_tree_token: Empty tree")
-  | Leaf token -> token
-  | Node (token, _) -> token
 
 let comp_loc loc1 loc2 = 
   let l1 = try int_of_string loc1 with _ -> -1 in
@@ -66,37 +55,23 @@ let comp_loc loc1 loc2 =
     if l2 = -1 then String.compare loc1 loc2 else -1
   else if l2 = -1 then 1 else l1 - l2
 
-let comp_loc_token token1 token2 = 
-  let loc1 = get_token_loc token1 in
-  let loc2 = get_token_loc token2 in
+let comp_part_token token1 token2 = 
+  let loc1 = get_part_token_loc token1 in
+  let loc2 = get_part_token_loc token2 in
   let loc_comp = comp_loc loc1 loc2 in
   if loc_comp != 0 then loc_comp else
   (
     match token1 with
-    | Loc_Token _ -> 
-      (
-        match token2 with
-        | Loc_Token _ -> 0
-        | _ -> 1
-      )
     | If_Case (_, loc21) -> 
       (
         match token2 with
-        | Loc_Token _ -> -1
         | If_Case (_, loc22) -> comp_loc loc21 loc22
         | _ -> 1
       )
     | Pat_Case (_, loc21) ->
       (
         match token2 with
-        | None_Token -> 1
         | Pat_Case (_, loc22) -> comp_loc loc21 loc22
-        | _ -> -1
-      )
-    | None_Token ->
-      (
-        match token2 with
-        | None_Token -> 0
         | _ -> -1
       )
   )
@@ -109,40 +84,98 @@ let is_pat_branch_token token = match token with
   | Pat_Case _ -> true
   | _ -> false
 
-let rec comp_trace trace1 trace2 = match trace1, trace2 with 
+let rec comp_part_trace trace1 trace2 = match trace1, trace2 with 
   | [], [] -> 0
   | [], _ -> -1
   | _, [] -> 1
-  | head1::tail1, head2::tail2 -> let head_result = comp_loc_token head1 head2 in
-      if head_result = 0 then comp_trace tail1 tail2 else head_result
+  | head1::tail1, head2::tail2 -> let head_result = comp_part_token head1 head2 in
+      if head_result = 0 then comp_part_trace tail1 tail2 else head_result
+
+let rec comp_call_trace trace1 trace2 = match trace1, trace2 with
+  | [], [] -> 0
+  | [], _ -> -1
+  | _, [] -> 1
+  | head1::tail1, head2::tail2 -> let head_result = comp_loc head1 head2 in
+      if head_result = 0 then comp_call_trace tail1 tail2 else head_result
+
+let comp_trace (call_trace1, part_trace1) (call_trace2, part_trace2) = 
+  let call_res = comp_call_trace call_trace1 call_trace2 in
+  let part_res = comp_part_trace part_trace1 part_trace2 in
+  if call_res+part_res > 0 && call_res >= 0 && part_res >= 0 then 1
+  else if call_res = 0 && part_res = 0 then 0 
+  else -1
 
 let sort_traces trace_list = List.sort(fun trace1 trace2 -> comp_trace trace1 trace2) trace_list
 
-let sort_trees tree_list = List.sort (fun t1 t2 -> comp_loc_token (get_trace_tree_token t1) (get_trace_tree_token t2)) tree_list
-
-let rec get_trace_data trace = match trace with
+let rec get_part_trace_data trace = match trace with
   | [] -> ""
-  | head :: [] -> get_token_loc head
-  | head :: tail -> get_token_loc head ^","^ get_trace_data tail
+  | head :: [] -> get_part_token_loc head
+  | head :: tail -> get_part_token_loc head ^","^ get_part_trace_data tail
 
-let add_token_to_trace token trace limit = 
+let rec get_call_trace_data trace = match trace with
+  | [] -> ""
+  | head :: [] -> head
+  | head :: tail -> head ^","^ get_call_trace_data tail
+
+let get_trace_data (call_trace, part_trace) = get_call_trace_data call_trace^" * "^get_part_trace_data part_trace
+
+let add_cs_token_to_trace token (call_trace, part_trace) limit = 
   (* print_trace Format.std_formatter trace; print_string "->"; *)
-  let new_trace = token :: trace in
-  let new_trace = prune_trace new_trace limit in 
+  let new_call_trace = token :: call_trace in
+  let new_call_trace = prune_semi_trace new_call_trace limit in 
   (* print_trace Format.std_formatter new_trace; print_newline (); *)
-  new_trace
+  new_call_trace, part_trace
 
-let add_tail_to_trace tail trace limit = 
+let add_pr_token_to_trace token (call_trace, part_trace) limit = 
   (* print_trace Format.std_formatter trace; print_string "->"; *)
-  let new_trace = tail @ trace in
-  let new_trace = prune_trace new_trace limit in 
+  let new_part_trace = token :: part_trace in
+  let new_part_trace = prune_semi_trace new_part_trace limit in 
   (* print_trace Format.std_formatter new_trace; print_newline (); *)
-  new_trace
+  call_trace, new_part_trace
 
-let rec is_subtrace trace1 trace2 = match trace1, trace2 with
+let add_cs_tail_to_trace tail (call_trace, part_trace) limit = 
+  (* print_trace Format.std_formatter trace; print_string "->"; *)
+  let new_call_trace = tail @ call_trace in
+  let new_call_trace = prune_semi_trace new_call_trace limit in 
+  (* print_trace Format.std_formatter new_trace; print_newline (); *)
+  new_call_trace, part_trace
+
+let add_pr_tail_to_trace tail (call_trace, part_trace) limit = 
+  (* print_trace Format.std_formatter trace; print_string "->"; *)
+  let new_part_trace = tail @ part_trace in
+  let new_part_trace = prune_semi_trace new_part_trace limit in 
+  (* print_trace Format.std_formatter new_trace; print_newline (); *)
+  call_trace, new_part_trace
+
+let add_tail_to_trace (call_tail, part_tail) trace limit = 
+  add_pr_tail_to_trace part_tail (add_cs_tail_to_trace call_tail trace limit) limit
+
+let rec is_call_subtrace trace1 trace2 = match trace1, trace2 with
   | [], _ -> true
   | _, [] -> false
-  | head1 :: tail1, head2 :: tail2 -> head1 = head2 && is_subtrace tail1 tail2
+  | head1 :: tail1, head2 :: tail2 -> head1 = head2 && is_call_subtrace tail1 tail2
+
+let rec is_part_subtrace trace1 trace2 = match trace1, trace2 with
+  | [], _ -> true
+  | _, [] -> false
+  | head1 :: tail1, head2 :: tail2 -> comp_part_token head1 head2 = 0 && is_part_subtrace tail1 tail2
+
+let is_subtrace (call_trace1, part_trace1) (call_trace2, part_trace2) = 
+  is_call_subtrace call_trace1 call_trace2 && is_part_subtrace part_trace1 part_trace2
+
+(* let sort_trees tree_list = List.sort (fun t1 t2 -> comp_loc_token (get_trace_tree_token t1) (get_trace_tree_token t2)) tree_list *)
+
+(* type loc_tree = 
+  | Empty
+  | Leaf of loc_token_t
+  | Node of loc_token_t * (loc_tree list)
+
+type loc_tree_t = loc * loc_tree
+
+let get_trace_tree_token tree : loc_token_t = match tree with
+  | Empty -> raise (Invalid_argument "get_trace_tree_token: Empty tree")
+  | Leaf token -> token
+  | Node (token, _) -> token *)
 
 (*let find_head_in_tree_list tree_list token = List.find (fun tree -> get_trace_tree_token tree = token) tree_list
 

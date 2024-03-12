@@ -149,7 +149,8 @@ module type SemanticsType =
     val update_table: trace_t -> value_te * value_te -> table_t -> table_t
     val table_isempty: table_t -> bool
     val table_mapi: (trace_t -> value_te * value_te -> value_te * value_te) -> table_t -> table_t
-    val append_trace: (loc_token_t -> trace_t -> trace_t)
+    val append_call_trace: (var -> trace_t -> trace_t)
+    val append_part_trace: (partition_token_t -> trace_t -> trace_t)
     val extend_trace: (trace_t -> trace_t -> trace_t)
   end
 
@@ -242,9 +243,9 @@ module NonSensitive: SemanticsType =
       | TypeAndEff (Table (_, vi, vo), _) -> vi, vo
       | _ -> raise (Invalid_argument "Should be a table when using io_T")
     let get_vnode = function
-      | EN (env, l) -> env, l, create_singleton_trace_loc l
+      | EN (env, l) -> env, l, create_singleton_trace_call_loc l
     let dx_T v = match v with
-        | TypeAndEff (Table (z,_,_), _) -> create_singleton_trace_loc z
+        | TypeAndEff (Table (z,_,_), _) -> create_singleton_trace_call_loc z
         | _ -> raise (Invalid_argument "Should be a table when using dx_T")
     let get_table_T = function
       | TypeAndEff (Table t, _) -> t
@@ -256,7 +257,7 @@ module NonSensitive: SemanticsType =
     let compare_node n1 n2 = 
       let SN (_, e1) = n1 in
       let SN (_, e2) = n2 in
-      comp_trace (create_singleton_trace_loc e1) (create_singleton_trace_loc e2)
+      comp_trace (create_singleton_trace_call_loc e1) (create_singleton_trace_call_loc e2)
     let prop_table f g (t1:table_t) (t2:table_t) = 
       let alpha_rename t1 t2 = let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
         if z1 = z2 then t1, t2
@@ -266,7 +267,7 @@ module NonSensitive: SemanticsType =
       in
       let t1', t2' = alpha_rename t1 t2 in
       let (z1, v1i, v1o) = t1' and (z2, v2i, v2o) = t2' in
-      let z_tr1 = create_singleton_trace_loc z1 in
+      let z_tr1 = create_singleton_trace_call_loc z1 in
       let (v1i', v1o'), (v2i', v2o') = f z_tr1 (v1i, v1o) (v2i, v2o) in
       let t1' = (z1, v1i', v1o') and t2' = (z2, v2i', v2o') in
       t1', t2'
@@ -274,10 +275,10 @@ module NonSensitive: SemanticsType =
       let z, tl, tr = match v with
       | TypeAndEff (Table (z, vi, vo), _) -> z, vi, vo
       | _ -> raise (Invalid_argument "Should be a table when using io_T") in
-      let z_tr = create_singleton_trace_loc z in
+      let z_tr = create_singleton_trace_call_loc z in
       f z_tr (tl, tr) m
     let get_full_table_T t = let (z, vi, vo) = t in
-      create_singleton_trace_loc z, (vi, vo)
+      create_singleton_trace_call_loc z, (vi, vo)
     let get_table_by_cs_T cs t = let (z, vi, vo) = t in (vi, vo)
     let update_table cs vio t = construct_table cs vio
     let table_isempty t = false
@@ -285,7 +286,8 @@ module NonSensitive: SemanticsType =
     let bot_shape_T f t = 
       let (z, vi, vo) = t in
       (z, f vi, f vo)
-    let append_trace new_token trace = add_token_to_trace new_token trace 1
+    let append_call_trace new_token trace = add_cs_token_to_trace new_token trace 1
+    let append_part_trace new_token trace = add_pr_token_to_trace new_token trace 1
     let extend_trace tail trace = add_tail_to_trace tail trace 1
   end
 
@@ -390,7 +392,7 @@ module OneSensitive: SemanticsType =
     let dx_T v = match v with
         | TypeAndEff (Table t, _) -> let cs, _ = 
               try TableMap.min_binding t with
-              Not_found -> [] , (TEBot,TEBot) 
+              Not_found -> create_empty_trace , (TEBot,TEBot) 
             in cs
         | _ -> raise (Invalid_argument "Should be a table when using dx_T")
     let get_table_T = function
@@ -447,7 +449,8 @@ module OneSensitive: SemanticsType =
     let bot_shape_T f t = 
       TableMap.mapi (fun cs (vi, vo) -> 
         (f vi, f vo)) t
-    let append_trace new_token trace = add_token_to_trace new_token trace 1
+    let append_call_trace new_token trace = add_cs_token_to_trace new_token trace 1
+    let append_part_trace new_token trace = add_pr_token_to_trace new_token trace 1
     let extend_trace tail trace = add_tail_to_trace tail trace !trace_len
   end
 
@@ -552,7 +555,7 @@ module NSensitive: SemanticsType =
     let dx_T v = match v with
         | TypeAndEff (Table t, _) -> let cs, _ = 
               try TableMap.min_binding t with
-              Not_found -> [] , (TEBot,TEBot) 
+              Not_found -> create_empty_trace , (TEBot,TEBot) 
             in cs
         | _ -> raise (Invalid_argument "Should be a table when using dx_T")
     let get_table_T = function
@@ -609,7 +612,8 @@ module NSensitive: SemanticsType =
     let bot_shape_T f t = 
       TableMap.mapi (fun cs (vi, vo) -> 
         (f vi, f vo)) t
-    let append_trace new_token trace = add_token_to_trace new_token trace !trace_len
+    let append_call_trace new_token trace = add_cs_token_to_trace new_token trace !trace_len
+    let append_part_trace new_token trace = add_pr_token_to_trace new_token trace !trace_len
     let extend_trace tail trace = add_tail_to_trace tail trace !trace_len
   end
 
