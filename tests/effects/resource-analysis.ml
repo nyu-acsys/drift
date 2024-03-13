@@ -1,4 +1,4 @@
-let rec spend n = (ev x); fun t ->
+let rec spend n t =
   ev -1;
   if n <= 0 then 0 else spend (n-1) (t+1)
 

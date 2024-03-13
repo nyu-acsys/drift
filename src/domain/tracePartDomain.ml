@@ -26,7 +26,7 @@ let rec print_call_trace ppf trace = match trace with
   | head :: [] -> Format.fprintf ppf "@[<2>%s@]" head
   | head :: tail -> Format.fprintf ppf "@[<2>%s@]" head; print_call_trace ppf tail
 
-let print_trace ppf (call_trace, part_trace) = Format.fprintf ppf "Callsite trace: %a * Partition trace: %a" print_call_trace call_trace print_part_trace part_trace
+let print_trace ppf (call_trace, part_trace) = Format.fprintf ppf "[Callsite trace: %a] * [Partition trace: %a]" print_call_trace call_trace print_part_trace part_trace
 
 let create_if_token if_loc block_loc = If_Case (if_loc, block_loc)
 
@@ -117,7 +117,7 @@ let rec get_call_trace_data trace = match trace with
   | head :: [] -> head
   | head :: tail -> head ^","^ get_call_trace_data tail
 
-let get_trace_data (call_trace, part_trace) = get_call_trace_data call_trace^" * "^get_part_trace_data part_trace
+let get_trace_data (call_trace, part_trace) = "("^get_call_trace_data call_trace^")*("^get_part_trace_data part_trace^")"
 
 let add_cs_token_to_trace token (call_trace, part_trace) limit = 
   (* print_trace Format.std_formatter trace; print_string "->"; *)
