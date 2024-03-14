@@ -223,6 +223,10 @@ and prop_v (v1: value_tt) (v2: value_tt): (value_tt * value_tt) = match v1, v2 w
            let ve1o', ve2o' = 
               if opt_o then ve1o', ve2o' else (join_VE ve1o ve1o', join_VE ve2o ve2o')
            in
+           (if !debug then
+            let pr = Format.fprintf Format.std_formatter in
+            pr "@.Prop Table Outputs (PostPost):@[<2>@[<v>@[ve1o': @[%a@]@],@,@[ve2o': @[%a@]@]@]@]"
+              pr_value_and_eff ve1o' pr_value_and_eff ve2o');
            ve1i', ve2i', ve1o', ve2o'
          in
          (ve1i', ve1o'), (ve2i', ve2o') 
@@ -639,7 +643,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       in
  
       let te = find n m in  (* M[env*l] *)
-      (if !debug && (loc term == "18") then
+      (if !debug && (loc term = "18") then
          let pr = Format.fprintf Format.std_formatter in
          pr "@.LINE 602, Var[%s](prop-pre), trace: %s, @,te: @[%a@]@."
            x (get_trace_data trace) pr_value_and_eff te);
@@ -657,7 +661,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
            x (get_trace_data trace)
            pr_value_and_eff tex'
            pr_value_and_eff te'); *)
-      (if !debug && (loc term == "18") then
+      (if !debug && (loc term = "18") then
         let pr = Format.fprintf Format.std_formatter in
         pr "@.LINE 630, Var[%s](prop-post), trace: %s, @,te': @[%a@]@, @,tex': @[%a@]@."
           x (get_trace_data trace) pr_value_and_eff te' pr_value_and_eff tex');
@@ -669,7 +673,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
            x (get_trace_data trace)
            pr_value_and_eff tex'
            pr_value_and_eff te'); *)
-      (if !debug && (loc term == "18") then
+      (if !debug && (loc term = "18") then
          let pr = Format.fprintf Format.std_formatter in
          pr "@.LINE 630, Var[%s](prop-post), trace: %s, @,te': @[%a@]@, @,tex': @[%a@]@."
            x (get_trace_data trace) pr_value_and_eff te' pr_value_and_eff tex');
@@ -747,7 +751,8 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                           else append_call_trace (loc e1 |> name_of_node) trace
                         else dx_T te1
                       in
-                      let te_temp = Table (construct_table trace (te2, te)) |> init_VE_v 
+                      let te2' = temap (id, fun eff -> arrow_EffV (get_trace_data trace) eff (extract_v te2)) te2 in
+                      let te_temp = Table (construct_table trace (te2', te)) |> init_VE_v 
                       in
                       (if !debug then
                          let pr = Format.fprintf Format.std_formatter in
@@ -772,8 +777,9 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                       let te' = get_env_list env trace m |> proj_VE raw_te' in
                       (if !debug then
                          let pr = Format.fprintf Format.std_formatter in
-                         pr "@.LINE 691, App, trace: %s,@,te1': @[%a@]@,te2': @[%a@]@,te': @[%a@]@,new te': @[%a@]@."
+                         pr "@.LINE 691, App, trace: %s,@,raw_te': @[%a@],@,te1': @[%a@]@,te2': @[%a@]@,te': @[%a@]@,new te': @[%a@]@."
                            (get_trace_data trace)
+                           pr_value_and_eff raw_te'
                            pr_value_and_eff te1'
                            pr_value_and_eff te2'
                            pr_value_and_eff te'
@@ -1096,7 +1102,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             Table tee |> init_VE_wec
         | _ -> temap (id, fun _ -> Effect ec) te0
       in
-      (if !debug && l = "49" then
+      (if !debug && l = "30" then
          let pr = Format.fprintf Format.std_formatter in
          pr "@.LINE 994, Lambda[l=49](prop-pre), trace: %s, @,te: @[%a@]@."
            (get_trace_data trace)
@@ -1121,7 +1127,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             in
             let n1 = loc e1 |> construct_enode env1 |> construct_snode trace in
             let tex = find nx m in
-            (if !debug && ((get_label_snode nx = "VN: 10;z24") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
+            (if !debug && ((get_label_snode nx = "VN: 10;(z18*)") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
               let pr = Format.fprintf Format.std_formatter in
               pr "@.LINE 1061, ae: @[%a@]@, tex: @[%a@]@."
                 pr_value ae pr_value_and_eff tex);
@@ -1147,7 +1153,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                  pr_value_and_eff prop_te
                  pr_value_and_eff te); *)
             let px_te, te1 = prop_scope env1 env' trace m prop_te te in
-            (if !debug && ((get_label_snode nx = "VN: 10;z24") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
+            (if !debug && ((get_label_snode nx = "VN: 10;(z18*)") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
               let pr = Format.fprintf Format.std_formatter in
               pr "@.LINE 1104, px_te: @[%a@]@, te1: @[%a@]@."
                 pr_value_and_eff px_te pr_value_and_eff te1);
@@ -1208,19 +1214,16 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                          |> Opt.get_or_else (update false n te1)) 
             in
             let trace = if is_rec' && x = "_" then trace' else trace in
-            (if !debug && ((get_label_snode nx = "VN: 10;z24") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then
+            (if !debug && ((get_label_snode nx = "VN: 10;(z18*)") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then
                let pr = Format.fprintf Format.std_formatter in
                pr "@.@.LINE 11083, Lambda(before eval body), trace:%s, @,tex': @[%a@]@." 
                  (get_trace_data trace) pr_value_and_eff tex'); 
             let ae' = if (x <> "_" && is_Relation (extract_v tex')) || is_List (extract_v tex') then 
               (* if only_shape_V tx then ae else  *)
               (arrow_V x ae (extract_v tex')) else ae in
-            let ec' = extract_ec tex' 
-                |> (fun ec' -> if (x <> "_" && is_Relation (extract_v tex')) || 
-                                  is_List (extract_v tex') then 
-                              (arrow_EffV x (Effect ec') (extract_v tex')) else Effect ec')
-                |> (function Effect ec' -> ec' | EffBot | EffTop -> StateMap.empty) in
-            (if !debug && ((get_label_snode nx = "VN: 10;z18") || (get_label_snode nx = "VN: 11;z22") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
+            let ec' = extract_ec tex' in
+            let ec' = replace_Eff (Effect ec') z x |> get_effmap in
+            (if !debug && ((get_label_snode nx = "VN: 10;(z18*)") || (get_label_snode nx = "VN: 11;z22") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
               let pr = Format.fprintf Format.std_formatter in
               pr "@.LINE 1068, ae': @[%a@]@, ec': @[%a@]@."
                 pr_value ae' pr_eff_map ec');
@@ -1257,7 +1260,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           end
       ) te (m |> update false n te |> Hashtbl.copy), [create_empty_trace]
       in
-      (if !debug && l = "49" then
+      (if !debug && l = "30" then
          let pr = Format.fprintf Format.std_formatter in
          pr "@.LINE 1124, Lambda[l=49](prop-post), trace: %s, @,te: @[%a@]@."
            (get_trace_data trace)

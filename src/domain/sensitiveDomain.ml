@@ -361,7 +361,7 @@ module OneSensitive: SemanticsType =
         let vars = var :: vars in
         List.append vars (g vi)
       in
-      f vi vars, f vo vars_o) mt
+      f vi vars_o, f vo vars_o) mt
     let get_label_snode n = match n with 
       | SEN (x, l) -> "EN: "^x^";"^get_trace_data l
       | SVN (x, cl) -> "VN: "^x^";"^get_trace_data cl
