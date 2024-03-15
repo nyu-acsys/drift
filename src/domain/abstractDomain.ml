@@ -707,6 +707,11 @@ module PolkaLooseDomain = BaseDomain(struct
   let man = Polka.manager_alloc_loose ()
 end)
 
+module PolkaGridDomain = BaseDomain(struct
+  type t = (Polka.strict) PolkaGrid.t
+  let man = PolkaGrid.manager_alloc (Polka.manager_alloc_strict ()) (Ppl.manager_alloc_grid ())
+end)
+
 module OctPolkaDomain = ProductDomain(OctDomain)(PolkaLooseDomain)
     
 let abstractValue = match !domain with
@@ -714,6 +719,7 @@ let abstractValue = match !domain with
 | "Polka_st" -> (module PolkaStrictDomain : Domain)
 | "Polka_ls" -> (module PolkaLooseDomain : Domain)
 | "OctPolka" -> (module OctPolkaDomain : Domain)
+| "PolkaGrid" -> (module PolkaGridDomain : Domain)
 | _ -> failwith ("unsupported abstract domain " ^ !domain)
        
 module AbstractValue = (val (abstractValue) : Domain)
