@@ -114,21 +114,29 @@ module SemanticsDomain =
       | Int v -> AbstractValue.sat_cons v x
       | Bool (vt, vf) -> AbstractValue.sat_cons vt x && AbstractValue.sat_cons vf x
       | _ -> false
+    let op_R_eq_mod res l r op cons a = (*cons for flag of linear constraints*)
+      if !debug then Format.fprintf Format.std_formatter "here";
+      match op with
+      | Eq | Ne -> (match a with
+        | Int v -> Int (AbstractValue.operator res l r op (-1) true v)
+        | Bool (vt, vf) -> Bool (AbstractValue.operator res l r op 1 true vt, AbstractValue.operator res l r (rev_op op) 0 true vf)
+        | Unit _ -> raise (Invalid_argument "opR: Given a unit type"))
+      | _ -> raise (Invalid_argument "op_R_eq_mod: Only does Eq/Ne operators.")
     let op_R res l r op cons a = (*cons for flag of linear constraints*)
       match op with
       | Plus | Mult | Div | Mod | Modc | Minus -> (match a with
-        | Int v -> Int (AbstractValue.operator res l r op (-1) v)
+        | Int v -> Int (AbstractValue.operator res l r op (-1) false v)
         | _ -> raise (Invalid_argument "opR: Given a unit type"))
       | Ge | Eq | Ne | Lt | Gt | Le -> (if cons then
         (match a with
-        | Int v -> Int (AbstractValue.operator res l r op (-1) v)
-        | Bool (vt, vf) -> Bool (AbstractValue.operator res l r op 1 vt, AbstractValue.operator res l r (rev_op op) 0 vf)
+        | Int v -> Int (AbstractValue.operator res l r op (-1) false v)
+        | Bool (vt, vf) -> Bool (AbstractValue.operator res l r op 1 false vt, AbstractValue.operator res l r (rev_op op) 0 false vf)
         | Unit _ -> raise (Invalid_argument "opR: Given a unit type")
         )
         else
         (match a with
-        | Int v -> Bool (AbstractValue.operator res l r op 1 v, AbstractValue.operator res l r (rev_op op) 0 v)
-        | Bool (vt, vf) -> Bool (AbstractValue.operator res l r op 1 vt, AbstractValue.operator res l r (rev_op op) 0 vf)
+        | Int v -> Bool (AbstractValue.operator res l r op 1 false v, AbstractValue.operator res l r (rev_op op) 0 false v)
+        | Bool (vt, vf) -> Bool (AbstractValue.operator res l r op 1 false vt, AbstractValue.operator res l r (rev_op op) 0 false vf)
         | Unit _ -> raise (Invalid_argument "opR: Given a unit type"))
       )
       | Cons | Seq | And | Or -> raise (Invalid_argument ("Invalid operator matched " ^ (string_of_op op)))
@@ -559,11 +567,11 @@ module SemanticsDomain =
     and wid_VE ve1 ve2 = match ve1, ve2 with 
       | TypeAndEff (v1, e1), TypeAndEff (v2, e2) -> TypeAndEff ((wid_V v1 v2), (wid_Eff e1 e2))
       | _, _ -> join_VE ve1 ve2
-    and op_V sl sr op v = match v with
+    and op_V sl sr op mod_eq_flag v = match v with
       | Bot | Top -> Top
-      | Relation r -> Relation (op_R "" sl sr op false r)
+      | Relation r -> Relation (if mod_eq_flag then op_R_eq_mod "" sl sr op false r else op_R "" sl sr op false r)
       | _ -> raise (Invalid_argument "Should be a relation type when using op_V")
-    and op_VE sl sr op ve = temap ((op_V sl sr op), id) ve
+    and op_VE sl sr op mod_eq_flag ve = temap ((op_V sl sr op mod_eq_flag), id) ve
     and uop_V op s v = match v with
       | Bot | Top -> Top
       | Relation r -> Relation (uop_R "" op s false r)

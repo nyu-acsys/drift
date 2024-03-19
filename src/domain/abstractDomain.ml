@@ -52,7 +52,7 @@ module type Domain =
       string ->
       string ->
       string ->
-      Syntax.binop -> int -> t -> t
+      Syntax.binop -> int -> bool -> t -> t
     val uoperator :
       string ->
       string ->
@@ -458,7 +458,7 @@ module BaseDomain(Manager : DomainManager) : Domain =
       with e -> Some (var |> Var.of_string)
 
     (*let op_cache = Hashtbl.create 100 |> Obj.magic*)
-    let operator vres vl vr op cons v =
+    let operator vres vl vr op cons mod_eq_flag v =
       (* (if !debug then
       begin
         Format.printf "\n\nOperator abs\n";
@@ -494,13 +494,19 @@ module BaseDomain(Manager : DomainManager) : Domain =
            let vt =
              if temp = "!=" then (* '!=' not support by apron, use vl < vr join vl > vr *)
                begin
-                 let expr1 = vl ^ "<" ^ vr in
-                 let expr2 = vl ^ ">" ^ vr in
-                 let tab1 = Parser.tcons1_of_lstring env [expr1] in
-                 let tab2 = Parser.tcons1_of_lstring env [expr2] in
-                 let vlt' = Abstract1.meet_tcons_array man v' tab1 in
-                 let vgt' = Abstract1.meet_tcons_array man v' tab2 in
-                 Abstract1.join man vlt' vgt'
+                 if mod_eq_flag then
+                  let vr = vr^" + 1" in
+                  let expr = vl ^ " = " ^ vr in
+                  let tab = Parser.tcons1_of_lstring env [expr] in
+                  Abstract1.meet_tcons_array man v' tab
+                 else
+                  let expr1 = vl ^ "<" ^ vr in
+                  let expr2 = vl ^ ">" ^ vr in
+                  let tab1 = Parser.tcons1_of_lstring env [expr1] in
+                  let tab2 = Parser.tcons1_of_lstring env [expr2] in
+                  let vlt' = Abstract1.meet_tcons_array man v' tab1 in
+                  let vgt' = Abstract1.meet_tcons_array man v' tab2 in
+                  Abstract1.join man vlt' vgt'
                end
              else
                begin
@@ -545,11 +551,11 @@ module BaseDomain(Manager : DomainManager) : Domain =
       Abstract1.minimize_environment man res
         (* res *)
 
-    let operator x1 x2 x3 x4 x5 = measure_call "AbstractValue.operator" (operator x1 x2 x3 x4 x5)
+    let operator x1 x2 x3 x4 x5 x6 = measure_call "AbstractValue.operator" (operator x1 x2 x3 x4 x5 x6)
     let uoperator vres ve op cons v =
       if is_bot v then v else
       match op with
-      | UMinus -> let v' = operator vres "0" ve Minus cons v in
+      | UMinus -> let v' = operator vres "0" ve Minus cons false v in
          alpha_rename v' ve "cur_v"
       | Not -> failwith "Not yet implemented"
 
@@ -665,9 +671,9 @@ module ProductDomain(D1 : Domain)(D2: Domain) : Domain =
     let widening (v11, v12) (v21, v22) =
       D1.widening v11 v21, D2.widening v12 v22
 
-    let operator vres vl vr op cons (v1, v2) =
-      D1.operator vres vl vr op cons v1,
-      D2.operator vres vl vr op cons v2
+    let operator vres vl vr op cons mod_eq_flag (v1, v2) =
+      D1.operator vres vl vr op cons mod_eq_flag v1,
+      D2.operator vres vl vr op cons mod_eq_flag v2
 
     let uoperator vres ve op cons (v1, v2) =
       D1.uoperator vres ve op cons v1,
