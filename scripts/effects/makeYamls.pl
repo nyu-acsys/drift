@@ -33,7 +33,9 @@ properties:
   - property_file: $rt.yml.prp
     expected_verdict: true
 EOT
+        chmod 0777, $fh;
         close($fh);
+
 
         print "Created file: $yaml_file\n";
     } else {
