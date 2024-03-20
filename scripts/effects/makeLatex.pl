@@ -70,6 +70,7 @@ sub parseResultsFile {
                 $d->{$bench}->{$runSets[$i]}->{cpu} = $RCWMs[$i+1];
                 $d->{$bench}->{$runSets[$i]}->{wall} = $RCWMs[$i+2];
                 $d->{$bench}->{$runSets[$i]}->{mem} = $RCWMs[$i+3];
+                $d->{$bench}->{$runSets[$i]}->{rd}  = $runSets[$i];
             }
             #my ($fn,$res,$cpu,$wall,$mem) = split /\t/, $_;
             # $fn =~ s/^cps_//;
@@ -80,39 +81,105 @@ sub parseResultsFile {
     }
 }
 
-
-
-
 foreach my $fn (@resultsfiles) {
     parseResultsFile($fn);
 }
 
-print "     ";
-foreach my $tool (@RUNDEFINITIONS) {
-    print " & \\multicolumn{3}{|c||}{$run2tool{$tool}}";
+sub newBest {
+    my ($bench,$rd) = @_;
+    $d->{$bench}->{BEST}->{res}  = $d->{$bench}->{$rd}->{res};
+    $d->{$bench}->{BEST}->{cpu}  = $d->{$bench}->{$rd}->{cpu};
+    $d->{$bench}->{BEST}->{wall} = $d->{$bench}->{$rd}->{wall};
+    $d->{$bench}->{BEST}->{mem}  = $d->{$bench}->{$rd}->{mem};
+    $d->{$bench}->{BEST}->{rd}   = $rd;
 }
-print "\\\\ \n";
-print "{\\bf Bench} ";
-foreach my $tool (@RUNDEFINITIONS) {
-    print " & {\\bf Res} & {\\bf CPU} & {\\bf Mem} ";
+# compute the best run set
+foreach my $bench (sort keys %$d) {
+    my $someRD = (keys %{$d->{$bench}})[0];
+    newBest($bench,$someRD);
+    #warn "someRD: $someRD".Dumper($d->{$bench}->{BEST});
+    # $d->{$bench}->{BEST}->{res} = 'unknown';
+    # $d->{$bench}->{BEST}->{cpu} = -1;
+    # $d->{$bench}->{BEST}->{wall} = -1;
+    # $d->{$bench}->{BEST}->{mem} = -1;
+    
+    foreach my $rd (keys %{$d->{$bench}}) {
+        next unless $d->{$bench}->{$rd}->{res} eq 'true';
+        # does it improve because previously BEST coudln't prove it?
+        if ($d->{$bench}->{BEST}->{res} ne 'true') {
+            newBest($bench,$rd);
+        # does it improve because it's faster?
+        } elsif ($d->{$bench}->{BEST}->{res} eq 'true'
+                && $d->{$bench}->{$rd}->{cpu} < $d->{$bench}->{BEST}->{cpu}) {
+            newBest($bench,$rd);
+        } else {
+            warn "not better\n";
+        }
+    }
 }
-print "\\\\ \n";
-print "\\hline\n";
+print Dumper($d);
+
+open EXT, ">exp-apx.tex" or die $!;
+# print EXT "     ";
+# foreach my $tool (@RUNDEFINITIONS) {
+#     print EXT " & \\multicolumn{3}{|c||}{$run2tool{$tool}}";
+# }
+# print EXT "\\\\ \n";
+# print EXT "{\\bf Bench} ";
+# foreach my $tool (@RUNDEFINITIONS) {
+#     print EXT " & {\\bf Res} & {\\bf CPU} & {\\bf Mem} ";
+# }
+# print EXT "\\\\ \n";
+# print EXT "\\hline\n";
 foreach my $b (sort keys %$d) {
     my $tt = $b; $tt =~ s/\_/\\_/g;
     $tt =~ s/negated/neg/;
-    print "\\texttt{\\scriptsize $tt} ";
+    print EXT "\\texttt{\\scriptsize $tt} \\\\\n";
     foreach my $tool (@RUNDEFINITIONS) {
-        printf("& %-5s & %3.2f & %3.2f ",
+        my $isBest = ($d->{$b}->{BEST}->{rd} eq $tool ? '\hl ' : '    ');
+        print EXT sprintf("& $isBest %-5s & %3.2f & %3.2f & %s \\\\\n",
            cleanRes($d->{$b}->{$tool}->{res}),
            $d->{$b}->{$tool}->{cpu},
 #           $d->{$b}->{$tool}->{wall},
-           $d->{$b}->{$tool}->{mem});
+           $d->{$b}->{$tool}->{mem},
+           $run2tool{$d->{$b}->{$tool}->{rd}});
     }
-    print "\\\\ \n";
+    print  EXT "\\hline\n";
 }
+close EXT;
+print "wrote: exp-apx.tex\n";
 
-print "\\hline\n";
+### Generate paper body table showing only the best
+
+open BODY, ">exp-body.tex" or die $!;
+print BODY "     ";
+foreach my $tool (@RUNDEFINITIONS) {
+    print BODY " & \\multicolumn{3}{|c||}{$run2tool{$tool}}";
+}
+print BODY "\\\\ \n";
+print BODY "{\\bf Bench} ";
+foreach my $tool (@RUNDEFINITIONS) {
+    print BODY " & {\\bf Res} & {\\bf CPU} & {\\bf Mem} ";
+}
+print BODY "\\\\ \n";
+print BODY "\\hline\n";
+foreach my $b (sort keys %$d) {
+    my $tt = $b; $tt =~ s/\_/\\_/g;
+    $tt =~ s/negated/neg/;
+    print BODY "\\texttt{\\scriptsize $tt} ";
+    print BODY sprintf("& %-5s & %3.2f & %3.2f & %s \\\\\n",
+           cleanRes($d->{$b}->{BEST}->{res}),
+           $d->{$b}->{BEST}->{cpu},
+#           $d->{$b}->{$tool}->{wall},
+           $d->{$b}->{BEST}->{mem},
+           $run2tool{$d->{$b}->{BEST}->{rd}});
+    print  BODY "\\hline\n";
+}
+close BODY;
+print "wrote: exp-body.tex\n";
+
+
+
 
 # while(<DATA>) {
 #     next if /^tool/;
