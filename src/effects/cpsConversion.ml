@@ -25,7 +25,7 @@ let fresh_k_q_acc () = match !fresh_k_q_acc_gen with
   | Some f -> f ()
   | None -> let f () = begin match Option.map snd !property_spec with
                    | Some aspec -> 
-                      begin match aspec.env with
+                      begin match aspec.env_vars with
                       | _::acc -> let accvars = List.map (fun accx -> fresh_var accx) acc in
                                  (fresh_var "k", fresh_var "q", accvars)
                       | _ -> raise (Invalid_argument "Expected Ev arguments")
@@ -148,7 +148,7 @@ let run e =
   | Some (_, aspec) ->
      let ev_k = fresh_var "k" in
      let ev_q = "q" in
-     let ev_x, ev_acc = begin match aspec.env with
+     let ev_x, ev_acc = begin match aspec.env_vars with
                         | x::acc -> x, acc
                         | _ -> raise (Invalid_argument "Expected Ev arguments")
                         end in

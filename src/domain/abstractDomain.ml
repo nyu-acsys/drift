@@ -61,6 +61,10 @@ module type Domain =
       string ->
       string ->
       string -> Syntax.binop -> t -> t
+    val parallel_assign:
+      string list -> 
+      (string * string option * Syntax.binop option) list ->
+      t -> t 
     val print_abs : Format.formatter -> t -> unit
     (*val print_env : Format.formatter -> t -> unit*)
     val derived : string -> t -> t
@@ -590,6 +594,48 @@ module BaseDomain(Manager : DomainManager) : Domain =
       Abstract1.minimize_environment man res
       (* res *)
 
+    let parallel_assign vress eabs v = 
+      let env, avress = Abstract1.env v 
+                        |> (fun env -> List.fold_left 
+                                      (fun (var_ress, env') vres -> 
+                                        match make_var vres with
+                                        | Some var_res -> 
+                                           ((var_res::var_ress), 
+                                            Environment.lce env' (Environment.make [|var_res|] [||]))
+                                        | None -> raise (Invalid_argument "Expected varibles for assignment"))
+                                      ([], env) vress)
+                        |> (fun (var_ress, env) -> List.rev var_ress 
+                                                |> Array.of_list 
+                                                |> (fun avress -> (env, avress))) 
+      in
+      let atabs, env' = (List.fold_left (fun (str_eabs, env) eab ->
+                             match eab with 
+                             | vl, Some vr, Some op -> begin
+                                 let env' = (match (make_var vl, make_var vr) with
+                                             | None, Some var_r -> Environment.make [|var_r|] [||]
+                                             | Some var_l, None -> Environment.make [|var_l|] [||]
+                                             | Some var_l, Some var_r -> Environment.make [|var_l; var_r|] [||]
+                                             | None, None -> Environment.make [||] [||])
+                                            |> Environment.lce env in
+                                 let str_eab = vl ^ " " ^ (string_of_op op) ^ " " ^ vr in 
+                                 (str_eab::str_eabs, env') end
+                             | vl, None, None -> begin
+                                 let env' = (match (make_var vl) with
+                                             | Some var_l -> Environment.make [|var_l|] [||]
+                                             | None -> Environment.make [||] [||])
+                                            |> Environment.lce env in
+                                 let str_eab = vl in
+                                 (str_eab::str_eabs, env') end
+                             | _, _, _ -> failwith "Not supported expression"
+                           ) ([], env) eabs)
+                        |> (fun (str_eabs, env) -> List.rev (str_eabs) 
+                                                |> List.map (fun str_eab -> Parser.texpr1_of_string env str_eab)
+                                                |> Array.of_list 
+                                                |> (fun atabs -> (atabs, env))) in
+      let v' = Abstract1.change_environment man v env' false in
+      let res' = Abstract1.assign_texpr_array man v' avress atabs None in
+      Abstract1.minimize_environment man res'
+
     let derived expr v = 
       (* (if !debug then
       begin
@@ -682,6 +728,10 @@ module ProductDomain(D1 : Domain)(D2: Domain) : Domain =
     let assign vres vl vr op (v1, v2) =
       D1.assign vres vl vr op v1,
       D2.assign vres vl vr op v2
+  
+    let parallel_assign vress eabs (v1, v2) =
+      D1.parallel_assign vress eabs v1,
+      D2.parallel_assign vress eabs v2 
 
     let print_abs ppf (v1, v2) =
       D1.print_abs ppf v1;

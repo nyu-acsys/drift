@@ -55,8 +55,8 @@ let tr (e: term) (a: term) (acfg: term) (asst: term option) (asstFinal: term opt
                        ], ""))
                 ], "")
           end
-      end
-    | UnOp (uop, e1, l) ->
+      end 
+   | UnOp (uop, e1, l) ->
       let tr_e1 = tr_ e1 acfg in
       begin match tr_e1 with 
         | TupleLst ([e1'; ecfg1], "") ->

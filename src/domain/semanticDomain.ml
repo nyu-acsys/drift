@@ -149,6 +149,9 @@ module SemanticsDomain =
     let assign_R res l r op = function 
       | Int v -> Int (AbstractValue.assign res l r op v)
       | _ -> raise (Invalid_argument "Assign boolean does not support")
+    let parallel_assign_R ress eabs = function
+      | Int v -> Int (AbstractValue.parallel_assign ress eabs v)
+      | _ -> raise (Invalid_argument "Parallel assign boolean does not support")
     let bool_op_R op a1 a2 = match a1, a2 with
       | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> if string_of_op op = "&&" then
         Bool (AbstractValue.meet v1t v2t, AbstractValue.join v1f v2f)
@@ -321,6 +324,7 @@ module SemanticsDomain =
     let bot_R_Eff e = effmapi (fun q acc -> VarMap.mapi (fun v r -> bot_R Plus) acc) e
     let bot_Eff = EffBot 
     let empty_eff = Effect (StateMap.empty)  (* todo: must revisit. it should be  a map where all states map to Bot *)
+          
     let extract_v = function
       | TEBot -> Bot
       | TypeAndEff (v, _) -> v

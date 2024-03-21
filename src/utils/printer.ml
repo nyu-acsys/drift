@@ -175,7 +175,8 @@ and pr_eff_acc ppf acc =
   else VarMap.bindings acc
        |> Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_eff_acc_binding ppf
 and pr_eff_acc_binding ppf (v, r) =
-  Format.fprintf ppf "@[<1>(@ %s@ |->@ %a)@]" v pr_relation r
+  (* Format.fprintf ppf "@[<1>(@ %s@ |->@ %a)@]" v pr_relation r *)
+  Format.fprintf ppf "@[<1>%a@]" pr_relation r
 and pr_eff_binding ppf ((Q q), acc) = 
   Format.fprintf ppf "@[<1>(@ %s@ |->@ @[<v>%a@])@]" (string_of_int q) pr_eff_acc acc
 and pr_lst ppf lst =

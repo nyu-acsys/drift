@@ -354,7 +354,7 @@ let get_env_list (env: env_t) (trace: trace_t) (m: exec_map_t) =
       in
       x :: lst'
     in
-    (List.fold_left helper [] env_l) @ (AbstractEv.spec_env ())
+    (List.fold_left helper [] env_l) @ (AbstractEv.spec_env_vars ())
 
 let get_env_list e cs = measure_call "get_env_list" (get_env_list e cs)
       
@@ -1784,14 +1784,19 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
 
   (* let eff_i = AbstractEv.eff0 () in *)
   let arrow_ec var ec v = match (arrow_EffV var (Effect ec) v) with Effect ec' -> ec' | _ -> ec in
-  let ae, eff_i = VarMap.fold (fun var (n, b) (ae, ec) ->
-                      let n = construct_snode create_empty_trace n in
-                      let find n m = NodeMap.find_opt n m |> Opt.get_or_else TEBot in
-                      let te = find n m in
-                      if is_Relation (extract_v te) then
-                        extract_v te |> (fun v -> (arrow_V var ae v, arrow_ec var ec v))
-                      else (ae, ec)
-                    ) env (Relation (top_R Plus), AbstractEv.eff0 ()) in
+  let ae, eff_i, pre_vars_vs = 
+    VarMap.fold (fun var (n, b) (ae, ec, pvs) ->
+        let n = construct_snode create_empty_trace n in
+        let find n m = NodeMap.find_opt n m |> Opt.get_or_else TEBot in
+        let te = find n m in
+        match (extract_v te) with
+        | (Relation r) as v -> (arrow_V var ae v, arrow_ec var ec v, VarDefMap.add var r pvs) 
+        | _ -> (ae, ec, pvs)
+        (* if is_Relation (extract_v te) then *)
+        (*   extract_v te |> (fun v ->  (arrow_V var ae v, arrow_ec var ec v, VarDefMap.add var v pvs)) *)
+        (* else (ae, ec, pvs) *)
+      ) env (Relation (top_R Plus), AbstractEv.eff0 (), VarDefMap.empty) in
+  let _ = AbstractEv.program_pre_vars := pre_vars_vs in
   let m_t = Hashtbl.copy m in
   (if !debug then
      let pr = Format.fprintf Format.std_formatter in

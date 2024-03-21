@@ -10,7 +10,7 @@ type assertCheck = PerTran | Final
 
 type aut_spec = {
   qset: state_t list; 
-  env: var list;
+  env_vars: var list;
   delta: term; 
   cfg0: term;
   asst: term option;
@@ -116,10 +116,10 @@ end
 
 module EvInterpSemActions : SemActionsSig = struct
  
-  let rec add_vars xs env = match xs with 
-    | [] -> env 
-    | (Var (v, _))::vs -> v::(add_vars vs env)
-    | (_)::vs -> add_vars vs env
+  let rec add_vars xs res = match xs with 
+    | [] -> res
+    | (Var (v, _))::vs -> v::(add_vars vs res)
+    | (_)::vs -> add_vars vs res
 
   let delta_fn x (q, acc) e = (label e, add_vars acc [] |> add_vars [x])
   let initial_cfg (e1, e2) = TupleLst ([e1; e2], "")
@@ -134,12 +134,12 @@ let semActions = match (!Config.ev_trans) with
 module SemActions = (val semActions : SemActionsSig)
 
 let effect_aut_spec fields = 
-  let qset, (delta, env), cfg0, assts = fields in
+  let qset, (delta, env_vars), cfg0, assts = fields in
   let asst, asstFinal = List.fold_left (fun (a, af) (a', aCheck') -> 
                             match aCheck' with 
                             | PerTran -> (Some a', af)
                             | Final -> (a, Some a') ) (None, None) assts 
   in
-  {qset; delta; env; cfg0; asst; asstFinal}
+  {qset; delta; env_vars; cfg0; asst; asstFinal}
 
     
