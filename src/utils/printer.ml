@@ -161,7 +161,11 @@ let rec pr_value ppf v = match v with
 and pr_value_and_eff ppf ve = match ve with
   | TEBot -> Format.fprintf ppf "_|_"
   | TETop -> Format.fprintf ppf "T"
-  | TypeAndEff (v, e) -> Format.fprintf ppf "@[(@ @[<v>@[t: %a@],@ @[<v>eff: @[<v>%a@]@]@])@]" pr_value v pr_eff e
+  | TypeAndEff (v, e) -> 
+     if (not !Config.ev_trans) then
+       Format.fprintf ppf "@[(@ @[<v>@[t: %a@],@ @[<v>eff: @[<v>%a@]@]@])@]" pr_value v pr_eff e
+     else
+       Format.fprintf ppf "@[(@ @[<v>@[t: %a@]])@]" pr_value v
 and pr_eff_map ppf e = 
   if StateMap.is_empty e then Format.fprintf ppf "Empty" 
   else StateMap.bindings e 

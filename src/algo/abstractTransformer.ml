@@ -861,7 +861,8 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                let pr = Format.fprintf Format.std_formatter in
                pr "@.LINE 781, BinOp.pre-e2, trace: %s, te: @[%a@]"
                  (get_trace_data trace1) pr_value_and_eff te1);
-            if te1 = TEBot then (m1', [tail1, ae1]) 
+            if (te1 = TEBot || (only_shape_V (extract_v te1) && ((extract_eff te1) == EffBot))) then 
+                                 (m1', [tail1, ae1]) 
             else 
               begin
                 let ec' = find n1 m1 |> extract_ec in
