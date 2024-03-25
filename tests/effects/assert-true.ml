@@ -1,2 +1,2 @@
 let main (u: unit(*-:{v:Unit | unit}*)) = 
-  0
+  ev 1; 0
