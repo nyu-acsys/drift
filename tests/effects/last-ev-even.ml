@@ -1,5 +1,5 @@
 let rec foo vv f =
-  if vv = 0 then ev f
+  if vv = 0 then begin ev f; 0 end
   else begin ev vv; foo (vv-1) f end 
 
 let main (v:int(*-:{v:Int | true}*)) (final:int(*-:{v:Int | true}*)) =

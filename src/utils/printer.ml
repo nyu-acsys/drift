@@ -30,7 +30,7 @@ let rec pr_exp pl ppf = function
         (pr_exp pl) e
         (print_tuple pl) tl
     in
-    Format.fprintf ppf "@[<2>(%a)%a@]"
+    Format.fprintf ppf "Tup @[<2>(%a)%a@]"
       (print_tuple pl) u (pr_label pl) l
 | Const (c, l) ->
     Format.fprintf ppf "Const %a%a" pr_const c (pr_label pl) l
@@ -155,17 +155,16 @@ let rec pr_value ppf v = match v with
   | Top -> Format.fprintf ppf "T"
   | Relation r -> pr_relation ppf r
   | Table t -> print_table t ppf pr_value_and_eff
-  | Tuple u -> pr_tuple ppf u
+  | Tuple u -> Format.fprintf ppf "(%a)" pr_tuple u
   | Ary ary -> pr_ary ppf ary
   | Lst lst -> pr_lst ppf lst
 and pr_value_and_eff ppf ve = match ve with
   | TEBot -> Format.fprintf ppf "_|_"
   | TETop -> Format.fprintf ppf "T"
   | TypeAndEff (v, e) -> 
-     if (not !Config.ev_trans) then
-       Format.fprintf ppf "@[(@ @[<v>@[t: %a@],@ @[<v>eff: @[<v>%a@]@]@])@]" pr_value v pr_eff e
+     if (not !Config.ev_trans) then Format.fprintf ppf "@[(@ @[<v>@[t: %a@],@ @[<v>eff: @[<v>%a@]@]@])@]" pr_value v pr_eff e
      else
-       Format.fprintf ppf "@[(@ @[<v>@[t: %a@]])@]" pr_value v
+       pr_value ppf v
 and pr_eff_map ppf e = 
   if StateMap.is_empty e then Format.fprintf ppf "Empty" 
   else StateMap.bindings e 

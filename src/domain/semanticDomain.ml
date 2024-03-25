@@ -303,6 +303,10 @@ module SemanticsDomain =
       | EffBot -> true
       | Effect map -> minimize_eff map |> StateMap.is_empty
       | EffTop -> false
+    let is_top_Eff e = match e with
+      | EffBot -> true
+      | Effect map -> false (* Not sure how to check here. *)
+      | EffTop -> false
     let stren_Eff e ae = match e, ae with
       | EffBot, _ -> EffBot 
       | Effect _, Relation rae -> 
@@ -449,7 +453,7 @@ module SemanticsDomain =
       | _ -> false
     (*todo: if v' is Bot then the result should be Bot? why is it different from the paper *)
     and arrow_V var (v:value_tt) (v':value_tt) = match v' with
-      | Bot | Top | Table _ -> v
+      | Bot | Top | Table _ | Tuple _ -> v
       | Relation r2 -> (match v with
                        | Table t -> Table (arrow_T forget_V arrow_VE var t v')
                        | Relation r1 -> Relation (arrow_R var r1 r2)
@@ -457,10 +461,10 @@ module SemanticsDomain =
                        | Lst lst -> Lst (arrow_Lst var lst (Relation r2) None)
                        | Tuple u -> Tuple (arrow_Tuple var u v')
                        | _ -> v)
-      | Tuple u2 -> List.fold_left (fun v1 ve2 ->
+      (* | Tuple u2 -> List.fold_left (fun v1 ve2 ->
                        match ve2 with 
                        | TETop | TEBot -> v1
-                       | TypeAndEff (v2, _) -> arrow_V var v1 v2) v u2
+                       | TypeAndEff (v2, _) -> arrow_V var v1 v2) v u2 *)
       | Ary ary2 -> let (vars, (rl2, re2)) = ary2 in
                    (match v with
                     | Table t -> Table (arrow_T forget_V arrow_VE var t v')
@@ -758,6 +762,14 @@ module SemanticsDomain =
       | Tuple u -> only_shape_Tuple u
       | Bot -> true
       | _ -> false
+    and is_bot_VE = function
+      | TEBot -> true
+      | TypeAndEff (Bot, e) -> is_bot_Eff e
+      | _ -> false
+    and is_top_VE = function
+      | TETop -> true
+      | TypeAndEff (Top, e) -> is_top_Eff e
+      | _ -> false
     and cons_temp_lst_V t = function
       | Lst lst -> Lst (cons_temp_lst_Lst t lst)
       | _ -> raise (Invalid_argument "Temp list construct should be item :: lst")
@@ -890,7 +902,7 @@ module SemanticsDomain =
     and bot_shape_Ary (vars, (rl, re)) = 
       (vars, (rl, bot_shape_R re))
     and only_shape_Ary (vars, (rl, re)) = 
-      is_bot_R rl && is_bot_R re 
+      is_bot_R rl && is_bot_R re
     (*
       *******************************
       ** Abstract domain for List **
@@ -1161,6 +1173,8 @@ module SemanticsDomain =
       ** Abstract domain for Tuple **
       *******************************
     *)
+    and init_Tuple l = 
+      Tuple (List.init l (fun _ -> TEBot))
     and join_Tuple u1 u2 =
       List.map2 (fun v1 v2 -> join_VE v1 v2) u1 u2
     and meet_Tuple u1 u2 =
@@ -1186,7 +1200,7 @@ module SemanticsDomain =
     and get_tuple_list u = 
       u
     and only_shape_Tuple u = 
-      List.fold_right (fun ve is_bot -> if is_bot then ve = TEBot else is_bot) u true
+      List.fold_right (fun ve is_bot -> if is_bot then is_bot_VE ve else is_bot) u true
 
     (*
       ***************************************
@@ -1221,7 +1235,7 @@ module SemanticsDomain =
     let leq_M (m1: exec_map_t) (m2: exec_map_t) : bool =
       NodeMap.for_all (fun n v1 (*untie to node -> value*) -> 
         NodeMap.find_opt n m2 |> Opt.map (fun v2 -> leq_VE v1 v2) |>
-        Opt.get_or_else (v1 = TEBot)) m1
+        Opt.get_or_else (is_bot_VE v1)) m1
     let eq_PM (m1:exec_map_t) (m2:exec_map_t) =
       NodeMap.for_all (fun n v1 (*untie to node -> value*) ->
         NodeMap.find_opt n m2 |> Opt.map (

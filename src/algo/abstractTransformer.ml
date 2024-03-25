@@ -560,10 +560,10 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
         | None -> v
         | Some v' -> if false && widen then wid_V v' v else (*join_V v'*) v) m*)
       (* NodeMap.add n v m *)
-    (if !debug && get_label_snode n = "EN: 33;(z28*22-20)" then
+    (if !debug && get_label_snode n = "EN: 89;(z18*)" then
       Format.fprintf Format.std_formatter "line 563. old_v: %a" pr_value_and_eff (find n m));
     let m' = NodeMap.update n (fun old_v -> match old_v with None -> v | Some v' -> join_VE v' v) m in
-    (if !debug && get_label_snode n = "EN: 33;(z28*22-20)" then
+    (if !debug && get_label_snode n = "EN: 89;(z18*)" then
       Format.fprintf Format.std_formatter "line 563. new_v: %a" pr_value_and_eff (find n m'));
     m'
   in
@@ -636,7 +636,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           pr_exp true Format.std_formatter term;
           Format.printf "\n";
       end);
-      (if !debug && ((loc term)="18") then
+      (if !debug && (x="cfg7") then
          let pr = Format.fprintf Format.std_formatter in
          pr "@.LINE 586, Var[%s], trace: %s, @,ec: @[%a@]@, @,ae: @[%a@]@."
            x (get_trace_data trace) pr_eff_map ec pr_value ae); 
@@ -644,7 +644,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       let (nx, recnb) = VarMap.find x env in
       let envx, lx, lcs = get_vnode nx in
       let nx = construct_snode trace nx in      
-      (if !debug && ((loc term) = "18") then
+      (if !debug && (x="cfg7") then
          find nx m |> (fun tex0 ->
          Format.fprintf Format.std_formatter "@.Pre_prog -> Var[%s]: @[%a@]" x pr_value_and_eff tex0)
       );
@@ -660,7 +660,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       in
  
       let te = find n m in  (* M[env*l] *)
-      (if !debug && (loc term = "18") then
+      (if !debug && (x="cfg7") then
          let pr = Format.fprintf Format.std_formatter in
          pr "@.LINE 602, Var[%s](prop-pre), trace: %s, @,te: @[%a@]@."
            x (get_trace_data trace) pr_value_and_eff te);
@@ -678,7 +678,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
            x (get_trace_data trace)
            pr_value_and_eff tex'
            pr_value_and_eff te'); *)
-      (if !debug && (loc term = "18") then
+      (if !debug && (x="cfg7") then
         let pr = Format.fprintf Format.std_formatter in
         pr "@.LINE 630, Var[%s](prop-post), trace: %s, @,te': @[%a@]@, @,tex': @[%a@]@."
           x (get_trace_data trace) pr_value_and_eff te' pr_value_and_eff tex');
@@ -690,7 +690,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
            x (get_trace_data trace)
            pr_value_and_eff tex'
            pr_value_and_eff te'); *)
-      (if !debug && (loc term = "18") then
+      (if !debug && (x="cfg7") then
          let pr = Format.fprintf Format.std_formatter in
          pr "@.LINE 630, Var[%s](prop-post), trace: %s, @,te': @[%a@]@, @,tex': @[%a@]@."
            x (get_trace_data trace) pr_value_and_eff te' pr_value_and_eff tex');
@@ -712,16 +712,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           let trace1 = extend_trace tail1 trace in
           let n1 = loc e1 |> construct_enode env |> construct_snode trace1 in
           let te0 = find n1 m0 in
-          let te1, m1 =
-            match te0 with
-            | TEBot when false ->
-                let t =
-                  append_call_trace (fresh_z ()) trace1 |> init_T
-                in
-                let te1 = Table t |> init_VE_wec in
-                te1, m0 |> update false n1 te1
-            | _ -> te0, m0
-          in
+          let te1, m1 = te0, m0 in
           if ((extract_v te1) = Bot) then join_M m0' m1, [tail1, ae1]
           else             
             if not @@ is_table (extract_v te1) then
@@ -758,8 +749,8 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                        (get_trace_data trace2) pr_value_and_eff te2
                   );
                   match te1, te2 with
-                  | TEBot, _ | _, TEBot -> m2', (extended_tail, ae2)
-                  | _, TETop -> m2' |> update false n TETop, (extended_tail, ae2)
+                  | TEBot, _ | _, TEBot | _ when is_bot_VE te1 || is_bot_VE te2 -> m2', (extended_tail, ae2)
+                  | _, TETop | _ when is_top_VE te2 -> m2' |> update false n TETop, (extended_tail, ae2)
                   | _ ->
                       let te = find n m2 in
                       let trace =
@@ -835,7 +826,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             let rec cons_list_items ec m term = match term with (* 1 :: 2 :: 3 ::  *)
               | BinOp (Cons, e1', e2', l') ->
                   let l1, te1', m1' = cons_list_items ec m e1' in
-                  if te1' = TEBot then l1, te1', m1'
+                  if is_bot_VE te1' then l1, te1', m1'
                   else
                     let ec' = extract_ec te1' in
                     let l2, te2', m2' = cons_list_items ec' m1' e2' in
@@ -861,8 +852,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                let pr = Format.fprintf Format.std_formatter in
                pr "@.LINE 781, BinOp.pre-e2, trace: %s, te: @[%a@]"
                  (get_trace_data trace1) pr_value_and_eff te1);
-            if (te1 = TEBot || (only_shape_V (extract_v te1) && ((extract_eff te1) == EffBot))) then 
-                                 (m1', [tail1, ae1]) 
+            if is_bot_VE te1 then (m1', [tail1, ae1]) 
             else 
               begin
                 let ec' = find n1 m1 |> extract_ec in
@@ -876,7 +866,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                       let n2 = loc e2 |> construct_enode env |> construct_snode trace2 in
                       let n = loc term |> construct_enode env |> construct_snode trace2 in
                       let te2 = find n2 m2 in
-                      if te1 = TEBot || te2 = TEBot then m2', (extended_tail, ae2)
+                      if is_bot_VE te1 || is_bot_VE te2 then m2', (extended_tail, ae2)
                       else
                         begin
                           let bop =
@@ -998,7 +988,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
         let n1 = loc e1 |> construct_enode env |> construct_snode trace in
         let n = loc term |> construct_enode env |> construct_snode trace in
         let te1 = find n1 m1 in
-        if te1 = TEBot then m1', (tail, ae1) 
+        if is_bot_VE te1 then m1', (tail, ae1) 
         else
           let node_1 = e1 |> loc |> name_of_node in
           let ted = init_VE_v (Relation (utop_R uop)) in
@@ -1035,7 +1025,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           let trace0 = extend_trace tail0 trace in
           let n0 = loc e0 |> construct_enode env |> construct_snode trace0 in
           let te0 = find n0 m0 in
-          if te0 = TEBot then m0', [tail0, ae0] else
+          if is_bot_VE te0 then m0', [tail0, ae0] else
           if not @@ is_bool_V (extract_v te0) then 
             let n = loc term |> construct_enode env |> construct_snode trace0 in
             m0' |> update false n TETop, [tail0, ae0]
@@ -1075,7 +1065,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                   (* let t1, t = alpha_rename_Vs t1 t in *)
                     prop te1 te in
                   let te1' = stren_ite_VE te1' t_true in
-                  (if !debug && get_label_snode n = "EN: 33;(z28*22-20)" then 
+                  (if !debug && get_label_snode n = "EN: 74;(z180*)" then 
                     Format.fprintf Format.std_formatter
                     "@.line 1047. tail1:@[%s@] te: @[%a@]@, te':@[%a@]@, te1: @[%a@]@, te1':@[%a@]"
                     (get_trace_data tail1)
@@ -1114,9 +1104,16 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                   ((if !trace_len > 0 && !if_part then m2' |> update false n te' else m2'), te'), (tail2, ae)
                 ) (map_true, TEBot) tails2
               in
+              let n = loc term |> construct_enode env |> construct_snode trace in
               if !trace_len = 0 || not !if_part then
-                let n = loc term |> construct_enode env |> construct_snode trace in
                 let te_n' = join_VE (stren_VE te_true ae0) (stren_VE te_false ae0) in
+                (if !debug && get_label_snode n = "EN: 74;(z180*)" then
+                  let pr = Format.fprintf Format.std_formatter in
+                  pr "@.LINE 1108, Ite, trace: %s, @,te_t: @[%a@]@, @,te_f: @[%a@]@, @,te_n': @[%a@]@."
+                    (get_trace_data trace) 
+                    pr_value_and_eff (stren_VE te_true ae0) 
+                    pr_value_and_eff (stren_VE te_false ae0)
+                    pr_value_and_eff te_n');
                 map_false |> update false n te_n', [create_empty_trace, ae0]
               else
                 join_M m0' map_false, tails1 @ tails2
@@ -1143,7 +1140,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           pr_value_and_eff te0);
       let te =
         match te0 with
-        | TEBot ->
+        | TEBot | _ when is_bot_VE te0 ->
             let tee = append_call_trace (fresh_z ()) trace |> init_T in
             Table tee |> init_VE_wec
         | _ -> temap (id, fun _ -> Effect ec) te0
@@ -1156,8 +1153,8 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       let trace' = trace in
       let is_rec' = Opt.exist f_opt || is_rec in
       let m', tails' = step_func (fun trace (tel, ter) m' -> 
-          if tel = TEBot then m' |> update false n te
-          else if ter = TETop then top_M m' else
+          if is_bot_VE tel then m' |> update false n te
+          else if is_top_VE ter then top_M m' else
           begin
             let z = get_trace_data trace in
             let f_nf_opt =
@@ -1176,7 +1173,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             (* MN: in the line below, z seems to be the name of the dependency variable. 
                    Is it correct to be the same as the current trace. see line 1068 *)
             let te1 = if x = "_" then find n1 m else replace_VE (find n1 m) x z in
-            (if !debug && ((get_label_snode nx = "VN: 2;(z28*22-20)") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
+            (if !debug && ((get_label_snode nx = "VN: 18;(z180*)")) then 
               let pr = Format.fprintf Format.std_formatter in
               pr "@.LINE 1061, ae: @[%a@]@, te1: @[%a@]@."
                 pr_value ae pr_value_and_eff te1);
@@ -1199,7 +1196,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                  pr_value_and_eff prop_te
                  pr_value_and_eff te); *)
             let px_te, te1 = prop_scope env1 env' trace m prop_te te in
-            (if !debug && ((get_label_snode nx = "VN: 2;(z28*22-20)") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
+            (if !debug && ((get_label_snode nx = "VN: 18;(z180*)")) then 
               let pr = Format.fprintf Format.std_formatter in
               pr "@.LINE 1104, px_te: @[%a@]@, te1: @[%a@]@, prop_te: @[%a@]@, te: @[%a@]@."
                 pr_value_and_eff px_te pr_value_and_eff te1 pr_value_and_eff prop_te pr_value_and_eff te);
@@ -1260,16 +1257,16 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                          |> Opt.get_or_else (update false n te1)) 
             in
             let trace = if is_rec' && x = "_" then trace' else trace in
-            (if !debug && ((get_label_snode nx = "VN: 2;(z28*22-20)") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then
+            (if !debug && ((get_label_snode nx = "VN: 18;(z180*)")) then
                let pr = Format.fprintf Format.std_formatter in
-               pr "@.@.LINE 1108, Lambda(before eval body), trace:%s, @,tex': @[%a@]@." 
+               pr "@.@.LINE 1259, Lambda(before eval body), trace:%s, @,tex': @[%a@]@." 
                  (get_trace_data trace) pr_value_and_eff tex'); 
             let ae' = if (x <> "_" && is_Relation (extract_v tex')) || is_List (extract_v tex') then 
               (* if only_shape_V tx then ae else  *)
               (arrow_V x ae (extract_v tex')) else ae in
             let ec' = extract_ec tex' in
             let ec' = replace_Eff (Effect ec') z x |> get_effmap in
-            (if !debug && ((get_label_snode nx = "VN: 2;(z28*22-20)") || (get_label_snode nx = "VN: 11;z22") || (get_label_snode nx = "VN: 12;z31") || (get_label_snode nx = "VN: 13;z35")|| (get_label_snode nx = "VN: 14;z37")) then 
+            (if !debug && ((get_label_snode nx = "VN: 18;(z180*)")) then 
               let pr = Format.fprintf Format.std_formatter in
               pr "@.LINE 1068, ae': @[%a@]@, ec': @[%a@]@."
                 pr_value ae' pr_eff_map ec');
@@ -1279,7 +1276,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                 let trace = extend_trace tail trace in
                 let node = loc e1 |> construct_enode env1 |> construct_snode trace in
                 let node_val = find node m1' in
-                (if !debug && get_label_snode nx = "VN: 2;(z28*22-20)" then
+                (if !debug && get_label_snode nx = "VN: 18;(z180*)" then
                   let pr = Format.fprintf Format.std_formatter in
                   pr "@.@.LINE 1150, Lambda(before eval body), trace:%s, @,node_val: @[%a@]@." 
                     (get_trace_data trace) pr_value_and_eff node_val);
@@ -1302,7 +1299,10 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             let m1' = m1' |> update nx tx' |> update n1 (if x = "_" then t1' else replace_V t1' z x) |>
             (Opt.map (fun (nf, t2, tf') -> fun m' -> m' |> update nf tf' |> update n (join_V t1 t2))
               nf_t2_tf'_opt |> Opt.get_or_else (update n t1)) in *)
-            join_M m1' m'
+            let m'' = join_M m1' m' in
+            (if !debug && (get_label_snode n = "EN: 111;(z132*)") then 
+              Format.fprintf Format.std_formatter "Line 1370 %a" pr_exec_map m1'
+            ); m''
           end
       ) te (m |> update false n te |> Hashtbl.copy), [create_empty_trace, ae]
       in
@@ -1312,40 +1312,43 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
            (get_trace_data trace)
            pr_value_and_eff (find n m'));
       m', tails'
-  | TupleLst (tlst, l) ->
+  | TupleLst (termlst, l) ->
       (if !debug then
       begin
           Format.printf "\n<=== Tuple ===>\n";
           pr_exp true Format.std_formatter term;
           Format.printf "\n";
       end);
-      (if !debug then
-         let pr = Format.fprintf Format.std_formatter in
-         pr "@.LINE 1160, Tuple, trace: %s, @,ec: @[%a@]@."
-           (get_trace_data trace) pr_eff_map ec);
       let n = loc term |> construct_enode env |> construct_snode trace in
       let te = find n m in 
       let te = match te with 
-          | TEBot -> init_VE_wec (Bot) 
-          | _ -> te 
+          | TEBot | _ when is_bot_VE te -> init_VE_wec (List.length termlst |> init_Tuple)
+          | _ -> te
       in
-      if List.length tlst = 0 then
+      let tlist = get_tuple_list_VE te in
+      (if !debug then
+         let pr = Format.fprintf Format.std_formatter in
+         pr "@.LINE 1160, Tuple, trace: %s, @,ec: @[%a@]@, @,te: @[%a@]@."
+           (get_trace_data trace) pr_eff_map ec pr_value_and_eff te);
+      if List.length termlst = 0 then
         let te' = 
           let cte = init_VE_v (init_V_c UnitLit) in
           join_VE te cte in
         m |> update false n te', [create_empty_trace, ae]
       else
         let tp, m', _ = List.fold_right 
-          (fun e (te, m, ec) -> 
+          (fun (te, e) (tep', m, ec) -> 
             let m', tails = step e env trace ec ae assertion is_rec m in
             let tee = merge_traces e (List.map fst tails) m' in
-            let te' = add_tuple_item_V te tee in
+            let ne = loc e |> construct_enode env |> construct_snode trace in
+            let tee', _ = prop tee te in
+            let m'' = update false ne tee' m' in
+            let te' = add_tuple_item_V tep' tee' in
             let ec' = extract_ec tee in
-            te',  m', ec'
-          ) tlst (Tuple [], m, ec) in
+            te',  m'', ec'
+          ) (zip_list tlist termlst) (Tuple [], m, ec) in
         let tep = TypeAndEff (tp, extract_eff te) in
-        let _, te' = prop tep te in
-        m' |> update false n te', [create_empty_trace, ae]
+        m' |> update false n tep, [create_empty_trace, ae]
   | PatMat (e, patlst, l) ->
       (if !debug then
       begin
@@ -1365,7 +1368,10 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       let tee = merge_traces e (List.map fst tails') m' in
       let ec' = extract_ec tee in
       let m' = update false ne tee m' in
-      if tee = TEBot || (extract_v tee) = Bot || only_shape_V (extract_v tee) then m', tails'
+      (* (if !debug && (get_label_snode ne = "EN: 95;(z18*)") then 
+        Format.fprintf Format.std_formatter "Line 1370 %a" pr_exec_map m'
+      ); *)
+      if is_bot_VE tee then m', tails'
       else 
         let m'' = 
           (if !debug && (loc e) = "131" then 
@@ -1386,9 +1392,9 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
               ); *)
               match e1 with
               | Const (c, l') ->
-                let m1, tails1 = step e1 env trace ec' ae assertion is_rec m in
+                let m1, _ = step e1 env trace ec' ae assertion is_rec m in
                 let n1 = loc e1 |> construct_enode env |> construct_snode trace in
-                let te1 = merge_traces e1 (List.map fst tails1) m1 in
+                let te1 = find n1 m in
                 let m1 = update false n1 te1 m1 in
                 let tee, te1 = find ne m1, find n1 m1 in
                 let tee, te1 = alpha_rename_VEs tee te1 in
@@ -1543,9 +1549,9 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                 let tee = find ne m in
                 let tee, te1 = alpha_rename_VEs tee te1 in
                 let tlst = get_tuple_list_VE te1 in
-                let tllst = tee |> get_tuple_list_VE in
-                let env', m', tlst', tllst' = 
-                  List.fold_left2 (fun (env, m, li, llst) e (tei, telsti) -> 
+                let tllst = get_tuple_list_VE tee in
+                let env', ae', m', tlst', tllst' = 
+                  List.fold_left2 (fun (env, ae', m, li, llst) e (tei, telsti) -> 
                       match e with
                       | Var (x, l') -> 
                           let nx = construct_vnode env l' trace in
@@ -1553,9 +1559,12 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                           let nx = construct_snode trace nx in
                           let tex = find nx m in
                           let tei', tex' = prop tei tex in
-                          let telsti', tei'' = prop telsti tei in
+                          let telsti', tei'' = prop telsti tei' in
                           let m' = m |> update false nx tex' in
-                          env1, m', (join_VE tei' tei'') :: li, telsti' :: llst
+                          let ae' = if (x <> "_" && is_Relation (extract_v tex')) || is_List (extract_v tex') then 
+                            (* if only_shape_V tx then ae else  *)
+                            (arrow_V x ae' (extract_v tex')) else ae' in
+                          env1, ae', m', tei'' :: li, telsti' :: llst
                       | _ -> begin 
                           (if !debug then 
                              begin 
@@ -1564,25 +1573,39 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                              end); 
                           raise (Invalid_argument "Tuple only for variables now")
                         end
-                    ) (env, m, [], []) termlst (zip_list tlst tllst) in
+                    ) (env, ae, m, [], []) termlst (zip_list tlst tllst) in
                 let tlst', tllst' = List.rev tlst', List.rev tllst' in
                 let te1', tee' = TypeAndEff (Tuple tlst', (extract_eff te1)), 
                                   TypeAndEff (Tuple tllst', (extract_eff tee)) 
                 in
-                let _, te1' = prop te1' te1 in
+                (if !debug then 
+                  begin 
+                    let pr = Format.fprintf Format.std_formatter in 
+                    pr "LINE 1568, PatMat.TupleLst, node: @[%s@]@, te1: @[%a@]@, tee: @[%a@]@, te1': @[%a@]@, tee': @[%a@]@." 
+                    (get_label_snode n1) pr_value_and_eff te1 pr_value_and_eff tee pr_value_and_eff te1' pr_value_and_eff tee'
+                  end); 
                 let tee', _ = prop tee tee' in
-                let m1 = m |> update false n1 te1' |> update false ne tee' in
+                (if !debug then 
+                  begin 
+                    let pr = Format.fprintf Format.std_formatter in 
+                    pr "LINE 1579, PatMat.TupleLst, node: @[%s@]@, te1': @[%a@]@, tee': @[%a@]@." 
+                    (get_label_snode n1) pr_value_and_eff te1' pr_value_and_eff tee'
+                  end); 
+                let m1 = m' |> update false n1 te1' |> update false ne tee' in
                 let ec' = extract_ec te1' in
-                let m2, tails2 = step e2 env' trace ec' ae assertion is_rec m1 in
+                let m2, tails2 = step e2 env' trace ec' ae' assertion is_rec m1 in
                 let n2 = loc e2 |> construct_enode env' |> construct_snode trace in
                 let te2 = merge_traces e2 (List.map fst tails2) m2 in
                 let m2 = update false n2 te2 m2 in
                 let te = find n m2 in 
                 let te2 = find n2 m2 in
-                let te2', te' = prop te2 te in
+                let te2', te' = prop_scope env' env trace m2 te2 te in
                 m2 |> update false n2 te2' |> update false n te'
               | _ -> raise (Invalid_argument "Pattern should only be either constant, variable, or list cons")
             ) (update false ne tee m' |> Hashtbl.copy) patlst in
+        (* (if !debug && (get_label_snode ne = "EN: 86;(z18*)") then 
+          pr_exec_map Format.std_formatter m''
+        ); *)
         m'', [create_empty_trace, ae]
   | Event (e1, l) ->
     (if !debug then
@@ -1600,7 +1623,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           let n1 = loc e1 |> construct_enode env |> construct_snode trace in
           let te1 = find n1 m1 in
           let penv = get_env_list env trace m1 in
-          if te1 = TEBot then m
+          if is_bot_VE te1 then m
           else
             let te' = begin match te1 with
                       | TypeAndEff ((Relation v), (Effect e)) -> 
@@ -1631,7 +1654,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                    |> (fun n -> (if assertion then add_reg_asst (loc term) ae1 n else ()); n) in
           let te1 = find n1 m in
           let ec' = extract_eff te1 in 
-          let te' = if te = TEBot then TypeAndEff (Relation (Unit ()), ec') 
+          let te' = if is_bot_VE te then TypeAndEff (Relation (Unit ()), ec') 
                     else temap (id, fun _ -> ec') te 
           in
           m |> update false n te'
