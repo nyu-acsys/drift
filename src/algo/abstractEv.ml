@@ -184,6 +184,11 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
     parallel_assign_R acc_vars assign_eabs acc 
   in
   let rec eval e env ae ts = 
+    let check_mod_const e_mod = 
+      match e_mod with
+      | Const (Integer 2, _) -> true
+      | _ -> false
+    in
     (* ( Format.printf "\n>>>exp:"; pr_exp true Format.std_formatter e;
        Format.printf "\n>>>ae:"; pr_relation Format.std_formatter ae; Format.printf "\n";
        Format.printf "\n>>>env: "; pr_ev_env Format.std_formatter env); *)
@@ -280,22 +285,33 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
                      | _ -> bop
                      end 
            in
+           let mod_eq_flag, e1, e2 = 
+             match bop, e1, e2 with
+             | Eq, BinOp (Mod, _, e_mod, _), _ -> check_mod_const e_mod, e1, e2
+             | Eq, _, BinOp(Mod, _, e_mod, _) -> check_mod_const e_mod, e2, e1
+             | Ne, BinOp(Mod, _, e_mod, _), _ -> check_mod_const e_mod, e1, e2
+             | Ne, _, BinOp(Mod, _, e_mod, _) -> check_mod_const e_mod, e2, e1
+             | _ -> false, e1, e2
+           in
+           (if !Config.debug then 
+              Format.fprintf Format.std_formatter "@.Eval->mod_eq_flag: %B" mod_eq_flag);
            let raw_v = 
              begin match bop with
              | And | Or -> bool_op_R bop v1 v2
              | Modc ->
                 let op1 = e1 |> loc |> name_of_node in
-                let v' = top_R Plus |> (fun v -> arrow_R op1 v v1) in
+                let v' = top_R bop |> (fun v -> arrow_R op1 v v1) in
                 let v'' = op_R "" op1 (str_of_const e2) bop false v' in
                 get_env_vars env |> proj_R v''
              | _ ->
                 let op1 = e1 |> loc |> name_of_node in
                 let op2 = e2 |> loc |> name_of_node in
-                let v' = top_R Plus |> (fun v -> arrow_R op1 v v1) |> (fun v -> arrow_R op2 v v2) in
+                let v' = top_R bop |> (fun v -> arrow_R op1 v v1) |> (fun v -> arrow_R op2 v v2) in
                 (if !Config.debug then 
                    Format.fprintf Format.std_formatter "@.BinOp_[op1 <- v1, op2 <- v2]: @[%a@]" 
                      pr_relation v');
-                let v'' = op_R "" op1 op2 bop false v' in
+                let v'' = (if mod_eq_flag then op_R_eq_mod "" op1 op2 bop false v' 
+                           else op_R "" op1 op2 bop false v') in
                 (if !Config.debug then 
                    Format.fprintf Format.std_formatter "@.BinOp_op_result: @[%a@]" 
                      pr_relation v'');
@@ -317,7 +333,7 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
          raise (Invalid_argument ("Unary operator " ^ (string_of_unop uop) ^ " is not defined for tuples"))
        else begin
            let op1 = e1 |> loc |> name_of_node in
-           let v' = top_R Plus |> (fun v -> arrow_R op1 v v1) in
+           let v' = utop_R uop |> (fun v -> arrow_R op1 v v1) in
            (* (if !Config.debug then Format.printf "\nUOp_[op1 <- v1]:"; 
               pr_relation Format.std_formatter v'; Format.printf "\n";); *)
            let v'' = uop_R "" uop op1 false v' in
@@ -401,6 +417,11 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
 
 let eval_assert term env acc_vars = 
   let find_acc_var x = List.find_opt ((=) x) acc_vars in
+  let check_mod_const e_mod = 
+    match e_mod with
+    | Const (Integer 2, _) -> true
+    | _ -> false
+  in
   let rec eval term env =
     match term with
     | Const (c, _) -> init_R_c c 
@@ -424,19 +445,31 @@ let eval_assert term env acc_vars =
                      | _ -> bop
                      end 
            in
+           let mod_eq_flag, e1, e2 = 
+             match bop, e1, e2 with
+             | Eq, BinOp (Mod, _, e_mod, _), _ -> check_mod_const e_mod, e1, e2
+             | Eq, _, BinOp(Mod, _, e_mod, _) -> check_mod_const e_mod, e2, e1
+             | Ne, BinOp(Mod, _, e_mod, _), _ -> check_mod_const e_mod, e1, e2
+             | Ne, _, BinOp(Mod, _, e_mod, _) -> check_mod_const e_mod, e2, e1
+             | _ -> false, e1, e2
+           in 
+            (if !Config.debug then 
+               Format.fprintf Format.std_formatter "@.Assert->exp: @[%a@], mod_eq_flag: %B@." 
+                 (pr_exp false) term mod_eq_flag);
            let raw_v = 
              begin match bop with
              | And | Or -> bool_op_R bop v1 v2
              | Modc ->
                 let op1 = e1 |> loc |> name_of_node in
-                let v' = top_R Plus |> (fun v -> arrow_R op1 v v1) in
+                let v' = top_R bop |> (fun v -> arrow_R op1 v v1) in
                 let v'' = op_R "" op1 (str_of_const e2) bop false v' in
                 v''
              | _ ->
                 let op1 = e1 |> loc |> name_of_node in
                 let op2 = e2 |> loc |> name_of_node in
-                let v' = top_R Plus |> (fun v -> arrow_R op1 v v1) |> (fun v -> arrow_R op2 v v2) in
-                let v'' = op_R "" op1 op2 bop false v' in
+                let v' = top_R bop |> (fun v -> arrow_R op1 v v1) |> (fun v -> arrow_R op2 v v2) in
+                let v'' = (if mod_eq_flag then op_R_eq_mod "" op1 op2 bop false v'
+                           else op_R "" op1 op2 bop false v') in
                 v''
              end
            in
@@ -449,7 +482,7 @@ let eval_assert term env acc_vars =
          raise (Invalid_argument ("Unary operator " ^ (string_of_unop uop) ^ " is not defined for units"))
        else begin
            let op1 = e1 |> loc |> name_of_node in
-           let v' = top_R Plus |> (fun v -> arrow_R op1 v v1) in
+           let v' = utop_R uop |> (fun v -> arrow_R op1 v v1) in
            let v'' = uop_R "" uop op1 false v' in
            v''
          end
