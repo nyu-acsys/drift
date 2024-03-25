@@ -10,14 +10,20 @@ use Data::Dumper;
 my @resultsfiles = (
     "results/benchmark-coarmochi.2024-02-25_10-16-09.results.default.mochibenchmarks.csv",
     #"results/results.2024-02-25_12-18-59.table.csv",
-    "results/results.2024-03-20_12-38-14.table.csv"
+    #"results/results.2024-03-20_12-38-14.table.csv"
+    "results/results.2024-03-25_13-16-55.table.csv"
 );
 
 # 2) Those CSVs have column names that depend on the rundefinition. Set those:
 # drift-new-len0.effects drift-new-len1.effects drift-trans-len0.effects drift-trans-len1.effects default.mochibenchmarks/;
 my @RUNDEFINITIONS = qw/
-    CA-March20.effects
-    CA-March20-trans.effects
+   NOTEmar23-TL0-TPfalse-DMpg-TRtrans
+   NOTEmar23-TL1-TPfalse-DMpg-TRtrans
+   NOTEmar23-TL2-TPfalse-DMpg-TRtrans
+   NOTEmar23-TL0-TPtrue-DMpg-TRdirect
+   NOTEmar23-TL0-TPfalse-DMpg-TRdirect
+   NOTEmar23-TL1-TPtrue-DMpg-TRdirect
+   NOTEmar23-TL1-TPfalse-DMpg-TRdirect
     default.mochibenchmarks
 /;
 
@@ -25,15 +31,24 @@ my @RUNDEFINITIONS = qw/
 my $MOCHI_RD = 'default.mochibenchmarks';
 
 # 4) Give human-readible names for these rundefinitions for column headers:
-my %run2tool = (
-    'drift-new-len0.effects' => 'EDrift len0',
-    'drift-new-len1.effects' => 'EDrift len1',
-    'drift-trans-len0.effects' => 'Trans+Drift len0',
-    'drift-trans-len1.effects' => 'Trans+Drift len1',
-    'default.mochibenchmarks' => 'CPS+Mochi',
-    'CA-March20.effects' => '3/20/24 TP',
-    'CA-March20-trans.effects' => '3/20/24 TP + trans'
-);
+sub run2tool {
+    my ($rdName) = @_;
+    return 'CPS+Mochi' if $rdName eq 'default.mochibenchmarks';
+    if($rdName =~ /NOTE(.*)-TL(.*)-TP(.*)-DM(.*)-TR([^\.]*)(\.effects)?/) {
+        return "\\humanCfg{$1}{$2}{$3}{$4}{$5}"
+    } else {
+        die "don't know how to parse rundef: $rdName\n";
+    }
+}
+# my %run2tool = (
+#     'drift-new-len0.effects' => 'EDrift len0',
+#     'drift-new-len1.effects' => 'EDrift len1',
+#     'drift-trans-len0.effects' => 'Trans+Drift len0',
+#     'drift-trans-len1.effects' => 'Trans+Drift len1',
+#     'default.mochibenchmarks' => 'CPS+Mochi',
+#     'CA-March20.effects' => '3/20/24 TP',
+#     'CA-March20-trans.effects' => '3/20/24 TP + trans'
+# );
 ######################################################################
 
 # results/benchmark-coarmochi.2024-02-25_10-16-09.results.default.mochibenchmarks.csv
@@ -66,6 +81,7 @@ sub parseResultsFile {
 
         } else {
             my ($bench,@RCWMs) = split /\t/, $_;
+            next if $bench =~ /min-max/;
             $bench =~ s/cps_// if $isMochi;
             $bench =~ s/\.y?ml$//;
             shift @RCWMs unless $isMochi;
@@ -151,7 +167,7 @@ foreach my $b (sort keys %$d) {
            $d->{$b}->{$tool}->{cpu},
 #           $d->{$b}->{$tool}->{wall},
            $d->{$b}->{$tool}->{mem},
-           $run2tool{$d->{$b}->{$tool}->{rd}});
+           run2tool($tool)); # d->{$b}->{$tool}->{rd}));
     }
     print  EXT "\\hline\n";
 }
@@ -176,12 +192,13 @@ foreach my $b (sort keys %$d) {
     my $tt = $b; $tt =~ s/\_/\\_/g;
     $tt =~ s/negated/neg/;
     print BODY "\\texttt{\\scriptsize $tt} ";
+    #warn "tool rd: ".Dumper($b,$d->{$b},$d->{$b}->{BEST_TRANS},$d->{$b}->{BEST_TRANS}->{rd});
     # Trans-Drift
     print BODY sprintf("& %-5s & %3.2f & %3.2f & %s ",
            cleanRes($d->{$b}->{BEST_TRANS}->{res}),
            $d->{$b}->{BEST_TRANS}->{cpu},
            $d->{$b}->{BEST_TRANS}->{mem},
-           $run2tool{$d->{$b}->{BEST_TRANS}->{rd}});
+           run2tool($d->{$b}->{BEST_TRANS}->{rd}));
     # Trans-Mochi
     print BODY sprintf("& %-5s & %3.2f & %3.2f ",
            cleanRes($d->{$b}->{$MOCHI_RD}->{res}),
@@ -192,7 +209,7 @@ foreach my $b (sort keys %$d) {
            cleanRes($d->{$b}->{BEST_DRIFTEV}->{res}),
            $d->{$b}->{BEST_DRIFTEV}->{cpu},
            $d->{$b}->{BEST_DRIFTEV}->{mem},
-           $run2tool{$d->{$b}->{BEST_DRIFTEV}->{rd}});
+           run2tool($d->{$b}->{BEST_DRIFTEV}->{rd}));
 }
 close BODY;
 print "wrote: exp-body.tex\n";
