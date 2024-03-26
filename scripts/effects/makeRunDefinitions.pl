@@ -20,7 +20,7 @@ foreach my $ifPart (qw/true false/) {
         "DM".($dom eq 'PolkaGrid' ? 'pg' : '_'),
         "TR".($evTrans eq 'true' ? 'trans' : 'direct')
     );
-    print "   $rdName\n";
+    print "   $rdName\.effects\n";
     $rdout .= <<EOT;
   <rundefinition name="$rdName">
     <option name="-ev-trans">$evTrans</option>

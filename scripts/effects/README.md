@@ -1,5 +1,13 @@
 # benchmarking
 
+# 0. Perl Module
+
+```
+cpan -i Statistics::Basic
+cpan -i List::Util
+cpan -i Math::Complex
+```
+
 # 0. Symlink drift so it's available in `/usr`
 ```
 export DRIFT_REPO=/tools/home/eric/drift
