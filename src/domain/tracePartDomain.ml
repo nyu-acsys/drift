@@ -30,6 +30,8 @@ let print_trace ppf (call_trace, part_trace) = Format.fprintf ppf "[Callsite tra
 
 let create_if_token if_loc block_loc = If_Case (if_loc, block_loc)
 
+let create_pat_token pat_loc block_loc = Pat_Case (pat_loc, block_loc)
+
 let create_empty_trace = [], []
 
 let create_singleton_trace_call_loc loc = List.init 1 (fun _ -> loc), []
@@ -117,7 +119,7 @@ let rec get_call_trace_data trace = match trace with
   | head :: [] -> head
   | head :: tail -> head ^","^ get_call_trace_data tail
 
-let get_trace_data (call_trace, part_trace) = "("^get_call_trace_data call_trace^"*"^get_part_trace_data part_trace^")"
+let get_trace_data (call_trace, part_trace) = get_call_trace_data call_trace^"."^get_part_trace_data part_trace
 
 let add_cs_token_to_trace token (call_trace, part_trace) limit = 
   (* print_trace Format.std_formatter trace; print_string "->"; *)

@@ -62,3 +62,4 @@ nohup.out
 drift.native1
 scripts/compare_results_explicit_match.py
 scripts/compare_results.py
+bench_status.txt

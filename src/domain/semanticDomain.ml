@@ -762,6 +762,10 @@ module SemanticsDomain =
       | Tuple u -> only_shape_Tuple u
       | Bot -> true
       | _ -> false
+    and only_shape_VE = function
+      | TEBot -> true
+      | TypeAndEff (t, e) -> only_shape_V t && is_bot_Eff e
+      | _ -> false
     and is_bot_VE = function
       | TEBot -> true
       | TypeAndEff (Bot, e) -> is_bot_Eff e
@@ -1228,8 +1232,9 @@ module SemanticsDomain =
           end
         ); *)
         let v = wid_VE v1 v2 in
-        if !debug && get_label_snode n = "EN: 22;z32" then
-          Format.fprintf Format.std_formatter "@,v: @[%a@]@, @,v1: @[%a@]@, @,v2: @[%a@]@" pr_value_and_eff v pr_value_and_eff v1 pr_value_and_eff v2;
+        if !debug && get_label_snode n = "EN: 31;z51__" then
+          Format.fprintf Format.std_formatter "sem line 1230 @,v: @[%a@]@, @,v1: @[%a@]@, @,v2: @[%a@]@" 
+          pr_value_and_eff v pr_value_and_eff v1 pr_value_and_eff v2;
         v
         ) m1 m2
     let leq_M (m1: exec_map_t) (m2: exec_map_t) : bool =
