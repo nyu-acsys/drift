@@ -165,7 +165,7 @@ let tr (e: term) (a: term) (acfg: term) (asst: term option) (asstFinal: term opt
        PatMat (tr_ e acfg, [
              mk_pattern_case
                (TupleLst ([e'; acfg'], ""))
-               (mk_app asst acfg')
+               (BinOp(Seq, (mk_app asst acfg'), e', ""))
            ], "")
   in
   mk_app (mk_lambda ev_ tr_e) a
