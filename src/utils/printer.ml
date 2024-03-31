@@ -121,7 +121,7 @@ let rec shape_value = function
     | Bool _ -> "Bool"
     | Unit _ -> "Unit")
   | Table t -> let (_, (vei,veo)) = get_full_table_T t in 
-              (shape_value_and_eff vei)^"->"^(shape_value_and_eff veo)
+              (shape_value_and_eff vei)^"->"^(shape_fout veo)
   | Tuple u -> if List.length u = 0 then "Unit"
     else 
       let rec shape_tuple = function
@@ -149,6 +149,7 @@ and shape_value_and_eff = function
   | TEBot -> "Bot"
   | TETop -> "Top"
   | TypeAndEff (v, e) -> "("^ (shape_value v) ^","^ (shape_eff e) ^ ")"
+and shape_fout fout = let (_, vo) = get_full_fout fout in shape_value_and_eff vo
 
 let rec pr_value ppf v = match v with
   | Bot -> Format.fprintf ppf "_|_"
@@ -194,6 +195,12 @@ and pr_tuple ppf u =
     | hd :: tl -> 
     Format.fprintf ppf "@[<1>%a,@ %a @]" pr_value_and_eff hd print_list tl in
     print_list ppf u
+and pr_fout ppf fout = print_fout fout ppf pr_value_and_eff
+
+let rec pr_tails ppf tails = match tails with
+  | [] -> ()
+  | [(tr, ae)] -> Format.fprintf ppf "@[(%a, %a)]" print_trace tr pr_value ae
+  | (tr, ae) :: tails -> Format.fprintf ppf "@[(%a, %a)]@" print_trace tr pr_value ae; pr_tails ppf tails
 
 let sort_list (m: exec_map_t) =
   let lst = (NodeMap.bindings m) in

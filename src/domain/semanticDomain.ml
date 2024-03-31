@@ -305,7 +305,7 @@ module SemanticsDomain =
       | EffTop -> false
     let is_top_Eff e = match e with
       | EffBot -> true
-      | Effect map -> false (* Not sure how to check here. *)
+      | Effect map -> false
       | EffTop -> false
     let stren_Eff e ae = match e, ae with
       | EffBot, _ -> EffBot 
@@ -337,6 +337,10 @@ module SemanticsDomain =
       | TEBot -> EffBot
       | TypeAndEff (_, e) -> e
       | TETop -> EffTop
+    (* let get_ae_from_eff = function
+      | EffBot -> Bot
+      | EffTop -> Top
+      | Effect e -> StateMap.fold (fun q acc_t acc -> join_V acc acc) e Bot *)
 
     (*
      ********************************
@@ -690,7 +694,7 @@ module SemanticsDomain =
     and is_bool_false_V = function
       | Relation r -> is_bool_false_R r
       | _ -> true
-    and get_second_table_input_V = function
+    (* and get_second_table_input_V = function
       | Bot -> Bot
       | Table t -> if table_isempty t then Bot else
                     let _,(_,veo) = get_full_table_T t in
@@ -703,7 +707,7 @@ module SemanticsDomain =
                                                    | TypeAndEff (vi, _) -> vi 
                                                    | TETop -> raise (Invalid_argument "input should not be Top"))
                      | _ -> raise (Invalid_argument "array.set should be a table"))
-      | _ -> raise (Invalid_argument "array.set should be a table")
+      | _ -> raise (Invalid_argument "array.set should be a table") *)
     and join_for_item_V v1 v2 = match v1, v2 with
       | Bot, _ | _, Bot -> v1
       | Ary ary, Relation r -> Ary (join_for_item_Ary ary r)
@@ -1232,7 +1236,7 @@ module SemanticsDomain =
           end
         ); *)
         let v = wid_VE v1 v2 in
-        if !debug && get_label_snode n = "EN: 31;z51__" then
+        if !debug && get_label_snode n = "" then
           Format.fprintf Format.std_formatter "sem line 1230 @,v: @[%a@]@, @,v1: @[%a@]@, @,v2: @[%a@]@" 
           pr_value_and_eff v pr_value_and_eff v1 pr_value_and_eff v2;
         v
@@ -1271,9 +1275,11 @@ module SemanticsDomain =
         in
         let t = 
           let t' = Table (construct_table (create_singleton_trace_call_loc var_e) 
-                            ((init_VE_v (Relation rm)), (init_VE_v (Ary ary)))) in
-          Table (construct_table (create_singleton_trace_call_loc var_l) 
-                   ((init_VE_v (Relation rl)), (init_VE_v t'))) in
+                            ((init_VE_v (Relation rm)), 
+                            (init_VE_v (Ary ary)) |> construct_fout create_empty_trace)) in
+          Table (construct_table create_empty_trace 
+                   ((init_VE_v (Relation rl)), 
+                   (init_VE_v t') |> construct_fout create_empty_trace)) in
         init_VE_v t
       in
       let n_len = construct_vnode env "Array.length" create_empty_trace in
@@ -1293,7 +1299,8 @@ module SemanticsDomain =
         (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
         let rlen = equal_R (top_R Plus) "l" in
         let t = Table (construct_table (create_singleton_trace_call_loc var_l) 
-                 ((init_VE_v (Ary ary)), (init_VE_v (Relation rlen))))
+                 ((init_VE_v (Ary ary)), 
+                 (init_VE_v (Relation rlen) |> construct_fout create_empty_trace)))
         in
         init_VE_v t
       in
@@ -1317,9 +1324,11 @@ module SemanticsDomain =
         let var_zi = "zi" in
         let t = 
           let t' = Table (construct_table (create_singleton_trace_call_loc var_zi) 
-                            ((init_VE_v (Relation rm)), (init_VE_v (Relation rr)))) in
+                            ((init_VE_v (Relation rm)), 
+                            (init_VE_v (Relation rr)) |> construct_fout create_empty_trace)) in
           Table (construct_table (create_singleton_trace_call_loc var_l) 
-                   ((init_VE_v (Ary ary)), (init_VE_v t'))) in
+                   ((init_VE_v (Ary ary)), 
+                   (init_VE_v t') |> construct_fout create_empty_trace)) in
         init_VE_v t
       in
       let n_set = construct_vnode env "Array.set" create_empty_trace in
@@ -1344,11 +1353,14 @@ module SemanticsDomain =
         let rrr = [] in
         let t = 
           let t' = Table (construct_table (create_singleton_trace_call_loc var_e) 
-                            ((init_VE_v (Relation rri)), (init_VE_v (Tuple rrr)))) in
+                            ((init_VE_v (Relation rri)), 
+                            (init_VE_v (Tuple rrr)) |> construct_fout create_empty_trace)) in
           let t'' = Table (construct_table (create_singleton_trace_call_loc var_zi) 
-                             ((init_VE_v (Relation rm)), (init_VE_v t'))) in
+                             ((init_VE_v (Relation rm)), 
+                             (init_VE_v t') |> construct_fout create_empty_trace)) in
           Table (construct_table (create_singleton_trace_call_loc var_l) 
-                   ((init_VE_v (Ary ary)), (init_VE_v t''))) in
+                   ((init_VE_v (Ary ary)), 
+                   (init_VE_v t'') |> construct_fout create_empty_trace)) in
         init_VE_v t
       in
       let m' = 
@@ -1379,7 +1391,8 @@ module SemanticsDomain =
         (* let rl = op_R var_i "0" Ge true llen |> op_R var_i var_len Lt true in *)
         let rlen = equal_R (top_R Plus) "l" in
         let t = Table (construct_table (create_singleton_trace_call_loc var_l) 
-                 ((init_VE_v (Lst list)), (init_VE_v (Relation rlen))))
+                 ((init_VE_v (Lst list)), 
+                 (init_VE_v (Relation rlen)) |> construct_fout create_empty_trace))
         in init_VE_v t
       in
       let n_hd = construct_vnode env "List.hd" create_empty_trace in
@@ -1398,7 +1411,8 @@ module SemanticsDomain =
         let tr = Top in
         let t =
           Table (construct_table (create_singleton_trace_call_loc var_h) 
-                   ((init_VE_v (Lst list)), (init_VE_v tr))) in
+                   ((init_VE_v (Lst list)), 
+                   (init_VE_v tr) |> construct_fout create_empty_trace)) in
         init_VE_v t
       in
       let n_tl = construct_vnode env "List.tl" create_empty_trace in
@@ -1424,7 +1438,8 @@ module SemanticsDomain =
         in
         let t =
           Table (construct_table (create_singleton_trace_call_loc var_t) 
-                   ((init_VE_v (Lst list1)), (init_VE_v (Lst list2)))) in
+                   ((init_VE_v (Lst list1)), 
+                   (init_VE_v (Lst list2)) |> construct_fout create_empty_trace)) in
         init_VE_v t
       in
       let n_cons = construct_vnode env "List.cons" create_empty_trace in
@@ -1452,9 +1467,10 @@ module SemanticsDomain =
         in
         let t =
           let t' = Table (construct_table (create_singleton_trace_call_loc var_l) 
-                            ((init_VE_v (Lst list1)), (init_VE_v (Lst list2)))) in
+                            ((init_VE_v (Lst list1)), 
+                            (init_VE_v (Lst list2)) |> construct_fout create_empty_trace)) in
           Table (construct_table (create_singleton_trace_call_loc var_c) 
-                   (ve, (init_VE_v t'))) in
+                   (ve, (init_VE_v t') |> construct_fout create_empty_trace)) in
         init_VE_v t
       in
       let m' = 
