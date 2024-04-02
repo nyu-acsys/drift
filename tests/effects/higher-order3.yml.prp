@@ -1,0 +1,15 @@
+(*
+   Traces are just [1;2]
+   q0 --1--> q1 --2--> q2
+   q3 is the error state
+*)
+QSet   = [0; 1; 2; 3]; 
+
+delta  = fun evx (q, acc) -> 
+  if      ((evx = 1) && (q = 0 || q = 1)) then (1,acc)
+  else if ((evx = 2) && (q = 1)) then (2,acc)
+  else (3,0);
+
+IniCfg = (0, 0);
+
+assertFinal = fun (q, acc) -> q = 2;

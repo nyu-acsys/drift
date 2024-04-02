@@ -16,7 +16,5 @@ delta  = fun evx (q, acc) ->
 
 IniCfg = (0, 0); 
 
-assert = fun (q, acc) -> true;
-
-assertFinal = fun (q, acc) -> q = 1 || acc < 0 || acc > 0;
+assertFinal = fun (q, acc) -> q=1 || acc<0 || acc>0;
 

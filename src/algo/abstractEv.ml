@@ -168,6 +168,7 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
   let eff_bot = eff_bot spec in
   let parallel_assign_acc acc e = 
     let parse_legal_expr = function 
+      | Const _ as c -> (str_of_const c, None, None)
       | Var (x, _) -> (x, None, None) 
       | BinOp (bop, (Var (x1,_)), (Var (x2,_)), _) -> (x1, Some x2, Some bop)
       | BinOp (bop, (Var (x1,_)), (Const _ as c2), _) -> (x1, Some (str_of_const c2), Some bop)
