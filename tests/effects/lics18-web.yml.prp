@@ -1,0 +1,44 @@
+(* From LICS18:
+"One critical property is that every accepted connection is eventually handled, i.e., that the pool of pending clients eventually becomes empty. This is, however, not true in general since infinitely many new clients may preempt handling pending clients. The property must be instead weakened to include a fairness constraint"
+
+  accept(1), handle(2), wait(3)
+
+Finite version of the property:
+  keep track of number pending.
+  After 42 events,
+     "fair" if you only see handle() events, until 0 pending.
+     "unfair" if you see other things, loop at unfair state q666
+
+       (q0)--[accept; pending++; tick++]-->(q0)
+       (q0)--[handle; pending--; tick++]-->(q0)
+       (q0)--[_; tick==42]-->(q42)
+
+     From 42, non-handle events bring you to unfair state q666:
+              handle events loop but reduce pending
+	      if pending is now 0, go to q0
+*)
+
+QSet = [0;42;666];
+
+delta = fun evx (q, (pending,tick)) ->
+  (* ways to loop at q0 *)
+  if      (q = 0 && tick < 42 && evx=1) then (0, (pending+1,tick+1))
+  else if (q = 0 && tick < 42 && evx=2) then (0, (pending-1,tick+1))
+  else if (q = 0 && tick < 42 && evx=3) then (0, (pending,  tick+1))
+  (* ways to move to q42 *)
+  if      (q = 0 && tick = 42 && evx=1) then (42, (pending+1,0))
+  else if (q = 0 && tick = 42 && evx=2) then (42, (pending-1,0))
+  else if (q = 0 && tick = 42 && evx=3) then (42, (pending,  0))
+  (* in q42 but get Handle events *)
+  else if (q = 42 && ev=2 && pending = 1) then (1, (0,0))
+  else if (q = 42 && ev=2 )               then (42, (pending-1,0))
+  (* in q42 but get unfair events *)
+  else if (q = 42)                        then (666, (0,0))
+  (* self-loop at 666 *)
+  else if (q = 666)                       then (666, (0,0))
+  (* Not possible: *)
+  else (q, (pending, tick));
+
+IniCfg = (0, (0,0));
+
+assert = fun (q, (pending, tick)) -> q = 666 || pending <= 42;
