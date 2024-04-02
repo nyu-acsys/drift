@@ -7,7 +7,7 @@ let nondet i =
   (i * i * i * 199) mod 2
 
 let rec listener i npool pend =
-  if nondet i == 0 && pend < npool then begin
+  if nondet i = 0 && pend < npool then begin
     ev 1; (* Accept *)
     listener i npool (pend + 1)
   end else if pend > 0 then begin
@@ -18,5 +18,5 @@ let rec listener i npool pend =
     listener i npool pend
   end
 
-let server npool i0 =
+let main (npool:int(*-:{v:Int | true}*)) (i0:int(*-:{v:Int | true}*)) =
   listener i0 npool 0
