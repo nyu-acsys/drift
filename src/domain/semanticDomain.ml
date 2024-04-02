@@ -540,12 +540,12 @@ module SemanticsDomain =
       match e, v' with 
       | EffBot,  _ -> EffBot
       | EffTop, _ -> EffTop
-      | _, Bot | _, Top | _, Table _ -> e
+      | _, Bot | _, Top | _, Table _ | _, Tuple _ -> e
       | _, Relation r2 -> arrow_Eff var e r2
-      | _, Tuple u2 -> List.fold_left (fun e1 ve2 ->
+      (* | _, Tuple u2 -> List.fold_left (fun e1 ve2 ->
                        match ve2 with 
                        | TETop | TEBot -> e1
-                       | TypeAndEff (v2, _) -> arrow_EffV var e1 v2) e u2
+                       | TypeAndEff (v2, _) -> arrow_EffV var e1 v2) e u2 *)
       | _, Ary ary2 -> let (vars, (rl2, re2)) = ary2 in
                    let e' = arrow_Eff var e rl2 in 
                    if is_bot_R re2 then e' else arrow_Eff var e' re2

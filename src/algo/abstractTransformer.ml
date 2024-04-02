@@ -1382,7 +1382,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           join_VE te cte in
         m |> update false n te', [create_empty_trace, ae]
       else
-        let tp, m', _ = List.fold_right 
+        let tp, m', ec' = List.fold_right 
           (fun (te, e) (tep', m, ec) -> 
             let m', tails = step e env trace ec ae assertion is_rec m in
             let tee = merge_traces e (List.map fst tails) m' in
@@ -1393,7 +1393,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             let ec' = extract_ec tee in
             te',  m'', ec'
           ) (zip_list tlist termlst) (Tuple [], m, ec) in
-        let tep = TypeAndEff (tp, extract_eff te) in
+        let tep = TypeAndEff (tp, Effect ec') in
         m' |> update false n tep, [create_empty_trace, ae]
   | PatMat (e, patlst, l) ->
       (if !debug then
@@ -1658,9 +1658,15 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                         end
                     ) (env, ae0, m_acc, [], []) termlst (zip_list tlst tllst) in
                 let tlst', tllst' = List.rev tlst', List.rev tllst' in
-                let te1', tee' = TypeAndEff (Tuple tlst', (extract_eff te1)), 
+                let te1', tee' = TypeAndEff (Tuple tlst', (extract_eff tee)), 
                                   TypeAndEff (Tuple tllst', (extract_eff tee)) 
                 in
+                (if !debug then 
+                  begin 
+                    let pr = Format.fprintf Format.std_formatter in 
+                    pr "LINE 1568, PatMat.TupleLst, node: @[%s@]@, ae: @[%a@]@." 
+                    (get_label_snode n1) pr_value_and_eff te1
+                  end); 
                 (* (if !debug then 
                   begin 
                     let pr = Format.fprintf Format.std_formatter in 
@@ -1952,7 +1958,7 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
   (* Format.printf "\nFinish step %d\n" k;
   flush stdout; *)
   let m'' = if stage = Widening then widening k m m' else narrowing m m' in
-  (* (if !debug then Format.fprintf Format.std_formatter "line 1837 %a" pr_exec_map m''); *)
+  (* (if !debug then Format.fprintf Format.std_formatter "%a" pr_exec_map m'); *)
   let comp = if stage = Widening then leq_M m'' m else leq_M m m'' in
   if comp then
     begin

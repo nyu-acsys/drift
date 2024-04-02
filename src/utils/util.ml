@@ -68,6 +68,13 @@ module Opt = struct
     | Some _ -> true
 end
 
+let first_n n =
+  let rec first_n_helper n = 
+    if n = 0 then [0]
+    else [n] @ first_n_helper (n-1)
+  in
+  first_n_helper n |> List.rev
+
 let rec zip_list xs ys =
   match xs with
       [] -> (match ys with
