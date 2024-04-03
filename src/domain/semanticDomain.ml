@@ -359,6 +359,7 @@ module SemanticsDomain =
       | Table t -> Table (alpha_rename_T alpha_rename_VE t prevar var)
       | Ary ary -> Ary (alpha_rename_Ary ary prevar var)
       | Lst lst -> Lst (alpha_rename_Lst lst prevar var)
+      | Tuple u -> Tuple (alpha_rename_Tuple u prevar var)
       | _ -> v
     and alpha_rename_VE ve prevar var = match ve with 
       | TypeAndEff (v, e) -> TypeAndEff (alpha_rename_V v prevar var, alpha_rename_Eff e prevar var)
@@ -457,7 +458,7 @@ module SemanticsDomain =
       | _ -> false
     (*todo: if v' is Bot then the result should be Bot? why is it different from the paper *)
     and arrow_V var (v:value_tt) (v':value_tt) = match v' with
-      | Bot | Top | Table _ | Tuple _ -> v
+      | Bot | Top | Table _ -> v
       | Relation r2 -> (match v with
                        | Table t -> Table (arrow_T forget_V arrow_VE var t v')
                        | Relation r1 -> Relation (arrow_R var r1 r2)
@@ -465,10 +466,11 @@ module SemanticsDomain =
                        | Lst lst -> Lst (arrow_Lst var lst (Relation r2) None)
                        | Tuple u -> Tuple (arrow_Tuple var u v')
                        | _ -> v)
-      (* | Tuple u2 -> List.fold_left (fun v1 ve2 ->
+      | Tuple u2 -> List.fold_left (fun v1 (ve2, i) ->
+                       let var_i = var^"."^(string_of_int i) in
                        match ve2 with 
                        | TETop | TEBot -> v1
-                       | TypeAndEff (v2, _) -> arrow_V var v1 v2) v u2 *)
+                       | TypeAndEff (v2, _) -> arrow_V var_i v1 v2) v (List.length u2 |> first_n |> zip_list u2)
       | Ary ary2 -> let (vars, (rl2, re2)) = ary2 in
                    (match v with
                     | Table t -> Table (arrow_T forget_V arrow_VE var t v')
@@ -540,12 +542,13 @@ module SemanticsDomain =
       match e, v' with 
       | EffBot,  _ -> EffBot
       | EffTop, _ -> EffTop
-      | _, Bot | _, Top | _, Table _ | _, Tuple _ -> e
+      | _, Bot | _, Top | _, Table _ -> e
       | _, Relation r2 -> arrow_Eff var e r2
-      (* | _, Tuple u2 -> List.fold_left (fun e1 ve2 ->
-                       match ve2 with 
-                       | TETop | TEBot -> e1
-                       | TypeAndEff (v2, _) -> arrow_EffV var e1 v2) e u2 *)
+      | _, Tuple u2 -> List.fold_left (fun e1 (ve2, i) ->
+          let var_i = var^"."^(string_of_int i) in
+          match ve2 with 
+          | TETop | TEBot -> e1
+          | TypeAndEff (v2, _) -> arrow_EffV var_i e1 v2) e (List.length u2 |> first_n |> zip_list u2)
       | _, Ary ary2 -> let (vars, (rl2, re2)) = ary2 in
                    let e' = arrow_Eff var e rl2 in 
                    if is_bot_R re2 then e' else arrow_Eff var e' re2
@@ -609,6 +612,7 @@ module SemanticsDomain =
       | Relation r -> Relation (replace_R r var x)
       | Ary ary -> Ary (replace_Ary ary var x)
       | Lst lst -> Lst (replace_Lst lst var x)
+      | Tuple u -> Tuple (replace_Tuple u var x)
       | _ -> v
     and replace_VE ve var x = 
       temap ((fun v -> replace_V v var x), (fun e -> replace_Eff e var x)) ve
@@ -1181,6 +1185,10 @@ module SemanticsDomain =
       ** Abstract domain for Tuple **
       *******************************
     *)
+    and alpha_rename_Tuple u prevar var =
+      List.map (fun v1 -> alpha_rename_VE v1 prevar var) u
+    and replace_Tuple u var x =
+      List.map (fun v1 -> replace_VE v1 var x) u
     and init_Tuple l = 
       Tuple (List.init l (fun _ -> TEBot))
     and join_Tuple u1 u2 =
