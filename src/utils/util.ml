@@ -70,8 +70,8 @@ end
 
 let first_n n =
   let rec first_n_helper n = 
-    if n = 0 then [0]
-    else [n] @ first_n_helper (n-1)
+    if n = 0 then []
+    else [n-1] @ first_n_helper (n-1)
   in
   first_n_helper n |> List.rev
 
