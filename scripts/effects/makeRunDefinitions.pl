@@ -1,8 +1,14 @@
 #!/usr/bin/perl
 
-my $prefix = 'NOTEapr2';
+my $prefix = 'NOTEapr3';
 my $rdout = '';
 
+my %domName = (
+  PolkaGrid => 'pg',
+  Polka_ls => 'ls', 
+  Polka_st => 'st',
+  Oct => 'oct'
+);
 print "Adding run definitions:\n";
 foreach my $evTrans (qw/true false/) {
 foreach my $tracelen (qw/0 1 2/) {
@@ -20,7 +26,7 @@ foreach my $dom (qw/PolkaGrid Polka_ls Polka_st Oct/) {
         $prefix,
         "TL$tracelen",
         "TP$ifPart",
-        "DM".($dom eq 'PolkaGrid' ? 'pg' : '_'),
+        "DM$domName{$dom}",
         "TR".($evTrans eq 'true' ? 'trans' : 'direct')
     );
     print "   $rdName\.effects\n";
