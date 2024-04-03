@@ -1,7 +1,7 @@
 (* CPS conversion. Source Program: 
 
 let rec foo vv f =
-  if vv = 0 then ev f
+  if vv = 0 then begin ev f; 0 end
   else begin ev vv; foo (vv-1) f end 
 
 let main (v:int(*-:{v:Int | true}*)) (final:int(*-:{v:Int | true}*)) =
@@ -80,9 +80,10 @@ let main prefv preffinal =
                let k23 q22 acc22 res14 =
                  k22 q22 acc22 res14 in 
                let k24 q23 acc23 res15 =
-                 let x17 = () in 
-                 let k29 q28 acc28 x16 =
-                   k23 q28 acc28 x17 in 
+                 let x18 = () in 
+                 let k29 q28 acc28 x17 =
+                   let x19 = 0 in 
+                   let x16 = x18 ; x19 in  k23 q28 acc28 x16 in 
                  ev k29 q23 acc23 f in 
                let k25 q24 acc24 res16 =
                  let x13 = () in 
@@ -97,9 +98,9 @@ let main prefv preffinal =
                if x9 then k24 q21 acc21 x9 else k25 q21 acc21 x9 in 
     k21 q20 acc20 f4 in 
   let k3 q2 acc2 res0 =
-    let k30 q acc x18 =
-      let x21 = 2 in 
-      let x20 = acc mod x21 in  let x22 = 0 in 
-                                let x19 = x20 = x22 in  assert(x19);x18 in 
+    let k30 q acc x20 =
+      let x23 = 2 in 
+      let x22 = acc mod x23 in  let x24 = 0 in 
+                                let x21 = x22 = x24 in  assert(x21);x20 in 
     k30 q2 acc2 res0 in 
   f0 k3 q1 acc1 foo

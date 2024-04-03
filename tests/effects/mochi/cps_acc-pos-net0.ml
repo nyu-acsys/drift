@@ -3,10 +3,10 @@
 
 let rec reduce n =
   ev -1;
-  if n <= 0 then 0 else reduce (n - 1)
+  if n <= 0 then 0 else begin reduce (n - 1) end
 
 let main (mn:int(*-:{v:Int | true}*)) = 
-  if mn > 0 then begin ev mn; reduce mn end else 0
+  if mn > 0 then begin ev mn; reduce (mn-1) end else 0
 
 
 Property: 
@@ -31,10 +31,10 @@ let main prefmn =
   let ev = fun k0 q acc evx ->
              k0 q (acc + evx) () in 
   let ev_assert = fun k1 q0 acc0 x0 ->
-                    let k21 q acc x20 =
-                      let x22 = 0 in 
-                      let x21 = acc >= x22 in  let x19 = () in 
-                                               assert(x21);k1 q acc x19 in 
+                    let k21 q acc x22 =
+                      let x24 = 0 in 
+                      let x23 = acc >= x24 in  let x21 = () in 
+                                               assert(x23);k1 q acc x21 in 
                     ev k21 q0 acc0 x0 in 
   let q1 = 0 in 
   let acc1 = 0 in 
@@ -51,9 +51,10 @@ let main prefmn =
                         let k10 q9 acc9 res4 =
                           let x6 = () in 
                           let k12 q11 acc11 x5 =
-                            let k13 q12 acc12 res6 =
-                              let x4 = x6 ; res6 in  k9 q12 acc12 x4 in 
-                            reduce k13 q11 acc11 mn in 
+                            let x8 = 1 in 
+                            let x7 = mn - x8 in  let k13 q12 acc12 res6 =
+                                                   let x4 = x6 ; res6 in  k9 q12 acc12 x4 in 
+                                                 reduce k13 q11 acc11 x7 in 
                           ev_assert k12 q9 acc9 mn in 
                         let k11 q10 acc10 res5 =
                           let x3 = 0 in 
@@ -63,26 +64,26 @@ let main prefmn =
                k4 q4 acc4 res1 in 
              f1 k5 q3 acc3 f2 in 
   let rec reduce k14 q13 acc13 n =
-    let x10 = -1 in 
-    let x9 = () in 
-    let k15 q14 acc14 x8 =
-      let x12 = 0 in 
-      let x11 = n <= x12 in 
+    let x12 = -1 in 
+    let x11 = () in 
+    let k15 q14 acc14 x10 =
+      let x14 = 0 in 
+      let x13 = n <= x14 in 
       let k16 q15 acc15 res7 =
-        let x7 = x9 ; res7 in  k14 q15 acc15 x7 in 
+        let x9 = x11 ; res7 in  k14 q15 acc15 x9 in 
       let k17 q16 acc16 res8 =
-        let x15 = 0 in 
-        k16 q16 acc16 x15 in 
+        let x17 = 0 in 
+        k16 q16 acc16 x17 in 
       let k18 q17 acc17 res9 =
-        let x14 = 1 in 
-        let x13 = n - x14 in  let k19 q18 acc18 res10 =
+        let x16 = 1 in 
+        let x15 = n - x16 in  let k19 q18 acc18 res10 =
                                 k16 q18 acc18 res10 in 
-                              reduce k19 q17 acc17 x13 in 
-      if x11 then k17 q14 acc14 x11 else k18 q14 acc14 x11 in 
-    ev_assert k15 q13 acc13 x10 in 
+                              reduce k19 q17 acc17 x15 in 
+      if x13 then k17 q14 acc14 x13 else k18 q14 acc14 x13 in 
+    ev_assert k15 q13 acc13 x12 in 
   let k3 q2 acc2 res0 =
-    let k20 q acc x16 =
-      let x18 = 0 in 
-      let x17 = acc = x18 in  assert(x17);x16 in 
+    let k20 q acc x18 =
+      let x20 = 0 in 
+      let x19 = acc = x20 in  assert(x19);x18 in 
     k20 q2 acc2 res0 in 
   f0 k3 q1 acc1 reduce
