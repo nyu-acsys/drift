@@ -7,6 +7,7 @@ print "Adding run definitions:\n";
 foreach my $evTrans (qw/true false/) {
 foreach my $tracelen (qw/0 1 2/) {
 foreach my $ifPart (qw/true false/) {
+foreach my $dom (qw/PolkaGrid Polka_ls Polka_st Oct/) {
     # CA says: "Although, there are some cases when with
     # ev-trans true, you need trace-len 2. Also, ev-trans
     # still doesn't work properly with if-part true"
@@ -15,7 +16,6 @@ foreach my $ifPart (qw/true false/) {
     # next if $ifPart eq 'true' and $evTrans eq 'true';
 
     next if $tracelen eq '2' and $evTrans eq 'false';
-    my $dom = 'PolkaGrid';
     my $rdName = join('-',
         $prefix,
         "TL$tracelen",
@@ -33,6 +33,7 @@ foreach my $ifPart (qw/true false/) {
     <option name="-domain">$dom</option>
   </rundefinition> 
 EOT
+}
 }
 }
 }
