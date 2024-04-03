@@ -27,49 +27,70 @@ SPDX-License-Identifier: Apache-2.0
            memlimit="1000 MB"
            cpuCores="1">
 
-  <rundefinition name="NOTEmar23-TL0-TPfalse-DMpg-TRtrans">
+  <rundefinition name="NOTEapr2-TL0-TPtrue-DMpg-TRtrans">
+    <option name="-ev-trans">true</option>
+    <option name="-trace-len">0</option>
+    <option name="-if-part">true</option>
+    <option name="-out">0</option>
+    <option name="-domain">PolkaGrid</option>
+  </rundefinition> 
+  <rundefinition name="NOTEapr2-TL0-TPfalse-DMpg-TRtrans">
     <option name="-ev-trans">true</option>
     <option name="-trace-len">0</option>
     <option name="-if-part">false</option>
     <option name="-out">0</option>
     <option name="-domain">PolkaGrid</option>
   </rundefinition> 
-  <rundefinition name="NOTEmar23-TL1-TPfalse-DMpg-TRtrans">
+  <rundefinition name="NOTEapr2-TL1-TPtrue-DMpg-TRtrans">
+    <option name="-ev-trans">true</option>
+    <option name="-trace-len">1</option>
+    <option name="-if-part">true</option>
+    <option name="-out">0</option>
+    <option name="-domain">PolkaGrid</option>
+  </rundefinition> 
+  <rundefinition name="NOTEapr2-TL1-TPfalse-DMpg-TRtrans">
     <option name="-ev-trans">true</option>
     <option name="-trace-len">1</option>
     <option name="-if-part">false</option>
     <option name="-out">0</option>
     <option name="-domain">PolkaGrid</option>
   </rundefinition> 
-  <rundefinition name="NOTEmar23-TL2-TPfalse-DMpg-TRtrans">
+  <rundefinition name="NOTEapr2-TL2-TPtrue-DMpg-TRtrans">
+    <option name="-ev-trans">true</option>
+    <option name="-trace-len">2</option>
+    <option name="-if-part">true</option>
+    <option name="-out">0</option>
+    <option name="-domain">PolkaGrid</option>
+  </rundefinition> 
+  <rundefinition name="NOTEapr2-TL2-TPfalse-DMpg-TRtrans">
     <option name="-ev-trans">true</option>
     <option name="-trace-len">2</option>
     <option name="-if-part">false</option>
     <option name="-out">0</option>
     <option name="-domain">PolkaGrid</option>
   </rundefinition> 
-  <rundefinition name="NOTEmar23-TL0-TPtrue-DMpg-TRdirect">
+  <rundefinition name="NOTEapr2-TL0-TPtrue-DMpg-TRdirect">
     <option name="-ev-trans">false</option>
     <option name="-trace-len">0</option>
     <option name="-if-part">true</option>
     <option name="-out">0</option>
     <option name="-domain">PolkaGrid</option>
   </rundefinition> 
-  <rundefinition name="NOTEmar23-TL0-TPfalse-DMpg-TRdirect">
+  <rundefinition name="NOTEapr2-TL0-TPfalse-DMpg-TRdirect">
     <option name="-ev-trans">false</option>
     <option name="-trace-len">0</option>
     <option name="-if-part">false</option>
     <option name="-out">0</option>
     <option name="-domain">PolkaGrid</option>
   </rundefinition> 
-  <rundefinition name="NOTEmar23-TL1-TPtrue-DMpg-TRdirect">
+  <rundefinition name="NOTEapr2-TL1-TPtrue-DMpg-TRdirect">
     <option name="-ev-trans">false</option>
     <option name="-trace-len">1</option>
     <option name="-if-part">true</option>
     <option name="-out">0</option>
     <option name="-domain">PolkaGrid</option>
   </rundefinition> 
-  <rundefinition name="NOTEmar23-TL1-TPfalse-DMpg-TRdirect">
+  <rundefinition name="NOTEapr2-TL1-TPfalse-DMpg-TRdirect">
     <option name="-ev-trans">false</option>
     <option name="-trace-len">1</option>
     <option name="-if-part">false</option>

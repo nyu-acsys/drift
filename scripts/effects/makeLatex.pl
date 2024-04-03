@@ -13,19 +13,23 @@ my @resultsfiles = (
     #"results/results.2024-02-25_12-18-59.table.csv",
     #"results/results.2024-03-20_12-38-14.table.csv"
     #"results/results.2024-03-25_13-16-55.table.csv"
-    "results/results.2024-03-25_15-35-29.table.csv"
+    #"results/results.2024-03-25_15-35-29.table.csv"
+    "results/results.2024-04-03_09-40-40.table.csv"
 );
 
 # 2) Those CSVs have column names that depend on the rundefinition. Set those:
 # drift-new-len0.effects drift-new-len1.effects drift-trans-len0.effects drift-trans-len1.effects default.mochibenchmarks/;
 my @RUNDEFINITIONS = qw/
-   NOTEmar23-TL0-TPfalse-DMpg-TRtrans.effects
-   NOTEmar23-TL1-TPfalse-DMpg-TRtrans.effects
-   NOTEmar23-TL2-TPfalse-DMpg-TRtrans.effects
-   NOTEmar23-TL0-TPtrue-DMpg-TRdirect.effects
-   NOTEmar23-TL0-TPfalse-DMpg-TRdirect.effects
-   NOTEmar23-TL1-TPtrue-DMpg-TRdirect.effects
-   NOTEmar23-TL1-TPfalse-DMpg-TRdirect.effects
+   NOTEapr2-TL0-TPtrue-DMpg-TRtrans.effects
+   NOTEapr2-TL0-TPfalse-DMpg-TRtrans.effects
+   NOTEapr2-TL1-TPtrue-DMpg-TRtrans.effects
+   NOTEapr2-TL1-TPfalse-DMpg-TRtrans.effects
+   NOTEapr2-TL2-TPtrue-DMpg-TRtrans.effects
+   NOTEapr2-TL2-TPfalse-DMpg-TRtrans.effects
+   NOTEapr2-TL0-TPtrue-DMpg-TRdirect.effects
+   NOTEapr2-TL0-TPfalse-DMpg-TRdirect.effects
+   NOTEapr2-TL1-TPtrue-DMpg-TRdirect.effects
+   NOTEapr2-TL1-TPfalse-DMpg-TRdirect.effects
     default.mochibenchmarks
 /;
 
@@ -115,6 +119,7 @@ foreach my $fn (@resultsfiles) {
     parseResultsFile($fn);
 }
 
+
 sub newBest {
     my ($BEST,$bench,$rd) = @_;
     $d->{$bench}->{$BEST}->{res}  = $d->{$bench}->{$rd}->{res};
@@ -130,7 +135,7 @@ foreach my $bench (sort keys %$d) {
     # newBest('BEST_TRANS',$bench,$someRD);
     # my $someRD = (grep($_ !~ /mochi/ && $_ !~ /trans/,keys %{$d->{$bench}}))[0];
     # newBest('BEST_DRIFTEV',$bench,$someRD);
-    
+    my $done = 0;
     foreach my $rd (keys %{$d->{$bench}}) {
         next if $rd =~ /BEST/;
         next if $rd =~ /mochi/i;
@@ -138,13 +143,14 @@ foreach my $bench (sort keys %$d) {
         # which are we improving?
         my $BEST = ($rd =~ /trans/i ? 'BEST_TRANS' : 'BEST_DRIFTEV');
         # we have nothing yet, so we take it
-        if (not defined $d->{$bench}->{$BEST}) {
+        if ($d->{$bench}->{$BEST}->{rd} !~ /[a-z]/) {
+            if ($BEST eq 'BEST_DRIFTEV') { ++$done; die "bad" if $done++ > 1; }
             newBest($BEST,$bench,$rd);
         # does it improve because previously BEST coudln't prove it?
         } elsif ($d->{$bench}->{$BEST}->{res} ne 'true') {
             newBest($BEST,$bench,$rd);
         # does it improve because it's faster?
-        } elsif ($d->{$bench}->{$BEST}->{res} eq 'true'
+        } elsif ($d->{$bench}->{$rd}->{res} eq 'true'
                 && $d->{$bench}->{$rd}->{cpu} < $d->{$bench}->{$BEST}->{cpu}) {
             newBest($BEST,$bench,$rd);
         } else {
@@ -166,10 +172,11 @@ open EXT, ">exp-apx.tex" or die $!;
 # }
 # print EXT "\\\\ \n";
 # print EXT "\\hline\n";
+my $ct = 1;
 foreach my $b (sort keys %$d) {
     my $tt = $b; $tt =~ s/\_/\\_/g;
     $tt =~ s/negated/neg/;
-    print EXT "\\texttt{\\scriptsize $tt} \\\\\n";
+    print EXT "$ct. \\texttt{\\scriptsize $tt} \\\\\n"; ++ $ct;
     foreach my $tool (@RUNDEFINITIONS) {
         my $isBest = ($d->{$b}->{BEST_DRIFTEV}->{rd} eq $tool ? '\hl ' : '    ');
         print EXT sprintf("& $isBest %-5s & %3.2f & %3.2f & %s \\\\\n",
@@ -199,11 +206,12 @@ open BODY, ">exp-body.tex" or die $!;
 # print BODY "\\\\ \n";
 # print BODY "\\hline\n";
 my @geos_mochi; my @geos_evtrans; my @geos_direct;
-my $newOverMochi = 0; my $newOverTrans = 0; my $benchCount = 0;
+my $newOverMochi = 0; my $newOverTrans = 0; my $benchCount = 0; $ct = 1;
 foreach my $b (sort keys %$d) {
+    next if $b =~ /ho-shrink/; # old name;
     my $tt = $b; $tt =~ s/\_/\\_/g;
     $tt =~ s/negated/neg/;
-    print BODY "\\texttt{\\scriptsize $tt} ";
+    print BODY "$ct. \\texttt{\\scriptsize $tt} "; ++$ct;
     #warn "tool rd: ".Dumper($b,$d->{$b},$d->{$b}->{BEST_TRANS},$d->{$b}->{BEST_TRANS}->{rd});
     # Trans-Drift
     print BODY sprintf("& %-5s & %3.2f & %3.2f & %s ",
@@ -222,6 +230,7 @@ foreach my $b (sort keys %$d) {
            $d->{$b}->{BEST_DRIFTEV}->{cpu},
            $d->{$b}->{BEST_DRIFTEV}->{mem},
            run2tool($d->{$b}->{BEST_DRIFTEV}->{rd}));
+    printf "best EDrift result for %-40s : %-10s : %s\n", $b, $d->{$b}->{BEST_DRIFTEV}->{res}, $d->{$b}->{BEST_DRIFTEV}->{rd};
     # save the runtimes for statistics
     push @geos_evtrans, $d->{$b}->{BEST_TRANS}->{cpu}
       if $d->{$b}->{BEST_TRANS}->{cpu} < 900 && $d->{$b}->{BEST_TRANS}->{cpu} > 0;
@@ -257,7 +266,6 @@ foreach my $bench (sort keys %$d) {
         next if $rd =~ /BEST/;
         next if $rd =~ /mochi/i;
         next if $rd =~ /TRtrans/;
-        warn "consider $rd\n";
         my $BEST = ($rd =~ /TPfalse/i ? 'BEST_TPOFF' : 'BEST_TPON');
         # we have nothing yet, so we take it
         if (not defined $d->{$bench}->{$BEST}) {
@@ -266,7 +274,7 @@ foreach my $bench (sort keys %$d) {
         } elsif ($d->{$bench}->{$BEST}->{res} ne 'true') {
             newBest($BEST,$bench,$rd);
         # does it improve because it's faster?
-        } elsif ($d->{$bench}->{$BEST}->{res} eq 'true'
+        } elsif ($d->{$bench}->{$rd}->{res} eq 'true'
                 && $d->{$bench}->{$rd}->{cpu} < $d->{$bench}->{$BEST}->{cpu}) {
             newBest($BEST,$bench,$rd);
         } else {
@@ -275,13 +283,14 @@ foreach my $bench (sort keys %$d) {
     }
 }
 
-print Dumper($d);
-
 open TP, ">exp-tp.tex" or die $!;
+$ct = 1;
+my $newTPOverNoTP = 0;
+my @geos_notp; my @geos_tp;
 foreach my $b (sort keys %$d) {
     my $tt = $b; $tt =~ s/\_/\\_/g;
     $tt =~ s/negated/neg/;
-    print TP "\\texttt{\\scriptsize $tt} ";
+    print TP "$ct. \\texttt{\\scriptsize $tt} "; ++$ct;
     #warn "tool rd: ".Dumper($b,$d->{$b},$d->{$b}->{BEST_TRANS},$d->{$b}->{BEST_TRANS}->{rd});
     # Best with Trace Part
     print TP sprintf("& %-5s & %3.2f & %3.2f & %s ",
@@ -295,6 +304,14 @@ foreach my $b (sort keys %$d) {
            $d->{$b}->{BEST_TPOFF}->{cpu},
            $d->{$b}->{BEST_TPOFF}->{mem},
            run2tool($d->{$b}->{BEST_TPOFF}->{rd}));
+
+    # save the runtimes for statistics
+    push @geos_tp, $d->{$b}->{BEST_TPON}->{cpu}
+      if $d->{$b}->{BEST_TPON}->{cpu} < 900 && $d->{$b}->{BEST_TPON}->{cpu} > 0;
+    push @geos_notp, $d->{$b}->{BEST_TPOFF}->{cpu}
+      if $d->{$b}->{BEST_TPOFF}->{cpu} < 900 && $d->{$b}->{BEST_TPOFF}->{cpu} > 0;
+    #
+    $newTPOverNoTP++ if $d->{$b}->{BEST_TPON}->{res} eq 'true' && $d->{$b}->{BEST_TPOFF}->{res} ne 'true';
 }
 close TP;
 print "wrote: exp-tp.tex\n";
@@ -311,6 +328,11 @@ print STATS join("\n", (
    ('\newcommand\expNewOverMochi{'.$newOverMochi.'}'),
    ('\newcommand\expNewOverTrans{'.$newOverTrans.'}'),
    ('\newcommand\expBenchCount{'.$benchCount.'}'),
+   "% TP Improvements:",
+   ('\newcommand\expTPGMoff{'.geometric_mean(@geos_tp).'}'),
+   ('\newcommand\expTPGMon{'.geometric_mean(@geos_notp).'}'),
+   ('\newcommand\expTPSpeedup{'.sprintf("%0.1f", geometric_mean(@geos_notp)/geometric_mean(@geos_tp)).'}'),
+   ('\newcommand\expTPNew{'.$newTPOverNoTP.'}'),
 ))."\n";
 close STATS;
 print "wrote: exp-stats.tex\n" or die $!;

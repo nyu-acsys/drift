@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-my $prefix = 'NOTEmar23';
+my $prefix = 'NOTEapr2';
 my $rdout = '';
 
 print "Adding run definitions:\n";
@@ -10,7 +10,10 @@ foreach my $ifPart (qw/true false/) {
     # CA says: "Although, there are some cases when with
     # ev-trans true, you need trace-len 2. Also, ev-trans
     # still doesn't work properly with if-part true"
-    next if $ifPart eq 'true' and $evTrans eq 'true';
+
+    # CA on Mar 27: should now work
+    # next if $ifPart eq 'true' and $evTrans eq 'true';
+
     next if $tracelen eq '2' and $evTrans eq 'false';
     my $dom = 'PolkaGrid';
     my $rdName = join('-',
