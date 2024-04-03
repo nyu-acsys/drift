@@ -30,7 +30,7 @@ delta = fun evx (q, (pending,tick)) ->
   else if (q = 0 && tick = 42 && evx=2) then (42, (pending-1,0))
   else if (q = 0 && tick = 42 && evx=3) then (42, (pending,  0))
   (* in q42 but get Handle events *)
-  else if (q = 42 && evx=2 && pending = 1) then (1, (0,0))
+  else if (q = 42 && evx=2 && pending = 1) then (0, (0,0))
   else if (q = 42 && evx=2 )               then (42, (pending-1,0))
   (* in q42 but get unfair events *)
   else if (q = 42)                        then (666, (0,0))
