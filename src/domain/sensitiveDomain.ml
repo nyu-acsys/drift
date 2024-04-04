@@ -131,7 +131,7 @@ module type SemanticsType =
     val equal_T: (value_te -> var -> value_te) -> (value_te -> string -> string -> value_te) -> table_t -> var -> table_t
     val replace_T: (value_te -> var -> var -> value_te) -> table_t -> var -> var -> table_t
     val stren_T: (value_te -> value_tt -> value_te) -> table_t -> value_tt -> table_t
-    val proj_T: (value_te -> string list -> value_te) -> (value_te -> string list) -> table_t -> string list -> table_t
+    val proj_T: (value_te -> string list -> value_te) -> (string -> value_te -> string list) -> table_t -> string list -> table_t
     val bot_shape_T: (value_te -> value_te) -> table_t -> table_t
     val get_label_snode: node_s_t -> string
     val construct_vnode: env_t -> var -> trace_t -> node_t
@@ -245,7 +245,7 @@ module NonSensitive: SemanticsType =
     let proj_T f g (t:table_t) vars = let (z, vi, vo) = t in
       let vars_o = 
         let vars = z :: vars in
-        List.append vars (g vi)
+        List.append vars (g z vi)
       in
       (z, f vi vars, f vo vars_o)
     let get_label_snode n = let SN (_, e1) = n in e1
@@ -443,7 +443,7 @@ module Sensitive: SemanticsType =
       let var = get_trace_data cs in
       let vars_o = 
         let vars = var :: vars in
-        List.append vars (g vi)
+        List.append vars (g var vi)
       in
       f vi vars_o, proj_fout f vo vars_o) mt
     let get_label_snode n = match n with 
@@ -540,13 +540,15 @@ module Sensitive: SemanticsType =
       | Fout fout1, Fout fout2 ->
         let (v1i', _), (v2i', _) = f cs (v1i, TEBot) (v2i, TEBot) in
         let fout = TableMap.merge (fun _ vo1 vo2 ->
-          match vo1, vo2 with
-            | None, Some vo2 -> Some (TEBot, vo2)
-            | Some vo1, None -> Some (vo1, vo1)
-            | Some vo1, Some vo2 -> 
-                let (_, vo1'), (_, vo2') = f cs (v1i, vo1) (v2i, vo2) in
-                Some (vo1', vo2')
-            | _, _ -> None
+          let vo1, vo2 = 
+            match vo1, vo2 with
+              | None, Some vo2 -> TEBot, vo2
+              | Some vo1, None -> vo1, TEBot
+              | Some vo1, Some vo2 -> vo1, vo2
+              | _, _ -> TEBot, TEBot
+          in
+          let (_, vo1'), (_, vo2') = f cs (v1i, vo1) (v2i, vo2) in
+          Some (vo1', vo2')
           ) fout1 fout2 in
         let fout1' = Fout (TableMap.map (fun (fout1, _) -> fout1) fout) in
         let fout2' = Fout (TableMap.map (fun (_, fout2) -> fout2) fout) in

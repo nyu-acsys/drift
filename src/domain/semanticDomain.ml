@@ -668,7 +668,7 @@ module SemanticsDomain =
     and proj_V v vars =
       match v with
       | Relation r -> Relation (proj_R r vars)
-      | Table t -> Table (proj_T proj_VE get_list_length_item_VE t vars)
+      | Table t -> Table (proj_T proj_VE get_arg_vars_VE t vars)
       | Ary ary -> Ary (proj_Ary ary vars)
       | Lst lst -> Lst (proj_Lst lst vars)
       | Tuple u -> Tuple (proj_Tuple u vars)
@@ -760,6 +760,10 @@ module SemanticsDomain =
       | Int -> Relation (bot_R Plus)
       | Bool -> Relation (bot_R Ge)
       | Unit -> Tuple []
+    and get_arg_vars_VE var = function
+      | TypeAndEff (Lst lst, _) -> get_list_length_item_Lst lst
+      | TypeAndEff (Tuple u, _) -> get_vars_Tuple var u
+      | _ -> []
     and get_list_length_item_VE = function
       | TypeAndEff (Lst lst, _) -> get_list_length_item_Lst lst
       | _ -> []
@@ -1215,8 +1219,10 @@ module SemanticsDomain =
       List.map (fun v -> bot_shape_VE v) u
     and get_tuple_list u = 
       u
+    and get_vars_Tuple var u =
+      List.map (fun i -> var^"."^(string_of_int i)) (List.length u |> first_n)
     and only_shape_Tuple u = 
-      List.fold_right (fun ve is_bot -> if is_bot then is_bot_VE ve else is_bot) u true
+      List.fold_right (fun ve is_bot -> if is_bot then only_shape_VE ve else is_bot) u true
 
     (*
       ***************************************
@@ -1244,7 +1250,7 @@ module SemanticsDomain =
           end
         ); *)
         let v = wid_VE v1 v2 in
-        if !debug && get_label_snode n = "" then
+        if !debug && get_label_snode n = "VN: 3;." then
           Format.fprintf Format.std_formatter "sem line 1230 @,v: @[%a@]@, @,v1: @[%a@]@, @,v2: @[%a@]@" 
           pr_value_and_eff v pr_value_and_eff v1 pr_value_and_eff v2;
         v
