@@ -57,6 +57,7 @@ scripts/benchexec-drifttoolinfo/drifttoolinfo.egg-info
 
 scripts/effects/results/**/*
 tests/effects/*.yml
+tests/effects/dead/*.yml
 nohup.out
 \#*\#
 drift.native1

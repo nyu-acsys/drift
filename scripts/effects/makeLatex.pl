@@ -16,7 +16,8 @@ my @resultsfiles = (
     #"results/results.2024-03-20_12-38-14.table.csv"
     #"results/results.2024-03-25_13-16-55.table.csv"
     #"results/results.2024-03-25_15-35-29.table.csv"
-    "results/results.2024-04-03_12-36-18.table.csv"
+    #    "results/results.2024-04-03_12-36-18.table.csv"
+    "results/results.2024-04-04_10-01-41.table.csv"
 );
 
 # 2) load the RunDefinitions defined in the autogen XML file
@@ -206,6 +207,7 @@ my @geos_mochi; my @geos_evtrans; my @geos_direct;
 my $newOverMochi = 0; my $newOverTrans = 0; my $benchCount = 0; $ct = 1;
 print Dumper($d->{overview1});
 foreach my $b (sort keys %$d) {
+    #next if $b =~ /amortized/;
     next if $b =~ /ho-shrink/; # old name;
     my $tt = $b; $tt =~ s/\_/\\_/g;
     $tt =~ s/negated/neg/;
