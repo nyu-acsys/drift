@@ -6,5 +6,5 @@ let rec mono t x =
     mono (t+x) (x-1) (* increase t by positive amount *)
 
 let main (u: int(*-:{v:Int | true}*)) = 
-  if u>0 then mono u 1 else 0
+  if u>0 then mono 1 u else 0
 

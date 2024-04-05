@@ -569,6 +569,7 @@ module SemanticsDomain =
     and equal_V v var = match v with
       | Relation r -> Relation (equal_R r var)
       | Table t -> Table (equal_T equal_VE alpha_rename_VE t var)
+      | Tuple u -> Tuple (equal_Tuple u var)
       | _ -> v
     and equal_VE ve var = 
       temap ((fun v -> equal_V v var), (fun e -> equal_Eff e var)) ve
@@ -647,6 +648,10 @@ module SemanticsDomain =
       | _ -> ve'
     and sat_equal_V v x = match v with
       | Relation r -> sat_equal_R r x
+      | Tuple u -> sat_equal_Tuple u x
+      | _ -> false
+    and sat_equal_VE ve x = match ve with
+      | TypeAndEff (v, _) -> sat_equal_V v x
       | _ -> false
     (* and der_V term v = match term, v with
        | _, Top | _, Bot -> v
@@ -1193,6 +1198,18 @@ module SemanticsDomain =
       List.map (fun v1 -> alpha_rename_VE v1 prevar var) u
     and replace_Tuple u var x =
       List.map (fun v1 -> replace_VE v1 var x) u
+    and sat_equal_Tuple u x = 
+      let inds = List.length u |> first_n in
+      zip_list inds u |>
+      List.fold_left (fun curr_bool (i, ve) ->
+        let x_i = x^"."^(string_of_int i) in
+        curr_bool && sat_equal_VE ve x_i) true
+    and equal_Tuple u var = 
+      let inds = List.length u |> first_n in
+      zip_list inds u |> 
+      List.map (fun (i, ve) ->
+        let var_i = var^"."^(string_of_int i) in
+        equal_VE ve var_i)
     and init_Tuple l = 
       Tuple (List.init l (fun _ -> TEBot))
     and join_Tuple u1 u2 =

@@ -665,7 +665,8 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       let tex = find nx m in
       let effx0 = tex |> extract_eff in
       let tex = find nx m 
-                |> temap ((fun tx -> if is_Relation tx then
+                |> temap ((fun tx -> 
+                                  if is_Relation tx || is_tuple_V tx then
                                     if sat_equal_V tx x then tx
                                     else equal_V (forget_V x tx) x
                                   else tx),
@@ -1332,7 +1333,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                let pr = Format.fprintf Format.std_formatter in
                pr "@.@.LINE 1259, Lambda(before eval body), trace:%s, @,tex': @[%a@]@." 
                  (get_trace_data trace') pr_value_and_eff tex'); 
-            let ae' = if (x <> "_" && is_Relation (extract_v tex')) || is_tuple_VE tex'  || is_List (extract_v tex') then 
+            let ae' = if (x <> "_" && is_Relation (extract_v tex')) || is_tuple_VE tex' || is_List (extract_v tex') then 
               (* if only_shape_V tx then ae else  *)
               (arrow_V x ae (extract_v tex')) else ae in
             let ec' = extract_ec tex' in
