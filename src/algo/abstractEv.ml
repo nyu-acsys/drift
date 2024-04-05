@@ -87,11 +87,15 @@ let eff0 () =
     let acc = match e with 
       | Const (acc0, _) -> 
          List.fold_left (fun acc v -> arrow_R v acc (init_R_c acc0)) (top_R Plus) acc_vars
+      | UnOp (UMinus, Const (Integer (acc0), _), _) -> 
+         List.fold_left (fun acc v -> arrow_R v acc (init_R_c (Integer (-acc0)))) (top_R Plus) acc_vars
       | TupleLst (es, _) -> 
          List.mapi (fun i e -> ((accv_of_idx i), e)) es
          |> List.fold_left 
               (fun acc (v, e) -> match e with
                               | Const (acc0, _) -> arrow_R v acc (init_R_c acc0)
+                              | UnOp (UMinus, Const (Integer (acc0), _), _) ->
+                                  arrow_R v acc (init_R_c (Integer (-acc0)))
                               | _ -> acc)
               (top_R Plus)
       | _ -> (top_R Plus)
