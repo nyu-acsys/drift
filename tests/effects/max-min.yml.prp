@@ -3,10 +3,11 @@
 QSet   = [0;1]; 
 
 delta  = fun evx (q, (max,min)) -> 
-   if evx < min then (1, (max,evx)) 
+   if evx < min && evx > max then (1, (evx, evx))
+   else if evx < min then (1, (max,evx)) 
    else if evx > max then (1, (evx,min)) 
    else (1, (max,min));
 
-IniCfg = (0, (0,0));
+IniCfg = (0, (-100000,100000));
 
 assertFinal = fun (q, (max,min)) -> max + min = 0;

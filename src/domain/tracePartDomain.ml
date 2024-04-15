@@ -48,7 +48,7 @@ let rec prune_semi_trace semi_trace limit = if List.length semi_trace > limit
   else semi_trace
 
 let get_part_token_loc loc_token = match loc_token with
-  | If_Case (loc1,loc2) | Pat_Case (loc1,loc2) -> loc1^"-"^loc2
+  | If_Case (loc1,loc2) | Pat_Case (loc1,loc2) -> loc1^"_"^loc2
 
 let comp_loc loc1 loc2 = 
   let l1 = try int_of_string loc1 with _ -> -1 in
