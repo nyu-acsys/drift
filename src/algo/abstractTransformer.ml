@@ -1338,9 +1338,6 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                let pr = Format.fprintf Format.std_formatter in
                pr "@.@.LINE 1259, Lambda(before eval body), trace:%s, @,tex': @[%a@]@." 
                  (get_trace_data trace') pr_value_and_eff tex'); 
-            let ae' = if (x <> "_" && is_Relation (extract_v tex')) || is_tuple_VE tex' || is_List (extract_v tex') then 
-              (* if only_shape_V tx then ae else  *)
-              (arrow_V x ae (extract_v tex')) else ae in
             let ec' = extract_ec tex' in
             let ec' =
               if is_tuple_VE tex then
@@ -1354,6 +1351,9 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
               else
                 replace_Eff (Effect ec') z x |> get_effmap
             in
+            let ae' = if (x <> "_" && is_Relation (extract_v tex')) || is_tuple_VE tex' || is_List (extract_v tex') then 
+              (* if only_shape_V tx then ae else  *)
+              (arrow_V x ae (extract_v tex')) else get_ae ec' |> stren_V ae  in
             (if !debug && lx = "97" then 
               let pr = Format.fprintf Format.std_formatter in
               pr "@.LINE 1068, ae': @[%a@]@, ec': @[%a@]@."
