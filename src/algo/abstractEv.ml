@@ -115,7 +115,7 @@ let eff0 () =
   |> (fun meff -> Option.value meff ~default:(StateMap.empty))
   |> minimize_eff
 
-let get_ae: effect_t -> SenSemantics.value_tt = fun eff ->
+let get_ae_from_eff: effect_t -> SenSemantics.value_tt = fun eff ->
   StateMap.fold (fun (Q q) acc res ->
     let qae = VarMap.find acc_name acc in
     let spec = Option.get !property_spec in

@@ -101,6 +101,11 @@ and pr_env ppf = function
   | [x, (n,r)] -> Format.fprintf ppf "%s, %b: %a" x r pr_node_full n
   | (x, (n,r)) :: env -> Format.fprintf ppf "%s, %b: %a,@ %a" x r pr_node_full n pr_env env
 
+let rec pr_env_vars ppf = function
+  | [] -> ()
+  | [x, (n, r)] -> Format.fprintf ppf "%s" x
+  | (x, (n,r)) :: env -> Format.fprintf ppf "%s,@ %a" x pr_env_vars env
+
 let string_of_node n = pr_node Format.str_formatter n; Format.flush_str_formatter ()
 
 let pr_agg_val ppf a = match a with

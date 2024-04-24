@@ -19,7 +19,7 @@ let print_part_token ppf loc_token = match loc_token with
 let rec print_part_trace ppf trace = match trace with
   | [] -> ()
   | head :: [] -> print_part_token ppf head
-  | head :: tail -> (print_part_token ppf head; print_string ","; print_part_trace ppf tail)
+  | head :: tail -> (print_part_token ppf head; print_string "."; print_part_trace ppf tail)
 
 let rec print_call_trace ppf trace = match trace with
   | [] -> ()
@@ -112,14 +112,14 @@ let sort_traces trace_list = List.sort(fun trace1 trace2 -> comp_trace trace1 tr
 let rec get_part_trace_data trace = match trace with
   | [] -> ""
   | head :: [] -> get_part_token_loc head
-  | head :: tail -> get_part_token_loc head ^","^ get_part_trace_data tail
+  | head :: tail -> get_part_token_loc head ^"."^ get_part_trace_data tail
 
 let rec get_call_trace_data trace = match trace with
   | [] -> ""
   | head :: [] -> head
-  | head :: tail -> head ^","^ get_call_trace_data tail
+  | head :: tail -> head ^"."^ get_call_trace_data tail
 
-let get_trace_data (call_trace, part_trace) = get_call_trace_data call_trace^"."^get_part_trace_data part_trace
+let get_trace_data (call_trace, part_trace) = get_call_trace_data call_trace^".."^get_part_trace_data part_trace
 
 let add_cs_token_to_trace token (call_trace, part_trace) limit = 
   (* print_trace Format.std_formatter trace; print_string "->"; *)

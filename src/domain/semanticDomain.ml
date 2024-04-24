@@ -115,7 +115,6 @@ module SemanticsDomain =
       | Bool (vt, vf) -> AbstractValue.sat_cons vt x && AbstractValue.sat_cons vf x
       | _ -> false
     let op_R_eq_mod res l r op cons a = (*cons for flag of linear constraints*)
-      if !debug then Format.fprintf Format.std_formatter "here";
       match op with
       | Eq | Ne -> (match a with
         | Int v -> Int (AbstractValue.operator res l r op (-1) true v)
@@ -199,6 +198,10 @@ module SemanticsDomain =
     let is_unit_R = function
       | Unit _ -> true
       | _ -> false
+    let get_ae_from_R r = match r with
+      | Int r1 -> Relation (forget_R "cur_v" r)
+      | Bool (rt, rf) -> Relation (join_R (extrac_bool_R r true) (extrac_bool_R r false))
+      | Unit _ -> Relation r
 
     (********************************************
      ** Abstract domain for Effects            **
@@ -337,6 +340,21 @@ module SemanticsDomain =
       | TEBot -> EffBot
       | TypeAndEff (_, e) -> e
       | TETop -> EffTop
+
+    let extract_ec = 
+      if (!Config.effect_on && (not !Config.ev_trans)) then
+          (fun te -> 
+            match (extract_eff te) with
+            | EffBot | EffTop -> 
+              (if !debug then
+                let pr = Format.fprintf Format.std_formatter in
+                pr ("@.ERR(extract_ec)-> node: %a \
+                      An effect should be observable at this stage of the analysis")
+                  pr_value_and_eff te);
+              StateMap.empty
+            | Effect e -> e)
+          else
+            (fun te -> StateMap.empty)
     (* let get_ae_from_eff = function
       | EffBot -> Bot
       | EffTop -> Top
@@ -826,6 +844,9 @@ module SemanticsDomain =
     and is_tuple_VE = function
       | TypeAndEff ((Tuple u), _) -> true
       | _ -> false
+    and is_pure_Tuple ve =
+      is_tuple_VE ve &&
+      List.fold_right (fun ve is_pure -> is_pure && (is_Relation (extract_v ve) || is_pure_Tuple ve)) (get_tuple_list_VE ve) true
     and get_tuple_list_V = function
       | Tuple u -> get_tuple_list u
       | _ -> raise (Invalid_argument "extract tuple should be a tuple")
@@ -841,6 +862,10 @@ module SemanticsDomain =
     and rename_lambda_V v = match v with
       | Lst lst -> Lst (rename_lambda_Lst lst)
       | _ -> v 
+    and get_ae_from_v v = match v with
+      | Relation r -> get_ae_from_R r
+      | Tuple u -> get_ae_from_Tuple u
+      | _ -> raise (Invalid_argument "Meet: Base Type not equal")
 
     (*
       *******************************
@@ -1240,6 +1265,8 @@ module SemanticsDomain =
       List.map (fun i -> var^"."^(string_of_int i)) (List.length u |> first_n)
     and only_shape_Tuple u = 
       List.fold_right (fun ve is_bot -> if is_bot then only_shape_VE ve else is_bot) u true
+    and get_ae_from_Tuple u =
+      List.fold_right (fun ve ae -> join_V (get_ae_from_v (extract_v ve)) Bot) u Bot
 
     (*
       ***************************************
@@ -1267,7 +1294,7 @@ module SemanticsDomain =
           end
         ); *)
         let v = wid_VE v1 v2 in
-        if !debug && get_label_snode n = "VN: 3;." then
+        if !debug && get_label_snode n = "VN: 137;z25.z132.." then
           Format.fprintf Format.std_formatter "sem line 1230 @,v: @[%a@]@, @,v1: @[%a@]@, @,v2: @[%a@]@" 
           pr_value_and_eff v pr_value_and_eff v1 pr_value_and_eff v2;
         v

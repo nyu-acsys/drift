@@ -56,6 +56,7 @@ module MakeHash(Hash: HashType) = struct
     fun key v lst -> (key, v) :: lst
   ) m []
   let fold = Hashtbl.fold
+  let iter = Hashtbl.iter
 end
 
 exception Pre_Def_Change of string
@@ -157,6 +158,7 @@ module type SemanticsType =
     val get_table_by_cs_T: trace_t -> table_t -> (value_te * fout_t)
     val update_fout: trace_t -> value_te -> fout_t -> fout_t
     val update_table: trace_t -> value_te * fout_t -> table_t -> table_t
+    val get_name: node_s_t -> var
     val is_top_fout: fout_t -> bool
     val table_isempty: table_t -> bool
     val table_mapi: (trace_t -> value_te * fout_t -> value_te * fout_t) -> table_t -> table_t
@@ -202,6 +204,8 @@ module NonSensitive: SemanticsType =
       | e -> e 
     let init_T trace = get_trace_data trace, TEBot, TEBot
     let init_fout = TEBot
+    let get_name n = match n with
+      | SN (_, var) -> var
     let alpha_rename_fout f fout prevar_trace var_trace = f fout prevar_trace var_trace
     let alpha_rename_T f (t:table_t) prevar_trace var_trace :table_t =
       let (z, vi, vo) = t in
@@ -359,6 +363,9 @@ module Sensitive: SemanticsType =
       | FTop -> false    
       | Fout fout -> TableMap.is_empty fout
     let init_T var = TableMap.empty
+    let get_name n = match n with
+      | SEN (var, _) -> var
+      | SVN (var, _) -> var
     let alpha_rename_fout f fout prevar var = match fout with
       | FTop -> FTop
       | Fout fout -> Fout (TableMap.map (fun vo_tr -> f vo_tr prevar var) fout)
@@ -495,7 +502,7 @@ module Sensitive: SemanticsType =
       | EN (env, l) -> Format.fprintf ppf "@[<1><[%a],[%s] " 
         f (VarMap.bindings env) l; Format.fprintf ppf ">@]"
       | VN (env, l, cs) -> let var = cs in Format.fprintf ppf "@[<1><@[<1>[%a]@],@ " 
-        f (VarMap.bindings env); Format.fprintf ppf ",@ "; print_trace ppf var; Format.fprintf ppf "%s>@]" l
+        f (VarMap.bindings env); Format.fprintf ppf ",@[%s]" (get_trace_data var); Format.fprintf ppf "%s>@]" l
     let compare_node n1 n2 = match n1, n2 with
       | SEN (var1, e1), SEN (var2, e2) -> comp_loc var1 var2
       | SEN (var1, e1), SVN (var2, e2) -> comp_loc var1 var2
