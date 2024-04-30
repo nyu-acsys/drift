@@ -11,3 +11,4 @@ delta = fun evx (q, (enq, deq, tick)) ->
 IniCfg = (0, (0,0,0));
 
 assertFinal = fun (q, (enq, deq, tick)) -> q=0 && tick = enq+prefl2 && tick = deq-prefl1;
+(* assertFinal = fun (q, (enq, deq, tick)) -> q=0 && tick = enq+prefl2; *)

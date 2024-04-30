@@ -33,21 +33,21 @@ let rec pr_exp pl ppf = function
     Format.fprintf ppf "Tup @[<2>(%a)%a@]"
       (print_tuple pl) u (pr_label pl) l
 | Const (c, l) ->
-    Format.fprintf ppf "Const %a%a" pr_const c (pr_label pl) l
+    Format.fprintf ppf "%a%a" pr_const c (pr_label pl) l
 | Var (x, l) ->
-    Format.fprintf ppf "Var %s%a" x (pr_label pl) l
+    Format.fprintf ppf "%s%a" x (pr_label pl) l
 | App (e1, e2, l) ->
-    Format.fprintf ppf "App @[<2>(%a@ %a)%a@]"
+    Format.fprintf ppf "@[<2>(%a@ %a)%a@]"
       (pr_exp pl) e1
       (pr_exp pl) e2
       (pr_label pl) l
 | Rec (None, (x, lx), e, l) ->
-    Format.fprintf ppf "Rec @[<2>(lambda %s%a.@ %a)%a@]"
+    Format.fprintf ppf "@[<2>(lambda %s%a.@ %a)%a@]"
       x (pr_label pl) lx
       (pr_exp pl) e
       (pr_label pl) l
 | Rec (Some (f, lf), (x, lx), e, l) ->
-    Format.fprintf ppf "Rec @[<2>(mu %s%a %s%a.@ %a)%a@]"
+    Format.fprintf ppf "@[<2>(mu %s%a %s%a.@ %a)%a@]"
       f (pr_label pl) lf
       x (pr_label pl) lx
       (pr_exp pl) e
@@ -59,23 +59,23 @@ let rec pr_exp pl ppf = function
       (pr_exp pl) e3
       (pr_label pl) l
 | BinOp (bop, e1, e2, l) ->
-    Format.fprintf ppf "BinOp @[<2>(%a@ %a@ %a)%a@]"
+    Format.fprintf ppf "@[<2>(%a@ %a@ %a)%a@]"
     (pr_exp pl) e1
     pr_op bop
     (pr_exp pl) e2
     (pr_label pl) l
 | UnOp (uop, e1, l) ->
-    Format.fprintf ppf "UnOp @[<2>(%a@ %a)%a@]"
+    Format.fprintf ppf "@[<2>(%a@ %a)%a@]"
     pr_unop uop
     (pr_exp pl) e1
     (pr_label pl) l
 | PatMat (e, patlst, l) ->
-  Format.fprintf ppf "PatMat @[<2>(match@ %a@ with@ %a)%a@]"
+  Format.fprintf ppf "@[<2>(match@ %a@ with@ %a)%a@]"
     (pr_exp pl) e
     (pr_pm pl) patlst
     (pr_label pl) l
 | Event (e, l) -> 
-   Format.fprintf ppf "@[<2>(event@ %a)%a@]"
+   Format.fprintf ppf "@[<2>(ev@ %a)%a@]"
      (pr_exp pl) e
      (pr_label pl) l
 | Assert (e, _, l) ->
@@ -89,7 +89,10 @@ and pr_pm pl ppf = function
 and pr_pattern pl ppf (Case (e1, e2)) = 
   Format.fprintf ppf "@[<2>%a@ ->@ %a@]" (pr_exp pl) e1 (pr_exp pl) e2
 
-let print_exp out_ch e = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" (pr_exp true) e
+let print_exp out_ch e =
+  let ppf = Format.formatter_of_out_channel out_ch in 
+  Format.pp_set_geometry ppf 190 200;
+  Format.fprintf ppf "%a@?" (pr_exp true) e
 
 let loc_of_node n = get_label_snode n
 
@@ -212,7 +215,10 @@ let sort_list (m: exec_map_t) =
   List.sort (fun (n1,_) (n2,_) -> 
     compare_node n1 n2) lst 
 
-let print_value out_ch v = Format.fprintf (Format.formatter_of_out_channel out_ch) "%a@?" pr_value v
+let print_value out_ch v = 
+  let ppf = Format.formatter_of_out_channel out_ch in 
+  Format.pp_set_geometry ppf 190 200;
+  Format.fprintf ppf "%a@?" pr_value v
 
 let string_of_value v = pr_value Format.str_formatter v; Format.flush_str_formatter ()
 let string_of_value_and_eff ve = pr_value_and_eff Format.str_formatter ve; Format.flush_str_formatter ()
