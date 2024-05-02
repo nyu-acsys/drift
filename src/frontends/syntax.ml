@@ -92,6 +92,7 @@ let string_of_op = function
   | Or    (* || *) -> "||"
   | Cons  (* :: *) -> "::"
   | Seq   (* ;  *) -> ";"
+  | Null -> "()"
         
 let string_of_unop = function
   | UMinus (* - *) -> "-"
@@ -148,6 +149,7 @@ let type_to_string = function
 type term =
   | TupleLst of term list * loc         (* tuple list *)
   | Const of value * loc               (* i (int constant) *)
+  | NonDet of loc                      (* To introduce non-determinism *)
   | Var of var * loc                   (* x (variable) *)
   | App of term * term * loc           (* t1 t2 (function application) *)
   | UnOp of unop * term * loc          (* uop t (unary operator) *)
@@ -163,6 +165,7 @@ and patcase =
 let loc = function
   | TupleLst (_, l)
   | Const (_, l)
+  | NonDet l -> l
   | Var (_, l)
   | App (_, _, l)
   | BinOp (_, _, _, l)
@@ -174,7 +177,7 @@ let loc = function
   | Assert (_, _, l) -> l
 
 let cond_op = function
-  | Plus | Mult | Div | Mod | Modc | Minus | And | Or | Cons | Seq -> false
+  | Plus | Mult | Div | Mod | Modc | Minus | And | Or | Cons | Seq | Null -> false
   | Ge | Eq | Ne | Lt | Gt | Le -> true
 
 let bool_op = function
@@ -259,6 +262,7 @@ let label e =
         let e' = List.rev e' in
         TupleLst (e', string_of_int k'), k' + 1
       | Const (c, _) -> Const (c, string_of_int k), k + 1
+      | NonDet _ -> NonDet (string_of_int k), k + 1
       | Var (x, _) -> Var (x, string_of_int k), k + 1
       | App (e1, e2, _) ->
           let e1', k1 = l k e1 in
@@ -296,6 +300,7 @@ let label e =
       | Assert (e1, ps, _) ->
          let e1', k1 = l k e1 in
          Assert (e1', ps, string_of_int k1), k1 + 1
+        
     and lp k = function
       | [] -> [], k
       | Case (e1, e2) :: tl -> 
@@ -350,6 +355,7 @@ let fv_acc acc e =
         fv (StringSet.union bvs d) acc e
     | Event (e, _) -> fv bvs acc e
     | Assert (e, _, _) -> fv bvs acc e
+    | NonDet _ -> acc
   in
   fv StringSet.empty acc e
 
@@ -358,7 +364,7 @@ let fv e = fv_acc StringSet.empty e
 let fo e =
   let inc acc x = StringMap.update x (function Some x -> Some (x + 1) | None -> Some 1) acc in
   let rec fv bvs acc = function
-    | Const _ -> acc
+    | Const _ | NonDet _ -> acc
     | Var (x, _) ->
         if StringMap.mem x bvs
         then acc
@@ -487,40 +493,40 @@ let subst sm =
   let rec subst sm e =
     let s = subst sm in
     match e with
-      | Const _ as e -> e
+      | Const _ | NonDet _ as e -> e
       | Var (y, _) as v ->
           StringMap.find_opt y sm |> Opt.get_or_else v
-        | App (e1, e2, l) ->
-            App (s e1, s e2, l)
-        | BinOp (bop, e1, e2, l) ->
-            BinOp (bop, s e1, s e2, l)
-        | UnOp (uop, e, l) ->
-            UnOp (uop, s e, l)
-        | TupleLst (ts, l) ->
-            TupleLst (List.map s ts, l)
-        | Ite (b, t, e, l) ->
-            Ite (s b, s t, s e, l)
-        | Rec (f_opt, y, e, l) as r ->
-            let bvs = fst y :: (f_opt |> Opt.map fst |> Opt.to_list) |> StringSet.of_list in
-            let sm1 = update_sm bvs sm in
-            if sm1 = StringMap.empty then r else
-            let f_opt1 = f_opt |> Opt.map (subst_bv sm1) in
-            let y1 = subst_bv sm1 y in
-            let e1 = subst sm1 e in
-            Rec (f_opt1, y1, e1, l)
-        | PatMat (t, ps, l) ->
-            let ps1 =
-              List.map (function Case (p, t) as c ->
-                let sm1 = update_sm (fv p) sm in
-                if sm1 = StringMap.empty then c else
-                let p1 = subst sm1 p in
-                let t1 = subst sm1 t in
-                Case (p1, t1))
-                ps
-            in
-            PatMat (s t, ps1, l)
-        | Event (e, l) -> Event (s e, l)
-        | Assert (e, ps, l) -> Assert (s e, ps, l)
+      | App (e1, e2, l) ->
+          App (s e1, s e2, l)
+      | BinOp (bop, e1, e2, l) ->
+          BinOp (bop, s e1, s e2, l)
+      | UnOp (uop, e, l) ->
+          UnOp (uop, s e, l)
+      | TupleLst (ts, l) ->
+          TupleLst (List.map s ts, l)
+      | Ite (b, t, e, l) ->
+          Ite (s b, s t, s e, l)
+      | Rec (f_opt, y, e, l) as r ->
+          let bvs = fst y :: (f_opt |> Opt.map fst |> Opt.to_list) |> StringSet.of_list in
+          let sm1 = update_sm bvs sm in
+          if sm1 = StringMap.empty then r else
+          let f_opt1 = f_opt |> Opt.map (subst_bv sm1) in
+          let y1 = subst_bv sm1 y in
+          let e1 = subst sm1 e in
+          Rec (f_opt1, y1, e1, l)
+      | PatMat (t, ps, l) ->
+          let ps1 =
+            List.map (function Case (p, t) as c ->
+              let sm1 = update_sm (fv p) sm in
+              if sm1 = StringMap.empty then c else
+              let p1 = subst sm1 p in
+              let t1 = subst sm1 t in
+              Case (p1, t1))
+              ps
+          in
+          PatMat (s t, ps1, l)
+      | Event (e, l) -> Event (s e, l)
+      | Assert (e, ps, l) -> Assert (s e, ps, l)
   in subst sm
     
 let simplify =
@@ -530,7 +536,7 @@ let simplify =
     Opt.get_or_else 0
   in
   let rec simp = function
-  | (Var _ | Const _) as e -> e
+  | (Var _ | Const _ | NonDet _) as e -> e
   | App (e1, e2, l) ->
       (match simp e1, simp e2 with
       | Rec (None, (x, _), e, _), (Const _ | Var _ as c) ->

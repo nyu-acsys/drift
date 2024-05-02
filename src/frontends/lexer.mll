@@ -23,7 +23,8 @@ let _ =
       ("rec", REC);
       ("then", THEN);
       ("ev", EV);
-      ("true", BOOLCONST true)])
+      ("true", BOOLCONST true);
+      ("nondet", NONDET)])
 
 let lexical_error lexbuf msg =
   let pos = lexeme_start_p lexbuf in 

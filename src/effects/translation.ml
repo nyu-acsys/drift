@@ -13,7 +13,7 @@ let tr (e: term) (a: term) (acfg: term) (asst: term option) (asstFinal: term opt
   let rec tr_ (e: term) (acfg: term) = 
     match e with
     | TupleLst (e, l) -> TupleLst (List.map (fun e' -> tr_ e' acfg) e, l)
-    | (Const _ | Var _) -> ret e acfg
+    | (Const _ | Var _ | NonDet _) -> ret e acfg
     | Rec (fopt, px, def, l) ->
       let fc = fresh_var "cfg" in
       ret (Rec (fopt, (fc, ""), Rec (None, px, tr_ def (Var (fc, "")), l), "")) acfg

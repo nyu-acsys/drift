@@ -583,7 +583,11 @@ module Sensitive: SemanticsType =
       TableMap.fold f t m
     let get_full_fout fout = match fout with
       | FTop -> raise (Invalid_argument("Fout with error"))
-      | Fout fout -> TableMap.min_binding fout
+      | Fout fout -> 
+        if TableMap.is_empty fout then 
+          create_empty_trace, TEBot 
+        else
+          TableMap.min_binding fout
     let get_full_table_T t = TableMap.min_binding t
     let get_table_by_cs_T cs t = TableMap.find cs t
     let update_fout cs vo fout = match fout with

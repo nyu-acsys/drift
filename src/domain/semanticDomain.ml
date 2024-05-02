@@ -52,7 +52,7 @@ module SemanticsDomain =
       | Boolean true -> Bool (AbstractValue.from_int 1, AbstractValue.bot)
       | Boolean false -> Bool (AbstractValue.bot, AbstractValue.from_int 0)
       | Integer i -> Int (AbstractValue.from_int i)
-      | UnitLit -> Unit (AbstractValue.bot)
+      | UnitLit -> Unit (AbstractValue.top)
       | IntList lst -> raise (Invalid_argument "This should be cover on the upper level")
     let init_Env = Env (AbstractValue.top)
     let join_R a1 a2 =
@@ -92,17 +92,22 @@ module SemanticsDomain =
     let arrow_R var a1 a2 = 
       let a2' = alpha_rename_R a2 "cur_v" var in
       match a1, a2' with
-      | Int _, Int _ | Unit _, Unit _ | Env _, Env _ -> meet_R a1 a2'
+      | Int _, Int _ | Unit _, Unit _ -> meet_R a1 a2'
       | Bool (vt1, vf1), Bool (vt2, vf2) -> (* {v:bool | at: [at^at' V at^af'], af: [af^at' V af^af']} *)
         let vt1' = AbstractValue.join (AbstractValue.meet vt1 vt2) (AbstractValue.meet vt1 vf2) in
         let vf1' = AbstractValue.join (AbstractValue.meet vf1 vt2) (AbstractValue.meet vf1 vf2) in
         Bool (vt1', vf1')
+      | Bool _ , Int v -> meet_R a1 (Bool (v, v))
+      | Unit v1, Int v2 -> Unit (AbstractValue.meet v1 v2)
+      | Env v1, Int v2 -> Env (AbstractValue.meet v1 v2)
       | Int v, Bool (vt, vf) -> (* {v:int| a^at V a^af} *)
         Int (AbstractValue.join (AbstractValue.meet v vt) (AbstractValue.meet v vf))
-      | Bool _ , Int v -> meet_R a1 (Bool (v, v))
-      | Env v1, Int v2 -> Env (AbstractValue.meet v1 v2)
+      | Unit v, Bool (vt, vf) -> Unit (AbstractValue.join (AbstractValue.meet v vt) (AbstractValue.meet v vf))
       | Env v, Bool (vt, vf) -> Env (AbstractValue.join (AbstractValue.meet v vt) (AbstractValue.meet v vf))
-      | _, _ -> a1
+      | Int v1, Unit v2 -> Int (AbstractValue.meet v1 v2)
+      | Bool (vt, vf), Unit v -> meet_R a1 (Bool (v, v))
+      | Env v1, Unit v2 -> Env (AbstractValue.meet v1 v2)
+      | _, _ -> raise (Invalid_argument "arrow: second argument cannot be of env type")
     let forget_R var a = match a with
       | Int v -> Int (AbstractValue.forget_var var v)
       | Bool (vt, vf) -> Bool (AbstractValue.forget_var var vt, AbstractValue.forget_var var vf)
@@ -1331,7 +1336,7 @@ module SemanticsDomain =
           let t' = Table (construct_table (create_singleton_trace_call_loc var_e) 
                             ((init_VE_v (Relation rm)), 
                             (init_VE_v (Ary ary)) |> construct_fout create_empty_trace)) in
-          Table (construct_table create_empty_trace 
+          Table (construct_table (create_singleton_trace_call_loc var_l) 
                    ((init_VE_v (Relation rl)), 
                    (init_VE_v t') |> construct_fout create_empty_trace)) in
         init_VE_v t
@@ -1568,5 +1573,4 @@ module SemanticsDomain =
               let m' = m |> NodeMap.add s_var te_var in
               m', env') !pre_vars (m, env)
       in env', m'
-
   end

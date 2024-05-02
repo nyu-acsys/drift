@@ -650,6 +650,12 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       let update_e eff = join_Eff eff (stren_Eff (Effect ec) ae) in
       let te' = temap (update_t, update_e) te in
       m |> update false n te', [(create_empty_trace, ae)] (* {v = c ^ aE}*)
+  | NonDet (l) ->
+      let t = Relation (Bool (AbstractValue.from_int 1, AbstractValue.from_int 0)) in
+      let t' = stren_V t ae in
+      let te = TypeAndEff (t', Effect ec) in
+      let n = loc term |> construct_enode env |> construct_snode trace in
+      update false n te m, [(create_empty_trace, ae)]
   | Var (x, l) ->
       (if !debug then
       begin
@@ -1891,7 +1897,7 @@ let rec check_assert term m fassts =
         | _ -> envE) env (VarMap.empty)
   in
   match term with
-  | Const _ | Var _ -> fassts
+  | Const _ | Var _ | NonDet _ -> fassts
   | BinOp (_, e1, e2, _) ->
      check_assert e1 m fassts |> check_assert e2 m
   | UnOp (_, e1, _) ->

@@ -83,6 +83,8 @@ let rec pr_exp pl ppf = function
    Format.fprintf ppf "@[<2>(assert@ %a)%a@]"
      (pr_exp pl) e
      (pr_label pl) l
+| NonDet l ->
+   Format.fprintf ppf "nondet"
 and pr_pm pl ppf = function
   | [] -> ()
   | [c] -> Format.fprintf ppf "%a" (pr_pattern pl) c

@@ -8,14 +8,14 @@ open Util
 open Parser
 open Printer
 
-let x = "x"
+(* let x = "x"
 let y = "y"
 let f = "f"
 let g = "g"
 let r = "r"
 let dec = "dec"
 let id = "id"
-let loop = "loop"
+let loop = "loop" *)
 
 (* let test_1 = mk_lets [id, mk_lambda x (mk_var x)]
 (mk_app

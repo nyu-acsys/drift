@@ -41,7 +41,7 @@ let convert_var_name_apron_not_support s =
 %token LPAREN RPAREN
 %token PLUS MINUS DIV TIMES MOD
 %token EQ NE LE GE LT GT
-%token EOF
+%token EOF NONDET
 %token AND OR
 %token ARROW CONS BAR 
 %token SEMI COLON COMMA LSQBR RSQBR LARYBR RARYBR
@@ -207,6 +207,8 @@ bool_op:
 ;
 
 bool_term: /* term@2 := term@2 bop term@3 */
+| NONDET { NonDet ("") }
+| NONDET bool_op bool_term { BinOp ($2, NonDet (""), $3, "") }
 | comp_term { $1 }
 | comp_term bool_op bool_term { BinOp ($2, $1, $3, "") }
 ;
