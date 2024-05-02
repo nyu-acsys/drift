@@ -51,6 +51,7 @@ type binop =
   | Or    (* || *)
   | Cons  (* :: *)
   | Seq   (* ; *)
+  | Null
       
 type value =
   | Integer of int

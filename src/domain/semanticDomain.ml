@@ -29,10 +29,12 @@ module SemanticsDomain =
     let alpha_rename_R (a:relation_t) prevar var :relation_t = match a with
       | Int v -> Int (AbstractValue.alpha_rename v prevar var)
       | Bool (vt, vf) -> Bool ((AbstractValue.alpha_rename vt prevar var), (AbstractValue.alpha_rename vf prevar var))
-      | Unit _ -> a
+      | Unit v -> Unit (AbstractValue.alpha_rename v prevar var)
+      | Env v -> Env (AbstractValue.alpha_rename v prevar var)
     let top_R = function
       | Plus | Mult | Div | Mod | Modc | Minus -> (Int AbstractValue.top)
       | Ge | Eq | Ne | Lt | Gt | Le | And | Or -> (Bool (AbstractValue.top, AbstractValue.top))
+      | Null -> Unit AbstractValue.top
       | _ -> raise (Invalid_argument "top_R should use a relational type operator")
     let utop_R = function
       | UMinus -> (Int AbstractValue.top)
@@ -40,7 +42,9 @@ module SemanticsDomain =
     let bot_R = function
       | Plus | Mult | Div | Mod | Modc | Minus -> (Int AbstractValue.bot)
       | Ge | Eq | Ne | Lt | Gt | Le | And | Or -> (Bool (AbstractValue.bot, AbstractValue.bot))
+      | Null -> Unit AbstractValue.bot
       | _ -> raise (Invalid_argument "bot_R should use a relational type operator")
+    let bot_Env = Env (AbstractValue.bot)
     let is_bool_R a = match a with
       | Bool _ -> true
       | _ -> false
@@ -48,44 +52,47 @@ module SemanticsDomain =
       | Boolean true -> Bool (AbstractValue.from_int 1, AbstractValue.bot)
       | Boolean false -> Bool (AbstractValue.bot, AbstractValue.from_int 0)
       | Integer i -> Int (AbstractValue.from_int i)
-      | UnitLit  -> Unit ()
+      | UnitLit -> Unit (AbstractValue.bot)
       | IntList lst -> raise (Invalid_argument "This should be cover on the upper level")
+    let init_Env = Env (AbstractValue.top)
     let join_R a1 a2 =
       match a1, a2 with
       | (Int v1), (Int v2) -> Int (AbstractValue.join v1 v2)
       | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> Bool (AbstractValue.join v1t v2t, AbstractValue.join v1f v2f)
-      | Unit _, a | a, Unit _ -> a
+      | Unit v1, Unit v2 -> Unit (AbstractValue.join v1 v2)
       | Int v1, Bool (v2t, v2f) | Bool (v2t, v2f) , Int v1
         when AbstractValue.eq v2t AbstractValue.bot &&
           AbstractValue.eq v2f AbstractValue.bot
         -> Int v1
       | Int v1, Bool (v2t, v2f) | Bool (v2t, v2f) , Int v1
         when AbstractValue.eq v1 AbstractValue.bot
-        -> Bool (v2t, v2f)          
+        -> Bool (v2t, v2f)        
+      | Int v1, Env v2 -> Int (AbstractValue.join v1 v2)
+      | Bool (v1t, v1f), Env v2 -> Bool (AbstractValue.join v2 v1t, AbstractValue.join v2 v1f)
+      | Env v1, Env v2 -> Env (AbstractValue.join v1 v2)
       | _, _ ->          
           raise (Invalid_argument "Join: Base Type not equal")
     let meet_R a1 a2 =
       match a1, a2 with
-      | (Int v1), (Int v2) -> Int  (AbstractValue.meet v1 v2)
-      | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> Bool (AbstractValue.meet v1t v2t, AbstractValue.meet v1f v2f)
-      | Unit _, _ | _, Unit _ -> Unit ()
+      | Int v1, Int v2 -> Int  (AbstractValue.meet v1 v2)
+      | Bool (v1t, v1f), Bool (v2t, v2f) -> Bool (AbstractValue.meet v1t v2t, AbstractValue.meet v1f v2f)
+      | Unit v1, Unit v2 -> Unit (AbstractValue.meet v1 v2)
+      | Env v1, Env v2 -> Env (AbstractValue.meet v1 v2)
       | _, _ -> raise (Invalid_argument "Meet: Base Type not equal")
     let leq_R a1 a2 =
       match a1, a2 with
-      | (Int v1), (Int v2) -> AbstractValue.leq v1 v2
+      | (Int v1), (Int v2) | Unit v1, Unit v2 | Env v1, Env v2 -> AbstractValue.leq v1 v2
       | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> AbstractValue.leq v1t v2t && AbstractValue.leq v1f v2f
-      | Unit u1, Unit u2 -> true
       | _, _ -> false
     let eq_R a1 a2 =
       match a1, a2 with
-      | (Int v1), (Int v2) -> AbstractValue.eq v1 v2
-      | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> AbstractValue.eq v1t v2t && AbstractValue.eq v1f v2f
-      | Unit u1, Unit u2 -> true
+      | Int v1, Int v2 | Unit v1, Unit v2 | Env v1, Env v2 -> AbstractValue.eq v1 v2
+      | Bool (v1t, v1f), Bool (v2t, v2f) -> AbstractValue.eq v1t v2t && AbstractValue.eq v1f v2f
       | _, _ -> false
     let arrow_R var a1 a2 = 
       let a2' = alpha_rename_R a2 "cur_v" var in
       match a1, a2' with
-      | Int _, Int _ -> meet_R a1 a2'
+      | Int _, Int _ | Unit _, Unit _ | Env _, Env _ -> meet_R a1 a2'
       | Bool (vt1, vf1), Bool (vt2, vf2) -> (* {v:bool | at: [at^at' V at^af'], af: [af^at' V af^af']} *)
         let vt1' = AbstractValue.join (AbstractValue.meet vt1 vt2) (AbstractValue.meet vt1 vf2) in
         let vf1' = AbstractValue.join (AbstractValue.meet vf1 vt2) (AbstractValue.meet vf1 vf2) in
@@ -93,22 +100,23 @@ module SemanticsDomain =
       | Int v, Bool (vt, vf) -> (* {v:int| a^at V a^af} *)
         Int (AbstractValue.join (AbstractValue.meet v vt) (AbstractValue.meet v vf))
       | Bool _ , Int v -> meet_R a1 (Bool (v, v))
+      | Env v1, Int v2 -> Env (AbstractValue.meet v1 v2)
+      | Env v, Bool (vt, vf) -> Env (AbstractValue.join (AbstractValue.meet v vt) (AbstractValue.meet v vf))
       | _, _ -> a1
     let forget_R var a = match a with
       | Int v -> Int (AbstractValue.forget_var var v)
       | Bool (vt, vf) -> Bool (AbstractValue.forget_var var vt, AbstractValue.forget_var var vf)
-      | Unit _ -> a
-    let equal_R a var = let eq_a = match a with
+      | Unit v -> Unit (AbstractValue.forget_var var v)
+      | Env v -> Env (AbstractValue.forget_var var v)
+    let equal_R a var = match a with
       | Int v -> Int (AbstractValue.equal_var v "cur_v" var)
       | Bool (vt, vf) -> Bool ((AbstractValue.equal_var vt "cur_v" var), (AbstractValue.equal_var vf "cur_v" var))
-      | Unit _ -> a
-      in
-      eq_a
+      | _ -> raise (Invalid_argument "equal_R: Given a unit/env type")
     let wid_R a1 a2 = match a1, a2 with
       | (Int v1), (Int v2) -> Int (AbstractValue.widening v1 v2)
       | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> Bool (AbstractValue.widening v1t v2t, AbstractValue.widening v1f v2f)
-      | Unit u1, Unit u2 -> Unit ()
-      | Unit _, a | a, Unit _ -> a
+      | Unit v1, Unit v2 -> Unit (AbstractValue.widening v1 v2)
+      | Env v1, Env v2 -> Env (AbstractValue.widening v1 v2)
       | _, _ -> raise (Invalid_argument "Widening: Base Type not equal")
     let sat_equal_R a x = match a with
       | Int v -> AbstractValue.sat_cons v x
@@ -119,26 +127,26 @@ module SemanticsDomain =
       | Eq | Ne -> (match a with
         | Int v -> Int (AbstractValue.operator res l r op (-1) true v)
         | Bool (vt, vf) -> Bool (AbstractValue.operator res l r op 1 true vt, AbstractValue.operator res l r (rev_op op) 0 true vf)
-        | Unit _ -> raise (Invalid_argument "opR: Given a unit type"))
+        | _ -> raise (Invalid_argument "opR: Given a unit/env type"))
       | _ -> raise (Invalid_argument "op_R_eq_mod: Only does Eq/Ne operators.")
     let op_R res l r op cons a = (*cons for flag of linear constraints*)
       match op with
       | Plus | Mult | Div | Mod | Modc | Minus -> (match a with
         | Int v -> Int (AbstractValue.operator res l r op (-1) false v)
-        | _ -> raise (Invalid_argument "opR: Given a unit type"))
+        | _ -> raise (Invalid_argument "opR: Given a unit/env type"))
       | Ge | Eq | Ne | Lt | Gt | Le -> (if cons then
         (match a with
         | Int v -> Int (AbstractValue.operator res l r op (-1) false v)
         | Bool (vt, vf) -> Bool (AbstractValue.operator res l r op 1 false vt, AbstractValue.operator res l r (rev_op op) 0 false vf)
-        | Unit _ -> raise (Invalid_argument "opR: Given a unit type")
+        | _ -> raise (Invalid_argument "opR: Given a unit/env type")
         )
         else
         (match a with
         | Int v -> Bool (AbstractValue.operator res l r op 1 false v, AbstractValue.operator res l r (rev_op op) 0 false v)
         | Bool (vt, vf) -> Bool (AbstractValue.operator res l r op 1 false vt, AbstractValue.operator res l r (rev_op op) 0 false vf)
-        | Unit _ -> raise (Invalid_argument "opR: Given a unit type"))
+        | _ -> raise (Invalid_argument "opR: Given a unit/env type"))
       )
-      | Cons | Seq | And | Or -> raise (Invalid_argument ("Invalid operator matched " ^ (string_of_op op)))
+      | Cons | Seq | And | Or | Null -> raise (Invalid_argument ("Invalid operator matched " ^ (string_of_op op)))
     let uop_R res op e cons a = (*cons for flag of linear constraints*)
       match op with
       | UMinus -> (match a with
@@ -149,8 +157,8 @@ module SemanticsDomain =
       | Int v -> Int (AbstractValue.assign res l r op v)
       | _ -> raise (Invalid_argument "Assign boolean does not support")
     let parallel_assign_R ress eabs = function
-      | Int v -> Int (AbstractValue.parallel_assign ress eabs v)
-      | _ -> raise (Invalid_argument "Parallel assign boolean does not support")
+      | Env v -> Env (AbstractValue.parallel_assign ress eabs v)
+      | _ -> raise (Invalid_argument "Parallel assign wrong type")
     let bool_op_R op a1 a2 = match a1, a2 with
       | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> if string_of_op op = "&&" then
         Bool (AbstractValue.meet v1t v2t, AbstractValue.join v1f v2f)
@@ -159,27 +167,29 @@ module SemanticsDomain =
       | _, _ -> raise (Invalid_argument "&& or || operation: Base Type should be bool")
     let replace_R a var x = alpha_rename_R a var x
     let extrac_bool_R v b = match v,b with
-      | Bool (vt, _), true -> Int vt |> forget_R "cur_v"
-      | Bool (_, vf), false -> Int vf |> forget_R "cur_v"
+      | Bool (vt, _), true -> Env vt |> forget_R "cur_v"
+      | Bool (_, vf), false -> Env vf |> forget_R "cur_v"
       | _,_ -> raise (Invalid_argument "Extract abstract value for condition, expect bool one")
     let stren_R a ae = 
       match a, ae with
-      | Int v, Int vae -> Int (AbstractValue.meet v vae)
-      | Bool (vt, vf), Int vae -> Bool (AbstractValue.meet vt vae, AbstractValue.meet vf vae)
-      | Unit _, Int vae -> a
-      | _, _ -> raise (Invalid_argument "ae should be {v:Int}")
+      | Int v, Env vae -> Int (AbstractValue.meet v vae)
+      | Bool (vt, vf), Env vae -> Bool (AbstractValue.meet vt vae, AbstractValue.meet vf vae)
+      | Unit v, Env vae -> Unit (AbstractValue.meet v vae)
+      | Env v, Env vae -> Env (AbstractValue.meet v vae)
+      | _, _ -> raise (Invalid_argument "ae should be Env")
     let der_R exp a = match a with
       | Bool (vt, vf) -> Bool (AbstractValue.derived exp vt, AbstractValue.derived exp vf)
       | Int v -> Int (AbstractValue.derived exp v)
-      | Unit _ -> a
+      | Unit v -> Unit (AbstractValue.derived exp v)
+      | Env v -> Env (AbstractValue.derived exp v)
     let proj_R a vars = match a with
       | Int v -> Int (AbstractValue.project_other_vars v vars)
       | Bool (vt, vf) -> Bool (AbstractValue.project_other_vars vt vars, AbstractValue.project_other_vars vf vars)
-      | Unit _ -> a
+      | Unit v -> Unit (AbstractValue.project_other_vars v vars)
+      | Env v -> Env (AbstractValue.project_other_vars v vars)
     let is_bot_R a = match a with
-      | Int v -> AbstractValue.is_bot v
+      | Int v | Unit v | Env v -> AbstractValue.is_bot v
       | Bool (vt, vf) -> AbstractValue.is_bot vt && AbstractValue.is_bot vf
-      | Unit _ -> false
     let is_bool_bot_R a = match a with
       | Bool (vt, vf) -> AbstractValue.is_bot vf && AbstractValue.is_bot vt
       | _ -> raise (Invalid_argument "Expect a bool value")
@@ -188,27 +198,41 @@ module SemanticsDomain =
       | _ -> raise (Invalid_argument "Expect a bool value")
     let opt_eq_R a1 a2 = is_bot_R a1 = false && is_bot_R a2 = false && eq_R a1 a2
     let contains_var_R var a = match a with
-      | Int v -> AbstractValue.contains_var var v
+      | Int v | Unit v | Env v -> AbstractValue.contains_var var v
       | Bool (vt, vf) -> AbstractValue.contains_var var vt && AbstractValue.contains_var var vf
-      | Unit _ -> false
     let bot_shape_R = function
       | Int _ -> bot_R Plus
       | Bool _ -> bot_R Ge
-      | Unit u as a -> a
+      | Unit _ -> bot_R Null
+      | Env _ -> bot_Env
     let is_unit_R = function
       | Unit _ -> true
       | _ -> false
-    let get_ae_from_R r = match r with
-      | Int r1 -> Relation (forget_R "cur_v" r)
-      | Bool (rt, rf) -> Relation (join_R (extrac_bool_R r true) (extrac_bool_R r false))
-      | Unit _ -> Relation r
+    let is_env_R = function
+      | Env _ -> true
+      | _ -> false
+    let rec convert_r_to_env r = match r with
+      | Int ri -> Env (AbstractValue.forget_var "cur_v" ri)
+      | Bool (rt, rf) -> join_R (extrac_bool_R r true) (extrac_bool_R r false) |> convert_r_to_env
+      | Unit ru -> Env (ru)
+      | Env _ -> r
+    let rec convert_r_to_unit r = match r with
+      | Int ri -> Unit (AbstractValue.forget_var "cur_v" ri)
+      | Bool (rt, rf) -> join_R (extrac_bool_R r true) (extrac_bool_R r false) |> convert_r_to_unit
+      | Unit ru -> r
+      | Env r -> Unit (r)
+    let get_ae_from_R r = Relation (convert_r_to_env r)
+    let get_int_from_ae prevar ae = match ae with
+    | Env v -> Int (AbstractValue.alpha_rename v prevar "cur_v")
+    | Int _ -> ae
+    | _ -> raise (Invalid_argument "Expect an env value")
 
     (********************************************
      ** Abstract domain for Effects            **
      ********************************************)
     let union_eff f eff1 eff2 = 
       StateMap.union 
-        (fun q acc1 acc2 -> Some (VarMap.union (fun v r1 r2 -> Some (f r1 r2)) acc1 acc2)) 
+        (fun q acc1 acc2 -> Some (f acc1 acc2)) 
         eff1 eff2
     let merge_eff f eff1 eff2 = 
       StateMap.merge
@@ -216,51 +240,20 @@ module SemanticsDomain =
           match macc1, macc2 with 
           | None, _ | _, None -> None
           | Some acc1, Some acc2 -> 
-             Some (VarMap.merge 
-                     (fun v mr1 mr2 ->
-                       match mr1, mr2 with 
-                       | None, _ | _, None -> None
-                       | Some r1, Some r2 -> Some (f r1 r2)) 
-                     acc1 acc2)) 
+             Some (f acc1 acc2)) 
         eff1 eff2
     let fold_eff: (relation_e option -> relation_e option -> 'a) -> 
                   ('a -> bool) ->
-      (relation_e VarMap.t StateMap.t) -> (relation_e VarMap.t StateMap.t) ->
+      (relation_e StateMap.t) -> (relation_e StateMap.t) ->
       'a -> 'a = 
       fun f g eff1 eff2 res -> 
       StateMap.merge 
         (fun k macc1 macc2 -> match macc1, macc2 with None, None -> None | _, _ -> Some (macc1, macc2))
         eff1 eff2
       |> (fun ea -> StateMap.fold 
-                   (fun q (macc1, macc2) res -> 
-                     if g res
-                     then res
-                     else match macc1, macc2 with
-                          | Some acc1, None -> VarMap.fold
-                                                (fun v r1 res -> 
-                                                  if g res 
-                                                  then res
-                                                  else f (Some r1) None) acc1 res
-                          | None, Some acc2 -> VarMap.fold
-                                                (fun v r2 res ->
-                                                  if g res
-                                                  then res
-                                                  else f None (Some r2)) acc2 res
-                          | Some acc1, Some acc2 -> 
-                             VarMap.merge 
-                               (fun v mr1 mr2 -> match mr1, mr2 with
-                                              | None, None -> None
-                                              | _, _ -> Some (mr1, mr2))
-                               acc1 acc2
-                             |> (fun mra -> VarMap.fold
-                                           (fun v (mr1, mr2) res -> 
-                                             if g res 
-                                             then res
-                                             else f mr1 mr2) mra res)
-                          | None, None -> res
-                   ) ea res)     
+                   (fun q (macc1, macc2) res -> if g res then res else f macc1 macc2) ea res)     
     let alpha_rename_Eff e prevar var = 
-      effmapi (fun q eff -> VarMap.mapi (fun _ r -> alpha_rename_R r prevar var) eff) e
+      effmapi (fun q eff -> alpha_rename_R eff prevar var) e
     let join_Eff e1 e2 = match e1, e2 with 
       | EffBot, _ | _, EffTop -> e2 
       | Effect eff1, Effect eff2 -> Effect (union_eff join_R eff1 eff2)
@@ -290,17 +283,17 @@ module SemanticsDomain =
                         | _, _ -> false)
            (not) e1 e2 true
       | _, _ -> false
-    let forget_Eff var e = effmapi (fun q acc -> VarMap.mapi (fun v r -> forget_R var r) acc) e
+    let forget_Eff var e = effmapi (fun q acc -> forget_R var acc) e
     let arrow_Eff var e r = match e with 
       | EffBot -> EffBot 
-      | Effect _ -> effmapi (fun q acc -> VarMap.mapi (fun v e_r -> arrow_R var e_r r) acc) e
+      | Effect _ -> effmapi (fun q acc -> arrow_R var acc r) e
       | EffTop -> raise (Invalid_argument "EffTop A should not be inferred")
-    let equal_Eff e var = effmapi (fun q acc -> VarMap.mapi (fun v r -> equal_R r var) acc) e
+    let equal_Eff e var = effmapi (fun q acc -> equal_R acc var) e
     let wid_Eff e1 e2 = match e1, e2 with 
       | Effect e1, Effect e2 -> Effect (union_eff wid_R e1 e2)
       | _, _ -> join_Eff e1 e2
-    let replace_Eff e var x = effmapi (fun q acc -> VarMap.mapi (fun v r -> replace_R r var x) acc) e
-    let is_bot_acc acc = VarMap.fold (fun _ va res -> if res then is_bot_R va else res) acc true
+    let replace_Eff e var x = effmapi (fun q acc -> replace_R acc var x) e
+    let is_bot_acc acc = is_bot_R acc
     let minimize_eff = StateMap.filter (fun _ acc -> not @@ is_bot_acc acc)
     let is_bot_Eff e = match e with
       | EffBot -> true
@@ -315,7 +308,7 @@ module SemanticsDomain =
       | Effect _, Relation rae -> 
          if is_bot_R rae 
          then EffBot 
-         else (effmapi (fun q acc -> VarMap.mapi (fun v r -> stren_R r rae) acc) e
+         else (effmapi (fun q acc -> stren_R acc rae) e
                |> effmap minimize_eff)
       | EffTop, Relation rae -> EffTop (* raise (Invalid_argument "EffTop B should not be inferred") *)
          (* effmapi (fun q r -> stren_R r) rae) eff_Top; where eff_Top = StateMap.creat (Q.size) (top_R Plus) *)
@@ -327,8 +320,8 @@ module SemanticsDomain =
       | _, Top -> e
       | _, Bot -> EffBot
       | _ -> raise (Invalid_argument "ae should not be a table") 
-    let proj_Eff e vars = effmapi (fun q acc -> VarMap.mapi (fun v r -> proj_R r vars) acc) e
-    let bot_R_Eff e = effmapi (fun q acc -> VarMap.mapi (fun v r -> bot_R Plus) acc) e
+    let proj_Eff e vars = effmapi (fun q acc -> proj_R acc vars) e
+    let bot_R_Eff e = effmapi (fun q acc -> bot_R Plus) e
     let bot_Eff = EffBot 
     let empty_eff = Effect (StateMap.empty)  (* todo: must revisit. it should be  a map where all states map to Bot *)
           
@@ -555,7 +548,7 @@ module SemanticsDomain =
                                                        "Relation should be relation")))
                | TETop -> er')
           in
-          effmapi (fun q acc -> VarMap.mapi (fun v er -> arrow_EffR er) acc) eff
+          effmapi (fun q acc -> arrow_EffR acc) eff
       in
       match e, v' with 
       | EffBot,  _ -> EffBot
@@ -865,7 +858,10 @@ module SemanticsDomain =
     and get_ae_from_v v = match v with
       | Relation r -> get_ae_from_R r
       | Tuple u -> get_ae_from_Tuple u
-      | _ -> raise (Invalid_argument "Meet: Base Type not equal")
+      | _ -> raise (Invalid_argument "get_ae_from_v: Wrong base type")
+    and get_unit_from_v v = match v with
+      | Relation r -> Relation (convert_r_to_unit r)
+      | _ -> raise (Invalid_argument "get_unit_from_v: Wrong base type")
 
     (*
       *******************************
@@ -1266,7 +1262,7 @@ module SemanticsDomain =
     and only_shape_Tuple u = 
       List.fold_right (fun ve is_bot -> if is_bot then only_shape_VE ve else is_bot) u true
     and get_ae_from_Tuple u =
-      List.fold_right (fun ve ae -> join_V (get_ae_from_v (extract_v ve)) Bot) u Bot
+      List.fold_right (fun ve ae -> join_V (get_ae_from_v (extract_v ve)) ae) u Bot
 
     (*
       ***************************************

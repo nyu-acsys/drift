@@ -9,9 +9,12 @@ exception AssertionError of string
 
 let name_of_node lb = ("z" ^ lb)
 
+type environment_t = AbstractValue.t
+
 type relation_t = Int of AbstractValue.t 
   | Bool of AbstractValue.t * AbstractValue.t
-  | Unit of unit
+  | Unit of AbstractValue.t
+  | Env of environment_t
 type array_t = (var * var) * (relation_t * relation_t)
 
 module type HashType =
@@ -88,7 +91,7 @@ end
 
 (* type state_t = state *)(* representation of automata state domain*)
 type relation_e = relation_t (* dependent effect *)
-type acc_t = relation_e VarMap.t
+type acc_t = relation_e
 module StateMap = Map.Make(struct type t = state_t let compare (Q q1) (Q q2) = compare q1 q2 end)
 type effect_t = acc_t  StateMap.t
 
@@ -117,7 +120,7 @@ module type SemanticsType =
     and tuple_t = value_te list
     val temap: (value_tt -> value_tt) * (eff -> eff) -> value_te -> value_te
     val effmap: (effect_t -> effect_t) -> eff -> eff
-    val effmapi: (state_t -> relation_e VarMap.t -> relation_e VarMap.t) -> eff -> eff
+    val effmapi: (state_t -> relation_e -> relation_e) -> eff -> eff
     val init_fout: fout_t
     val init_T: trace_t -> table_t
     val alpha_rename_fout: (value_te -> string -> string -> value_te) -> fout_t -> string -> string -> fout_t

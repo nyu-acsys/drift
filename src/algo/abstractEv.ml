@@ -14,7 +14,7 @@ type evenv = EmptyEvEnv | ExtendEvEnv of var * relation_e * evenv
 
 type eff_assert_class = EvAssert of loc | FinalAssert 
 
-let acc_name = "acc"
+let acc_name = "acc_vars"
 let property_spec: aut_spec option ref = ref None
 let program_pre_vars: relation_t VarDefMap.t ref = ref VarDefMap.empty 
 
@@ -54,7 +54,7 @@ let empty_env () = EmptyEvEnv
 let extend_env id v env = ExtendEvEnv (id, v, env)
 let rec apply_env var = function
   | EmptyEvEnv -> raise (Invalid_argument (var^ " not found! when evaluating EV"))
-  | ExtendEvEnv (id, v, tail) -> if var = id then v else apply_env var tail
+  | ExtendEvEnv (id, v, tail) -> if var = id then get_int_from_ae var v else apply_env var tail
 let rec fold_env f env acc = match env with
   | EmptyEvEnv -> acc
   | ExtendEvEnv (id, v, tail) -> f id v (fold_env f tail acc) 
@@ -77,18 +77,17 @@ let pr_ev_env ppf env =
   Format.fprintf ppf "[ @[<v>%a@] ]@." pr_env env
 
 let eff_bot spec = 
-  let bot_acc = VarMap.add acc_name (bot_R Plus) VarMap.empty in
-  List.fold_right (fun q e -> StateMap.add q bot_acc e) spec.qset (StateMap.empty)
+  List.fold_right (fun q e -> StateMap.add q bot_Env e) spec.qset (StateMap.empty)
 
 let eff0 () = 
   let acc0_of_exp spec e =
     let acc_vars = List.filter (fun v -> v <> "evx") spec.env_vars in
     let accv_of_idx i = List.nth acc_vars i in 
-    let acc = match e with 
+    match e with 
       | Const (acc0, _) -> 
-         List.fold_left (fun acc v -> arrow_R v acc (init_R_c acc0)) (top_R Plus) acc_vars
+         List.fold_left (fun acc v -> arrow_R v acc (init_R_c acc0)) init_Env acc_vars
       | UnOp (UMinus, Const (Integer (acc0), _), _) -> 
-         List.fold_left (fun acc v -> arrow_R v acc (init_R_c (Integer (-acc0)))) (top_R Plus) acc_vars
+         List.fold_left (fun acc v -> arrow_R v acc (init_R_c (Integer (-acc0)))) init_Env acc_vars
       | TupleLst (es, _) -> 
          List.mapi (fun i e -> ((accv_of_idx i), e)) es
          |> List.fold_left 
@@ -97,10 +96,8 @@ let eff0 () =
                               | UnOp (UMinus, Const (Integer (acc0), _), _) ->
                                   arrow_R v acc (init_R_c (Integer (-acc0)))
                               | _ -> acc)
-              (top_R Plus)
-      | _ -> (top_R Plus)
-    in 
-    VarMap.add acc_name acc VarMap.empty 
+              init_Env
+      | _ -> init_Env
   in
   Option.map 
     (fun spec -> 
@@ -116,15 +113,21 @@ let eff0 () =
   |> minimize_eff
 
 let get_ae_from_eff: effect_t -> SenSemantics.value_tt = fun eff ->
-  StateMap.fold (fun (Q q) acc res ->
-    let qae = VarMap.find acc_name acc in
+  (if !debug then
+    Format.fprintf Format.std_formatter "@.EV_ae. pre: @[%a@]"
+    pr_eff_map eff);
+  let eff = StateMap.fold (fun (Q q) acc res ->
     let spec = Option.get !property_spec in
     let qae' = List.fold_left (fun ae var ->
         forget_R var ae
-        ) qae (spec.env_vars)
+        ) acc (spec.env_vars)
     in
     join_V (Relation qae') res
-    ) eff Bot
+    ) eff Bot in
+  (if !debug then
+    Format.fprintf Format.std_formatter "@.EV_ae. post: @[%a@]"
+    pr_value eff);
+  eff
 
 let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t -> 
   
@@ -148,23 +151,19 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
                          |> extend_env "q" (init_R_c (Integer q))
                          |> extend_env "evx" t
                          |> (VarDefMap.fold (fun v va e -> extend_env v va e) !program_pre_vars)
-                         |> VarMap.fold (fun v va e -> extend_env v va e) acc
+                         |> extend_env acc_name acc
   in
   let get_ae0 env = 
     let arrow_var x v = apply_env x env |> (fun xv -> arrow_R x v xv) in
-    apply_env acc_name env |> arrow_var "q" |> arrow_var "evx" 
+    let r = apply_env acc_name env |> arrow_var "q" |> arrow_var "evx" in
+    convert_r_to_env r
   in   
-  let bot_acc = VarMap.add acc_name (bot_R Plus) VarMap.empty in
-  let arrow_acc var acc v = VarMap.map (fun va -> arrow_R var va v) acc in
-  let join_acc acc1 acc2 = VarMap.merge 
-                             (fun v mva1 mva2 -> match mva1, mva2 with 
-                                              | Some va1, Some va2 -> Some (join_R va1 va2) 
-                                              | _, _ -> None)
-                             acc1 acc2
-  in 
+  let bot_acc = bot_Env in
+  let arrow_acc var acc v = arrow_R var acc v in
+  let join_acc acc1 acc2 = join_R acc1 acc2 in 
 
-  let forget_acc v acc = VarMap.map (fun va -> forget_R v va) acc in
-  let acc_of_evv = function Val va -> VarMap.add acc_name va VarMap.empty in
+  let forget_acc v acc = forget_R v acc in
+  let acc_of_evv = function Val va -> va in
 
   let add_tran vva ts =
     let forget_evx_var (Val va) = Val (forget_R "evx" va) in  
@@ -208,7 +207,7 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
     (* ( Format.printf "\n>>>exp:"; pr_exp true Format.std_formatter e;
        Format.printf "\n>>>ae:"; pr_relation Format.std_formatter ae; Format.printf "\n";
        Format.printf "\n>>>env: "; pr_ev_env Format.std_formatter env); *)
-    if is_bot_R ae then (Val (Unit ()), ts) else
+    if is_bot_R ae then (Val (convert_r_to_unit ae), ts) else
     match e with
     | Const (c, _) -> 
        let v = init_R_c c |> (fun v -> 
@@ -263,9 +262,7 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
                (pr_exp true) e2 
                pr_relation v2);
           begin match v1, v2 with 
-          | Unit _, Unit _ -> (Val (Unit ()), ts''') 
-          | Int _, Int _ -> (Val (join_R v1 v2), ts''')
-          | Bool _, Bool _ -> (Val (join_R v1 v2), ts''')
+          | Int _, Int _ | Unit _, Unit _ | Bool _, Bool _ -> (Val (join_R v1 v2), ts''')
           | _, _ -> raise (Invalid_argument ("Branches should either both evaluate to "^
                                               "values or pairs of next state and new acc"))
           end
@@ -370,8 +367,8 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
        (if !Config.debug then 
           Format.fprintf Format.std_formatter "@.Parallel update result: @[%a@]" 
             pr_relation va);
-       (Val (Unit ()), (add_tran (Val va) ts))
-    | _ -> (Val (Unit ()), ts) 
+       (Val (convert_r_to_unit ae), (add_tran (Val va) ts))
+    | _ -> (Val (convert_r_to_unit ae), ts) 
   in
   (* let _, ts = eval spec.delta env0 (top_R Plus) [] in  (* memoize this *) *)
   (* let pp_eff e = 
@@ -445,8 +442,11 @@ let eval_assert term env acc_vars =
        let v = 
          (match find_acc_var x with
           | None -> apply_env x env |> (fun v -> if sat_equal_R v x then v else equal_R (forget_R x v) x)
-          | Some accx -> apply_env acc_name env|> (fun v -> equal_R v accx))
-       in v
+          | Some accx -> apply_env acc_name env |> (fun v -> equal_R v accx))
+       in 
+       (if !debug then Format.fprintf Format.std_formatter
+        "@.x: @[%s@]@,v: @[%a@]" x pr_relation v);
+       v
     (* apply_env x env *)
     (* |> (fun v -> if sat_equal_R v x then v else equal_R (forget_R x v) x) *)        
     | BinOp (bop, e1, e2, _) -> 
@@ -512,7 +512,7 @@ let check_assert eac envE eff =
     | FinalAssert -> Format.fprintf ppf "final-eff"
   in
   let find_pre v = VarMap.find_opt v envE
-                   |> Opt.get_or_else (top_R Plus) in 
+                   |> Opt.get_or_else init_Env in 
   let asst_term spec = match eac with | EvAssert _ -> spec.asst | FinalAssert -> spec.asstFinal in
   Opt.map (fun spec -> 
       let acc_vars = List.filter (fun v -> v <> "evx") spec.env_vars in
@@ -524,7 +524,7 @@ let check_assert eac envE eff =
              else begin
                  let env = EmptyEvEnv 
                            |> extend_env "q" (init_R_c (Integer q))
-                           |> VarMap.fold (fun v va e -> extend_env v va e) acc
+                           |> extend_env acc_name acc
                            |> (VarDefMap.fold (fun v _ e -> extend_env v (find_pre v) e) !pre_vars)
                  in
                  let r = eval_assert term env acc_vars in

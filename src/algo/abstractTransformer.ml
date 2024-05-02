@@ -1076,12 +1076,12 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             m0' |> update false n TETop, [tail0, ae0]
           else
             begin
-              let t_true = meet_V (extrac_bool_V (extract_v te0) true) ae0 in (* Meet with ae*)
+              let t_true = extrac_bool_V (extract_v te0) true |> meet_V ae0 in (* Meet with ae*)
               (* (if !debug && get_label_snode n = "EN: 33;(z28*22-20)" then
                 Format.fprintf Format.std_formatter
                 "@.line 1047. tail1:@[%s@] te: @[%a@]@, te':@[%a@]@, te1: @[%a@]@, te1':@[%a@]"
               ); *)
-              let t_false = meet_V (extrac_bool_V (extract_v te0) false) ae0 in
+              let t_false = extrac_bool_V (extract_v te0) false |> meet_V ae0 in
               let ec' = extract_ec te0 in
               let ec_true = extrac_bool_V (extract_v te0) true |> stren_Eff (Effect ec') |> get_effmap in
               let ec_false = extrac_bool_V (extract_v te0) false |> stren_Eff (Effect ec') |> get_effmap in
@@ -1449,7 +1449,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
            (get_trace_data trace) pr_eff_map ec pr_value_and_eff te);
       if List.length termlst = 0 then
         let te' = 
-          let cte = init_VE_v (init_V_c UnitLit) in
+          let cte = init_VE_v (get_unit_from_v ae) in
           join_VE te cte in
         m |> update false n te', [create_empty_trace, ae]
       else
@@ -1825,7 +1825,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           else
             let te' = begin match te1 with
                       | TypeAndEff ((Relation v), (Effect e)) -> 
-                        TypeAndEff (Relation (Unit ()), Effect (AbstractEv.ev penv e v))
+                        TypeAndEff (get_unit_from_v ae, Effect (AbstractEv.ev penv e v))
                       | _ -> te1
                       end
             in 
@@ -1852,7 +1852,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                    |> (fun n -> (if assertion then add_reg_asst (loc term) ae1 n else ()); n) in
           let te1 = find n1 m in
           let ec' = extract_eff te1 in 
-          let te' = if is_bot_VE te then TypeAndEff (Relation (Unit ()), ec') 
+          let te' = if is_bot_VE te then TypeAndEff (bot_shape_V ae, ec') 
                     else temap (id, fun _ -> ec') te 
           in
           m |> update false n te'
@@ -2018,7 +2018,7 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
         (* if is_Relation (extract_v te) then *)
         (*   extract_v te |> (fun v ->  (arrow_V var ae v, arrow_ec var ec v, VarDefMap.add var v pvs)) *)
         (* else (ae, ec, pvs) *)
-      ) env (Relation (top_R Plus), AbstractEv.eff0 (), VarDefMap.empty) in
+      ) env (Relation init_Env, AbstractEv.eff0 (), VarDefMap.empty) in
   let _ = AbstractEv.program_pre_vars := pre_vars_vs in
   let m_t = Hashtbl.copy m in
   (if !debug then

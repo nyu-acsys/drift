@@ -9,7 +9,8 @@ open TracePartDomain
 let pr_relation ppf = function
   | Bool (vt, vf) -> Format.fprintf ppf "@[<1>{@ cur_v:@ Bool@ |@ TRUE:@ %a,@ FALSE:@ %a@ }@]"  AbstractValue.print_abs vt AbstractValue.print_abs vf
   | Int v -> Format.fprintf ppf "@[<1>{@ cur_v:@ Int@ |@ %a@ }@]" AbstractValue.print_abs v
-  | Unit u -> Format.fprintf ppf "@[<1>Unit@]"
+  | Unit v -> Format.fprintf ppf "@[<1>{@ Unit@ |@ %a@ }@]" AbstractValue.print_abs v
+  | Env v -> Format.fprintf ppf "@[<1>%a@]" AbstractValue.print_abs v
 
 let pr_label pl ppf l = if pl then Format.fprintf ppf "^%s" l else ()
 
@@ -113,9 +114,7 @@ let string_of_node n = pr_node Format.str_formatter n; Format.flush_str_formatte
 
 let pr_agg_val ppf a = match a with
   | Bool (vt, vf) -> Format.fprintf ppf "@[<1>@ TRUE:@ %a,@ FALSE:@ %a@ @]"  AbstractValue.print_abs vt AbstractValue.print_abs vf
-  | Int v -> Format.fprintf ppf "@[<1>@ %a@ @]" AbstractValue.print_abs v
-  | Unit u -> Format.fprintf ppf "@[<1>Unit@]"
-
+  | Int v | Unit v | Env v -> Format.fprintf ppf "@[<1>@ %a@ @]" AbstractValue.print_abs v
 
 let pr_ary ppf ary = 
   let (l,e), (rl, ve) = ary in
@@ -127,7 +126,8 @@ let rec shape_value = function
   | Relation r -> (match r with
     | Int _ -> "Int"
     | Bool _ -> "Bool"
-    | Unit _ -> "Unit")
+    | Unit _ -> "Unit"
+    | Env _ -> "Env")
   | Table t -> let (_, (vei,veo)) = get_full_table_T t in 
               (shape_value_and_eff vei)^"->"^(shape_fout veo)
   | Tuple u -> if List.length u = 0 then "Unit"
@@ -145,13 +145,12 @@ and shape_eff = function
   | Effect e -> StateMap.bindings e
                |> List.map (fun ((Q q), acc) ->
                       (string_of_int q) ^ "|-> {" ^
-                        (VarMap.bindings acc 
-                         |> List.map (fun (v, r) -> v ^ ":" ^
-                                                   (match r with 
-                                                    | Int _ -> "Int"
-                                                    | Bool _ -> "Bool"
-                                                    | Unit _ -> "Unit"))
-                         |> String.concat " ; ") ^ "}")
+                        (match acc with 
+                        | Int _ -> "Int"
+                        | Bool _ -> "Bool"
+                        | Unit _ -> "Unit"
+                        | Env _ -> "Env")
+                        ^ "}")
                |> String.concat " ; "
 and shape_value_and_eff = function 
   | TEBot -> "Bot"
@@ -183,9 +182,7 @@ and pr_eff ppf eff = match eff with
   | EffTop -> Format.fprintf ppf "T"
   | Effect e -> pr_eff_map ppf e
 and pr_eff_acc ppf acc = 
-  if VarMap.is_empty acc then Format.fprintf ppf "()"
-  else VarMap.bindings acc
-       |> Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_eff_acc_binding ppf
+  Format.fprintf ppf "@[<1>%a@]" pr_relation acc
 and pr_eff_acc_binding ppf (v, r) =
   (* Format.fprintf ppf "@[<1>(@ %s@ |->@ %a)@]" v pr_relation r *)
   Format.fprintf ppf "@[<1>%a@]" pr_relation r
