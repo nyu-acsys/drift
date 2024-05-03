@@ -116,6 +116,7 @@ module SemanticsDomain =
     let equal_R a var = match a with
       | Int v -> Int (AbstractValue.equal_var v "cur_v" var)
       | Bool (vt, vf) -> Bool ((AbstractValue.equal_var vt "cur_v" var), (AbstractValue.equal_var vf "cur_v" var))
+      | Unit v -> a
       | _ -> raise (Invalid_argument "equal_R: Given a unit/env type")
     let wid_R a1 a2 = match a1, a2 with
       | (Int v1), (Int v2) -> Int (AbstractValue.widening v1 v2)
@@ -293,7 +294,7 @@ module SemanticsDomain =
       | EffBot -> EffBot 
       | Effect _ -> effmapi (fun q acc -> arrow_R var acc r) e
       | EffTop -> raise (Invalid_argument "EffTop A should not be inferred")
-    let equal_Eff e var = effmapi (fun q acc -> equal_R acc var) e
+    (* let equal_Eff e var = effmapi (fun q acc -> equal_R acc var) e *)
     let wid_Eff e1 e2 = match e1, e2 with 
       | Effect e1, Effect e2 -> Effect (union_eff wid_R e1 e2)
       | _, _ -> join_Eff e1 e2
@@ -584,11 +585,11 @@ module SemanticsDomain =
       | _ -> ve
     and equal_V v var = match v with
       | Relation r -> Relation (equal_R r var)
-      | Table t -> Table (equal_T equal_VE alpha_rename_VE t var)
+      (* | Table t -> Table (equal_T equal_VE alpha_rename_VE t var) *)
       | Tuple u -> Tuple (equal_Tuple u var)
       | _ -> v
     and equal_VE ve var = 
-      temap ((fun v -> equal_V v var), (fun e -> equal_Eff e var)) ve
+      temap ((fun v -> equal_V v var), id) ve
     and wid_V v1 v2 = match v1, v2 with
       | Relation r1, Relation r2 -> Relation (wid_R r1 r2)
       | Table t1, Table t2 -> Table (wid_T wid_VE alpha_rename_VE t1 t2)

@@ -663,7 +663,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           pr_exp true Format.std_formatter term;
           Format.printf "\n";
       end);
-      (if !debug && (x="compute") then
+      (if !debug && (x="x1") then
          let pr = Format.fprintf Format.std_formatter in
          pr "@.LINE 586, Var[%s], trace: %s, @,ec: @[%a@]@, @,ae: @[%a@]@."
            x (get_trace_data trace) pr_eff_map ec pr_value ae); 
@@ -671,7 +671,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       let (nx, recnb) = VarMap.find x env in
       let envx, lx, lcs = get_vnode nx in
       let nx = construct_snode trace nx in      
-      (if !debug && (x="compute") then
+      (if !debug && (x="x1") then
          find nx m |> (fun tex0 ->
          Format.fprintf Format.std_formatter "@.Pre_prog -> Var[%s]: @[%a@], @env: @[%a@]@." 
          x 

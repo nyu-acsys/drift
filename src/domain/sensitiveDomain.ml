@@ -132,7 +132,7 @@ module type SemanticsType =
     val forget_T: (var -> value_te -> value_te) -> var -> table_t -> table_t
     val arrow_T: (var -> value_tt -> value_tt) -> (var -> value_te -> value_tt -> value_te) -> var -> table_t -> value_tt -> table_t
     val wid_T: (value_te -> value_te -> value_te) -> (value_te -> string -> string -> value_te) -> table_t -> table_t -> table_t
-    val equal_T: (value_te -> var -> value_te) -> (value_te -> string -> string -> value_te) -> table_t -> var -> table_t
+    (* val equal_T: (value_te -> var -> value_te) -> (value_te -> string -> string -> value_te) -> table_t -> var -> table_t *)
     val replace_T: (value_te -> var -> var -> value_te) -> table_t -> var -> var -> table_t
     val stren_T: (value_te -> value_tt -> value_te) -> table_t -> value_tt -> table_t
     val proj_T: (value_te -> string list -> value_te) -> (string -> value_te -> string list) -> table_t -> string list -> table_t
@@ -239,12 +239,12 @@ module NonSensitive: SemanticsType =
           let v2o' = g v2o z2 z1 in 
           (z1, f v1i v2i, f v1o v2o')
         in t
-    let equal_T f g (t:table_t) var = 
+    (* let equal_T f g (t:table_t) var = 
       let (z, vi, vo) = t in
         let vo' = if (String.compare z var) = 0 then 
           g vo z "z1"
           else vo in
-        (z, f vi var, f vo' var)
+        (z, f vi var, f vo' var) *)
     let replace_T f (t:table_t) var_trace x = let (z, vi, vo) = t in
       (z, f vi var_trace x, f vo var_trace x)
     let stren_T f (t:table_t) ae = let (z, vi, vo) = t in
@@ -434,10 +434,10 @@ module Sensitive: SemanticsType =
       | _, _ -> join_fout f f fout1 fout2
     let wid_T f g mt1 mt2 =
       TableMap.union (fun cs (v1i, v1o) (v2i, v2o) -> Some (f v1i v2i, wid_fout f v1o v2o)) mt1 mt2
-    let equal_fout f fout var = match fout with
+    (* let equal_fout f fout var = match fout with
       | FTop -> FTop
       | Fout fout -> Fout (TableMap.map (fun vo -> f vo var) fout)
-    let equal_T f g mt var = TableMap.map (fun (vi, vo) -> f vi var, equal_fout f vo var) mt
+    let equal_T f g mt var = TableMap.map (fun (vi, vo) -> f vi var, equal_fout f vo var) mt *)
     let replace_fout f fout var x = match fout with
       | FTop -> FTop
       | Fout fout -> Fout (TableMap.map (fun vo -> f vo var x) fout)
