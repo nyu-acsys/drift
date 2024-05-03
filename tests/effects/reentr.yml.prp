@@ -1,0 +1,13 @@
+(* Never release more than acquire *)
+
+QSet = [0;1];
+
+delta = fun evx (q, acc) -> 
+      if q = 0 && (acc + evx) >= 0 then (q, acc + evx)
+      else if q = 0 && (acc + evx) < 0 then (1, acc + evx)
+      else (q, acc);
+
+IniCfg = (0, 0);
+
+assert = fun (q, acc) -> q = 0;
+   
