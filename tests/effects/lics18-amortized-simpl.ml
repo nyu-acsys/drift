@@ -61,11 +61,11 @@ let rec rev l =
     else begin ev 2; aux (l_aux-1) (l_acc+1) end
   in aux l 0
 
-let rec repeat_dequeue (l1_deq, l2_deq) = 
+let rec dequeue (l1_deq, l2_deq) = 
   if (l1_deq > 0) then 
-    begin ev 1; repeat_dequeue ((l1_deq-1), l2_deq) end
+    begin ev 1; dequeue ((l1_deq-1), l2_deq) end
   else if l1_deq = 0 then
-    if l2_deq > 0 then repeat_dequeue ((rev l2_deq), 0)
+    if l2_deq > 0 then dequeue ((rev l2_deq), 0)
     else 0
   (* if (l1_deq = 0) then rev (l2_deq)
   else repeat_dequeue ((l1_deq -1), l2_deq) *)
@@ -75,7 +75,7 @@ let rec enqueue n_r (l1_eq, l2_eq) =
   else begin ev 0; enqueue (n_r-1) (l1_eq, l2_eq+1) end
 
 let main (n:int(*-:{v:Int | v >= 0 }*)) (l1:int(*-:{v:Int | v >= 0 }*)) (l2:int(*-:{v:Int | v >= 0 }*)) =
-  repeat_dequeue (enqueue n (l1, l2))
+  dequeue (enqueue n (l1, l2))
 
 
 (* let is_empty l1_e l2_e = l1_e = 0 && l2_e = 0

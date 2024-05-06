@@ -84,7 +84,7 @@ let rec pr_exp pl ppf = function
      (pr_exp pl) e
      (pr_label pl) l
 | NonDet l ->
-   Format.fprintf ppf "nondet"
+   Format.fprintf ppf "nondet%a" (pr_label pl) l
 and pr_pm pl ppf = function
   | [] -> ()
   | [c] -> Format.fprintf ppf "%a" (pr_pattern pl) c
