@@ -9,7 +9,7 @@ let rec sum x = if x <= 0 then 0 else x + sum (x - 1)
 
 let rec sum x = 
   ev x;
-  if x <= 0 then 0 else x + sum (x - 1)
+  if x <= 0 then 0 else x + (sum (x - 1))
 
 let main (v:int(*-:{v:Int | true}*)) =
   if v < 0 then sum (0 - v) else sum v  
