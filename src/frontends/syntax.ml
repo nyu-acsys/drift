@@ -573,13 +573,14 @@ let simplify =
 type kvar = string
 type qvar = string
 type accvar = string list
+type xvar = string list
 type kterm = 
   | KLetVal of var * kval * kterm
   | KLetCont of kvar * qvar * accvar * var * kterm * kterm
-  | KContApp of kvar * qvar * accvar * var
-  | KApp of var * kvar * qvar * accvar * var
+  | KContApp of kvar * qvar * accvar * xvar
+  | KApp of var * kvar * qvar * accvar * xvar
   | KIte of var * kterm * kterm 
-  | KFix of var * kvar * qvar * accvar * var * kterm * kterm
+  | KFix of var * kvar * qvar * accvar * xvar * kterm * kterm
   | KLetUnOp of var * unop * var * kterm
   | KLetBinOp of var * binop * var * var * kterm 
   | KEvApp of kvar * qvar * accvar * var
@@ -590,5 +591,5 @@ type kterm =
   | KMainDef of (var list) * kterm 
 and kval = 
   | KConst of value
-  | KFn of kvar * qvar * accvar * var * kterm
+  | KFn of kvar * qvar * accvar * xvar * kterm
 

@@ -7,19 +7,18 @@ there are two particular events (let us treat them as integers
 *)
 let rec order d c = 
   if (d > 0) then begin
-     (* begin if ( d mod 2 = 0 ) then ev c else ev(-c) end; *)
-     ev (if d mod 2 = 0 then c else (-c)); 
+     begin if ( d mod 2 = 0 ) then ev c else ev(-c) end;
      order (d - 2) c
   end else 0
 
-let main (dd:int(*-:{v:Int | true}*)) (cc:int(*-:{v:Int | v > 0}*)) = 
+let main (dd:int(*-:{v:Int | true}*)) (cc:int(*-:{v:Int | true}*)) = 
   order dd cc
 
 
 
 Property: 
 
-(* there are two particular events (let us treat them as integers
+ (* there are two particular events (let us treat them as integers
  c and -c for some c) such that at most one of them is permitted 
  to occur during any execution *)
 
@@ -71,33 +70,36 @@ let main prefdd prefcc =
                let k15 q14 acc14 res6 =
                  k14 q14 acc14 res6 in 
                let k16 q15 acc15 res7 =
-                 let x9 = 2 in 
-                 let x8 = d mod x9 in 
-                 let x10 = 0 in 
-                 let x7 = x8 = x10 in 
-                 let k19 q18 acc18 res9 =
-                   let x6 = () in 
-                   let k18 q17 acc17 x5 =
-                     let x13 = 2 in 
-                     let x12 = d - x13 in  let k23 q22 acc22 res13 =
-                                             let k22 q21 acc21 res12 =
-                                               let x4 = x6 ; res12 in  k15 q21 acc21 x4 in 
-                                             res13 k22 q22 acc22 c in 
-                                           order k23 q17 acc17 x12 in 
-                   ev k18 q18 acc18 res9 in 
-                 let k20 q19 acc19 res10 =
-                   k19 q19 acc19 c in 
-                 let k21 q20 acc20 res11 =
-                   let x11 = - c in  k19 q20 acc20 x11 in 
-                 if x7 then k20 q15 acc15 x7 else k21 q15 acc15 x7 in 
+                 let x7 = 2 in 
+                 let x6 = d mod x7 in 
+                 let x8 = 0 in 
+                 let x5 = x6 = x8 in 
+                 let k18 q17 acc17 res9 =
+                   let x15 = 2 in 
+                   let x14 = d - x15 in  let k24 q23 acc23 res13 =
+                                           let k23 q22 acc22 res12 =
+                                             let x4 = res9 ; res12 in  k15 q22 acc22 x4 in 
+                                           res13 k23 q23 acc23 c in 
+                                         order k24 q17 acc17 x14 in 
+                 let k19 q18 acc18 res10 =
+                   let x13 = () in 
+                   let k22 q21 acc21 x12 =
+                     k18 q21 acc21 x13 in 
+                   ev k22 q18 acc18 c in 
+                 let k20 q19 acc19 res11 =
+                   let x11 = - c in  let x10 = () in 
+                                     let k21 q20 acc20 x9 =
+                                       k18 q20 acc20 x10 in 
+                                     ev k21 q19 acc19 x11 in 
+                 if x5 then k19 q15 acc15 x5 else k20 q15 acc15 x5 in 
                let k17 q16 acc16 res8 =
                  let x3 = 0 in 
                  k15 q16 acc16 x3 in 
                if x1 then k16 q13 acc13 x1 else k17 q13 acc13 x1 in 
     k13 q12 acc12 f4 in 
   let k3 q2 acc2 res0 =
-    let k24 q acc x14 =
-      let x16 = 0 in 
-      let x15 = q = x16 in  assert(x15);x14 in 
-    k24 q2 acc2 res0 in 
+    let k25 q acc x16 =
+      let x18 = 0 in 
+      let x17 = q = x18 in  assert(x17);x16 in 
+    k25 q2 acc2 res0 in 
   f0 k3 q1 acc1 order

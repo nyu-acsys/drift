@@ -1,14 +1,14 @@
 (* CPS conversion. Source Program: 
 
 
-let rec mono t x =
+let rec mono x t =
   ev t;
   if x <= 0 then 0
   else
-    mono (t+x) (x-1) (* increase t by positive amount *)
+    mono (x-1) (t+x) (* increase t by positive amount *)
 
-let main (u: int(*-:{v:Int | true}*)) = 
-  if u>0 then mono 1 u else 0
+let main (u: unit(*-:{v:Unit | unit}*)) = 
+  if u>0 then mono u 1 else 0
 
 
 
@@ -49,12 +49,12 @@ let main prefu =
                         let k9 q8 acc8 res3 =
                           k8 q8 acc8 res3 in 
                         let k10 q9 acc9 res4 =
-                          let x4 = 1 in 
                           let k13 q12 acc12 res7 =
+                            let x4 = 1 in 
                             let k12 q11 acc11 res6 =
                               k9 q11 acc11 res6 in 
-                            res7 k12 q12 acc12 u in 
-                          mono k13 q9 acc9 x4 in 
+                            res7 k12 q12 acc12 x4 in 
+                          mono k13 q9 acc9 u in 
                         let k11 q10 acc10 res5 =
                           let x3 = 0 in 
                           k9 q10 acc10 x3 in 
@@ -62,8 +62,8 @@ let main prefu =
              let k5 q4 acc4 res1 =
                k4 q4 acc4 res1 in 
              f1 k5 q3 acc3 f2 in 
-  let rec mono k14 q13 acc13 t =
-    let f3 = fun k15 q14 acc14 x ->
+  let rec mono k14 q13 acc13 x =
+    let f3 = fun k15 q14 acc14 t ->
                let x7 = () in 
                let k16 q15 acc15 x6 =
                  let x9 = 0 in 
@@ -74,13 +74,12 @@ let main prefu =
                    let x13 = 0 in 
                    k17 q17 acc17 x13 in 
                  let k19 q18 acc18 res10 =
-                   let x10 = t + x in 
-                   let k21 q20 acc20 res12 =
-                     let x12 = 1 in 
-                     let x11 = x - x12 in  let k20 q19 acc19 res11 =
-                                             k17 q19 acc19 res11 in 
-                                           res12 k20 q20 acc20 x11 in 
-                   mono k21 q18 acc18 x10 in 
+                   let x11 = 1 in 
+                   let x10 = x - x11 in  let k21 q20 acc20 res12 =
+                                           let x12 = t + x in  let k20 q19 acc19 res11 =
+                                                                 k17 q19 acc19 res11 in 
+                                                               res12 k20 q20 acc20 x12 in 
+                                         mono k21 q18 acc18 x10 in 
                  if x8 then k18 q15 acc15 x8 else k19 q15 acc15 x8 in 
                ev k16 q14 acc14 t in 
     k14 q13 acc13 f3 in 

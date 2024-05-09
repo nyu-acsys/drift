@@ -1,4 +1,4 @@
- (* there are two particular events (let us treat them as integers
+(* there are two particular events (let us treat them as integers
  c and -c for some c) such that at most one of them is permitted 
  to occur during any execution *)
 

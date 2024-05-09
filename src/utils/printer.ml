@@ -302,14 +302,14 @@ let rec pr_cps_kterm ppf = function
      Format.fprintf ppf "@[<v>@[<v 2>let %s %s %a %s =@ %a@] in @;@[%a@]@]" 
        k q pr_cps_acc acc x pr_cps_kterm kdef pr_cps_kterm kt
   | KContApp (k, q, acc, x) -> 
-     Format.fprintf ppf "@[%s %s %a %s@]" k q pr_cps_acc acc x
+     Format.fprintf ppf "@[%s %s %a %s@]" k q pr_cps_acc acc (String.concat " " x)
   | KApp (f, k, q, acc, x) -> 
-     Format.fprintf ppf "@[%s %s %s %a %s@]" f k q pr_cps_acc acc x
+     Format.fprintf ppf "@[%s %s %s %a %s@]" f k q pr_cps_acc acc (String.concat " " x)
   | KIte (xcond, kt1, kt2) -> 
      Format.fprintf ppf "@[if %s@ then@ @[<2>%a@]@ else@ @[%a@]@]" xcond pr_cps_kterm kt1 pr_cps_kterm kt2 
   | KFix (f, k, q, acc, x, fdef, kt) ->
      Format.fprintf ppf "@[<v>@[<v 2>let rec %s %s %s %a %s =@;@[%a@]@] in @;@[%a@]@]" 
-       f k q pr_cps_acc acc x pr_cps_kterm fdef pr_cps_kterm kt
+       f k q pr_cps_acc acc (String.concat " " x) pr_cps_kterm fdef pr_cps_kterm kt
   | KLetUnOp (x, op, o, kt) -> 
      Format.fprintf ppf "@[let %s = %a %s in @;@[%a@]@]" x pr_unop op o pr_cps_kterm kt
   | KLetBinOp (x, op, o1, o2, kt) -> 
@@ -329,4 +329,4 @@ let rec pr_cps_kterm ppf = function
 and pr_cps_kval ppf = function 
   | KConst c -> pr_const ppf c
   | KFn (k, q, acc, x, def) -> 
-     Format.fprintf ppf "@[<v 2>fun %s %s %a %s ->@;@[%a@]@]" k q pr_cps_acc acc x pr_cps_kterm def
+     Format.fprintf ppf "@[<v 2>fun %s %s %a %s ->@;@[%a@]@]" k q pr_cps_acc acc (String.concat " " x) pr_cps_kterm def
