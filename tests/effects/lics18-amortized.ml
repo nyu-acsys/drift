@@ -8,8 +8,9 @@ let rec dequeue (l1_deq, l2_deq) =
   if (l1_deq > 0) then 
     begin ev 1; dequeue ((l1_deq-1), l2_deq) end
   else if l1_deq = 0 then
-    if l2_deq > 0 then dequeue ((rev l2_deq), 0)
-    else 0
+    (if l2_deq > 0 then dequeue ((rev l2_deq), 0)
+          else 0) 
+  else 0
   (* if (l1_deq = 0) then rev (l2_deq)
   else repeat_dequeue ((l1_deq -1), l2_deq) *)
 
