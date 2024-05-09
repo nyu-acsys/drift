@@ -17,7 +17,8 @@ my @resultsfiles = (
     #"results/results.2024-03-25_13-16-55.table.csv"
     #"results/results.2024-03-25_15-35-29.table.csv"
     #    "results/results.2024-04-03_12-36-18.table.csv"
-    "results/results.2024-04-04_10-01-41.table.csv"
+    #"results/results.2024-04-04_10-01-41.table.csv"
+    "results/results.2024-05-08_08-58-29.table.csv"
 );
 
 # 2) load the RunDefinitions defined in the autogen XML file

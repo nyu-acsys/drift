@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-my $prefix = 'NOTEapr3';
+my $prefix = 'NOTEmay8';
 my $rdout = '';
 
 my %domName = (
@@ -13,6 +13,8 @@ print "Adding run definitions:\n";
 foreach my $evTrans (qw/true false/) {
 foreach my $tracelen (qw/0 1 2/) {
 foreach my $ifPart (qw/true false/) {
+    # for ev-trans, only use TL=1 and ifPart=false
+    next if $evTrans eq 'true' && ($tracelen ne '1' || $ifPart eq 'true');
 foreach my $dom (qw/PolkaGrid Polka_ls Polka_st Oct/) {
     # CA says: "Although, there are some cases when with
     # ev-trans true, you need trace-len 2. Also, ev-trans
