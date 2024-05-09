@@ -11,14 +11,15 @@ use Data::Dumper;
 my @resultsfiles = (
     #"results/benchmark-coarmochi.2024-02-25_10-16-09.results.default.mochibenchmarks.csv",
     #"results/benchmark-coarmochi.2024-03-25_16-47-09.results.default.mochibenchmarks.csv",
-    "results/benchmark-coarmochi.2024-04-03_12-51-55.results.default.mochibenchmarks.csv",
+    #"results/benchmark-coarmochi.2024-04-03_12-51-55.results.default.mochibenchmarks.csv",
+    "results/benchmark-coarmochi.2024-05-09_09-54-42.results.default.mochibenchmarks.csv",
     #"results/results.2024-02-25_12-18-59.table.csv",
     #"results/results.2024-03-20_12-38-14.table.csv"
     #"results/results.2024-03-25_13-16-55.table.csv"
     #"results/results.2024-03-25_15-35-29.table.csv"
     #    "results/results.2024-04-03_12-36-18.table.csv"
     #"results/results.2024-04-04_10-01-41.table.csv"
-    "results/results.2024-05-08_08-58-29.table.csv"
+    "results/results.2024-05-09_09-15-34.table.csv"
 );
 
 # 2) load the RunDefinitions defined in the autogen XML file
@@ -94,7 +95,9 @@ sub parseResultsFile {
 
         } else {
             my ($bench,@RCWMs) = split /\t/, $_;
-            next if $bench =~ /min-max/;
+            next if $bench =~ /lics18-web/;
+            next if $bench =~ /higher-order-disj/;
+            next if $bench =~ /reentr/;
             $bench =~ s/cps_// if $isMochi;
             $bench =~ s/\.y?ml$//;
             shift @RCWMs unless $isMochi;

@@ -2,6 +2,8 @@
 use strict;
 use warnings;
 
+die "csvToTex no longer in use.";
+
 # Open the input file
 my $filename = 'latest-results.csv'; # Replace with your file name
 open(my $fh, '<', $filename) or die "Could not open file '$filename' $!";
