@@ -81,6 +81,7 @@ let meet_V e = measure_call "meet_V" (meet_V e)
 let equal_V e = measure_call "equal_V" (equal_V e)
 let proj_V e = measure_call "proj_V" (proj_V e)
 let sat_equal_V e = measure_call "sat_equal_V" (sat_equal_V e)
+let ev penv e = measure_call "ev" (AbstractEv.ev penv e)
 
 
 let rec prop (ve1: value_te) (ve2: value_te): (value_te * value_te) = 
@@ -374,7 +375,7 @@ let rec add_tuple_to_env x tup_ve l trace env =
     else
       id
     ) env (zip_list list_ve (List.length list_ve |> first_n))
-      
+
 let prop_scope (env1: env_t) (env2: env_t) (cs: trace_t) (m: exec_map_t) (ve1: value_te) (ve2: value_te): (value_te * value_te) = 
     let env1 = get_env_list env1 cs m in
     let env2 = get_env_list env2 cs m in
@@ -831,7 +832,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                         let raw_te'_tr = v_fout tail3 raw_te' in
                         let te' = get_env_list env trace m3' |> proj_VE raw_te'_tr in
                         let ec3 = extract_ec te' in
-                        let ae3 = if is_bot_Eff (Effect ec3) then ae2 else get_ae_from_eff ec3 in
+                        let ae3 = if is_bot_Eff (Effect ec3) then ae2 else get_ae_from_eff ec3 |> meet_V ae2 in
                         (if !debug then
                           let pr = Format.fprintf Format.std_formatter in
                           pr "@.LINE 691, App, trace: %s,@,raw_te': @[%a@],@,te1': @[%a@]@,te2': @[%a@]@,te': @[%a@]@,new te': @[%a@]@."
@@ -1710,6 +1711,12 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                 let tee, te1 = alpha_rename_VEs tee te1 in
                 let tlst = get_tuple_list_VE te1 in
                 let tllst = get_tuple_list_VE tee in
+                (if !debug then 
+                  begin 
+                    let pr = Format.fprintf Format.std_formatter in 
+                    pr "LINE 1568, PatMat.TupleLst, te1: @[%a@]@, tee: @[%a@]@." 
+                    pr_value_and_eff te1 pr_value_and_eff tee;
+                  end); 
                 let env1, ae1, ec1, m1, tlst', tllst' = 
                   List.fold_left2 (fun (env1', ae1', ec1', m1', li, llst) e (tei, telsti) -> 
                       match e with
@@ -1831,7 +1838,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           else
             let te' = begin match te1 with
                       | TypeAndEff ((Relation v), (Effect e)) -> 
-                        TypeAndEff (get_unit_from_v ae, Effect (AbstractEv.ev penv e v))
+                        TypeAndEff (get_unit_from_v ae, Effect (ev penv e v))
                       | _ -> te1
                       end
             in 
@@ -1997,6 +2004,10 @@ let check_assert_final_eff te env m fassts =
     | EffBot -> report_fasst fassts true
     | Effect eff -> AbstractEv.check_assert FinalAssert envE eff |> report_fasst fassts 
     | EffTop -> AbstractEv.check_assert_top (FinalAssert) |> report_fasst fassts 
+
+let check_assert term m = measure_call "check_assert" (check_assert term m)
+
+let check_assert_final_eff te env m = measure_call "check_assert_final" (check_assert_final_eff te env m)
  
 (** Fixpoint loop **)
 let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_map_t =

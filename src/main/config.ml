@@ -3,6 +3,8 @@ let version = "0.2 beta"
 
 let debug = ref false
 
+let profile = ref false
+
 let out_put_level = ref 0 (* default to print map after each step *)
 
 let bt = ref false
@@ -44,6 +46,7 @@ let cmd_options_spec =
       \t 1: Output map only for the last step\n
       \t 2: Output the result only");
    ("-debug", Arg.Set debug, ": Debug mode");
+   ("-profile", Arg.Set profile, ": Profiling output");
    ("-bt", Arg.Set bt, ": Allow trace back");
    ("-prop", Arg.String (fun s -> effect_on := true; prop_file := s), ": Automata specification of safety property for effect analysis");
    ("-ev-trans", Arg.String (fun s -> if s = "true" then ev_trans := true else ev_trans := false), "Translate Ev expressions"); 

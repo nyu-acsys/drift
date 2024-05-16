@@ -8,6 +8,8 @@ open AbstractDomain
 open SemanticDomain
 open SemanticsDomain
 
+let stren_R x = measure_call "stren_R" (stren_R x)
+let arrow_R x1 x2 = measure_call "arrow_R" (arrow_R x1 x2)
 
 type evv_t = Val of relation_e
 type evenv = EmptyEvEnv | ExtendEvEnv of var * relation_e * evenv
@@ -175,6 +177,9 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
     (if !debug then pr_delta_tran Format.std_formatter vva_acc);
     (vva_acc)::ts 
   in
+
+  let add_tran vva = measure_call "add_tran" (add_tran vva) in
+
   let name_of_node l = "ze" ^ l in
   let get_env_vars env = 
     fold_env (fun id _ lst -> if not @@ List.mem id lst then id::lst else lst) env penv 
@@ -198,6 +203,7 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
        (Format.fprintf Format.std_formatter "@.pre_parallel_update.acc:@[%a@]" pr_relation acc));
     parallel_assign_R acc_vars assign_eabs acc 
   in
+  let parallel_assign_acc x1 = measure_call "parallel_assign" (parallel_assign_acc x1) in
   let rec eval e env ae ts = 
     let check_mod_const e_mod = 
       match e_mod with
@@ -380,6 +386,8 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
   
   (* (Format.printf "\neff_bot: "; (pp_eff eff_bot););
      (Format.printf "\neff: "; (pp_eff eff)); *)
+  let eval e env ae = measure_call "eval" (eval e env ae) in
+    
   minimize_eff @@ 
     StateMap.mapi 
       (fun (Q q') _ -> 
