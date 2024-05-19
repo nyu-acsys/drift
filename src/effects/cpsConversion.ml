@@ -145,6 +145,15 @@ let rec cps_convert: term -> qvar -> accvar -> (qvar -> accvar -> xvar -> kterm)
      cps_convert e1 q acc (fun q1' acc1' res1' -> 
          cps_convert e2 q1' acc1' (fun q2' acc2' res2' -> 
              tr_k q2' acc2' (res1' @ res2')))
+  | NonDet _ -> 
+     let x = fresh_var "x" in
+     let zero = fresh_var "x" in
+     let nondet_bool = fresh_var "bool_random" in
+     let k0, q0, acc0 = fresh_k_q_acc () in
+     let res0 = fresh_var "res" in
+     KLetVal (x, KRandomInt, 
+              KLetVal (zero, KConst (Integer 0), 
+                       KLetBinOp (nondet_bool, Ge, x, zero, (tr_k q acc [nondet_bool]))))  
   | e -> (Format.fprintf Format.std_formatter "ERROR, missing pattern for exp: @.%a" (pr_exp false) e); raise (Invalid_argument "ERROR")  
    
 let get_init_config e = 
