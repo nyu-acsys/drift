@@ -1,6 +1,6 @@
 let rec refund j =
   if j = 0 then ()  
-  else refund (j - 1)
+  else begin ev 3; refund (j - 1) end
 
 let close n = ev 2; refund (n-1)
 
