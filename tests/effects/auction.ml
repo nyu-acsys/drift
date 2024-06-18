@@ -1,8 +1,10 @@
 let rec refund j =
-  if j = 0 then ()  
+  if j <= 0 then ()  
   else begin ev 3; refund (j - 1) end
 
-let close n = ev 2; refund (n-1)
+let close n = 
+  if n=0 then () 
+  else begin ev 2; refund (n-1) end
 
 let rec bid i =
   if nondet then
