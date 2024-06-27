@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-my $prefix = 'NOTEmay8';
+my $prefix = 'NOTEmay9';
 my $rdout = '';
 
 my %domName = (
@@ -39,6 +39,7 @@ foreach my $dom (qw/PolkaGrid Polka_ls Polka_st Oct/) {
     <option name="-if-part">$ifPart</option>
     <option name="-out">0</option>
     <option name="-domain">$dom</option>
+    <option name="-thold">true</option>
   </rundefinition> 
 EOT
 }

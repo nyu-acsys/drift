@@ -42,7 +42,8 @@ sub run2tool {
     return 'CPS+Mochi' if $rdName eq 'default.mochibenchmarks';
     if($rdName =~ /NOTE(.*)-TL(.*)-TP(.*)-DM(.*)-TR([^\.]*)(\.effects)?/) {
         my $tp = ($3 eq 'true' ? 'T' : 'F');
-        return "\\humanCfg{$1}{$2}{$tp}{$4}{$5}"
+        my $isTrans = $5;
+        return "\\humanCfg".$isTrans."{$1}{$2}{$tp}{$4}"
     } else {
         die "don't know how to parse rundef: $rdName\n";
     }
@@ -97,6 +98,7 @@ sub parseResultsFile {
             my ($bench,@RCWMs) = split /\t/, $_;
             next if $bench =~ /lics18-web/;
             next if $bench =~ /higher-order-disj/;
+            next if $bench =~ /traffic/;
             next if $bench =~ /reentr/;
             $bench =~ s/cps_// if $isMochi;
             $bench =~ s/\.y?ml$//;
