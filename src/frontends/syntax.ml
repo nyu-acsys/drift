@@ -592,4 +592,5 @@ type kterm =
 and kval = 
   | KConst of value
   | KFn of kvar * qvar * accvar * xvar * kterm
+  | KRandomInt
 

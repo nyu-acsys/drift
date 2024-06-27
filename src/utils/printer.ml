@@ -330,3 +330,4 @@ and pr_cps_kval ppf = function
   | KConst c -> pr_const ppf c
   | KFn (k, q, acc, x, def) -> 
      Format.fprintf ppf "@[<v 2>fun %s %s %a %s ->@;@[%a@]@]" k q pr_cps_acc acc (String.concat " " x) pr_cps_kterm def
+  | KRandomInt -> Format.fprintf ppf "@[Random.int(0)@]"
