@@ -32,6 +32,7 @@ foreach my $dom (qw/PolkaGrid Polka_ls Polka_st Oct/) {
         "TR".($evTrans eq 'true' ? 'trans' : 'direct')
     );
     print "   $rdName\.effects\n";
+    my $thold = ($dom eq 'PolkaGrid' ? 'false' : 'true');
     $rdout .= <<EOT;
   <rundefinition name="$rdName">
     <option name="-ev-trans">$evTrans</option>
@@ -39,7 +40,7 @@ foreach my $dom (qw/PolkaGrid Polka_ls Polka_st Oct/) {
     <option name="-if-part">$ifPart</option>
     <option name="-out">0</option>
     <option name="-domain">$dom</option>
-    <option name="-thold">true</option>
+    <option name="-thold">$thold</option>
   </rundefinition> 
 EOT
 }
