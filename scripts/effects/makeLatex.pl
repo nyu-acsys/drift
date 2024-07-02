@@ -13,13 +13,8 @@ my @resultsfiles = (
     #"results/benchmark-coarmochi.2024-03-25_16-47-09.results.default.mochibenchmarks.csv",
     #"results/benchmark-coarmochi.2024-04-03_12-51-55.results.default.mochibenchmarks.csv",
     "results/benchmark-coarmochi.2024-05-09_09-54-42.results.default.mochibenchmarks.csv",
-    #"results/results.2024-02-25_12-18-59.table.csv",
-    #"results/results.2024-03-20_12-38-14.table.csv"
-    #"results/results.2024-03-25_13-16-55.table.csv"
-    #"results/results.2024-03-25_15-35-29.table.csv"
-    #    "results/results.2024-04-03_12-36-18.table.csv"
     #"results/results.2024-04-04_10-01-41.table.csv"
-    "results/results.2024-05-09_09-15-34.table.csv"
+    "results/results.2024-06-30_11-29-24.table.csv"
 );
 
 # 2) load the RunDefinitions defined in the autogen XML file
@@ -213,7 +208,8 @@ my @geos_mochi; my @geos_evtrans; my @geos_direct;
 my $newOverMochi = 0; my $newOverTrans = 0; my $benchCount = 0; $ct = 1;
 print Dumper($d->{overview1});
 foreach my $b (sort keys %$d) {
-    #next if $b =~ /amortized/;
+    next if $b =~ /auction/;
+    next if $b =~ /binomial_heap/;
     next if $b =~ /ho-shrink/; # old name;
     my $tt = $b; $tt =~ s/\_/\\_/g;
     $tt =~ s/negated/neg/;
@@ -276,6 +272,7 @@ foreach my $bench (sort keys %$d) {
         next if $rd =~ /BEST/;
         next if $rd =~ /mochi/i;
         next if $rd =~ /TRtrans/;
+        next if $rd !~ /TL1/; # CA on June 25th said for TP only do TL=1
         my $BEST = ($rd =~ /TPfalse/i ? 'BEST_TPOFF' : 'BEST_TPON');
         # we have nothing yet, so we take it
         if (not defined $d->{$bench}->{$BEST}) {
