@@ -161,9 +161,11 @@ let get_init_config e =
   | TupleLst ((Const (cq,_))::eacc, _) -> 
      let cacc = begin match eacc with 
                 | [Const (c, _)] -> [c]
+                | [UnOp (UMinus, (Const (Integer c, _)), _)] -> [Integer (-c)]
                 | [TupleLst (accs, _)] -> 
                    List.map (function 
                        | Const (c, _) -> c 
+                       | UnOp (UMinus, (Const (Integer c, _)), _) -> Integer (-c)
                        | _ -> raise (Invalid_argument "AccInit expected to be a constant"))
                      accs
                 | _ -> raise (Invalid_argument ("AccInit not valid. " ^ 
