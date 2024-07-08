@@ -1,82 +1,80 @@
 # Trace partitioning on all-ev-pos:
-drift.exe -file test/effects/all-ev-pos.ml -prop test/effects/all-ev-pos.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain ls -thold true
+drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain Polka_ls -thold true
 # Without Trace partitioning on all-ev-pos:
-drift.exe -file test/effects/all-ev-pos.ml -prop test/effects/all-ev-pos.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain ls -thold true
+drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Polka_ls -thold true
 # Trace partitioning on auction:
-drift.exe -file test/effects/auction.ml -prop test/effects/auction.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain ls -thold true
+drift.exe -file tests/effects/auction.ml -prop tests/effects/auction.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain Polka_ls -thold true
 # Without Trace partitioning on auction:
-drift.exe -file test/effects/auction.ml -prop test/effects/auction.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain ls -thold true
+drift.exe -file tests/effects/auction.ml -prop tests/effects/auction.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Polka_ls -thold true
 # Trace partitioning on binomial_heap:
-drift.exe -file test/effects/binomial_heap.ml -prop test/effects/binomial_heap.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain ls -thold true
+drift.exe -file tests/effects/binomial_heap.ml -prop tests/effects/binomial_heap.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain Polka_ls -thold true
 # Without Trace partitioning on binomial_heap:
-drift.exe -file test/effects/binomial_heap.ml -prop test/effects/binomial_heap.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain ls -thold true
+drift.exe -file tests/effects/binomial_heap.ml -prop tests/effects/binomial_heap.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Polka_ls -thold true
 # Trace partitioning on depend:
-drift.exe -file test/effects/depend.ml -prop test/effects/depend.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain ls -thold true
+drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain Polka_ls -thold true
 # Without Trace partitioning on depend:
-drift.exe -file test/effects/depend.ml -prop test/effects/depend.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain st -thold true
+drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Polka_st -thold true
 # Trace partitioning on disj:
-drift.exe -file test/effects/disj.ml -prop test/effects/disj.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain pg -thold false
+drift.exe -file tests/effects/disj.ml -prop tests/effects/disj.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain PolkaGrid -thold false
 # Without Trace partitioning on disj:
-drift.exe -file test/effects/disj.ml -prop test/effects/disj.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain pg -thold false
+drift.exe -file tests/effects/disj.ml -prop tests/effects/disj.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain PolkaGrid -thold false
 # Trace partitioning on disj-gte:
-drift.exe -file test/effects/disj-gte.ml -prop test/effects/disj-gte.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain ls -thold true
+drift.exe -file tests/effects/disj-gte.ml -prop tests/effects/disj-gte.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain Polka_ls -thold true
 # Without Trace partitioning on disj-gte:
-drift.exe -file test/effects/disj-gte.ml -prop test/effects/disj-gte.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain ls -thold true
+drift.exe -file tests/effects/disj-gte.ml -prop tests/effects/disj-gte.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Polka_ls -thold true
 # Trace partitioning on higher-order:
-drift.exe -file test/effects/higher-order.ml -prop test/effects/higher-order.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain ls -thold true
+drift.exe -file tests/effects/higher-order.ml -prop tests/effects/higher-order.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain Polka_ls -thold true
 # Without Trace partitioning on higher-order:
-drift.exe -file test/effects/higher-order.ml -prop test/effects/higher-order.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain ls -thold true
+drift.exe -file tests/effects/higher-order.ml -prop tests/effects/higher-order.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Polka_ls -thold true
 # Trace partitioning on last-ev-even:
-drift.exe -file test/effects/last-ev-even.ml -prop test/effects/last-ev-even.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain pg -thold false
+drift.exe -file tests/effects/last-ev-even.ml -prop tests/effects/last-ev-even.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain PolkaGrid -thold false
 # Without Trace partitioning on last-ev-even:
 # Trace partitioning on lics18-amortized:
-drift.exe -file test/effects/lics18-amortized.ml -prop test/effects/lics18-amortized.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain ls -thold true
+drift.exe -file tests/effects/lics18-amortized.ml -prop tests/effects/lics18-amortized.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain Polka_ls -thold true
 # Without Trace partitioning on lics18-amortized:
-drift.exe -file test/effects/lics18-amortized.ml -prop test/effects/lics18-amortized.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain ls -thold true
+drift.exe -file tests/effects/lics18-amortized.ml -prop tests/effects/lics18-amortized.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Polka_ls -thold true
 # Trace partitioning on lics18-hoshrink:
-drift.exe -file test/effects/lics18-hoshrink.ml -prop test/effects/lics18-hoshrink.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain ls -thold true
 # Without Trace partitioning on lics18-hoshrink:
-drift.exe -file test/effects/lics18-hoshrink.ml -prop test/effects/lics18-hoshrink.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain pg -thold false
+drift.exe -file tests/effects/lics18-hoshrink.ml -prop tests/effects/lics18-hoshrink.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Polka_st -thold true
 # Trace partitioning on lics18-web:
-drift.exe -file test/effects/lics18-web.ml -prop test/effects/lics18-web.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain ls -thold true
+drift.exe -file tests/effects/lics18-web.ml -prop tests/effects/lics18-web.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain Polka_ls -thold true
 # Without Trace partitioning on lics18-web:
-drift.exe -file test/effects/lics18-web.ml -prop test/effects/lics18-web.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain ls -thold true
+drift.exe -file tests/effects/lics18-web.ml -prop tests/effects/lics18-web.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Polka_ls -thold true
 # Trace partitioning on market:
-drift.exe -file test/effects/market.ml -prop test/effects/market.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain ls -thold true
 # Without Trace partitioning on market:
-drift.exe -file test/effects/market.ml -prop test/effects/market.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain pg -thold false
+drift.exe -file tests/effects/market.ml -prop tests/effects/market.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Octagon -thold true
 # Trace partitioning on max-min:
-drift.exe -file test/effects/max-min.ml -prop test/effects/max-min.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain ls -thold true
+drift.exe -file tests/effects/max-min.ml -prop tests/effects/max-min.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain Polka_ls -thold true
 # Without Trace partitioning on max-min:
 # Trace partitioning on monotonic:
-drift.exe -file test/effects/monotonic.ml -prop test/effects/monotonic.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain ls -thold true
+drift.exe -file tests/effects/monotonic.ml -prop tests/effects/monotonic.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain Polka_ls -thold true
 # Without Trace partitioning on monotonic:
-drift.exe -file test/effects/monotonic.ml -prop test/effects/monotonic.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain ls -thold true
+drift.exe -file tests/effects/monotonic.ml -prop tests/effects/monotonic.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Polka_ls -thold true
 # Trace partitioning on order-irrel:
-drift.exe -file test/effects/order-irrel.ml -prop test/effects/order-irrel.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain pg -thold false
+drift.exe -file tests/effects/order-irrel.ml -prop tests/effects/order-irrel.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain PolkaGrid -thold false
 # Without Trace partitioning on order-irrel:
-drift.exe -file test/effects/order-irrel.ml -prop test/effects/order-irrel.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain pg -thold false
+drift.exe -file tests/effects/order-irrel.ml -prop tests/effects/order-irrel.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Octagon -thold true
 # Trace partitioning on overview1:
-drift.exe -file test/effects/overview1.ml -prop test/effects/overview1.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain ls -thold true
+drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain Polka_ls -thold true
 # Without Trace partitioning on overview1:
-drift.exe -file test/effects/overview1.ml -prop test/effects/overview1.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain ls -thold true
+drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Polka_ls -thold true
 # Trace partitioning on reentr:
-drift.exe -file test/effects/reentr.ml -prop test/effects/reentr.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain ls -thold true
+drift.exe -file tests/effects/reentr.ml -prop tests/effects/reentr.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain Polka_ls -thold true
 # Without Trace partitioning on reentr:
-drift.exe -file test/effects/reentr.ml -prop test/effects/reentr.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain ls -thold true
+drift.exe -file tests/effects/reentr.ml -prop tests/effects/reentr.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Polka_ls -thold true
 # Trace partitioning on resource-analysis:
-drift.exe -file test/effects/resource-analysis.ml -prop test/effects/resource-analysis.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain ls -thold true
+drift.exe -file tests/effects/resource-analysis.ml -prop tests/effects/resource-analysis.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain Polka_ls -thold true
 # Without Trace partitioning on resource-analysis:
-drift.exe -file test/effects/resource-analysis.ml -prop test/effects/resource-analysis.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain ls -thold true
+drift.exe -file tests/effects/resource-analysis.ml -prop tests/effects/resource-analysis.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Polka_ls -thold true
 # Trace partitioning on sum-appendix:
-drift.exe -file test/effects/sum-appendix.ml -prop test/effects/sum-appendix.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain ls -thold true
+drift.exe -file tests/effects/sum-appendix.ml -prop tests/effects/sum-appendix.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain Polka_ls -thold true
 # Without Trace partitioning on sum-appendix:
-drift.exe -file test/effects/sum-appendix.ml -prop test/effects/sum-appendix.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain ls -thold true
+drift.exe -file tests/effects/sum-appendix.ml -prop tests/effects/sum-appendix.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Polka_ls -thold true
 # Trace partitioning on sum-of-ev-even:
-drift.exe -file test/effects/sum-of-ev-even.ml -prop test/effects/sum-of-ev-even.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain pg -thold false
+drift.exe -file tests/effects/sum-of-ev-even.ml -prop tests/effects/sum-of-ev-even.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain PolkaGrid -thold false
 # Without Trace partitioning on sum-of-ev-even:
-drift.exe -file test/effects/sum-of-ev-even.ml -prop test/effects/sum-of-ev-even.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain pg -thold false
+drift.exe -file tests/effects/sum-of-ev-even.ml -prop tests/effects/sum-of-ev-even.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain PolkaGrid -thold false
 # Trace partitioning on temperature:
-drift.exe -file test/effects/temperature.ml -prop test/effects/temperature.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain pg -thold false
+drift.exe -file tests/effects/temperature.ml -prop tests/effects/temperature.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain PolkaGrid -thold false
 # Without Trace partitioning on temperature:
-drift.exe -file test/effects/temperature.ml -prop test/effects/temperature.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain pg -thold false
+drift.exe -file tests/effects/temperature.ml -prop tests/effects/temperature.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain PolkaGrid -thold false
