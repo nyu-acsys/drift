@@ -48,7 +48,7 @@ foreach my $dom (qw/PolkaGrid Polka_ls Polka_st Oct/) {
         "TR".($evTrans eq 'true' ? 'trans' : 'direct')
     );
     print "   $rdName\.effects\n";
-    print TEX ($evTrans eq 'true' ? '{\sc Drift}' : '{\bf ev}-{\sc Drift}')."  $tracelen & $ifPart & $thold & $texDomName{$dom} \\\\\n";
+    print TEX ($evTrans eq 'true' ? '{\sc Drift}' : '{\bf ev}-{\sc Drift}')." & $tracelen & $ifPart & $thold & $texDomName{$dom} \\\\\n";
     $rdout .= <<EOT;
   <rundefinition name="$rdName">
     <option name="-ev-trans">$evTrans</option>
