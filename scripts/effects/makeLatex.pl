@@ -239,6 +239,7 @@ open SCRIPT, ">generate_table1" or die $!;
 # print BODY "\\hline\n";
 my @geos_mochi; my @geos_evtrans; my @geos_direct;
 my $newOverMochi = 0; my $newOverTrans = 0; my $benchCount = 0; $ct = 1;
+my $driftVerified = 0; my $evdriftVerified = 0;
 #print Dumper($d->{overview1});
 foreach my $b (sort keys %$d) {
     # next if $b =~ /auction/;
@@ -278,6 +279,8 @@ foreach my $b (sort keys %$d) {
     push @geos_direct, $d->{$b}->{BEST_DRIFTEV}->{cpu}
       if $d->{$b}->{BEST_DRIFTEV}->{cpu} < 900 && $d->{$b}->{BEST_DRIFTEV}->{cpu} > 0;
     #
+    $driftVerified++ if $d->{$b}->{BEST_TRANS}->{res} eq 'true'; 
+    $evdriftVerified++ if $d->{$b}->{BEST_DRIFTEV}->{res} eq 'true'; 
     $newOverMochi++ if $d->{$b}->{BEST_DRIFTEV}->{res} eq 'true' && $d->{$b}->{$MOCHI_RD}->{res} ne 'true';
     $newOverTrans++ if $d->{$b}->{BEST_DRIFTEV}->{res} eq 'true' && $d->{$b}->{BEST_TRANS}->{res} ne 'true';
     $benchCount++;
@@ -309,9 +312,10 @@ foreach my $bench (sort keys %$d) {
     foreach my $rd (keys %{$d->{$bench}}) {
         next if $rd =~ /BEST/;
         next if $rd =~ /mochi/i;
-        next if $rd =~ /TRtrans/;
+        #next if $rd =~ /TRtrans/;
         next if $rd !~ /TL1/; # CA on June 25th said for TP only do TL=1
         my $BEST = ($rd =~ /TPfalse/i ? 'BEST_TPOFF' : 'BEST_TPON');
+        $BEST = $BEST.($rd =~ /TRtrans/ ? '_DRIFT' : '_EVDRIFT');
         # we have nothing yet, so we take it
         if (not defined $d->{$bench}->{$BEST}) {
             newBest($BEST,$bench,$rd);
@@ -331,36 +335,48 @@ foreach my $bench (sort keys %$d) {
 open TP, ">exp-tp.tex" or die $!;
 open SCRIPT, ">generate_table2" or die $!;
 $ct = 1;
-my $newTPOverNoTP = 0;
-my @geos_notp; my @geos_tp;
+my $newTPOverNoTPevDrift = 0;
+my @geos_notp_drift;   my @geos_tp_drift; 
+my @geos_notp_evdrift; my @geos_tp_evdrift;
 foreach my $b (sort keys %$d) {
     my $tt = $b; $tt =~ s/\_/\\_/g;
     $tt =~ s/negated/neg/;
     print TP "$ct. \\texttt{\\scriptsize $tt} "; ++$ct;
     #warn "tool rd: ".Dumper($b,$d->{$b},$d->{$b}->{BEST_TRANS},$d->{$b}->{BEST_TRANS}->{rd});
-    # Best with Trace Part
+    # Best Drift+TP
     print TP sprintf("& %-5s & %3.2f & %3.2f & %s ",
-           cleanRes($d->{$b}->{BEST_TPON}->{res}),
-           $d->{$b}->{BEST_TPON}->{cpu},
-           $d->{$b}->{BEST_TPON}->{mem},
-           run2tool($d->{$b}->{BEST_TPON}->{rd}));
-    # Best without Trace Part
+           cleanRes($d->{$b}->{BEST_TPON_DRIFT}->{res}),
+           $d->{$b}->{BEST_TPON_DRIFT}->{cpu},
+           $d->{$b}->{BEST_TPON_DRIFT}->{mem},
+           run2tool($d->{$b}->{BEST_TPON_DRIFT}->{rd}));
+    # Best EVDrift no TP
+    print TP sprintf("& %-5s & %3.2f & %3.2f & %s ",
+           cleanRes($d->{$b}->{BEST_TPOFF_EVDRIFT}->{res}),
+           $d->{$b}->{BEST_TPOFF_EVDRIFT}->{cpu},
+           $d->{$b}->{BEST_TPOFF_EVDRIFT}->{mem},
+           run2tool($d->{$b}->{BEST_TPOFF_EVDRIFT}->{rd}));
+    # Best EVDrift+TP
     print TP sprintf("& %-5s & %3.2f & %3.2f & %s \\\\ \n",
-           cleanRes($d->{$b}->{BEST_TPOFF}->{res}),
-           $d->{$b}->{BEST_TPOFF}->{cpu},
-           $d->{$b}->{BEST_TPOFF}->{mem},
-           run2tool($d->{$b}->{BEST_TPOFF}->{rd}));
+           cleanRes($d->{$b}->{BEST_TPON_EVDRIFT}->{res}),
+           $d->{$b}->{BEST_TPON_EVDRIFT}->{cpu},
+           $d->{$b}->{BEST_TPON_EVDRIFT}->{mem},
+           run2tool($d->{$b}->{BEST_TPON_EVDRIFT}->{rd}));
 
     # save the runtimes for statistics
-    push @geos_tp, $d->{$b}->{BEST_TPON}->{cpu}
-      if $d->{$b}->{BEST_TPON}->{cpu} < 900 && $d->{$b}->{BEST_TPON}->{cpu} > 0;
-    push @geos_notp, $d->{$b}->{BEST_TPOFF}->{cpu}
-      if $d->{$b}->{BEST_TPOFF}->{cpu} < 900 && $d->{$b}->{BEST_TPOFF}->{cpu} > 0;
+    push @geos_notp_drift, $d->{$b}->{BEST_TPOFF_DRIFT}->{cpu}
+      if $d->{$b}->{BEST_TPOFF_DRIFT}->{cpu} < 900 && $d->{$b}->{BEST_TPOFF_DRIFT}->{cpu} > 0;
+    push @geos_tp_drift, $d->{$b}->{BEST_TPON_DRIFT}->{cpu}
+      if $d->{$b}->{BEST_TPON_DRIFT}->{cpu} < 900 && $d->{$b}->{BEST_TPON_DRIFT}->{cpu} > 0;
+    push @geos_notp_evdrift, $d->{$b}->{BEST_TPOFF_EVDRIFT}->{cpu}
+      if $d->{$b}->{BEST_TPOFF_EVDRIFT}->{cpu} < 900 && $d->{$b}->{BEST_TPOFF_EVDRIFT}->{cpu} > 0;
+    push @geos_tp_evdrift, $d->{$b}->{BEST_TPON_EVDRIFT}->{cpu}
+      if $d->{$b}->{BEST_TPON_EVDRIFT}->{cpu} < 900 && $d->{$b}->{BEST_TPON_EVDRIFT}->{cpu} > 0;
     #
-    $newTPOverNoTP++ if $d->{$b}->{BEST_TPON}->{res} eq 'true' && $d->{$b}->{BEST_TPOFF}->{res} ne 'true';
+    $newTPOverNoTPevDrift++ if $d->{$b}->{BEST_TPON_EVDRIFT}->{res} eq 'true' && $d->{$b}->{BEST_TPOFF_EVDRIFT}->{res} ne 'true';
     # script for tp-vs-noTP
-    print SCRIPT "# Trace partitioning on $b:\n".cfg2cmd($b,$d->{$b}->{BEST_TPON}->{rd});
-    print SCRIPT "# Without Trace partitioning on $b:\n".cfg2cmd($b,$d->{$b}->{BEST_TPOFF}->{rd});
+    print SCRIPT "# Drift + Trace partitioning $b:\n".cfg2cmd($b,$d->{$b}->{BEST_TPON_DRIFT}->{rd});
+    print SCRIPT "# evDrift without Trace partitioning $b:\n".cfg2cmd($b,$d->{$b}->{BEST_TPOFF_EVDRIFT}->{rd});
+    print SCRIPT "# evDrift + Trace partitioning $b:\n".cfg2cmd($b,$d->{$b}->{BEST_TPOFF_EVDRIFT}->{rd});
 }
 close TP;
 close SCRIPT;
@@ -379,11 +395,17 @@ print STATS join("\n", (
    ('\newcommand\expNewOverMochi{'.$newOverMochi.'}'),
    ('\newcommand\expNewOverTrans{'.$newOverTrans.'}'),
    ('\newcommand\expBenchCount{'.$benchCount.'}'),
+   ('\newcommand\expDriftVerified{'.$driftVerified.'}'),
+   ('\newcommand\expEDriftVerified{'.$evdriftVerified.'}'),
    "% TP Improvements:",
-   ('\newcommand\expTPGMoff{'.geometric_mean(@geos_tp).'}'),
-   ('\newcommand\expTPGMon{'.geometric_mean(@geos_notp).'}'),
-   ('\newcommand\expTPSpeedup{'.sprintf("%0.1f", geometric_mean(@geos_notp)/geometric_mean(@geos_tp)).'}'),
-   ('\newcommand\expTPNew{'.$newTPOverNoTP.'}'),
+   ('\newcommand\expTPGMoffDrift{'.geometric_mean(@geos_notp_drift).'}'),
+   ('\newcommand\expTPGMonDrift{'.geometric_mean(@geos_tp_drift).'}'),
+   ('\newcommand\expTPGMoffevDrift{'.geometric_mean(@geos_notp_evdrift).'}'),
+   ('\newcommand\expTPGMonevDrift{'.geometric_mean(@geos_tp_evdrift).'}'),
+   ('\newcommand\expTPSpeedupDrift{'.sprintf("%0.1f", geometric_mean(@geos_notp_drift)/geometric_mean(@geos_tp_drift)).'}'),
+   ('\newcommand\expTPSpeedupevDrift{'.sprintf("%0.1f", geometric_mean(@geos_notp_evdrift)/geometric_mean(@geos_tp_evdrift)).'}'),
+   ('\newcommand\expTPNew{'.$newTPOverNoTPevDrift.'}'),
+   "% Overview temperature example:",
    ('\newcommand\expBestTempEVDrift{'.sprintf("%d", $d->{temperature}->{BEST_DRIFTEV}->{cpu}).'}'),
    ('\newcommand\expBestTempTrans{'.sprintf("%d", $d->{temperature}->{BEST_TRANS}->{cpu}).'}'),
 ))."\n";
