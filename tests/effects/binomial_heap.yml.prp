@@ -20,11 +20,11 @@ delta = fun evx (q, (carries, size)) ->
       	  else if (q = 1 && evx = 1) then (q, (carries+1, size))
 	  else if (q = 1 && evx = 2) then (q, (carries, size-1))
 	  else if (q = 1 && evx = 3) then (2, (carries, size+1))
-	  else (3, (start, carries,size));
+	  else (3, (carries,size));
 
 IniCfg = (0, (0, 0));
 
-assert = fun (q, (start, carries, size)) -> q < 3;
+assert = fun (q, (carries, size)) -> q < 3;
 
-assertFinal = fun (q, (start, carries, size)) -> size = prefh - carries + 1;  
+assertFinal = fun (q, (carries, size)) -> size = prefh - carries + 1;  
 
