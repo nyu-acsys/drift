@@ -187,6 +187,22 @@ foreach my $bench (sort keys %$d) {
             # warn "not better\n";
         }
     }
+    # # if the best Drift didn't verify it, use specific rd:
+    # if ($d->{$bench}->{BEST_DRIFT}->{res} ne 'true') {
+    #     my $rd = $d->{$bench}->{BEST_DRIFT}->{rd};
+    #     foreach my $ord (keys %{$d->{$bench}}) {
+    #         next unless $ord =~ /TRtrans/; # Drift
+
+    #     }
+    #     my @rds = grep { $d->{$bench}->{$_}->{rd} =~ /TRtrans/ } keys %{$d->{$bench}};
+    #     die Dumper(\@rds);
+    #     #my $rd = 'NOTE'.$
+    # }
+    # # if the best evDrift didn't verify it, use specific rd:
+    # if ($d->{$bench}->{BEST_DRIFTEV}->{res} ne 'true') {
+        
+    # }
+    
 }
 #print Dumper($d);
 
@@ -207,15 +223,19 @@ foreach my $b (sort keys %$d) {
     my $tt = $b; $tt =~ s/\_/\\_/g;
     $tt =~ s/negated/neg/;
     print EXT "$ct. \\texttt{\\scriptsize $tt} \\\\\n"; ++ $ct;
-    foreach my $tool (keys %{$d->{$b}}) { # @RUNDEFINITIONS) {
+    # sort the run defs by tool:
+    my @driftRds = grep {$d->{$b}->{$_}->{rd} =~ /TRtrans/ } keys %{$d->{$b}};
+    my @evdriftRds = grep {$d->{$b}->{$_}->{rd} =~ /TRdirect/ } keys %{$d->{$b}};
+    foreach my $tool (@driftRds, @evdriftRds) { # @RUNDEFINITIONS) {
         next if $tool =~ /BEST/;
+        my $drift = ($tool =~ /TRtrans/ ? '\drift' : '\evdrift');
         my $isBest = ($d->{$b}->{BEST_DRIFTEV}->{rd} eq $tool ? '\hl ' : '    ');
-        print EXT sprintf("& $isBest %-5s & %3.2f & %3.2f & %s \\\\\n",
+        print EXT sprintf("& $drift & $isBest %s & $isBest %-5s & $isBest %3.2f & $isBest %3.2f  \\\\\n",
+           run2tool($tool),
            cleanRes($d->{$b}->{$tool}->{res}),
            $d->{$b}->{$tool}->{cpu},
 #           $d->{$b}->{$tool}->{wall},
-           $d->{$b}->{$tool}->{mem},
-           run2tool($tool)); # d->{$b}->{$tool}->{rd}));
+           $d->{$b}->{$tool}->{mem}); # d->{$b}->{$tool}->{rd}));
     }
     print  EXT "\\hline\n";
 }
@@ -254,18 +274,18 @@ foreach my $b (sort keys %$d) {
     die "don't have a $MOCHI_RD rundef for $b" unless $d->{$b}->{$MOCHI_RD}->{rd} =~ /[a-z]/;
     die "don't have a BEST_DRIFTEV rundef for $b" unless $d->{$b}->{BEST_DRIFTEV}->{rd} =~ /[a-z]/;
     # Trans-Drift
-    print BODY sprintf("& %-5s & %3.2f & %3.2f & %s ",
+    print BODY sprintf("& %-5s & %3.1f & %3.1f & %s ",
            cleanRes($d->{$b}->{BEST_TRANS}->{res}),
            $d->{$b}->{BEST_TRANS}->{cpu},
            $d->{$b}->{BEST_TRANS}->{mem},
            run2tool($d->{$b}->{BEST_TRANS}->{rd}));
     # Trans-Mochi
-    print BODY sprintf("& %-5s & %3.2f & %3.2f ",
+    print BODY sprintf("& %-5s & %3.1f & %3.1f ",
            cleanRes($d->{$b}->{$MOCHI_RD}->{res}),
            $d->{$b}->{$MOCHI_RD}->{cpu},
            $d->{$b}->{$MOCHI_RD}->{mem});
     # DriftEV
-    print BODY sprintf("& %-5s & %3.2f & %3.2f & %s \\\\ \n",
+    print BODY sprintf("& %-5s & %3.1f & %3.1f & %s \\\\ \n",
            cleanRes($d->{$b}->{BEST_DRIFTEV}->{res}),
            $d->{$b}->{BEST_DRIFTEV}->{cpu},
            $d->{$b}->{BEST_DRIFTEV}->{mem},
@@ -344,19 +364,19 @@ foreach my $b (sort keys %$d) {
     print TP "$ct. \\texttt{\\scriptsize $tt} "; ++$ct;
     #warn "tool rd: ".Dumper($b,$d->{$b},$d->{$b}->{BEST_TRANS},$d->{$b}->{BEST_TRANS}->{rd});
     # Best Drift+TP
-    print TP sprintf("& %-5s & %3.2f & %3.2f & %s ",
+    print TP sprintf("& %-5s & %3.1f & %3.1f & %s ",
            cleanRes($d->{$b}->{BEST_TPON_DRIFT}->{res}),
            $d->{$b}->{BEST_TPON_DRIFT}->{cpu},
            $d->{$b}->{BEST_TPON_DRIFT}->{mem},
            run2tool($d->{$b}->{BEST_TPON_DRIFT}->{rd}));
     # Best EVDrift no TP
-    print TP sprintf("& %-5s & %3.2f & %3.2f & %s ",
+    print TP sprintf("& %-5s & %3.1f & %3.1f & %s ",
            cleanRes($d->{$b}->{BEST_TPOFF_EVDRIFT}->{res}),
            $d->{$b}->{BEST_TPOFF_EVDRIFT}->{cpu},
            $d->{$b}->{BEST_TPOFF_EVDRIFT}->{mem},
            run2tool($d->{$b}->{BEST_TPOFF_EVDRIFT}->{rd}));
     # Best EVDrift+TP
-    print TP sprintf("& %-5s & %3.2f & %3.2f & %s \\\\ \n",
+    print TP sprintf("& %-5s & %3.1f & %3.1f & %s \\\\ \n",
            cleanRes($d->{$b}->{BEST_TPON_EVDRIFT}->{res}),
            $d->{$b}->{BEST_TPON_EVDRIFT}->{cpu},
            $d->{$b}->{BEST_TPON_EVDRIFT}->{mem},
