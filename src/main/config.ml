@@ -23,23 +23,20 @@ let use_threshold = ref false
 
 let trace_len = ref 0
 let if_part = ref false
-let sensitive = ref true
-
 let effect_on = ref false
 let ev_trans = ref false
 let prop_file = ref "" 
 
 let convert_to_cps = ref false
 
-let usage = "usage: " ^ Sys.argv.(0) ^ " [-file <file name>] [-domain <domain name>] [-sen <true/false>] [-thold <true/false>] [-delay-wid <num>] [-nar <true/false>] [-prop <file name>] [-ev-trans <true/false>] [-cps-convert <true/false>] [-out <num>] [-debug] [-bt]"
+let usage = "usage: " ^ Sys.argv.(0) ^ " [-file <file name>] [-domain <domain name>] [-thold <true/false>] [-delay-wid <num>] [-nar <true/false>] [-prop <file name>] [-ev-trans <true/false>] [-cps-convert <true/false>] [-out <num>] [-debug] [-bt]"
 
 let cmd_options_spec =
   [("-file", Arg.String (fun s -> parse_file := true; file := s), ": Input file specification");
-  ("-domain", Arg.String (fun s -> domain := s), ": Abstract domain specification (Oct, Polka_st, Polka_ls, OctPolka)");
-  ("-sen", Arg.String (fun s -> if s = "true" then sensitive:=true else sensitive:=false), ": Use 1-context sensitive analysis");
+  ("-domain", Arg.String (fun s -> domain := s), ": Abstract domain specification (Oct, Polka_st, Polka_ls, PolkaGrid)");
    ("-thold", Arg.String (fun s -> if s = "true" then use_threshold:=true else use_threshold:=false), ": Use threshold widening");
    ("-delay-wid", Arg.Int (fun s -> delay_wid := s), ": Set number of delay widening steps (depricated)");
-   ("-nar", Arg.String (fun s -> if s = "true" then narrow:=true else narrow:=false), ": Use narrowing procedure");
+   ("-nar", Arg.String (fun s -> if s = "true" then narrow:=true else narrow:=false), ": Use narrowing procedure (depricated)");
    ("-out", Arg.Int (fun s -> out_put_level := s), 
     ": Output result level\n
       \t 0: Output map after each step\n
