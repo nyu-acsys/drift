@@ -1,4 +1,18 @@
-# Installation Requirements
+# The ev-Drift Verifier
+
+This tool uses a type-and-effect system and abstract interpretation to 
+infer symbolic accumulation automaton (SAA) properties of higher order programs.
+
+An example program can be seen in `tests/effects/overview.ml`
+
+An example SAA property can be seen in `tests/effects/overview.yml.prp`
+
+In addition, one can use our tuple-based product translation to 
+transform these two inputs into an effectless program with assertions,
+and use the Drift tool (POPL 2020). This can be done by suppling
+`-ev-trans true` as a commandline argument (see details below).
+
+## Installation Requirements
 
 - [OCaml](https://ocaml.org/), version >= 4.06
 - [OPAM](https://opam.ocaml.org/), version >= 2.0.4
@@ -68,7 +82,23 @@ usage: ./drift.exe [-file <file name>] [-domain <domain name>] [-thold <true/fal
 ```
 
 ## Guides for Running Experiments 
-The scripts to generate Drift-(with tuple translation) and evDrift results for tables 1 and table 2 are as follows:
-1. 
-2. 
+
+The sources can be found in `tests/effects/*.ml`, along with properties
+in `tests/effects/*.yml.prp`. Unsafe versions of the benchmarks are 
+found in `tests/effects/unsafe/*.ml`.
+
+The scripts to generate Drift-(with tuple translation) and evDrift
+results for tables 1 and table 2 are as follows:
+
+1. Reproduce Table 1 (including the Drift+Translation and evDrift columns):
+```
+sh generate_table1
+```
+2. Reproduce Table 2
+```
+sh generate_table2
+```
+3. Run evDrift on the /unsafe/ versions of the programs:
+```
+sh runall_unsafe
 ```
