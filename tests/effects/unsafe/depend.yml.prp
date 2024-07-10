@@ -1,0 +1,11 @@
+(* Dependent *)
+
+QSet   = [0]; 
+
+delta  = fun evx (q, acc) -> 
+   if evx > prefv then (q,acc - evx) else (q, acc);
+
+IniCfg = (0, 0);
+
+assert = fun (q, acc) -> (acc >= 0);
+

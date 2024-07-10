@@ -53,13 +53,13 @@ my %dm2domain = (
     oct => 'Octagon',
 );
 sub cfg2cmd {
-    my ($benchname, $cfg) = @_;
+    my ($subdir,$benchname, $cfg) = @_;
     if ($cfg =~ /TL([^-]+)-TP([^-]+)-TH([^-]+)-DM([^-]+)-TR([^-]+)\.effects/) {
         my ($tl,$tp,$th,$dm,$tr) = ($1,$2,$3,$4,$5);
         return join(' ', (
             'drift.exe',
-            '-file', "tests/effects/$benchname.ml",
-            '-prop', "tests/effects/$benchname.yml.prp",
+            '-file', "tests/effects/$subdir$benchname.ml",
+            '-prop', "tests/effects/$subdir$benchname.yml.prp",
             '-ev-trans', $tr,
             '-trace-len', $tl,
             '-if-part', $tp,
@@ -246,6 +246,7 @@ print "wrote: exp-apx.tex\n";
 
 open BODY, ">exp-body.tex" or die $!;
 open SCRIPT, ">generate_table1" or die $!;
+open UNSAFE, ">runall_unsafe" or die $!;
 # print BODY "     ";
 # foreach my $tool (@RUNDEFINITIONS) {
 #     print BODY " & \\multicolumn{3}{|c||}{$run2tool{$tool}}";
@@ -305,13 +306,18 @@ foreach my $b (sort keys %$d) {
     $newOverTrans++ if $d->{$b}->{BEST_DRIFTEV}->{res} eq 'true' && $d->{$b}->{BEST_TRANS}->{res} ne 'true';
     $benchCount++;
     # script for drift and evdrift
-    print SCRIPT "# Drift on $b:\n".cfg2cmd($b,$d->{$b}->{BEST_TRANS}->{rd});
-    print SCRIPT "# evDrift on $b:\n".cfg2cmd($b,$d->{$b}->{BEST_DRIFTEV}->{rd});
+    print SCRIPT "# Drift on $b:\n".cfg2cmd('',$b,$d->{$b}->{BEST_TRANS}->{rd});
+    print SCRIPT "# evDrift on $b:\n".cfg2cmd('',$b,$d->{$b}->{BEST_DRIFTEV}->{rd});
+    #print UNSAFE "# Drift on $b:\n".cfg2cmd('unsafe/',$b,$d->{$b}->{BEST_TRANS}->{rd});
+    #print UNSAFE "# evDrift on $b:\n".cfg2cmd('unsafe/',$b,$d->{$b}->{BEST_DRIFTEV}->{rd});
+    print UNSAFE cfg2cmd('unsafe/',$b,$d->{$b}->{BEST_DRIFTEV}->{rd});
 }
 close BODY;
 close SCRIPT;
+close UNSAFE;
 print "wrote: exp-body.tex\n";
 print "wrote: generate_table1\n";
+print "wrote: runall_unsafe\n";
 
 
 
@@ -394,9 +400,9 @@ foreach my $b (sort keys %$d) {
     #
     $newTPOverNoTPevDrift++ if $d->{$b}->{BEST_TPON_EVDRIFT}->{res} eq 'true' && $d->{$b}->{BEST_TPOFF_EVDRIFT}->{res} ne 'true';
     # script for tp-vs-noTP
-    print SCRIPT "# Drift + Trace partitioning $b:\n".cfg2cmd($b,$d->{$b}->{BEST_TPON_DRIFT}->{rd});
-    print SCRIPT "# evDrift without Trace partitioning $b:\n".cfg2cmd($b,$d->{$b}->{BEST_TPOFF_EVDRIFT}->{rd});
-    print SCRIPT "# evDrift + Trace partitioning $b:\n".cfg2cmd($b,$d->{$b}->{BEST_TPOFF_EVDRIFT}->{rd});
+    print SCRIPT "# Drift + Trace partitioning $b:\n".cfg2cmd('',$b,$d->{$b}->{BEST_TPON_DRIFT}->{rd});
+    print SCRIPT "# evDrift without Trace partitioning $b:\n".cfg2cmd('',$b,$d->{$b}->{BEST_TPOFF_EVDRIFT}->{rd});
+    print SCRIPT "# evDrift + Trace partitioning $b:\n".cfg2cmd('',$b,$d->{$b}->{BEST_TPOFF_EVDRIFT}->{rd});
 }
 close TP;
 close SCRIPT;
@@ -425,6 +431,9 @@ print STATS join("\n", (
    ('\newcommand\expTPSpeedupDrift{'.sprintf("%0.1f", geometric_mean(@geos_notp_drift)/geometric_mean(@geos_tp_drift)).'}'),
    ('\newcommand\expTPSpeedupevDrift{'.sprintf("%0.1f", geometric_mean(@geos_notp_evdrift)/geometric_mean(@geos_tp_evdrift)).'}'),
    ('\newcommand\expTPNew{'.$newTPOverNoTPevDrift.'}'),
+   "% Overview 1st example:",
+   ('\newcommand\expBestOverviewEVDrift{'.sprintf("%0.1f", $d->{overview1}->{BEST_DRIFTEV}->{cpu}).'}'),
+   ('\newcommand\expBestOverviewTrans{'.sprintf("%0.1f", $d->{overview1}->{BEST_TRANS}->{cpu}).'}'),
    "% Overview temperature example:",
    ('\newcommand\expBestTempEVDrift{'.sprintf("%d", $d->{temperature}->{BEST_DRIFTEV}->{cpu}).'}'),
    ('\newcommand\expBestTempTrans{'.sprintf("%d", $d->{temperature}->{BEST_TRANS}->{cpu}).'}'),

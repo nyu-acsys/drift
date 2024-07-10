@@ -1,0 +1,18 @@
+(* Disjunctive *)
+
+QSet   = [0;1;2;3]; 
+
+delta  = fun evx (q, acc) -> 
+       	 if ((q = 0) && (evx > 0)) then (1, evx)
+    else if ((q = 0) && (evx < 0)) then (2, evx)
+    (* q1=heating *)
+    else if ((q = 1) && (evx > acc)) then (1, evx)
+    (* q2=cooling *)
+    else if ((q = 2) && (evx < acc)) then (2, evx)
+    else (3, evx);
+
+IniCfg = (0, 0);
+
+(* if event is pos, x must  be even ; *)
+assert = fun (q, acc) -> (q < 3);
+

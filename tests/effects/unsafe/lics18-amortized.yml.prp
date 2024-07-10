@@ -1,0 +1,14 @@
+QSet = [0;1];
+
+(* [default state, error state] *)
+
+delta = fun evx (q, (enq, deq, tick)) ->
+    if (q=0 && evx = 0) then (q, (enq+1, deq, tick))
+    else if (q=0 && evx = 1) then (q, (enq, deq+1, tick))
+    else if (q=0 && evx = 2) then (q, (enq, deq, tick+2))
+    else (1, (enq, deq, tick));
+
+IniCfg = (0, (0,0,0));
+
+assertFinal = fun (q, (enq, deq, tick)) -> q=0 && tick = enq+prefl2 && tick = deq-prefl1;
+(* assertFinal = fun (q, (enq, deq, tick)) -> q=0 && tick = enq+prefl2; *)

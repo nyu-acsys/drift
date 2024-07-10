@@ -1,0 +1,14 @@
+QSet   = [0;1;2;3]; 
+
+(* [stable state, consumer state, producer state, error state] *)
+
+delta  = fun evx (q, (budget, stock)) -> 
+    if (q=0 && evx > 0 && evx < 3) then (evx, (budget, stock))
+    else if (q=1 && evx<>0) then (q, ((budget-evx), stock))
+    else if (q=2 && evx<>0) then (q, (budget, (stock-evx)))
+    else if ((q=1||q=2) && evx=0) then (0, (budget, stock))
+    else (3, (budget, stock));
+
+IniCfg = (0, (0,0));
+
+assert = fun (q, (budget, stock)) -> q < 3 && budget >=0 && stock >=0 && stock >= budget;

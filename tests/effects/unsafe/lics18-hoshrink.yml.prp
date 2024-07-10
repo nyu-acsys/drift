@@ -1,0 +1,10 @@
+(* Dependent *)
+ 
+QSet   = [0]; 
+ 
+delta  = fun evx (q, acc) -> (q, (acc-evx));
+ 
+IniCfg = (0, 0);
+
+assertFinal = fun (q, acc) -> (acc = prefgl_t/prefgl_d);
+ 

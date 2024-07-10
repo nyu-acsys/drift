@@ -1,0 +1,27 @@
+(* 
+ * Abstraction of an auction smart contract running on blockchain:
+ * "The property states that if N users place a bid and the auction has ended, then there will be N-1 successful refunds."
+ * 
+ * encoding of events: bid(1), close(2), refund(3)
+ * 
+ * Automaton property
+ *   keep track of number of bids 
+ * 
+ * (q0)--[bid; bidders++]-->(q0)
+ * (q0)--[close]-->(q1)
+ * (q1)--[refund; refunds--]-->(q1)
+ *)
+
+QSet = [0; 1; 2];
+
+delta = fun evx (q, (bidders, refunds)) ->
+          if (q = 0 && evx = 1) then (q, (bidders+1, refunds))
+	  else if (q = 0 && evx = 2) then (1, (bidders, refunds))
+	  else if (q = 1 && evx = 3) then (1, (bidders, refunds+1))
+	  else (2, (bidders, refunds));
+
+IniCfg = (0, (0,0));
+
+assert = fun (q, (bidders, refunds)) -> q < 2;
+
+assertFinal = fun (q, (bidders, refunds)) -> (q = 0) || (q = 1 && refunds = bidders - 1);

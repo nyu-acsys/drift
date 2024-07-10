@@ -1,0 +1,14 @@
+(*
+   Event values increase [1;2;5;...]
+   Save previous value
+   q1 is the error state
+*)
+QSet   = [0;1]; 
+
+delta  = fun evx (q, acc) -> 
+  if   (q = 0 && evx < acc) then (0, evx)
+  else (1, 0);
+
+IniCfg = (0, 0);
+
+assertFinal = fun (q, acc) -> q = 0;
