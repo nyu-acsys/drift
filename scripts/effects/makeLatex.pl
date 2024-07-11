@@ -158,17 +158,14 @@ sub newBest {
     $d->{$bench}->{$BEST}->{mem}  = $d->{$bench}->{$rd}->{mem};
     $d->{$bench}->{$BEST}->{rd}   = $rd;
 }
-# compute the best (non-mochi) run set
+# compute the best (non-mochi) run set (for Table 1)
 foreach my $bench (sort keys %$d) {
-    # choose a starting point for both BEST_TRANS and BEST_DRIFTEV
-    # my $someRD = (grep($_ !~ /mochi/ && $_ =~ /trans/,keys %{$d->{$bench}}))[0];
-    # newBest('BEST_TRANS',$bench,$someRD);
-    # my $someRD = (grep($_ !~ /mochi/ && $_ !~ /trans/,keys %{$d->{$bench}}))[0];
-    # newBest('BEST_DRIFTEV',$bench,$someRD);
     my $done = 0;
     foreach my $rd (keys %{$d->{$bench}}) {
         next if $rd =~ /BEST/;
         next if $rd =~ /mochi/i;
+        # For Drift+Trans, don't allow Trace Partitioning
+        next if $rd =~ /TRtrans/ && $rd =~ /TPtrue/;
 #        next unless $d->{$bench}->{$rd}->{res} eq 'true';
         # which are we improving?
         my $BEST = ($rd =~ /trans/i ? 'BEST_TRANS' : 'BEST_DRIFTEV');
@@ -186,23 +183,7 @@ foreach my $bench (sort keys %$d) {
         } else {
             # warn "not better\n";
         }
-    }
-    # # if the best Drift didn't verify it, use specific rd:
-    # if ($d->{$bench}->{BEST_DRIFT}->{res} ne 'true') {
-    #     my $rd = $d->{$bench}->{BEST_DRIFT}->{rd};
-    #     foreach my $ord (keys %{$d->{$bench}}) {
-    #         next unless $ord =~ /TRtrans/; # Drift
-
-    #     }
-    #     my @rds = grep { $d->{$bench}->{$_}->{rd} =~ /TRtrans/ } keys %{$d->{$bench}};
-    #     die Dumper(\@rds);
-    #     #my $rd = 'NOTE'.$
-    # }
-    # # if the best evDrift didn't verify it, use specific rd:
-    # if ($d->{$bench}->{BEST_DRIFTEV}->{res} ne 'true') {
-        
-    # }
-    
+    }    
 }
 #print Dumper($d);
 
