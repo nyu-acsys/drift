@@ -7,9 +7,9 @@
 ./drift.exe -file tests/effects/unsafe/higher-order.ml -prop tests/effects/unsafe/higher-order.yml.prp -ev-trans direct -trace-len 0 -if-part false -out 0 -domain Polka_ls -thold true
 ./drift.exe -file tests/effects/unsafe/last-ev-even.ml -prop tests/effects/unsafe/last-ev-even.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain PolkaGrid -thold false
 ./drift.exe -file tests/effects/unsafe/lics18-amortized.ml -prop tests/effects/unsafe/lics18-amortized.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Polka_ls -thold true
-./drift.exe -file tests/effects/unsafe/lics18-hoshrink.ml -prop tests/effects/unsafe/lics18-hoshrink.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Octagon -thold true
+./drift.exe -file tests/effects/unsafe/lics18-hoshrink.ml -prop tests/effects/unsafe/lics18-hoshrink.yml.prp -ev-trans direct -trace-len 0 -if-part false -out 0 -domain Octagon -thold true
 ./drift.exe -file tests/effects/unsafe/lics18-web.ml -prop tests/effects/unsafe/lics18-web.yml.prp -ev-trans direct -trace-len 0 -if-part false -out 0 -domain Polka_ls -thold true
-./drift.exe -file tests/effects/unsafe/market.ml -prop tests/effects/unsafe/market.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain Octagon -thold true
+./drift.exe -file tests/effects/unsafe/market.ml -prop tests/effects/unsafe/market.yml.prp -ev-trans direct -trace-len 0 -if-part false -out 0 -domain Polka_st -thold true
 ./drift.exe -file tests/effects/unsafe/max-min.ml -prop tests/effects/unsafe/max-min.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain Polka_ls -thold true
 ./drift.exe -file tests/effects/unsafe/monotonic.ml -prop tests/effects/unsafe/monotonic.yml.prp -ev-trans direct -trace-len 1 -if-part false -out 0 -domain Polka_ls -thold true
 ./drift.exe -file tests/effects/unsafe/order-irrel.ml -prop tests/effects/unsafe/order-irrel.yml.prp -ev-trans direct -trace-len 1 -if-part true -out 0 -domain PolkaGrid -thold false

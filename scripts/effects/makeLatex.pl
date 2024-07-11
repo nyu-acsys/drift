@@ -57,7 +57,7 @@ sub cfg2cmd {
     if ($cfg =~ /TL([^-]+)-TP([^-]+)-TH([^-]+)-DM([^-]+)-TR([^-]+)\.effects/) {
         my ($tl,$tp,$th,$dm,$tr) = ($1,$2,$3,$4,$5);
         return join(' ', (
-            'drift.exe',
+            './drift.exe',
             '-file', "tests/effects/$subdir$benchname.ml",
             '-prop', "tests/effects/$subdir$benchname.yml.prp",
             '-ev-trans', $tr,
@@ -242,6 +242,7 @@ open UNSAFE, ">runall_unsafe" or die $!;
 my @geos_mochi; my @geos_evtrans; my @geos_direct;
 my $newOverMochi = 0; my $newOverTrans = 0; my $benchCount = 0; $ct = 1;
 my $driftVerified = 0; my $evdriftVerified = 0;
+my @bothSolved;
 #print Dumper($d->{overview1});
 foreach my $b (sort keys %$d) {
     # next if $b =~ /auction/;
@@ -275,17 +276,19 @@ foreach my $b (sort keys %$d) {
     printf "best EDrift result for %-40s : %-10s : %s\n", $b, $d->{$b}->{BEST_DRIFTEV}->{res}, $d->{$b}->{BEST_DRIFTEV}->{rd};
     # save the runtimes for statistics
     push @geos_evtrans, $d->{$b}->{BEST_TRANS}->{cpu}
-      if $d->{$b}->{BEST_TRANS}->{cpu} < 900 && $d->{$b}->{BEST_TRANS}->{cpu} > 0;
+      if $d->{$b}->{BEST_TRANS}->{res} eq 'true' && $d->{$b}->{BEST_TRANS}->{cpu} < 900 && $d->{$b}->{BEST_TRANS}->{cpu} > 0;
     push @geos_mochi, $d->{$b}->{$MOCHI_RD}->{cpu}
-      if $d->{$b}->{$MOCHI_RD}->{cpu} < 900 && $d->{$b}->{$MOCHI_RD}->{cpu} > 0;
+      if $d->{$b}->{$MOCHI_RD}->{res} eq 'true' && $d->{$b}->{$MOCHI_RD}->{cpu} < 900 && $d->{$b}->{$MOCHI_RD}->{cpu} > 0;
     push @geos_direct, $d->{$b}->{BEST_DRIFTEV}->{cpu}
-      if $d->{$b}->{BEST_DRIFTEV}->{cpu} < 900 && $d->{$b}->{BEST_DRIFTEV}->{cpu} > 0;
+      if $d->{$b}->{BEST_DRIFTEV}->{res} eq 'true' && $d->{$b}->{BEST_DRIFTEV}->{cpu} < 900 && $d->{$b}->{BEST_DRIFTEV}->{cpu} > 0;
     #
     $driftVerified++ if $d->{$b}->{BEST_TRANS}->{res} eq 'true'; 
     $evdriftVerified++ if $d->{$b}->{BEST_DRIFTEV}->{res} eq 'true'; 
     $newOverMochi++ if $d->{$b}->{BEST_DRIFTEV}->{res} eq 'true' && $d->{$b}->{$MOCHI_RD}->{res} ne 'true';
     $newOverTrans++ if $d->{$b}->{BEST_DRIFTEV}->{res} eq 'true' && $d->{$b}->{BEST_TRANS}->{res} ne 'true';
     $benchCount++;
+    # remember which ones were solved by Drift for speedup calculation
+    push @bothSolved, $b if $d->{$b}->{BEST_TRANS}->{res} eq 'true' && $d->{$b}->{BEST_DRIFTEV}->{res} eq 'true';
     # script for drift and evdrift
     print SCRIPT "# Drift on $b:\n".cfg2cmd('',$b,$d->{$b}->{BEST_TRANS}->{rd});
     print SCRIPT "# evDrift on $b:\n".cfg2cmd('',$b,$d->{$b}->{BEST_DRIFTEV}->{rd});
@@ -300,9 +303,13 @@ print "wrote: exp-body.tex\n";
 print "wrote: generate_table1\n";
 print "wrote: runall_unsafe\n";
 
-
-
-
+# calculate the speedup on the ones that Drift and evDrift BOTH solved
+my @driftTimes  = map { $d->{$_}->{BEST_TRANS}->{cpu} } @bothSolved;
+my @evDiftTimes = map { $d->{$_}->{BEST_DRIFTEV}->{cpu} } @bothSolved;
+# print "GM of evtrans:".Dumper(\@geos_evtrans, 0+@geos_evtrans);
+# print "GM of direct:".Dumper(\@geos_direct, 0+@geos_direct);
+# print "times:".Dumper(\@driftTimes, \@evDiftTimes);
+my $speedupEVoverDrift = geometric_mean(@driftTimes)/geometric_mean(@evDiftTimes);
 
 
 
@@ -397,8 +404,9 @@ print STATS join("\n", (
    ('\newcommand\expGMevtrans{'.geometric_mean(@geos_evtrans).'}'),
    ('\newcommand\expGMmochi{'.geometric_mean(@geos_mochi).'}'),
    ('\newcommand\expGMdirect{'.geometric_mean(@geos_direct).'}'),
-   ('\newcommand\expSpeedupEvtrans{'.sprintf("%0.1f", geometric_mean(@geos_evtrans)/geometric_mean(@geos_direct)).'}'),
-   ('\newcommand\expSpeedupMochi{'.sprintf("%0.1f", geometric_mean(@geos_mochi)/geometric_mean(@geos_direct)).'}'),
+   ('\newcommand\expSpeedupEVoverDrift{'.$speedupEVoverDrift.'}'),
+#   ('\newcommand\expSpeedupEvtrans{'.sprintf("%0.1f", geometric_mean(@geos_evtrans)/geometric_mean(@geos_direct)).'}'),
+#   ('\newcommand\expSpeedupMochi{'.sprintf("%0.1f", geometric_mean(@geos_mochi)/geometric_mean(@geos_direct)).'}'),
    ('\newcommand\expNewOverMochi{'.$newOverMochi.'}'),
    ('\newcommand\expNewOverTrans{'.$newOverTrans.'}'),
    ('\newcommand\expBenchCount{'.$benchCount.'}'),
