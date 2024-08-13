@@ -28,6 +28,7 @@ let ev_trans = ref false
 let prop_file = ref "" 
 
 let convert_to_cps = ref false
+let convert_to_tuple = ref false
 
 let usage = "usage: " ^ Sys.argv.(0) ^ " [-file <file name>] [-domain <domain name>] [-thold <true/false>] [-delay-wid <num>] [-nar <true/false>] [-prop <file name>] [-ev-trans <true/false>] [-cps-convert <true/false>] [-out <num>] [-debug] [-bt]"
 
@@ -51,6 +52,8 @@ let cmd_options_spec =
    ("-if-part", Arg.String (fun s -> if s = "true" then if_part:=true else if_part:=false), ": Partition traces on if tokens");
    ("-cps-convert", Arg.String (fun s -> if s = "true" then (convert_to_cps:=true; ev_trans := false) 
                                       else convert_to_cps:=false), ": Convert prog to CPS");
+   ("-tuple-convert", Arg.String (fun s -> if s = "true" then (convert_to_tuple:=true; ev_trans := false) 
+                                      else convert_to_tuple:=false), ": Convert prog to tuple-encoding of the product program");
   ]
 
 (* Parse auxiliary 'command line options' that are set during parsing of the input file *)

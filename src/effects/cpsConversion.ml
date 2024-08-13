@@ -11,7 +11,7 @@ let evasstfn_var = "ev_assert"
 let parse_aut_spec file = 
   let chan = open_in file in
   let lexbuf = Lexing.from_channel chan in
-  let a = EffectAutomataGrammar.top EffectAutomataLexer.token lexbuf in 
+  let a = aut_spec_of_ml (EffectAutomataGrammar.top EffectAutomataLexer.token lexbuf) false in 
   let a_raw = (seek_in chan 0; really_input_string chan (in_channel_length chan)) in
   let _ = close_in chan in
   (a_raw, a)
@@ -138,10 +138,6 @@ let rec cps_convert: term -> qvar -> accvar -> (qvar -> accvar -> xvar -> kterm)
          KLetVal (xunit, KConst (UnitLit),
                   KAssert (List.hd res', (tr_k q' acc' [xunit]))))
   | TupleLst([e1;e2], _) -> 
-     let k1, q1, acc1 = fresh_k_q_acc () in
-     let res1 = fresh_var "res" in
-     let k2, q2, acc2 = fresh_k_q_acc () in
-     let res2 = fresh_var "res" in 
      cps_convert e1 q acc (fun q1' acc1' res1' -> 
          cps_convert e2 q1' acc1' (fun q2' acc2' res2' -> 
              tr_k q2' acc2' (res1' @ res2')))
@@ -149,8 +145,6 @@ let rec cps_convert: term -> qvar -> accvar -> (qvar -> accvar -> xvar -> kterm)
      let x = fresh_var "x" in
      let zero = fresh_var "x" in
      let nondet_bool = fresh_var "bool_random" in
-     let k0, q0, acc0 = fresh_k_q_acc () in
-     let res0 = fresh_var "res" in
      KLetVal (x, KRandomInt, 
               KLetVal (zero, KConst (Integer 0), 
                        KLetBinOp (nondet_bool, Ge, x, zero, (tr_k q acc [nondet_bool]))))  

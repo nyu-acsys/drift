@@ -173,7 +173,7 @@ let tr (e: term) (a: term) (acfg: term) (asst: term option) (asstFinal: term opt
 let parse_aut_spec file = 
   let chan = open_in file in
   let lexbuf = Lexing.from_channel chan in
-  let a =  EffectAutomataGrammar.top EffectAutomataLexer.token lexbuf in
+  let a =  aut_spec_of_ml (EffectAutomataGrammar.top EffectAutomataLexer.token lexbuf) false in
   let _ = close_in chan in
   a
 

@@ -331,3 +331,59 @@ and pr_cps_kval ppf = function
   | KFn (k, q, acc, x, def) -> 
      Format.fprintf ppf "@[<v 2>fun %s %s %a %s ->@;@[%a@]@]" k q pr_cps_acc acc (String.concat " " x) pr_cps_kterm def
   | KRandomInt -> Format.fprintf ppf "@[Random.int(0)@]"
+
+
+(* ML print *)
+
+let pr_ml_op ppf op =
+  match op with 
+  | Mod -> Format.fprintf ppf "%s" "mod"
+  | Modc -> Format.fprintf ppf "%s" "mod"
+  | _ -> pr_op ppf op
+
+let rec pr_mlterm ppf = function
+  | MlConst c -> Format.fprintf ppf "%a" pr_const c
+  | MlVar x -> Format.fprintf ppf "%s" x
+  | MlApp (e1, e2) -> Format.fprintf ppf "(%a %a)" pr_mlterm e1 pr_mlterm e2
+  | MlRec (None, xs, e) -> Format.fprintf ppf "(fun %a -> @[<v 2>%a@])" 
+                            pr_mlrec_params xs pr_mlterm e
+  | MlRec (Some f, xs, e) -> Format.fprintf ppf "(rec fun %s %a -> @[<v 2>%a@])" 
+                              f pr_mlrec_params xs pr_mlterm e
+  | MlIte (e0, e1, e2) -> Format.fprintf ppf "if @[%a@] then @[<v>%a@] @;else @[<v>%a@]"
+                           pr_mlterm e0 pr_mlterm e1 pr_mlterm e2
+  | MlBinOp (bop, e1, e2) -> Format.fprintf ppf "(@[%a@] %a @[%a@])" 
+                              pr_mlterm e1 pr_ml_op bop pr_mlterm e2
+  | MlUnOp (uop, e1) -> Format.fprintf ppf "(%a @[%a@])" pr_unop uop pr_mlterm e1
+  | MlNonDet -> Format.fprintf ppf "*"
+  | MlLetIn (name, e1, e2) -> Format.fprintf ppf "let @[%s@] = @[%a@] in @;@[%a@]"
+                               name pr_mlterm e1 pr_mlterm e2
+  | MlPatMat (e, pcs) -> Format.fprintf ppf "(@[<v 2>match @[%a@] with @;@[<v 2>%a@]@])"
+                          pr_mlterm e pr_mlcases pcs
+  | MlTupleLst xs -> Format.fprintf ppf "@[(%a)@]" pr_mltuple xs
+  | MlGDefs (ges, Some main) -> Format.fprintf ppf "@[<v>%a @.@.@.%a@]"
+                                 pr_mlgdefs ges pr_mlterm main
+  | MlGDefMain (MlRec (_, xs, def)) -> Format.fprintf ppf "@[<v>let main %a = %a@]"
+                                           pr_mlrec_params xs pr_mlterm def
+  | MlAssert (e, _) -> Format.fprintf ppf "@[assert %a@]" pr_mlterm e
+  | _ -> raise (Invalid_argument "Unexpected expression in the translated program")
+and pr_mlrec_params ppf ps = Format.pp_print_list 
+                               ~pp_sep:(fun ppf () -> Format.fprintf ppf " ") 
+                               (fun ppf x -> Format.fprintf ppf "%a" pr_mlterm x) ppf ps
+and pr_mltuple ppf xs = Format.pp_print_list 
+                          ~pp_sep:(fun ppf () -> Format.fprintf ppf ",")
+                          (fun ppf x -> Format.fprintf ppf "%a" pr_mlterm x) ppf xs 
+and pr_mlgdefs ppf ges = Format.pp_print_list
+                           ~pp_sep:(fun ppf () -> Format.fprintf ppf "@.@.@.")
+                           (fun ppf ge -> Format.fprintf ppf "@[<v>%a@]" pr_mlgdef ge) ppf ges
+and pr_mlgdef ppf (name, e) = 
+  match e with
+  | MlRec (None, xs, e') -> Format.fprintf ppf "let %s %a = %a" 
+                             name pr_mlrec_params xs pr_mlterm e'
+  | MlRec (Some f, xs, e') -> Format.fprintf ppf "let rec %s %a = %a" 
+                             f pr_mlrec_params xs pr_mlterm e'
+  | _ -> Format.fprintf ppf "let %s %a" name pr_mlterm e 
+  (* | _ -> raise (Invalid_argument "Unexpected expression in the translated program") *)
+and pr_mlcases ppf pcs = Format.pp_print_list
+                           ~pp_sep:(fun ppf () -> Format.fprintf ppf "@;")
+                           (fun ppf (MlCase (p, e)) -> Format.fprintf ppf "@[@[%a@] -> @[%a@]"
+                                                      pr_mlterm p pr_mlterm e) ppf pcs

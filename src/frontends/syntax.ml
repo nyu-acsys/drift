@@ -403,10 +403,10 @@ let mk_rec f x e =
     if StringSet.mem f (fv e) then Some (f, "") else None
   in
   Rec (f_opt, (x, ""), e, "")
-let mk_ite e0 e1 e2 = Ite (e0, e1, e2, "")
+(* let mk_ite e0 e1 e2 = Ite (e0, e1, e2, "") *)
 
 let mk_op op e1 e2 = BinOp (op, e1, e2, "")
-let mk_unop uop e1 = UnOp (uop, e1, "")
+(* let mk_unop uop e1 = UnOp (uop, e1, "") *)
 
 let mk_let_in x def e =
   match x with
@@ -441,7 +441,8 @@ let mk_let_main x def params =
   | _ ->
       let e =
         let lst =
-          List.rev_map (function Var (x, _) -> x | _ -> failwith "parameters of main function can only be variables")
+          List.rev_map (function Var (x, _) -> x 
+                               | _ -> failwith "parameters of main function can only be variables")
             params
         in
         mk_pre_apps lst (mk_var x')
@@ -594,3 +595,112 @@ and kval =
   | KFn of kvar * qvar * accvar * xvar * kterm
   | KRandomInt
 
+(****************************)
+(* OCaml AST                *)
+(****************************)
+type mlterm =
+  
+  | MlConst of value                                (* i (int constant) *)
+  | MlVar of var                                    (* x (variable) *)
+  | MlApp of mlterm * mlterm                        (* t1 t2 (function application) *)
+  | MlUnOp of unop * mlterm                         (* uop t (unary operator) *)
+  | MlBinOp of binop * mlterm * mlterm              (* t1 bop t2 (binary infix operator) *)
+  | MlNonDet                                        (* To introduce non-determinism *)
+  | MlPatMat of mlterm * mlpatcase list             (* match t1 with t2 -> t3 | ... *)
+  | MlIte of mlterm * mlterm * mlterm               (* if t1 then t2 else t3 (conditional) *)
+  | MlRec of var option * mlterm list * mlterm      (*lambda and recursive function*)
+  | MlEvent of mlterm                               (* event *)
+  | MlAssert of mlterm * pos
+  | MlTupleLst of mlterm list                       (* tuple list *)
+  | MlLetIn of var * mlterm * mlterm
+  | MlGDefs of ((var * mlterm) list * (mlterm option)) (* list of gdefs & one distinguished "main" *) 
+  | MlGDefMain of mlterm
+and mlpatcase = 
+  | MlCase of mlterm * mlterm
+
+let rec term_of_ml = function
+  | MlConst k -> Const (k, "")
+  | MlVar x -> Var (x, "")
+
+  | MlRec (None, xs, def) -> mk_lambdas (List.map term_of_ml xs) (term_of_ml def)
+  | MlRec (Some fn, xs, def) -> 
+     lam_to_mu fn (mk_lambdas (List.map term_of_ml xs) (term_of_ml def))
+
+  | MlApp (e1, e2) -> mk_app (term_of_ml e1) (term_of_ml e2)
+
+  | MlUnOp (uop, e) -> UnOp (uop, term_of_ml e, "")
+  | MlBinOp (bop, e1, e2) -> BinOp (bop, term_of_ml e1, term_of_ml e2, "")
+  | MlIte (cond, et, ef) -> Ite (term_of_ml cond, term_of_ml et, term_of_ml ef, "")
+  | MlNonDet -> NonDet ""
+
+  | MlLetIn (name, (MlRec (None, _, _) as f), e) ->
+     mk_let_in (Var (name, "")) (term_of_ml f) (term_of_ml e)
+  | MlLetIn (_, (MlRec (Some fn, _, _) as f), e) ->
+     mk_let_rec_in fn (term_of_ml f) (term_of_ml e)
+  | MlLetIn (name, e1, e2) ->
+     mk_let_in (Var (name, "")) (term_of_ml e1) (term_of_ml e2)
+
+  | MlEvent e -> mk_event (term_of_ml e)
+  | MlPatMat (e, pcs) -> PatMat (term_of_ml e, List.map patmat_of_ml pcs, "")
+
+  | MlAssert (e, pos) -> mk_assert (term_of_ml e) pos
+
+  | MlGDefs (ges, maybe_main) -> 
+     begin match maybe_main with
+     | None -> raise (Invalid_argument "Main is missing")
+     | Some main -> 
+        let prog = List.fold_left (fun eacc (name, e) -> MlLetIn (name, e, eacc)) main ges in
+        term_of_ml prog
+     end
+  | MlGDefMain e -> 
+     begin match e with 
+     | MlRec (None, xs, _) -> mk_let_main "main" (term_of_ml e) (List.map term_of_ml xs)
+     | _ -> raise (Invalid_argument "Main is missing")
+     end
+  | MlTupleLst es -> TupleLst (List.map term_of_ml es, "")
+and patmat_of_ml (MlCase (p, e)) = mk_pattern_case (term_of_ml p) (term_of_ml e)
+
+module SemActions = struct
+  let mk_const k = MlConst k
+  let mk_var x = MlVar x
+
+  let mk_app e1 e2 = MlApp (e1, e2)
+  let mk_assert e pos = MlAssert (e, pos)
+  let mk_unop (uop, e) = MlUnOp (uop, e)
+  let mk_binop (bop, e1, e2) = MlBinOp (bop, e1, e2)
+  let mk_nondet () = MlNonDet
+
+  let mk_tuple es = MlTupleLst es
+  let mk_ite (cond, et, ef) = MlIte (cond, et, ef)
+  
+  let mk_lambda fn_rec xs e = MlRec (fn_rec, xs, e)
+
+  let mk_gdef name fn_rec xs e = 
+    match name with
+    | MlVar name_ -> (name_, MlRec (fn_rec, xs, e))
+    | _ -> raise (Invalid_argument "Expected identifier")
+  
+  let mk_gdefs ge ges = match ges with 
+    | MlGDefs (ges, main) -> MlGDefs (ge::ges, main)
+    | _ -> raise (Invalid_argument "Constructor not supported")
+  let mk_gdef_main e = MlGDefs ([], Some (MlGDefMain e))  
+  
+  let mk_let_in name xs def e =
+    let name_ = match name with 
+      | MlVar name_ -> name_ 
+      | _ -> raise (Invalid_argument "Expected identifier")
+    in
+    match xs with 
+    | [] -> MlLetIn (name_, def, e)
+    | _ -> MlLetIn (name_, mk_lambda None xs def, e)
+  let mk_letrec_in fn xs def e = 
+    let fn_ = match fn with 
+      | MlVar fn_ -> fn_ 
+      | _ -> raise (Invalid_argument "Expected identifier")
+    in
+    MlLetIn (fn_, mk_lambda (Some fn_) xs def, e)
+  
+  let mk_event e = MlEvent e
+  let mk_patmat (e, pcs) = MlPatMat (e, pcs)
+  let mk_patcase p e = MlCase (p, e)
+end

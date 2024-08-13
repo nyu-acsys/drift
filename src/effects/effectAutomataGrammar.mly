@@ -46,7 +46,7 @@ let convert_var_name_apron_not_support s =
 %left MINUS
 %left TIMES DIV MOD
 
-%start <EffectAutomataSyntax.aut_spec> top
+%start <EffectAutomataSyntax.ml_aut_spec> top
 %%
 
 /* production rules */
@@ -83,7 +83,7 @@ asst_fun:
 exp:
   | c=const_exp { c }
   | x=var { x }
-  | EMPTYLIST { Const (IntList [], "") }
+  | EMPTYLIST { SSA.mk_const (IntList []) }
   | e=if_exp { e } 
   | e=tuple_exp { e }
   | e=binary_exp { e }
@@ -98,27 +98,27 @@ vars:
 var:
   | x=IDENT
       { let res_str = convert_var_name_apron_not_support x in 
-        Var (res_str, "") }
+        SSA.mk_var res_str }
 
 const_exp:
-  | i=INTCONST { Const (Integer i, "") }
+  | i=INTCONST { SSA.mk_const (Integer i) }
 
 tuple_exp:
-  | LPAREN e=exp COMMA es=separated_nonempty_list(COMMA, e=exp { e }) RPAREN { TupleLst (e::es, "") }
+  | LPAREN e=exp COMMA es=separated_nonempty_list(COMMA, e=exp { e }) RPAREN { SSA.mk_tuple (e::es) }
 
 %inline if_exp:
   | IF be=bool_exp THEN e1=exp ELSE e2=exp 
-      { Ite (be, e1, e2, "") }
+      { SSA.mk_ite (be, e1, e2) }
   | IF be=bool_exp THEN e1=exp 
-      { let else_term = Const (UnitLit, "") in
-        Ite (be, e1, else_term, "") }
+      { let else_term = SSA.mk_const UnitLit in
+        SSA.mk_ite (be, e1, else_term) }
 
 bool_exp: 
-  | e1=bool_exp bop=bool_op e2=bool_exp1 { BinOp (bop, e1, e2, "") } 
+  | e1=bool_exp bop=bool_op e2=bool_exp1 { SSA.mk_binop (bop, e1, e2) } 
   | e=bool_exp1 { e }
 
 bool_exp1:
-  | b=BOOLCONST { Const (Boolean b, "") }
+  | b=BOOLCONST { SSA.mk_const (Boolean b) }
   | e=comp_exp { e }
   | LPAREN e=bool_exp RPAREN { e }
 
@@ -127,7 +127,7 @@ bool_op:
   | OR { Or }
 
 comp_exp:
-  | e1=exp op=comp_op e2=exp { BinOp (op, e1, e2, "") } 
+  | e1=exp op=comp_op e2=exp { SSA.mk_binop (op, e1, e2) } 
 
 %inline comp_op:
   | EQ { Eq }
@@ -138,13 +138,13 @@ comp_exp:
   | GT { Gt }
 
 unary_exp:
-  | op=uop e=exp { UnOp (op, e, "") }
+  | op=uop e=exp { SSA.mk_unop (op, e) }
 
 %inline uop:
   | MINUS { UMinus }
 
 binary_exp:
-  | e1=exp op=bop e2=exp { BinOp (op, e1, e2, "") }
+  | e1=exp op=bop e2=exp { SSA.mk_binop (op, e1, e2) }
 
 %inline bop:
   | PLUS { Plus }

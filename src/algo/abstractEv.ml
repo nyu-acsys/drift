@@ -23,7 +23,7 @@ let program_pre_vars: relation_t VarDefMap.t ref = ref VarDefMap.empty
 let parse_aut_spec file = 
   let chan = open_in file in
   let lexbuf = Lexing.from_channel chan in
-  let a = EffectAutomataGrammar.top EffectAutomataLexer.token lexbuf in 
+  let a = aut_spec_of_ml (EffectAutomataGrammar.top EffectAutomataLexer.token lexbuf) true in 
   let _ = close_in chan in
   a
 

@@ -331,17 +331,32 @@ let _ =
         CpsConversion.(property_spec := 
                          if !Config.effect_on then Some (parse_property_spec !Config.prop_file)
                          else None);
-        (List.iter (fun (prog, e) ->
-            CpsConversion.run e
-            |> Format.fprintf Format.std_formatter 
-                 ("(* CPS conversion. Source Program: @.@.@[%s@]@.@." ^^
-                    "Property: @.@.@[%s@]@.@.*)" ^^ 
+        (List.iter (fun (prog, (_, e)) ->
+             CpsConversion.run e
+             |> Format.fprintf Format.std_formatter 
+                  ("(* CPS conversion. Source Program: @.@.@[%s@]@.@." ^^
+                     "Property: @.@.@[%s@]@.@.*)" ^^ 
+                       "@.@.@[%a@]")
+                  prog (Option.map fst !CpsConversion.property_spec |> Option.value ~default:"") 
+                  pr_cps_kterm) t) 
+      end
+    else if !Config.convert_to_tuple then begin
+        TupleOCamlTranslation.(property_spec := 
+                                 if !Config.effect_on then 
+                                   Some (parse_property_spec !Config.prop_file)
+                                 else None);
+        (List.iter (fun (prog, (mle, _)) ->
+             TupleOCamlTranslation.run mle
+             |> Format.fprintf Format.std_formatter
+                  ("(* Tuple Encoding of Product Prog. Source Program: @.@.@[%s@]@.@." ^^
+                     "Property: @.@.@[%s@]@.@.*)" ^^
                       "@.@.@[%a@]")
-                 prog (Option.map fst !CpsConversion.property_spec |> Option.value ~default:"") 
-                 pr_cps_kterm) t) 
+                  prog (Option.map fst !TupleOCamlTranslation.property_spec
+                        |> Option.value ~default:"")
+                  pr_mlterm) t) 
       end
     else begin
-        List.iter (fun (_, e) -> 
+        List.iter (fun (_, (_, e)) -> 
             let el = e 
                      |> simplify
                      |> (if !Config.effect_on && !Config.ev_trans then
