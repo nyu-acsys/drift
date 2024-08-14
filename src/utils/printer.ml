@@ -242,15 +242,21 @@ let rec str_toplist str = function
 | [(vr,ty)] -> str^"("^vr^", "^(str_of_type ty)^")"
 | (vr,ty)::l -> let s' = str^"("^vr^", "^(str_of_type ty)^"); " in (str_toplist s' l)
 
-let pr_pre_exp ppf = function
-  | {name = n; dtype = d; left = l; right = r} -> 
-    if l = "top" then Format.fprintf ppf "{%s:%s | %s}" n (type_to_string d) l
-    else Format.fprintf ppf "{%s:%s | %s = %s}" n (type_to_string d) l r
+let pr_pre_exp as_type ppf = function
+  | {name = n; dtype = d; left = l; right = r} ->
+     if as_type then begin
+       if l = "top" then Format.fprintf ppf "%s(*-:{%s:%s | %s}*)" 
+                           (mltype_of_inputType d) n (type_to_string d) l
+       else Format.fprintf ppf "%s(*-:{%s:%s | %s = %s}*)" 
+              (mltype_of_inputType d) n (type_to_string d) l r end
+     else begin
+       if l = "top" then Format.fprintf ppf "{%s:%s | %s}" n (type_to_string d) l
+       else Format.fprintf ppf "{%s:%s | %s = %s}" n (type_to_string d) l r end
 
 let pr_pre_def_vars ppf = 
   let rec pr_ll = function
   | [] -> ()
-  | (k, ls)::tl -> Format.fprintf ppf "@[<2>%s@ ->@ %a@]\n" k pr_pre_exp ls; pr_ll tl
+  | (k, ls)::tl -> Format.fprintf ppf "@[<2>%s@ ->@ %a@]\n" k (pr_pre_exp false) ls; pr_ll tl
   in
   let ls = VarDefMap.bindings !pre_vars in
   pr_ll ls
@@ -345,30 +351,37 @@ let rec pr_mlterm ppf = function
   | MlConst c -> Format.fprintf ppf "%a" pr_const c
   | MlVar x -> Format.fprintf ppf "%s" x
   | MlApp (e1, e2) -> Format.fprintf ppf "(%a %a)" pr_mlterm e1 pr_mlterm e2
-  | MlRec (None, xs, e) -> Format.fprintf ppf "(fun %a -> @[<v 2>%a@])" 
+  | MlRec (None, xs, e) -> Format.fprintf ppf "(@[<v 2>fun %a ->@;%a@])" 
                             pr_mlrec_params xs pr_mlterm e
-  | MlRec (Some f, xs, e) -> Format.fprintf ppf "(rec fun %s %a -> @[<v 2>%a@])" 
-                              f pr_mlrec_params xs pr_mlterm e
-  | MlIte (e0, e1, e2) -> Format.fprintf ppf "if @[%a@] then @[<v>%a@] @;else @[<v>%a@]"
+  | MlRec (Some f, xs, e) -> Format.fprintf ppf "(@[<v 2>let rec %s %a =@;%a@ in %s@])" 
+                              f pr_mlrec_params xs pr_mlterm e f
+  | MlIte (e0, e1, e2) -> Format.fprintf ppf 
+                           "@[<v>@[<hv 2>if@ @[%a@]@ then@;@[<v>%a@]@]@;@[<hv 2>else@;@[<v>%a@]@]@]"
                            pr_mlterm e0 pr_mlterm e1 pr_mlterm e2
   | MlBinOp (bop, e1, e2) -> Format.fprintf ppf "(@[%a@] %a @[%a@])" 
                               pr_mlterm e1 pr_ml_op bop pr_mlterm e2
   | MlUnOp (uop, e1) -> Format.fprintf ppf "(%a @[%a@])" pr_unop uop pr_mlterm e1
-  | MlNonDet -> Format.fprintf ppf "*"
-  | MlLetIn (name, e1, e2) -> Format.fprintf ppf "let @[%s@] = @[%a@] in @;@[%a@]"
+  | MlNonDet -> Format.fprintf ppf "(nondet_op)"
+  | MlLetIn (name, e1, e2) -> Format.fprintf ppf "@[<v>let @[%s@] = @[%a@] in @;@[%a@]@]"
                                name pr_mlterm e1 pr_mlterm e2
-  | MlPatMat (e, pcs) -> Format.fprintf ppf "(@[<v 2>match @[%a@] with @;@[<v 2>%a@]@])"
+  | MlPatMat (e, pcs) -> Format.fprintf ppf "(@[<v>match @[%a@] with @;@[<v 2>%a@]@])"
                           pr_mlterm e pr_mlcases pcs
   | MlTupleLst xs -> Format.fprintf ppf "@[(%a)@]" pr_mltuple xs
   | MlGDefs (ges, Some main) -> Format.fprintf ppf "@[<v>%a @.@.@.%a@]"
                                  pr_mlgdefs ges pr_mlterm main
   | MlGDefMain (MlRec (_, xs, def)) -> Format.fprintf ppf "@[<v>let main %a = %a@]"
-                                           pr_mlrec_params xs pr_mlterm def
+                                           pr_mlrec_main_params xs pr_mlterm def
   | MlAssert (e, _) -> Format.fprintf ppf "@[assert %a@]" pr_mlterm e
   | _ -> raise (Invalid_argument "Unexpected expression in the translated program")
 and pr_mlrec_params ppf ps = Format.pp_print_list 
                                ~pp_sep:(fun ppf () -> Format.fprintf ppf " ") 
                                (fun ppf x -> Format.fprintf ppf "%a" pr_mlterm x) ppf ps
+and pr_mlrec_main_params ppf ps = Format.pp_print_list
+                                    ~pp_sep:(fun ppf () -> Format.fprintf ppf " ")
+                                    (fun ppf x -> Format.fprintf ppf "(%a:%a)"
+                                                 pr_mlterm x 
+                                                 (pr_pre_exp true) 
+                                                 (VarDefMap.find ("pref"^(var_of_mlterm x)) !pre_vars)) ppf ps 
 and pr_mltuple ppf xs = Format.pp_print_list 
                           ~pp_sep:(fun ppf () -> Format.fprintf ppf ",")
                           (fun ppf x -> Format.fprintf ppf "%a" pr_mlterm x) ppf xs 

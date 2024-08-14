@@ -190,14 +190,6 @@ let run (e: mlterm) =
   let ev_step = fresh_var "ev_step" in 
   let asst = fresh_var "ev_step_asst" in
   let asstFinal = fresh_var "asst_final" in
-  (* let _ = match !property_spec with *)
-  (*   | None -> Format.printf "No property file\n" *)
-  (*   | Some (_, spec) -> Format.printf "Some spec\n" *)
-  (* in *)
-  (* let _ = match e with *)
-  (*   | MlGDefs (ges, Some (MlGDefMain (MlRec  _)))  -> Format.printf "ml gdefs\n" *)
-  (*   | _ -> Format.printf "ml other\n" *)
-  (* in *)
   match e, !property_spec  with
   | MlGDefs (ges, Some (MlGDefMain (MlRec (fopt, xs, main_body)))), Some (_, spec) ->
      let gasst = Option.map (fun e -> [(asst, e)]) spec.ml_asst 

@@ -144,7 +144,6 @@ let type_to_string = function
   | Int -> "Int"
   | Unit -> "Unit"
 
-
 (** Terms *)
 type term =
   | TupleLst of term list * loc         (* tuple list *)
@@ -220,6 +219,8 @@ let str_of_const = function
     | _ -> raise (Invalid_argument ("Expected mod <const> is an integer.")))
   | _ -> raise (Invalid_argument ("Expected mod <const> procedure for apron."))
 
+
+let string_of_int i = if (i < 0) then ("("^(string_of_int i)^")") else (string_of_int i)
 let str_of_val = function
   | Integer i -> string_of_int i
   | Boolean b -> string_of_bool b
@@ -659,6 +660,15 @@ let rec term_of_ml = function
      end
   | MlTupleLst es -> TupleLst (List.map term_of_ml es, "")
 and patmat_of_ml (MlCase (p, e)) = mk_pattern_case (term_of_ml p) (term_of_ml e)
+
+let var_of_mlterm = function
+  | MlVar x -> x
+  | _ -> raise (Invalid_argument "Expected a variable term")
+
+let mltype_of_inputType = function
+  | Int -> "int"
+  | Bool -> "bool"
+  | Unit -> "unit"
 
 module SemActions = struct
   let mk_const k = MlConst k

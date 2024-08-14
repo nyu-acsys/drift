@@ -348,7 +348,7 @@ let _ =
         (List.iter (fun (prog, (mle, _)) ->
              TupleOCamlTranslation.run mle
              |> Format.fprintf Format.std_formatter
-                  ("(* Tuple Encoding of Product Prog. Source Program: @.@.@[%s@]@.@." ^^
+                  ("(*@.Tuple Encoding of Product Program.@.@.Source Program: @.@.@[%s@]@.@." ^^
                      "Property: @.@.@[%s@]@.@.*)" ^^
                       "@.@.@[%a@]")
                   prog (Option.map fst !TupleOCamlTranslation.property_spec
