@@ -369,7 +369,7 @@ let rec pr_mlterm ppf = function
   | MlTupleLst xs -> Format.fprintf ppf "@[(%a)@]" pr_mltuple xs
   | MlGDefs (ges, Some main) -> Format.fprintf ppf "@[<v>%a @.@.@.%a@]"
                                  pr_mlgdefs ges pr_mlterm main
-  | MlGDefMain (MlRec (_, xs, def)) -> Format.fprintf ppf "@[<v>let main %a = %a@]"
+  | MlGDefMain (MlRec (_, xs, def)) -> Format.fprintf ppf "@[<v 2>let main %a =@;%a@]"
                                            pr_mlrec_main_params xs pr_mlterm def
   | MlAssert (e, _) -> Format.fprintf ppf "@[assert %a@]" pr_mlterm e
   | _ -> raise (Invalid_argument "Unexpected expression in the translated program")
@@ -390,9 +390,9 @@ and pr_mlgdefs ppf ges = Format.pp_print_list
                            (fun ppf ge -> Format.fprintf ppf "@[<v>%a@]" pr_mlgdef ge) ppf ges
 and pr_mlgdef ppf (name, e) = 
   match e with
-  | MlRec (None, xs, e') -> Format.fprintf ppf "let %s %a = %a" 
+  | MlRec (None, xs, e') -> Format.fprintf ppf "@[<v 2>let %s %a =@;%a@]" 
                              name pr_mlrec_params xs pr_mlterm e'
-  | MlRec (Some f, xs, e') -> Format.fprintf ppf "let rec %s %a = %a" 
+  | MlRec (Some f, xs, e') -> Format.fprintf ppf "@[<v 2>let rec %s %a =@;%a@]" 
                              f pr_mlrec_params xs pr_mlterm e'
   | _ -> Format.fprintf ppf "let %s %a" name pr_mlterm e 
   (* | _ -> raise (Invalid_argument "Unexpected expression in the translated program") *)
