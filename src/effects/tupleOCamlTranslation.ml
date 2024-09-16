@@ -37,7 +37,23 @@ let tr: mlterm -> mlterm -> mlterm -> mlterm option -> mlterm option -> mlterm =
   let ret e cfg = MlTupleLst [e; cfg] in
   let rec tr_ (e: mlterm) (acfg: mlterm) = 
     match e with
-    | MlTupleLst e -> MlTupleLst (List.map (fun e' -> tr_ e' acfg) e)
+    | MlTupleLst es -> begin
+       let rec fold_ = function
+         | [], es', acfg' -> MlTupleLst [MlTupleLst (List.rev es'); acfg']
+         | (ei::eis), es', acfg' ->
+            let tr_ei = tr_ ei acfg' in
+            begin match tr_ei with
+            | MlTupleLst [ei'; acfgi'] -> fold_ (eis, ei'::es', acfgi') 
+            | _ -> 
+               let eix, eicfgx = mk_fresh_var "x", mk_fresh_var "cfg" in
+               MlPatMat (tr_ei, [
+                     MlCase (MlTupleLst [eix; eicfgx], 
+                             fold_ (eis, eix::es', eicfgx))])
+            end
+       in
+       fold_ (es, [], acfg)
+       (* MlTupleLst (List.map (fun e' -> tr_ e' acfg) e) *)
+      end
     | (MlConst _ | MlVar _ | MlNonDet) -> ret e acfg
     | MlRec (fopt, xs, def) ->
        let fc = mk_fresh_var "cfg" in

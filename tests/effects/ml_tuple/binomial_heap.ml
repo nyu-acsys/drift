@@ -70,55 +70,63 @@ assertFinal = fun (q, (carries, size)) -> size = prefh - carries + 1;
 
 *)
 
-let ev_step0 evx cfg0 = (match cfg0 with 
-                         (q,acc0) -> (match acc0 with 
-                                      (carries,size) -> if (q = 0) then (1,(carries,evx))
-                                                        else
-                                                          if ((q = 1) && (evx = 1)) then (q,((carries + 1),size))
-                                                          else
-                                                            if ((q = 1) && (evx = 2)) then (q,(carries,(size - 1)))
-                                                            else if ((q = 1) && (evx = 3)) then (2,(carries,(size + 1)))
-                                                                 else (3,(carries,size))))
+let main (prefh: int) (prefj: int) = 
 
+let ev_step0 evx cfg0 =
+  (match cfg0 with 
+   (q,acc0) -> (match acc0 with 
+                (carries,size) -> if (q = 0) then (1,(carries,evx))
+                                  else
+                                    if ((q = 1) && (evx = 1)) then (q,((carries + 1),size))
+                                    else if ((q = 1) && (evx = 2)) then (q,(carries,(size - 1)))
+                                         else if ((q = 1) && (evx = 3)) then (2,(carries,(size + 1)))
+                                              else (3,(carries,size))))
+in
 
-let ev_step_asst0 cfg1 = (match cfg1 with 
-                          (q,acc1) -> (match acc1 with 
-                                       (carries,size) -> assert (q < 3)))
+let ev_step_asst0 cfg1 =
+  (match cfg1 with 
+   (q,acc1) -> (match acc1 with 
+                (carries,size) -> assert (q < 3)))
+in
 
+let asst_final0 cfg2 =
+  (match cfg2 with 
+   (q,acc2) -> (match acc2 with 
+                (carries,size) -> assert (size = ((prefh - carries) + 1))))
+in
 
-let asst_final0 cfg2 = (match cfg2 with 
-                        (q,acc2) -> (match acc2 with 
-                                     (carries,size) -> assert (size = ((prefh - carries) + 1))))
+let rec link r cfg3 =
+  (match ((fun cfg4 ->
+             ((ev_step_asst0 cfg4) ; ((),cfg4))) ((ev_step0 1) cfg3)) with 
+   (x0,cfg5) -> (match ((r + 1),cfg5) with 
+                 (x1,cfg6) -> ((x0 ; x1),cfg6)))
+in
 
+let rec insTree i cfg7 =
+  ((fun k cfg8 ->
+      ((fun l cfg9 ->
+          if
+            (i >= k)
+            then
+            (match ((fun cfg16 ->
+                       ((ev_step_asst0 cfg16) ; ((),cfg16))) ((ev_step0 3) cfg9)) with 
+             (x7,cfg17) -> (match ((l + 1),cfg17) with 
+                            (x8,cfg18) -> ((x7 ; x8),cfg18)))
+            else
+              (match ((fun cfg10 ->
+                         ((ev_step_asst0 cfg10) ; ((),cfg10))) ((ev_step0 2) cfg9)) with 
+               (x2,cfg11) -> (match (match (match (match ((link i) cfg11) with 
+                                                   (x4,cfg13) -> ((insTree x4) cfg13)) with  (x5,cfg14) -> ((x5 k) cfg14)) with 
+                                            (x6,cfg15) -> ((x6 (l - 1)) cfg15)) with 
+                                           (x3,cfg12) -> ((x2 ; x3),cfg12)))),cfg8)),cfg7) 
+in
 
-let rec link r cfg3 = (match ((fun cfg4 ->
-                                 ((ev_step_asst0 cfg4) ; ((),cfg4))) ((ev_step0 1) cfg3)) with 
-                       (x0,cfg5) -> (match ((r + 1),cfg5) with 
-                                     (x1,cfg6) -> ((x0 ; x1),cfg6)))
-
-
-let rec insTree i cfg7 = ((fun k cfg8 ->
-                             ((fun l cfg9 ->
-                                 if
-                                   (i >= k)
-                                   then
-                                   (match ((fun cfg16 ->
-                                              ((ev_step_asst0 cfg16) ; ((),cfg16))) ((ev_step0 3) cfg9)) with 
-                                    (x7,cfg17) -> (match ((l + 1),cfg17) with 
-                                                   (x8,cfg18) -> ((x7 ; x8),cfg18)))
-                                   else
-                                     (match ((fun cfg10 ->
-                                                ((ev_step_asst0 cfg10) ; ((),cfg10))) ((ev_step0 2) cfg9)) with 
-                                      (x2,cfg11) -> (match (match (match (match ((link i) cfg11) with 
-                                                                          (x4,cfg13) -> ((insTree x4) cfg13)) with  (x5,cfg14) -> ((x5 k) cfg14)) with 
-                                                                   (x6,cfg15) -> ((x6 (l - 1)) cfg15)) with 
-                                                                  (x3,cfg12) -> ((x2 ; x3),cfg12)))),cfg8)),cfg7) 
-
-
-let main (h:int(*-:{cur_v:Int | cur_v = 0}*)) (j:int(*-:{cur_v:Int | cur_v = 0}*)) = (match (match ((fun cfg19 ->
-                                                                                                       ((ev_step_asst0 cfg19) ; ((),cfg19))) ((ev_step0 h) (0,(0,0)))) with 
-                                                                                             (x9,cfg20) -> (match (match (match ((insTree 0) cfg20) with 
-                                                                                                                          (x11,cfg22) -> ((x11 j) cfg22)) with 
-                                                                                                                         (x12,cfg23) -> ((x12 h) cfg23)) with 
-                                                                                                                   (x10,cfg21) -> ((x9 ; x10),cfg21))) with 
-                                                                                             (e0,acfg0) -> ((asst_final0 acfg0) ; e0))
+if (prefh >= 0) && (prefj >= 0) then
+  (match (match ((fun cfg19 ->
+                  ((ev_step_asst0 cfg19) ; ((),cfg19))) ((ev_step0 prefh) (0,(0,0)))) with 
+            (x9,cfg20) -> (match (match (match ((insTree 0) cfg20) with 
+                                          (x11,cfg22) -> ((x11 prefj) cfg22)) with  (x12,cfg23) -> ((x12 prefh) cfg23)) with 
+                            (x10,cfg21) -> ((x9 ; x10),cfg21))) with 
+     (e0,acfg0) -> ((asst_final0 acfg0) ; e0))
+else
+  0
