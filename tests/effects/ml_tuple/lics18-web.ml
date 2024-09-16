@@ -74,60 +74,63 @@ assert = fun (q, (pending, tick)) -> q = 666 || pending <= tick;
 
 *)
 
-let ev_step0 evx cfg0 = (match cfg0 with 
-                         (q,acc0) -> (match acc0 with 
-                                      (pending,tick) -> if (((q = 0) && (tick < 42)) && (evx = 1)) then (0,((pending + 1),(tick + 1)))
-                                                        else
-                                                          if (((q = 0) && (tick < 42)) && (evx = 2)) then (0,((pending - 1),(tick + 1)))
-                                                          else
-                                                            if (((q = 0) && (tick < 42)) && (evx = 3)) then (0,(pending,(tick + 1)))
-                                                            else
-                                                              if (((q = 0) && (tick = 42)) && (evx = 1)) then (42,((pending + 1),43))
-                                                              else
-                                                                if (((q = 0) && (tick = 42)) && (evx = 2)) then (42,((pending - 1),43))
-                                                                else
-                                                                  if (((q = 0) && (tick = 42)) && (evx = 3)) then (42,(pending,43))
-                                                                  else
-                                                                    if (((q = 42) && (evx = 2)) && (pending = 1)) then (0,(0,0))
-                                                                    else
-                                                                      if ((q = 42) && (evx = 2)) then (42,((pending - 1),(tick - 1)))
-                                                                      else if (q = 42) then (666,(0,0))
-                                                                           else if (q = 666) then (666,(0,0))
-                                                                                else (q,(pending,tick))))
-
-
-let ev_step_asst0 cfg1 = (match cfg1 with 
-                          (q,acc1) -> (match acc1 with 
-                                       (pending,tick) -> assert ((q = 666) || (pending <= tick))))
-
-
-let rec listener i cfg2 = ((fun npool cfg3 ->
-                              ((fun pend cfg4 ->
-                                  if
-                                    ((nondet_op) && (pend < npool))
-                                    then
-                                    (match ((fun cfg15 ->
-                                               ((ev_step_asst0 cfg15) ; ((),cfg15))) ((ev_step0 1) cfg4)) with 
-                                     (x8,cfg16) -> (match (match (match ((listener i) cfg16) with 
-                                                                  (x10,cfg18) -> ((x10 npool) cfg18)) with  (x11,cfg19) -> ((x11 (pend + 1)) cfg19)) with 
-                                                           (x9,cfg17) -> ((x8 ; x9),cfg17)))
-                                       else
-                                         if
-                                           (pend > 0)
-                                           then
-                                           (match ((fun cfg10 ->
-                                                      ((ev_step_asst0 cfg10) ; ((),cfg10))) ((ev_step0 2) cfg4)) with 
-                                            (x4,cfg11) -> (match (match (match ((listener i) cfg11) with 
-                                                                         (x6,cfg13) -> ((x6 npool) cfg13)) with  (x7,cfg14) -> ((x7 (pend - 1)) cfg14)) with 
-                                                                  (x5,cfg12) -> ((x4 ; x5),cfg12)))
+let ev_step0 evx cfg0 =
+  (match cfg0 with 
+   (q,acc0) -> (match acc0 with 
+                (pending,tick) -> if (((q = 0) && (tick < 42)) && (evx = 1)) then (0,((pending + 1),(tick + 1)))
+                                  else
+                                    if (((q = 0) && (tick < 42)) && (evx = 2)) then (0,((pending - 1),(tick + 1)))
+                                    else
+                                      if (((q = 0) && (tick < 42)) && (evx = 3)) then (0,(pending,(tick + 1)))
+                                      else
+                                        if (((q = 0) && (tick = 42)) && (evx = 1)) then (42,((pending + 1),43))
+                                        else
+                                          if (((q = 0) && (tick = 42)) && (evx = 2)) then (42,((pending - 1),43))
+                                          else
+                                            if (((q = 0) && (tick = 42)) && (evx = 3)) then (42,(pending,43))
+                                            else
+                                              if (((q = 42) && (evx = 2)) && (pending = 1)) then (0,(0,0))
                                               else
-                                                (match ((fun cfg5 ->
-                                                           ((ev_step_asst0 cfg5) ; ((),cfg5))) ((ev_step0 3) cfg4)) with 
-                                                 (x0,cfg6) -> (match (match (match ((listener i) cfg6) with 
-                                                                             (x2,cfg8) -> ((x2 npool) cfg8)) with  (x3,cfg9) -> ((x3 pend) cfg9)) with 
-                                                                      (x1,cfg7) -> ((x0 ; x1),cfg7)))),cfg3)),cfg2) 
+                                                if ((q = 42) && (evx = 2)) then (42,((pending - 1),(tick - 1)))
+                                                else if (q = 42) then (666,(0,0))
+                                                     else if (q = 666) then (666,(0,0))
+                                                          else (q,(pending,tick))))
 
 
-let main (npool:int(*-:{cur_v:Int | true = true}*)) (i0:int(*-:{cur_v:Int | true = true}*)) = (match (match ((listener i0) (0,(0,0))) with 
-                                                                                                      (x12,cfg20) -> ((x12 npool) cfg20)) with 
-                                                                                                     (x13,cfg21) -> ((x13 0) cfg21))
+let ev_step_asst0 cfg1 =
+  (match cfg1 with 
+   (q,acc1) -> (match acc1 with 
+                (pending,tick) -> assert ((q = 666) || (pending <= tick))))
+
+
+let rec listener i cfg2 =
+  ((fun npool cfg3 ->
+      ((fun pend cfg4 ->
+          if
+            ((Random.int(0) >= 0) && (pend < npool))
+            then
+            (match ((fun cfg15 ->
+                       ((ev_step_asst0 cfg15) ; ((),cfg15))) ((ev_step0 1) cfg4)) with 
+             (x8,cfg16) -> (match (match (match ((listener i) cfg16) with 
+                                          (x10,cfg18) -> ((x10 npool) cfg18)) with  (x11,cfg19) -> ((x11 (pend + 1)) cfg19)) with 
+                                   (x9,cfg17) -> ((x8 ; x9),cfg17)))
+               else
+                 if
+                   (pend > 0)
+                   then
+                   (match ((fun cfg10 ->
+                              ((ev_step_asst0 cfg10) ; ((),cfg10))) ((ev_step0 2) cfg4)) with 
+                    (x4,cfg11) -> (match (match (match ((listener i) cfg11) with 
+                                                 (x6,cfg13) -> ((x6 npool) cfg13)) with  (x7,cfg14) -> ((x7 (pend - 1)) cfg14)) with 
+                                          (x5,cfg12) -> ((x4 ; x5),cfg12)))
+                      else
+                        (match ((fun cfg5 ->
+                                   ((ev_step_asst0 cfg5) ; ((),cfg5))) ((ev_step0 3) cfg4)) with 
+                         (x0,cfg6) -> (match (match (match ((listener i) cfg6) with 
+                                                     (x2,cfg8) -> ((x2 npool) cfg8)) with  (x3,cfg9) -> ((x3 pend) cfg9)) with 
+                                              (x1,cfg7) -> ((x0 ; x1),cfg7)))),cfg3)),cfg2) 
+
+
+let main (npool:int(*-:{cur_v:Int | true = true}*)) (i0:int(*-:{cur_v:Int | true = true}*)) =
+  (match (match ((listener i0) (0,(0,0))) with 
+          (x12,cfg20) -> ((x12 npool) cfg20)) with  (x13,cfg21) -> ((x13 0) cfg21))
