@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+
+<!--
+This file is part of BenchExec, a framework for reliable benchmarking:
+https://github.com/sosy-lab/benchexec
+
+SPDX-FileCopyrightText: 2007-2020 Dirk Beyer <https://www.sosy-lab.org>
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
+<!DOCTYPE benchmark PUBLIC "+//IDN sosy-lab.org//DTD BenchExec benchmark 2.3//EN" "https://www.sosy-lab.org/benchexec/benchmark-2.2.3dtd">
+<!-- Example file for benchmark definition for BenchExec,
+     using tool "cbmc" with a CPU time limit of 60s,
+     1000 MB of RAM, and 1 CPU core.
+     To use this file, CBMC needs to be on PATH
+     and C programs from SV-COMP need to be available in directory programs/
+     (or input files need to be changed). -->
+<benchmark tool="drifttoolinfo.mochi"
+           timelimit="60s"
+           hardtimelimit="90s"
+           memlimit="1000 MB"
+           cpuCores="1">
+
+  <rundefinition name="default">
+    <!-- <option name="-c">/tools/home/eric/coar-clone-mihai/config/solver/dbg_rcaml_pcsat_tb_ar.json</option> 
+    <option name="-p">ml</option> -->
+  </rundefinition>
+
+
+  <tasks name="realmochibenchmarks">
+    <include>../../tests/effects/ml_tuple/*.ml</include>
+  </tasks>
+
+  <!-- Use an SV-COMP property file as specification
+    (file ALL.prp in the same directory as each source file). -->
+  <!-- <propertyfile>unreach-call.prp</propertyfile> -->
+</benchmark>
