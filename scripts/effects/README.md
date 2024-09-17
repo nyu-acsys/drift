@@ -57,6 +57,9 @@ sudo benchexec benchmark-coarmochi.xml --read-only-dir / --limitCores 2 --timeli
 
 ```
 export DRIFT_REPO=/tools/home/eric/drift
+cd $DRIFT_REPO/tests/effects/ml_tuple
+rm *.{json,status,annot,bin} *hors*
+chmod 666 *; cd ..; chmod 777 ml_tuple
 cd $DRIFT_REPO/scripts/effects
 sudo benchexec benchmark-mochi.xml --read-only-dir / --limitCores 2 --timelimit 900s --numOfThreads 8
 ```

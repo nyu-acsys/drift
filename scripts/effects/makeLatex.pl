@@ -14,6 +14,7 @@ my @resultsfiles = (
     #"results/benchmark-coarmochi.2024-04-03_12-51-55.results.default.mochibenchmarks.csv",
     #"results/benchmark-coarmochi.2024-05-09_09-54-42.results.default.mochibenchmarks.csv",
     "results/benchmark-coarmochi.2024-07-02_17-08-26.results.default.mochibenchmarks.csv",
+    "results/benchmark-mochi.2024-09-16_21-13-49.results.default.realmochibenchmarks.csv",
     #"results/results.2024-04-04_10-01-41.table.csv"
     #"results/results.2024-06-30_11-29-24.table.csv"
     "results/results.2024-07-02_16-55-09.table.csv"
