@@ -10,6 +10,14 @@ open SemanticsDomain
 
 let stren_R x = measure_call "stren_R" (stren_R x)
 let arrow_R x1 x2 = measure_call "arrow_R" (arrow_R x1 x2)
+(* let op_R x1 x2 x3 x4 x5 = measure_call "op_R" (op_R x1 x2 x3 x4 x5)
+let proj_R x1 = measure_call "proj_R" (proj_R x1)
+let convert_r_to_unit = measure_call "convert_r_to_unit" (convert_r_to_unit)
+let bool_op_R x1 x2 = measure_call "bool_op_R" (bool_op_R x1 x2)
+let meet_R x1 = measure_call "meet_R" (meet_R x1)
+let extrac_bool_R x1 = measure_call "extrac_bool_R" (extrac_bool_R x1)
+let bool_op_R x1 x2 = measure_call "bool_op_R" (bool_op_R x1 x2)
+let equal_R x1 = measure_call "equal_R" (equal_R x1) *)
 
 type evv_t = Val of relation_e
 type evenv = EmptyEvEnv | ExtendEvEnv of var * relation_e * evenv
@@ -291,9 +299,9 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
        (if !Config.debug then 
           Format.fprintf Format.std_formatter "@.BinOp_e2: @[%a@]" 
             pr_relation v2);
-       if is_unit_R v1 || is_unit_R v2 then 
+       (* if is_unit_R v1 || is_unit_R v2 then 
          raise (Invalid_argument ("Binary operator " ^ (string_of_op bop) ^ " is not defined for tuples"))
-       else begin
+       else begin *)
            let bop = begin match bop, e1, e2 with
                      | Mod, Const _, Const _ -> Mod
                      | Mod, _, Const _ -> Modc
@@ -338,15 +346,15 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
              end
            in
            (Val (stren_R raw_v ae), eff''')
-         end 
+         (* end  *)
     | UnOp (uop, e1, _) ->
        let vv1, eff'' = eval e1 env ae eff' in
        (* (if !Config.debug then Format.printf "\nUOp_e1: "; pr_relation Format.std_formatter v1; Format.printf "\n";); *)
        let v1 = absv_of_val vv1 in
        
-       if is_unit_R v1 then
+       (* if is_unit_R v1 then
          raise (Invalid_argument ("Unary operator " ^ (string_of_unop uop) ^ " is not defined for tuples"))
-       else begin
+       else begin *)
            let op1 = e1 |> loc |> name_of_node in
            let v' = utop_R uop |> (fun v -> arrow_R op1 v v1) in
            (* (if !Config.debug then Format.printf "\nUOp_[op1 <- v1]:"; 
@@ -358,7 +366,7 @@ let ev: var list -> effect_t -> relation_t -> effect_t = fun penv eff t ->
            (* (if !Config.debug then Format.printf "\nUOp_Proj_env:"; 
               pr_relation Format.std_formatter raw_v; Format.printf "\n";); *)
            (Val (stren_R raw_v ae), eff'')
-         end
+         (* end *)
     | TupleLst ([e1; e2], _) -> 
        let (Val vq), _ = eval e1 env ae eff' in
        (if !Config.debug then 
@@ -422,9 +430,9 @@ let eval_assert term env acc_vars =
     | BinOp (bop, e1, e2, _) -> 
        let v1 = eval e1 env in
        let v2 = eval e2 env in
-       if is_unit_R v1 || is_unit_R v2 then 
+       (* if is_unit_R v1 || is_unit_R v2 then 
          raise (Invalid_argument ("Binary operator " ^ (string_of_op bop) ^ " is not defined for units"))
-       else begin
+       else begin *)
            let bop = begin match bop, e1, e2 with
                      | Mod, Const _, Const _ -> Mod
                      | Mod, _, Const _ -> Modc
@@ -460,18 +468,18 @@ let eval_assert term env acc_vars =
              end
            in
            raw_v
-         end 
+         (* end  *)
     | UnOp (uop, e1, _) ->
        let v1 = eval e1 env in
        
-       if is_unit_R v1 then
+       (* if is_unit_R v1 then
          raise (Invalid_argument ("Unary operator " ^ (string_of_unop uop) ^ " is not defined for units"))
-       else begin
+       else begin *)
            let op1 = e1 |> loc |> name_of_node in
            let v' = utop_R uop |> (fun v -> arrow_R op1 v v1) in
            let v'' = uop_R "" uop op1 false v' in
            v''
-         end
+         (* end *)
     | _ -> bot_R Eq
   in 
   eval term env
