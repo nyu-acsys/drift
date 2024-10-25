@@ -136,6 +136,7 @@ let measure fn arg =
     raise e
 
 let measures = Hashtbl.create 10
+let steps = Hashtbl.create 10
 
 let measure_call (id: string) fn arg =
   let get_time () = 
@@ -152,11 +153,19 @@ let measure_call (id: string) fn arg =
     let res = fn arg in
     let end_time = get_time () in
     Hashtbl.replace measures id (calls + 1, time +. end_time -. start_time);
+    (if String.equal id "step" then Hashtbl.replace steps calls (end_time -. start_time));
     res
   with e ->
     let end_time = get_time () in
     Hashtbl.replace measures id (calls + 1, time +. end_time -. start_time);
     raise e
+
+let rec print_steps n_steps step = 
+  if step = n_steps then ()
+  else 
+    let time = Hashtbl.find steps step in
+    print_endline ((string_of_int step) ^ ": " ^ (string_of_float time) ^ " s");
+    print_steps n_steps (step+1)
 
 let print_measures () =
   if Hashtbl.length measures > 0 then print_endline "Profiling:";
@@ -164,4 +173,6 @@ let print_measures () =
     (fun id (calls, time) ->
       print_endline ("  " ^ id ^ ": " ^ (string_of_int calls) ^ " call(s), " ^ (string_of_float time) ^ " s")
     )
-    measures
+    measures;
+  let n_steps = Hashtbl.length steps in
+  print_steps n_steps 0

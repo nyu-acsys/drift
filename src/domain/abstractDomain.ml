@@ -161,6 +161,8 @@ module BaseDomain(Manager : DomainManager) : Domain =
       Abstract1.minimize_environment man res
       (* res *)
 
+    let join x1 = measure_call "AbstractValue.join" (join x1)
+
     let meet v1 v2 =
       let v1',v2' = lc_env v1 v2 in
       if leq_without_lcenv v1' v2' then
@@ -193,6 +195,8 @@ module BaseDomain(Manager : DomainManager) : Domain =
         then delay_wid := 0;
       Abstract1.minimize_environment man res
       (* res *)
+
+    let meet x1 = measure_call "AbstractValue.meet" (meet x1)
 
     let alpha_rename v prevar var =
         (* (if !debug then
@@ -296,6 +300,8 @@ module BaseDomain(Manager : DomainManager) : Domain =
           Format.printf "\n";
         end); *)
         Abstract1.minimize_environment man res
+
+    let project_other_vars x1 = measure_call "Abstract.project" (project_other_vars x1)
 
     let top =
       let env = Environment.make [||] [||] in
