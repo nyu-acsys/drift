@@ -219,8 +219,8 @@ let str_of_const = function
     | _ -> raise (Invalid_argument ("Expected mod <const> is an integer.")))
   | _ -> raise (Invalid_argument ("Expected mod <const> procedure for apron."))
 
+(* let string_of_int i = if (i < 0) then ("("^(string_of_int i)^")") else (string_of_int i) *)
 
-let string_of_int i = if (i < 0) then ("("^(string_of_int i)^")") else (string_of_int i)
 let str_of_val = function
   | Integer i -> string_of_int i
   | Boolean b -> string_of_bool b
