@@ -1,0 +1,9 @@
+QSet   = [0;1]; 
+
+delta  = fun evx (q, acc) -> 
+  if   (q = 0 && evx <= 3) then (0, evx + acc)
+  else (1, acc);
+
+IniCfg = (0, 0);
+
+assertFinal = fun (q, acc) -> q = 0 && acc <= 3*prefn;
