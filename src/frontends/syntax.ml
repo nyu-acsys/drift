@@ -650,7 +650,7 @@ let rec term_of_ml = function
      begin match maybe_main with
      | None -> raise (Invalid_argument "Main is missing")
      | Some main -> 
-        let prog = List.fold_left (fun eacc (name, e) -> MlLetIn (name, e, eacc)) main ges in
+        let prog = List.fold_right (fun (name, e) eacc -> MlLetIn (name, e, eacc)) ges main in
         term_of_ml prog
      end
   | MlGDefMain e -> 
