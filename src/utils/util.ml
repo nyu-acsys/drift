@@ -169,9 +169,11 @@ let rec print_steps n_steps step =
 
 let print_measures () =
   if Hashtbl.length measures > 0 then print_endline "Profiling:";
+  let total = Hashtbl.find measures "s" |> snd in
   Hashtbl.iter
     (fun id (calls, time) ->
-      print_endline ("  " ^ id ^ ": " ^ (string_of_int calls) ^ " call(s), " ^ (string_of_float time) ^ " s")
+      print_endline ("  " ^ id ^ ": " ^ (string_of_int calls) ^ " call(s), " ^ (string_of_float time) ^ " s - " 
+      ^ (string_of_float ((time/.total) *. 100.0)) ^ "%")
     )
     measures;
   let n_steps = Hashtbl.length steps in

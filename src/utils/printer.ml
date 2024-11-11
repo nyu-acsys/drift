@@ -130,7 +130,7 @@ let rec shape_value = function
     | Bool _ -> "Bool"
     | Unit _ -> "Unit"
     | Env _ -> "Env")
-  | Table t -> let (_, (vei,veo)) = get_full_table_T t in 
+  | Table t -> let (_, (vei,veo), _) = get_full_table_T t in 
               (shape_value_and_eff vei)^"->"^(shape_fout veo)
   | Tuple u -> if List.length u = 0 then "Unit"
     else 
@@ -164,7 +164,7 @@ let rec pr_value ppf v = match v with
   | Bot -> Format.fprintf ppf "_|_"
   | Top -> Format.fprintf ppf "T"
   | Relation r -> pr_relation ppf r
-  | Table t -> print_table t ppf pr_value_and_eff
+  | Table t -> print_table t ppf pr_value_and_eff pr_relation
   | Tuple u -> Format.fprintf ppf "(%a)" pr_tuple u
   | Ary ary -> pr_ary ppf ary
   | Lst lst -> pr_lst ppf lst

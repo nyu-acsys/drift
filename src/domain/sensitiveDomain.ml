@@ -8,6 +8,7 @@ open TracePartDomain
 exception AssertionError of string
 
 let name_of_node lb = ("z" ^ lb)
+let get_input_acc_name trace (Q q) var = var^"_"^trace^"_"^(string_of_int q)
 
 type environment_t = AbstractValue.t
 
@@ -122,27 +123,32 @@ module type SemanticsType =
     val effmap: (effect_t -> effect_t) -> eff -> eff
     val effmapi: (state_t -> relation_e -> relation_e) -> eff -> eff
     val init_fout: fout_t
-    val init_T: trace_t -> table_t
+    val init_T: trace_t -> relation_t -> table_t
+    val set_env: relation_t -> table_t -> table_t
+    val table_to_value: (relation_t -> bool) -> table_t -> value_tt
+    val get_env_T: table_t -> relation_t
     val alpha_rename_fout: (value_te -> string -> string -> value_te) -> fout_t -> string -> string -> fout_t
-    val alpha_rename_T: (value_te -> string -> string -> value_te) -> table_t -> string -> string -> table_t
-    val join_T: (value_te -> value_te -> value_te) -> (value_te -> string -> string -> value_te) -> table_t -> table_t -> table_t
-    val meet_T: (value_te -> value_te -> value_te) -> (value_te -> string -> string -> value_te) -> table_t -> table_t -> table_t
-    val leq_T: (value_te -> value_te -> bool) -> table_t -> table_t -> bool
-    val eq_T: (value_te -> value_te -> bool) -> table_t -> table_t -> bool
-    val forget_T: (var -> value_te -> value_te) -> var -> table_t -> table_t
-    val arrow_T: (var -> value_tt -> value_tt) -> (var -> value_te -> value_tt -> value_te) -> var -> table_t -> value_tt -> table_t
-    val wid_T: (value_te -> value_te -> value_te) -> (value_te -> string -> string -> value_te) -> table_t -> table_t -> table_t
+    val alpha_rename_T: (value_te -> string -> string -> value_te) -> (relation_t -> string -> string -> relation_t) -> table_t -> string -> string -> table_t
+    val join_T: (value_te -> value_te -> value_te) -> (relation_t -> relation_t -> relation_t) -> (value_te -> string -> string -> value_te) -> table_t -> table_t -> table_t
+    val meet_T: (value_te -> value_te -> value_te) -> (relation_t -> relation_t -> relation_t) -> (value_te -> string -> string -> value_te) -> table_t -> table_t -> table_t
+    val leq_T: (value_te -> value_te -> bool) -> (relation_t -> relation_t -> bool) -> table_t -> table_t -> bool
+    val eq_T: (value_te -> value_te -> bool) -> (relation_t -> relation_t -> bool) -> table_t -> table_t -> bool
+    val forget_T: (var -> value_te -> value_te) -> (var -> relation_t -> relation_t) -> var -> table_t -> table_t
+    val arrow_T: (var -> value_tt -> value_tt) -> (var -> value_te -> value_tt -> value_te) -> (var -> value_tt -> value_tt -> value_tt) -> var -> table_t -> value_tt -> table_t
+    val wid_T: (value_te -> value_te -> value_te) -> (relation_t -> relation_t -> relation_t) -> (value_te -> string -> string -> value_te) -> table_t -> table_t -> table_t
     (* val equal_T: (value_te -> var -> value_te) -> (value_te -> string -> string -> value_te) -> table_t -> var -> table_t *)
-    val replace_T: (value_te -> var -> var -> value_te) -> table_t -> var -> var -> table_t
-    val stren_T: (value_te -> value_tt -> value_te) -> table_t -> value_tt -> table_t
-    val proj_T: (value_te -> string list -> value_te) -> (string -> value_te -> string list) -> table_t -> string list -> table_t
-    val bot_shape_T: (value_te -> value_te) -> table_t -> table_t
+    val replace_T: (value_te -> var -> var -> value_te) -> (relation_t -> var -> var -> relation_t) -> table_t -> var -> var -> table_t
+    val stren_T: (value_te -> value_tt -> value_te) -> (value_tt -> value_tt -> value_tt) -> table_t -> value_tt -> table_t
+    val proj_T: 
+    (value_te -> (string list * state_t list) -> string list -> value_te) -> (relation_t -> string list -> relation_t) -> 
+      (string -> value_te -> string list) -> table_t -> (string list * state_t list) -> string list -> table_t
+    (* val bot_shape_T: (value_te -> value_te) -> (relation_t -> relation_t) -> table_t -> table_t *)
     val get_label_snode: node_s_t -> string
     val construct_vnode: env_t -> var -> trace_t -> node_t
     val construct_enode: env_t -> var -> node_t
     val construct_snode: trace_t -> node_t -> node_s_t
     val construct_fout: trace_t -> value_te -> fout_t
-    val construct_table: trace_t -> value_te * fout_t -> table_t
+    val construct_table: trace_t -> value_te * fout_t -> relation_t -> table_t
     val v_fout: trace_t -> fout_t -> value_te
     val io_T: trace_t -> value_te -> value_te * fout_t
     val get_vnode: node_t -> env_t * var * trace_t
@@ -152,12 +158,15 @@ module type SemanticsType =
     val get_table_T: value_te -> table_t
     val print_node: node_t -> Format.formatter -> (Format.formatter -> (string * (node_t * bool)) list -> unit) -> unit
     val print_fout: fout_t -> Format.formatter -> (Format.formatter -> value_te -> unit) -> unit
-    val print_table: table_t -> Format.formatter -> (Format.formatter -> value_te -> unit) -> unit
+    val print_table: table_t -> Format.formatter -> (Format.formatter -> value_te -> unit) -> (Format.formatter -> relation_t -> unit) -> unit
     val compare_node: node_s_t -> node_s_t -> int
-    val prop_table: (trace_t -> value_te * value_te -> value_te * value_te -> (value_te * value_te) * (value_te * value_te)) -> (value_te -> var -> var -> value_te) -> table_t -> table_t -> table_t * table_t
-    val step_func: (trace_t -> value_te * fout_t -> 'a -> 'a) -> value_te -> 'a -> 'a
+    val prop_table: 
+    (trace_t -> value_te * value_te -> value_te * value_te -> (value_te * value_te) * (value_te * value_te)) -> 
+      (value_te -> var -> var -> value_te) -> (relation_t -> relation_t -> relation_t) -> 
+        table_t -> table_t -> table_t * table_t
+    val step_func: (relation_t -> trace_t -> value_te * fout_t -> 'a -> 'a) -> value_te -> 'a -> 'a
     val get_full_fout: fout_t -> trace_t * value_te
-    val get_full_table_T: table_t -> trace_t * (value_te * fout_t)
+    val get_full_table_T: table_t -> trace_t * (value_te * fout_t) * relation_t
     val get_table_by_cs_T: trace_t -> table_t -> (value_te * fout_t)
     val update_fout: trace_t -> value_te -> fout_t -> fout_t
     val update_table: trace_t -> value_te * fout_t -> table_t -> table_t
@@ -189,7 +198,7 @@ module NonSensitive: SemanticsType =
       | TETop 
       | TypeAndEff of value_tt * eff 
     and fout_t = value_te
-    and table_t = var * value_te * fout_t
+    and table_t = trace_t * value_te * fout_t * relation_t
     and list_t = (var * var) * (relation_t * value_te)
     and tuple_t = value_te list
     type call_site = None (* Not used *)
@@ -205,39 +214,51 @@ module NonSensitive: SemanticsType =
     let effmapi f = function
       | Effect eff -> Effect (StateMap.mapi f eff)
       | e -> e 
-    let init_T trace = get_trace_data trace, TEBot, TEBot
+    let init_T trace env = trace, TEBot, TEBot, env
+    let set_env env (var, ve, fout, _) = var, ve, fout, env
+    let table_to_value f (var, ve, fout, env) = 
+      if f env then Bot else Table (var, ve, fout, env)
+    let get_env_T (_, _, _, env) = env
     let init_fout = TEBot
     let get_name n = match n with
       | SN (_, var) -> var
     let alpha_rename_fout f fout prevar_trace var_trace = f fout prevar_trace var_trace
-    let alpha_rename_T f (t:table_t) prevar_trace var_trace :table_t =
-      let (z, vi, vo) = t in
-        (z, f vi prevar_trace var_trace, f vo prevar_trace var_trace)
-    let join_T f g (t1:table_t) (t2:table_t) = let t =
-      let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
-        if String.compare z1 z2 = 0 then (z1, f v1i v2i, f v1o v2o) else (*a renaming*)
-          let v2o' = g v2o z2 z1 in 
-          (z1, f v1i v2i, f v1o v2o')
+    let alpha_rename_T f fr (t:table_t) prevar_trace var_trace :table_t =
+      let (z, vi, vo, env) = t in
+        (z, f vi prevar_trace var_trace, f vo prevar_trace var_trace, fr env prevar_trace var_trace)
+    let join_T f fr g (t1:table_t) (t2:table_t) = let t =
+      let (z1, v1i, v1o, env1) = t1 and (z2, v2i, v2o, env2) = t2 in
+      let z1', z2' = get_trace_data z1, get_trace_data z2 in
+        if String.compare z1' z2' = 0 then (z1, f v1i v2i, f v1o v2o, fr env1 env2) else (*a renaming*)
+          let v2o' = g v2o z2' z1' in 
+          (z1, f v1i v2i, f v1o v2o', fr env1 env2)
         in t
-    let meet_T f g (t1:table_t) (t2:table_t) = let t =
-      let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
-        if String.compare z1 z2 = 0 then (z1, f v1i v2i, f v1o v2o) else (*a renaming*)
-          let v2o' = g v2o z2 z1 in 
-          (z1, f v1i v2i, f v1o v2o')
+    let meet_T f fr g (t1:table_t) (t2:table_t) = let t =
+      let (z1, v1i, v1o, env1) = t1 and (z2, v2i, v2o, env2) = t2 in
+      let z1', z2' = get_trace_data z1, get_trace_data z2 in
+        if String.compare z1' z2' = 0 then (z1, f v1i v2i, f v1o v2o, fr env1 env2) else (*a renaming*)
+          let v2o' = g v2o z2' z1' in 
+          (z1, f v1i v2i, f v1o v2o', fr env1 env2)
         in t
-    let leq_T f (z1, v1i, v1o) (z2, v2i, v2o) = z1 = z2 && f v1i v2i && f v1o v2o
-    let eq_T f (z1, v1i, v1o) (z2, v2i, v2o) = 
-        z1 = z2 && f v1i v2i && f v1o v2o
-    let forget_T f var (t:table_t) = let (z, vi, vo) = t in (z, f var vi, f var vo)
-    let arrow_T f1 f2 var (t:table_t) v =
-        let (z, vi, vo) = t in
-        let v' = f1 z v in
-        (z, f2 var vi v, f2 var vo v')
-    let wid_T f g (t1:table_t) (t2:table_t) = let t =
-      let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
-        if String.compare z1 z2 = 0 then (z1, f v1i v2i, f v1o v2o) else (*a renaming*)
-          let v2o' = g v2o z2 z1 in 
-          (z1, f v1i v2i, f v1o v2o')
+    let leq_T f fr (z1, v1i, v1o, env1) (z2, v2i, v2o, env2) = z1 = z2 && f v1i v2i && f v1o v2o && fr env1 env2
+    let eq_T f fr (z1, v1i, v1o, env1) (z2, v2i, v2o, env2) = 
+        z1 = z2 && f v1i v2i && f v1o v2o && fr env1 env2
+    let forget_T f fr var (t:table_t) = let (z, vi, vo, env) = t in (z, f var vi, f var vo, fr var env)
+    let arrow_T f1 f2 fr var (t:table_t) v =
+        let (z, vi, vo, env) = t in
+        let v' = f1 (get_trace_data z) v in
+        let env' = 
+          match fr var (Relation env) v with
+          | Relation r -> r
+          | _ -> raise (Invalid_argument "Should be a relation")
+        in
+        (z, f2 var vi v, f2 var vo v', env')
+    let wid_T f fr g (t1:table_t) (t2:table_t) = let t =
+      let (z1, v1i, v1o, env1) = t1 and (z2, v2i, v2o, env2) = t2 in
+      let z1', z2' = get_trace_data z1, get_trace_data z2 in
+        if String.compare z1' z2' = 0 then (z1, f v1i v2i, f v1o v2o, fr env1 env2) else (*a renaming*)
+          let v2o' = g v2o z2' z1' in 
+          (z1, f v1i v2i, f v1o v2o', fr env1 env2)
         in t
     (* let equal_T f g (t:table_t) var = 
       let (z, vi, vo) = t in
@@ -245,31 +266,40 @@ module NonSensitive: SemanticsType =
           g vo z "z1"
           else vo in
         (z, f vi var, f vo' var) *)
-    let replace_T f (t:table_t) var_trace x = let (z, vi, vo) = t in
-      (z, f vi var_trace x, f vo var_trace x)
-    let stren_T f (t:table_t) ae = let (z, vi, vo) = t in
-      (z, f vi ae, f vo ae)
-    let proj_T f g (t:table_t) vars = let (z, vi, vo) = t in
+    let replace_T f fr (t:table_t) var_trace x = let (z, vi, vo, env) = t in
+      (z, f vi var_trace x, f vo var_trace x, fr env var_trace x)
+    let stren_T f fr (t:table_t) ae = let (z, vi, vo, env) = t in
+      (z, f vi ae, f vo ae,
+      match fr (Relation env) ae with
+      | Relation r -> r
+      | _ -> raise (Invalid_argument "Should be a relation"))
+    let proj_T f fr g (t:table_t) (acc_vars, qset) vars = let (z, vi, vo, env) = t in
+      let var = get_trace_data z in
       let vars_o = 
-        let vars = z :: vars in
-        List.append vars (g z vi)
+        let vars = var :: vars in
+        let acc_z_vars = 
+          List.map (fun q -> List.map (get_input_acc_name var q) acc_vars) qset 
+          |> List.flatten
+        in
+        let vars = acc_z_vars @ vars in
+        List.append vars (g var vi)
       in
-      (z, f vi vars, f vo vars_o)
+      (z, f vi (acc_vars, qset) (var :: vars), f vo (acc_vars, qset) vars_o, fr env vars)
     let get_label_snode n = let SN (_, e1) = n in e1
     let construct_vnode env label _ = EN (env, label)
     let construct_enode env label = EN (env, label)
     let construct_snode trace (EN (_, label)) = SN (true, label)
     let construct_fout z vo = vo
-    let construct_table z (vi,vo) = get_trace_data z, vi, vo
+    let construct_table z (vi,vo) env = z, vi, vo, env
     let v_fout _ v = v
     let io_T _ v = match v with
-      | TypeAndEff (Table (_, vi, vo), _) -> vi, vo
+      | TypeAndEff (Table (_, vi, vo, _), _) -> vi, vo
       | _ -> raise (Invalid_argument "Should be a table when using io_T")
     let get_vnode = function
       | EN (env, l) -> env, l, create_singleton_trace_call_loc l
     let get_fout_traces fout = [create_empty_trace]
     let dx_T v = match v with
-        | TypeAndEff (Table (z,_,_), _) -> create_singleton_trace_call_loc z
+        | TypeAndEff (Table (z,_,_, _), _) -> z
         | _ -> raise (Invalid_argument "Should be a table when using dx_T")
     let trace_exists trace table = true
     let get_table_T = function
@@ -278,45 +308,45 @@ module NonSensitive: SemanticsType =
     let print_node n ppf f = match n with
       | EN (env, l) -> Format.fprintf ppf "@[<1><[%a],[%s] " f (VarMap.bindings env) l ; Format.fprintf ppf ">@]"
     let print_fout fout ppf f = f ppf fout
-    let print_table t ppf f = let (z, vi, vo) = t in
-      Format.fprintf ppf "@[%s" z; Format.fprintf ppf ": (%a ->@ %a)@]" f vi f vo
+    let print_table t ppf f fr = let (z, vi, vo, env) = t in
+      Format.fprintf ppf "@[%s" (get_trace_data z); Format.fprintf ppf ": (%a ->@ %a | %a)@]" f vi f vo fr env
     let compare_node n1 n2 = 
       let SN (_, e1) = n1 in
       let SN (_, e2) = n2 in
       comp_trace (create_singleton_trace_call_loc e1) (create_singleton_trace_call_loc e2)
-    let prop_table f g (t1:table_t) (t2:table_t) = 
-      let alpha_rename t1 t2 = let (z1, v1i, v1o) = t1 and (z2, v2i, v2o) = t2 in
-        if z1 = z2 then t1, t2
+    let prop_table f g fr (t1:table_t) (t2:table_t) = 
+      let alpha_rename t1 t2 = let (z1, v1i, v1o, env1) = t1 and (z2, v2i, v2o, env2) = t2 in
+        let z1', z2' = get_trace_data z1, get_trace_data z2 in
+        if String.compare z1' z2' = 0 then t1, t2
         else (*a renaming*)
-          let v2o' = g v2o z2 z1 in
-          (z1, v1i, v1o), (z1, v2i, v2o') 
+          let v2o' = g v2o z2' z1' in
+          let v2i' = g v2i z2' z1' in
+          (z1, v1i, v1o, env1), (z1, v2i', v2o', env2) 
       in
       let t1', t2' = alpha_rename t1 t2 in
-      let (z1, v1i, v1o) = t1' and (z2, v2i, v2o) = t2' in
-      let z_tr1 = create_singleton_trace_call_loc z1 in
-      let (v1i', v1o'), (v2i', v2o') = f z_tr1 (v1i, v1o) (v2i, v2o) in
-      let t1' = (z1, v1i', v1o') and t2' = (z2, v2i', v2o') in
+      let (z1, v1i, v1o, env1) = t1' and (z2, v2i, v2o, env2) = t2' in
+      let (v1i', v1o'), (v2i', v2o') = f z1 (v1i, v1o) (v2i, v2o) in
+      let t1' = (z1, v1i', v1o', env1) and t2' = (z2, v2i', v2o', fr env1 env2) in
       t1', t2'
     let step_func f v m = 
-      let z, tl, tr = match v with
-      | TypeAndEff (Table (z, vi, vo), _) -> z, vi, vo
+      let z, tl, tr, env = match v with
+      | TypeAndEff (Table (z, vi, vo, env), _) -> z, vi, vo, env
       | _ -> raise (Invalid_argument "Should be a table when using step_func") in
-      let z_tr = create_singleton_trace_call_loc z in
-      f z_tr (tl, tr) m
+      f env z (tl, tr) m
     let get_full_fout fout = create_empty_trace, fout
-    let get_full_table_T t = let (z, vi, vo) = t in
-      create_singleton_trace_call_loc z, (vi, vo)
-    let get_table_by_cs_T cs t = let (z, vi, vo) = t in (vi, vo)
+    let get_full_table_T t = let (z, vi, vo, env) = t in
+      z, (vi, vo), env
+    let get_table_by_cs_T cs t = let (z, vi, vo, env) = t in (vi, vo)
     let update_fout cs vo fout = construct_fout cs vo
-    let update_table cs vio t = construct_table cs vio
+    let update_table cs vio (_, _, _, env) = construct_table cs vio env
     let table_isempty t = false
     let table_mapi f t = t
     let is_top_fout fout = match fout with
       | TETop -> true
       | _ -> false
-    let bot_shape_T f t = 
-      let (z, vi, vo) = t in
-      (z, f vi, f vo)
+    (* let bot_shape_T f fr t = 
+      let (z, vi, vo, env) = t in
+      (z, f vi, f vo, fr env) *)
     let append_call_trace new_token trace = add_cs_token_to_trace new_token trace 1
     let append_part_trace new_token trace = add_pr_token_to_trace new_token trace 1
     let extend_trace tail trace = add_tail_to_trace tail trace 1
@@ -346,7 +376,7 @@ module Sensitive: SemanticsType =
       | TEBot  
       | TETop
       | TypeAndEff of value_tt * eff 
-    and table_t = (value_te * fout_t) TableMap.t
+    and table_t = ((value_te * fout_t) TableMap.t) * relation_t
     and list_t = (var * var) * (relation_t * value_te)
     and tuple_t = value_te list
    let temap (f, g) te = 
@@ -365,36 +395,40 @@ module Sensitive: SemanticsType =
     let fout_isempty fout = match fout with 
       | FTop -> false    
       | Fout fout -> TableMap.is_empty fout
-    let init_T var = TableMap.empty
+    let init_T var env = TableMap.empty, env
+    let set_env env (t, _) = t, env
+    let table_to_value f (table, env) = 
+      if f env then Bot else Table (table, env)
+    let get_env_T (_, env) = env
     let get_name n = match n with
       | SEN (var, _) -> var
       | SVN (var, _) -> var
     let alpha_rename_fout f fout prevar var = match fout with
       | FTop -> FTop
       | Fout fout -> Fout (TableMap.map (fun vo_tr -> f vo_tr prevar var) fout)
-    let alpha_rename_T f (mt:table_t) prevar var = TableMap.map (fun (vi, vo) ->
+    let alpha_rename_T f fr ((mt, env):table_t) prevar var = TableMap.map (fun (vi, vo) ->
         f vi prevar var, 
         alpha_rename_fout f vo prevar var
-      ) mt
+      ) mt, fr env prevar var
     let join_fout f g fout1 fout2 = match fout1, fout2 with
       | FTop, _ | _, FTop -> FTop
       | Fout fout1, Fout fout2 -> Fout (TableMap.union (fun cs_tr v1o_tr v2o_tr -> 
           Some (f v1o_tr v2o_tr)) fout1 fout2)
-    let join_T f g mt1 mt2 =
+    let join_T f fr g (mt1, env1) (mt2, env2) =
       TableMap.union (fun cs (v1i, v1o) (v2i, v2o) -> 
         Some (f v1i v2i, join_fout f g v1o v2o)
-      ) mt1 mt2
+      ) mt1 mt2, fr env1 env2
     let meet_fout f g fout1 fout2 = match fout1, fout2 with
       | FTop, fout | fout, FTop -> fout
       | Fout fout1, Fout fout2 -> Fout (TableMap.union (fun cs_tr v1o_tr v2o_tr -> 
           Some (f v1o_tr v2o_tr)) fout1 fout2)
-    let meet_T f g mt1 mt2 =
+    let meet_T f fr g (mt1, env1) (mt2, env2) =
         TableMap.merge (fun cs vio1 vio2 -> 
           match vio1, vio2 with
           | None, _ | _, None -> None
           | Some (v1i, v1o), Some (v2i, v2o) -> 
               Some ((f v1i v2i), meet_fout f g v1o v2o)
-          ) mt1 mt2
+          ) mt1 mt2, fr env1 env2
     let is_bot_VE = function
       | TEBot -> true
       | TypeAndEff (Bot, EffBot) -> true
@@ -406,34 +440,37 @@ module Sensitive: SemanticsType =
       | Fout fout1, Fout fout2 -> TableMap.for_all (fun cs v1o -> 
           TableMap.find_opt cs fout2 |> Opt.map (fun v2o -> f v1o v2o) |>
           Opt.get_or_else (is_bot_VE v1o)) fout1
-    let leq_T f mt1 mt2 =
+    let leq_T f fr (mt1, env1) (mt2, env2) =
       TableMap.for_all (fun cs (v1i, v1o) -> 
         TableMap.find_opt cs mt2 |> Opt.map (fun (v2i, v2o) -> f v1i v2i && leq_fout f v1o v2o) |>
-        Opt.get_or_else (is_bot_VE v1i && fout_isempty v1o)) mt1
+        Opt.get_or_else (is_bot_VE v1i && fout_isempty v1o)) mt1 && fr env1 env2
     let eq_fout f fout1 fout2 = match fout1, fout2 with
       | Fout _, FTop -> false
       | FTop, Fout _ -> false
       | FTop, FTop -> true
       | Fout fout1, Fout fout2 -> TableMap.equal (fun v1o v2o -> f v1o v2o) fout1 fout2
-    let eq_T f mt1 mt2 =
-        TableMap.equal (fun (v1i, v1o) (v2i, v2o) -> f v1i v2i && eq_fout f v1o v2o) mt1 mt2
+    let eq_T f fr (mt1, env1) (mt2, env2) =
+        TableMap.equal (fun (v1i, v1o) (v2i, v2o) -> f v1i v2i && eq_fout f v1o v2o) mt1 mt2 && fr env1 env2
     let forget_fout f var fout = match fout with
       | FTop -> FTop
       | Fout fout -> Fout (TableMap.map (fun vo -> f var vo) fout)
-    let forget_T f var mt = TableMap.map (fun (vi, vo) -> 
-      f var vi, forget_fout f var vo) mt
+    let forget_T f fr var (mt, env) = TableMap.map (fun (vi, vo) -> 
+      f var vi, forget_fout f var vo) mt, fr var env
     let arrow_fout f var fout v = match fout with
       | FTop -> FTop
       | Fout fout -> Fout (TableMap.mapi (fun cs_tr vo -> f var vo v) fout)
-    let arrow_T f1 f2 var mt v = TableMap.mapi (fun cs (vi, vo) -> 
+    let arrow_T f1 f2 fr var (mt, env) v = TableMap.mapi (fun cs (vi, vo) -> 
       let z = get_trace_data cs in
       let v' = f1 z v in
-      f2 var vi v, arrow_fout f2 var vo v') mt
+      f2 var vi v, arrow_fout f2 var vo v') mt, 
+      match fr var (Relation env) v with
+      | Relation r -> r
+      | _ -> raise (Invalid_argument "Should be a relation")
     let wid_fout f fout1 fout2 = match fout1, fout2 with
       | Fout fout1, Fout fout2 -> Fout (TableMap.union (fun cs v1o v2o -> Some (f v1o v2o)) fout1 fout2)
       | _, _ -> join_fout f f fout1 fout2
-    let wid_T f g mt1 mt2 =
-      TableMap.union (fun cs (v1i, v1o) (v2i, v2o) -> Some (f v1i v2i, wid_fout f v1o v2o)) mt1 mt2
+    let wid_T f fr g (mt1, env1) (mt2, env2) =
+      TableMap.union (fun cs (v1i, v1o) (v2i, v2o) -> Some (f v1i v2i, wid_fout f v1o v2o)) mt1 mt2, fr env1 env2
     (* let equal_fout f fout var = match fout with
       | FTop -> FTop
       | Fout fout -> Fout (TableMap.map (fun vo -> f vo var) fout)
@@ -441,21 +478,35 @@ module Sensitive: SemanticsType =
     let replace_fout f fout var x = match fout with
       | FTop -> FTop
       | Fout fout -> Fout (TableMap.map (fun vo -> f vo var x) fout)
-    let replace_T f mt var x = TableMap.map (fun (vi, vo) -> f vi var x, replace_fout f vo var x) mt
+    let replace_T f fr (mt, env) var x = 
+      TableMap.map (fun (vi, vo) -> f vi var x, replace_fout f vo var x) mt, fr env var x
     let stren_fout f fout ae = match fout with
       | FTop -> FTop
       | Fout fout -> Fout (TableMap.map (fun vo -> f vo ae) fout)
-    let stren_T f mt ae = TableMap.map (fun (vi, vo) -> f vi ae, stren_fout f vo ae) mt
-    let proj_fout f fout vars = match fout with
+    let stren_T f fr (mt, env) ae = 
+      TableMap.map (fun (vi, vo) -> f vi ae, stren_fout f vo ae) mt, 
+      match fr (Relation env) ae with
+      | Relation r -> r
+      | _ -> raise (Invalid_argument "Should be a relation")
+    let proj_fout f fout (acc_vars, qset) vars = match fout with
       | FTop -> FTop
-      | Fout fout -> Fout (TableMap.mapi (fun cs vo -> f vo vars) fout)
-    let proj_T f g mt vars = TableMap.mapi (fun cs (vi, vo) -> 
+      | Fout fout -> Fout (TableMap.mapi (fun cs vo -> f vo (acc_vars, qset) vars) fout)
+    let rec pr_vars ppf = function
+      | [] -> ()
+      | [x] -> Format.fprintf ppf "%s" x
+      | x :: vars -> Format.fprintf ppf "%s,@ %a" x pr_vars vars
+    let proj_T f fr g (mt, env) (acc_vars, qset) vars = TableMap.mapi (fun cs (vi, vo) -> 
       let var = get_trace_data cs in
       let vars_o = 
         let vars = var :: vars in
+        let acc_z_vars = 
+          List.map (fun q -> List.map (get_input_acc_name var q) acc_vars) qset 
+          |> List.flatten
+        in
+        let vars = acc_z_vars @ vars in
         List.append vars (g var vi)
       in
-      f vi vars_o, proj_fout f vo vars_o) mt
+      f vi (acc_vars, qset) (var :: vars), proj_fout f vo (acc_vars, qset) vars_o) mt, fr env vars
     let get_label_snode n = match n with 
       | SEN (x, l) -> "EN: "^x^";"^get_trace_data l
       | SVN (x, cl) -> "VN: "^x^";"^get_trace_data cl
@@ -477,7 +528,7 @@ module Sensitive: SemanticsType =
     | EN (env, l) -> SEN (l, cs)
     | VN (env, xl, cl) -> SVN (xl, cl)
     let construct_fout cs vo = Fout (TableMap.singleton cs vo)
-    let construct_table cs (vi,vo) = TableMap.singleton cs (vi, vo)
+    let construct_table cs (vi,vo) env = TableMap.singleton cs (vi, vo), env
     let get_vnode = function
       | VN(env, l, cs) -> env, l, cs
       | EN(_, l) -> raise (Invalid_argument ("Expected variable node at "^l))
@@ -485,19 +536,19 @@ module Sensitive: SemanticsType =
       | FTop -> TETop
       | Fout fout -> TableMap.find_opt tr fout |> Opt.get_or_else TEBot
     let io_T cs v = match v with
-      | TypeAndEff (Table t, _) -> TableMap.find cs t
+      | TypeAndEff (Table (t, _), _) -> TableMap.find cs t
       | _ -> raise (Invalid_argument "Should be a table when using io_T")
     let get_fout_traces fout = match fout with
       | FTop -> raise (Invalid_argument "Error function output")
       | Fout fout -> TableMap.bindings fout |> List.map (fun (tr, _) -> tr) 
           |> fun l -> match l with | [] -> [create_empty_trace] | _ -> l
     let dx_T v = match v with
-      | TypeAndEff (Table t, _) -> let cs, _ = 
+      | TypeAndEff (Table (t, _), _) -> let cs, _ = 
             try TableMap.min_binding t with
             Not_found -> create_empty_trace , (TEBot, init_fout) 
           in cs
       | _ -> raise (Invalid_argument "Should be a table when using dx_T")
-    let trace_exists trace table = TableMap.exists (fun tr _ -> comp_trace trace tr = 0) table
+    let trace_exists trace (table, env) = TableMap.exists (fun tr _ -> comp_trace trace tr = 0) table
     let get_table_T = function
       | TypeAndEff (Table t, _) -> t
       | _ -> raise (Invalid_argument "Should be a table when using get_table_T")
@@ -526,11 +577,11 @@ module Sensitive: SemanticsType =
       and pr_table_row ppf (cs, fout) = 
         Format.fprintf ppf "@[<2>%s" (get_trace_data cs); Format.fprintf ppf ":@ @[<2>%a@]@]" pr_table fout
       in print_table_map ppf fout
-    let print_table t ppf f = 
+    let print_table (t, env) ppf f fr = 
       let rec pr_table ppf t = let (vi, vo) = t in
         Format.fprintf ppf "@[(%a ->@ " f vi; print_fout vo ppf f; Format.fprintf ppf ")@]"
       and print_table_map ppf mt = 
-        Format.fprintf ppf "[ %a ]" pr_table_map (TableMap.bindings mt)
+        Format.fprintf ppf "[ %a |@ %a]" pr_table_map (TableMap.bindings mt) fr env
       and pr_table_map ppf = function
         | [] -> ()
         | [row] -> Format.fprintf ppf "%a" pr_table_row row
@@ -563,7 +614,7 @@ module Sensitive: SemanticsType =
         let fout1' = Fout (TableMap.map (fun (fout1, _) -> fout1) fout) in
         let fout2' = Fout (TableMap.map (fun (_, fout2) -> fout2) fout) in
         (v1i', fout1'), (v2i', fout2')
-    let prop_table f g t1 t2 = 
+    let prop_table f g fr (t1, env1) (t2, env2) = 
       let t = TableMap.merge (fun cs vio1 vio2 ->
         match vio1, vio2 with
          | None, Some (v2i, v2o) -> Some ((v2i, init_fout), (v2i, v2o))
@@ -578,9 +629,9 @@ module Sensitive: SemanticsType =
             let temp_mt2 = TableMap.map (fun (_, vio2) -> vio2) t in
             TableMap.filter (fun cs (v2i, v2o) -> not@@is_bot_VE v2i || not@@fout_isempty v2o) temp_mt2
             (*Q: How to detect node scoping?*)
-       in t1', t2'
-    let step_func f v m = let t = get_table_T v in
-      TableMap.fold f t m
+       in (t1', env1), (t2', fr env1 env2)
+    let step_func f v m = let (t, env) = get_table_T v in
+      TableMap.fold (f env) t m
     let get_full_fout fout = match fout with
       | FTop -> raise (Invalid_argument("Fout with error"))
       | Fout fout -> 
@@ -588,23 +639,23 @@ module Sensitive: SemanticsType =
           create_empty_trace, TEBot 
         else
           TableMap.min_binding fout
-    let get_full_table_T t = TableMap.min_binding t
-    let get_table_by_cs_T cs t = TableMap.find cs t
+    let get_full_table_T (t, env) = let (a, b) = TableMap.min_binding t in (a, b, env)
+    let get_table_by_cs_T cs (t, env) = TableMap.find cs t
     let update_fout cs vo fout = match fout with
       | FTop -> FTop
       | Fout fout -> Fout (TableMap.add cs vo fout)
-    let update_table cs vio t = TableMap.add cs vio t
-    let table_isempty t = TableMap.is_empty t
-    let table_mapi f t = TableMap.mapi f t
+    let update_table cs vio (t, env) = TableMap.add cs vio t, env
+    let table_isempty (t, env) = TableMap.is_empty t
+    let table_mapi f (t, env) = (TableMap.mapi f t, env)
     let is_top_fout fout = match fout with
       | FTop -> true
       | _ -> false
     let bot_shape_fout f fout = match fout with
       | FTop -> init_fout
       | Fout fout -> Fout (TableMap.mapi (fun cs vo -> f vo) fout)
-    let bot_shape_T f t = 
+    (* let bot_shape_T f fr (t, env) = 
       TableMap.mapi (fun cs (vi, vo) -> 
-        (f vi, bot_shape_fout f vo)) t
+        (f vi, bot_shape_fout f vo)) t, fr env *)
     let append_call_trace new_token trace = add_cs_token_to_trace new_token trace !trace_len
     let append_part_trace new_token trace = add_pr_token_to_trace new_token trace !trace_len
     let extend_trace tail trace = add_tail_to_trace tail trace !trace_len

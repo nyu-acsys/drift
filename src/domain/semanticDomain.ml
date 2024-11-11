@@ -21,6 +21,7 @@ let pre_def_func = ref []
 
 module SemanticsDomain =
   struct
+    let ve_have_effects () = !Config.effect_on && (not !Config.ev_trans)
     (*
     **********************************
     ** Abstract domain for Relation **
@@ -118,6 +119,11 @@ module SemanticsDomain =
       | Bool (vt, vf) -> Bool ((AbstractValue.equal_var vt "cur_v" var), (AbstractValue.equal_var vf "cur_v" var))
       | Unit v -> a
       | _ -> raise (Invalid_argument "equal_R: Given a unit/env type")
+    let equal_R_v a var1 var2 = match a with
+      | Int v -> Int (AbstractValue.equal_var v var1 var2)
+      | Bool (vt, vf) -> Bool ((AbstractValue.equal_var vt var1 var2), (AbstractValue.equal_var vf var1 var2))
+      | Unit v -> Unit (AbstractValue.equal_var v var1 var2)
+      | Env v -> Env (AbstractValue.equal_var v var1 var2)
     let wid_R a1 a2 = match a1, a2 with
       | (Int v1), (Int v2) -> Int (AbstractValue.widening v1 v2)
       | (Bool (v1t, v1f)), (Bool (v2t, v2f)) -> Bool (AbstractValue.widening v1t v2t, AbstractValue.widening v1f v2f)
@@ -339,9 +345,8 @@ module SemanticsDomain =
       | TEBot -> EffBot
       | TypeAndEff (_, e) -> e
       | TETop -> EffTop
-
     let extract_ec = 
-      if (!Config.effect_on && (not !Config.ev_trans)) then
+      if (ve_have_effects ()) then
           (fun te -> 
             match (extract_eff te) with
             | EffBot | EffTop -> 
@@ -367,13 +372,22 @@ module SemanticsDomain =
      ********************************
      *)
     let init_VE_v v = TypeAndEff (v, EffBot)
+    let set_table_ae ae v = 
+      let r = 
+        match ae with
+        | Relation r -> r
+        | _ -> raise (Invalid_argument "Expected Relation")
+      in
+      match v with
+      | Table t -> Table (set_env r t)
+      | _ -> raise (Invalid_argument "Expected Table")
     let destruct_VE = function 
       | TEBot -> Bot, EffBot
       | TypeAndEff (v, e) -> v, e
       | TETop -> Top, EffTop 
     let rec alpha_rename_V v prevar var = match v with
       | Relation r -> Relation (alpha_rename_R r prevar var)
-      | Table t -> Table (alpha_rename_T alpha_rename_VE t prevar var)
+      | Table t -> Table (alpha_rename_T alpha_rename_VE alpha_rename_R t prevar var)
       | Ary ary -> Ary (alpha_rename_Ary ary prevar var)
       | Lst lst -> Lst (alpha_rename_Lst lst prevar var)
       | Tuple u -> Tuple (alpha_rename_Tuple u prevar var)
@@ -395,19 +409,31 @@ module SemanticsDomain =
     and join_V (v1:value_tt) (v2:value_tt) :value_tt = match v1, v2 with
       | Bot, v | v, Bot -> v
       | Relation r1, Relation r2 -> Relation (join_R r1 r2)
-      | Table t1, Table t2 -> Table (join_T join_VE alpha_rename_VE t1 t2)
+      | Table t1, Table t2 -> Table (join_T join_VE join_R alpha_rename_VE t1 t2)
       | Ary ary1, Ary ary2 -> Ary (join_Ary ary1 ary2)
       | Lst lst1, Lst lst2 -> Lst (join_Lst lst1 lst2)
       | Tuple u1, Tuple u2 -> Tuple (join_Tuple u1 u2)
       | _, _ -> Top
+    and join_V_Eff (v1:value_tt) (v2:value_tt) :value_tt = match v1, v2 with
+      | Top, v | v, Top -> v
+      | Relation r1, Relation r2 -> Relation r1
+      | Table t1, Table t2 -> Table (join_T join_VE_Eff (fun env v -> env) alpha_rename_VE t1 t2)
+      | Ary ary1, Ary ary2 -> Ary ary1
+      | Lst lst1, Lst lst2 -> Lst lst1
+      | Tuple u1, Tuple u2 -> Tuple (join_Tuple_Eff u1 u2)
+      | _, _ -> Bot
     and join_VE (ve1: value_te) (ve2: value_te) :value_te = match ve1, ve2 with 
       | TEBot, ve | ve, TEBot -> ve
       | TypeAndEff (v1, e1), TypeAndEff (v2, e2) -> TypeAndEff (join_V v1 v2, join_Eff e1 e2)
       | _, _ -> TETop
+    and join_VE_Eff (ve1: value_te) (ve2: value_te) :value_te = match ve1, ve2 with 
+      | TETop, ve | ve, TETop -> ve
+      | TypeAndEff (v1, e1), TypeAndEff (v2, e2) -> TypeAndEff (join_V_Eff v1 v2, join_Eff e1 e2)
+      | _, _ -> TEBot
     and meet_V (v1:value_tt) (v2:value_tt) :value_tt = match v1, v2 with
       | Top, v | v, Top -> v
       | Relation r1, Relation r2 -> Relation (meet_R r1 r2)
-      | Table t1, Table t2 -> Table (meet_T meet_VE alpha_rename_VE t1 t2)
+      | Table t1, Table t2 -> meet_T meet_VE meet_R alpha_rename_VE t1 t2 |> table_to_value is_bot_R
       | Ary ary1, Ary ary2 -> Ary (meet_Ary ary1 ary2)
       | Lst lst1, Lst lst2 -> Lst (meet_Lst lst1 lst2)
       | Tuple u1, Tuple u2 -> Tuple (meet_Tuple u1 u2)
@@ -420,7 +446,7 @@ module SemanticsDomain =
       | Bot, _ -> true
       | _, Top -> true
       | Relation r1, Relation r2 -> leq_R r1 r2
-      | Table t1, Table t2 -> leq_T leq_VE t1 t2
+      | Table t1, Table t2 -> leq_T leq_VE leq_R t1 t2
       | Ary ary1, Ary ary2 -> leq_Ary ary1 ary2
       | Lst lst1, Lst lst2 -> leq_Lst lst1 lst2
       | Tuple u1, Tuple u2 -> leq_Tuple u1 u2
@@ -434,7 +460,7 @@ module SemanticsDomain =
       | Bot, _ -> true
       | _, Top -> true
       | Relation r1, Relation r2 -> leq_R r1 r2
-      | Table t1, Table t2 -> leq_T leq_VE t1 t2
+      | Table t1, Table t2 -> leq_T leq_VE leq_R t1 t2
       | Ary ary1, Ary ary2 -> leq_Ary ary1 ary2
       | Lst lst1, Lst lst2 -> sat_leq_Lst lst1 lst2
       | Tuple u1, Tuple u2 -> leq_Tuple u1 u2
@@ -448,7 +474,7 @@ module SemanticsDomain =
       | Bot, Bot -> true
       | Top, Top -> true
       | Relation r1, Relation r2 -> eq_R r1 r2
-      | Table t1, Table t2 -> eq_T eq_VE t1 t2
+      | Table t1, Table t2 -> eq_T eq_VE eq_R t1 t2
       | Ary ary1, Ary ary2 -> eq_Ary ary1 ary2
       | Lst lst1, Lst lst2 -> eq_Lst lst1 lst2
       | Tuple u1, Tuple u2 -> eq_Tuple u1 u2
@@ -467,6 +493,9 @@ module SemanticsDomain =
     and is_Relation = function 
       | Relation _ -> true
       | _ -> false
+    and get_Relation = function
+      | Relation r -> r
+      | _ -> raise (Invalid_argument "Not a relation")
     and is_Array = function
       | Ary _ -> true
       | _ -> false
@@ -475,9 +504,10 @@ module SemanticsDomain =
       | _ -> false
     (*todo: if v' is Bot then the result should be Bot? why is it different from the paper *)
     and arrow_V var (v:value_tt) (v':value_tt) = match v' with
-      | Bot | Top | Table _ -> v
+      | Bot | Top -> v
+      | Table t -> Relation (get_env_T t) |> stren_V v
       | Relation r2 -> (match v with
-                       | Table t -> Table (arrow_T forget_V arrow_VE var t v')
+                       | Table t -> arrow_T forget_V arrow_VE arrow_V var t v' |> table_to_value is_bot_R
                        | Relation r1 -> Relation (arrow_R var r1 r2)
                        | Ary ary -> Ary (arrow_Ary var ary r2 None)
                        | Lst lst -> Lst (arrow_Lst var lst (Relation r2) None)
@@ -490,7 +520,7 @@ module SemanticsDomain =
                        | TypeAndEff (v2, _) -> arrow_V var_i v1 v2) v (List.length u2 |> first_n |> zip_list u2)
       | Ary ary2 -> let (vars, (rl2, re2)) = ary2 in
                    (match v with
-                    | Table t -> Table (arrow_T forget_V arrow_VE var t v')
+                    | Table t -> arrow_T forget_V arrow_VE arrow_V var t v' |> table_to_value is_bot_R
                     | Relation r1 -> Relation (
                                         let r1' = arrow_R var r1 rl2 in
                                         if is_bot_R re2 then r1' else
@@ -501,7 +531,7 @@ module SemanticsDomain =
                     | _ -> v)
       | Lst lst2 -> let ((l2,e2) as vars, (rl2, vee2)) = lst2 in
                    (match v with
-                    | Table t -> Table (arrow_T forget_V arrow_VE var t v')
+                    | Table t -> arrow_T forget_V arrow_VE arrow_V var t v' |> table_to_value is_bot_R
                     | Relation r1 -> if is_bot_R rl2 then Relation (bot_shape_R r1) else
                                       let r1' = let res = meet_R r1 rl2 in
                                                 if is_bot_R res then (meet_R (forget_R l2 r1) rl2) else res in
@@ -531,6 +561,14 @@ module SemanticsDomain =
                                | TEBot -> Bot)
                             else v
                     | _ -> v)
+    and arrow_V_Eff var v v' = match v' with
+    | Relation r2 -> (
+      match v with
+      | Table t -> arrow_T forget_V arrow_VE_Eff (fun var env v -> env) var t v' |> table_to_value is_bot_R
+      | Tuple u -> Tuple (arrow_Tuple_Eff var u v')
+      | _ -> v
+      )
+    | _ -> v
     (* todo: same here, the strengthening with Bot return the effect. Need to verify why is that? *)
     and arrow_EffV var e v' = 
       let arrow_Eff_with_lst eff l =
@@ -573,8 +611,11 @@ module SemanticsDomain =
     and arrow_VE var ve v' = match ve with 
       | TypeAndEff (v, e) -> TypeAndEff (arrow_V var v v', arrow_EffV var e v')
       | _ -> ve
+    and arrow_VE_Eff var ve v' = match ve with
+      | TypeAndEff (v, e) -> TypeAndEff (arrow_V_Eff var v v', arrow_EffV var e v')
+      | _ -> ve
     and forget_V var v = match v with
-      | Table t -> Table (forget_T forget_VE var t)
+      | Table t -> Table (forget_T forget_VE forget_R var t)
       | Ary ary -> Ary (forget_Ary var ary)
       | Lst lst -> Lst (forget_Lst var lst)
       | Relation r -> Relation (forget_R var r)
@@ -592,7 +633,7 @@ module SemanticsDomain =
       temap ((fun v -> equal_V v var), id) ve
     and wid_V v1 v2 = match v1, v2 with
       | Relation r1, Relation r2 -> Relation (wid_R r1 r2)
-      | Table t1, Table t2 -> Table (wid_T wid_VE alpha_rename_VE t1 t2)
+      | Table t1, Table t2 -> Table (wid_T wid_VE wid_R alpha_rename_VE t1 t2)
       | Ary ary1, Ary ary2 -> Ary (wid_Ary ary1 ary2)
       | Lst lst1, Lst lst2 -> Lst (wid_Lst lst1 lst2)
       | Tuple u1, Tuple u2 -> Tuple (wid_Tuple u1 u2)
@@ -626,7 +667,7 @@ module SemanticsDomain =
       | Bot -> true
       | _ -> false
     and replace_V v var x = match v with
-      | Table t -> Table (replace_T replace_VE t var x)
+      | Table t -> Table (replace_T replace_VE replace_R t var x)
       | Relation r -> Relation (replace_R r var x)
       | Ary ary -> Ary (replace_Ary ary var x)
       | Lst lst -> Lst (replace_Lst lst var x)
@@ -643,8 +684,16 @@ module SemanticsDomain =
                                      Relation (stren_R r rae)
       | Ary ary, Relation rae -> Ary (stren_Ary ary rae)
       | Lst lst, Relation rae -> Lst (stren_Lst lst rae)
-      | Table t, Relation rae -> Table t (* Table (stren_T stren_V t ae) *)
+      | Table t, Relation rae -> stren_T stren_VE stren_V t ae |> table_to_value is_bot_R
       | Tuple u, Relation rae -> Tuple (stren_Tuple u ae)
+      | Top, _ -> ae
+      | _, Bot -> Bot
+      | _, Top -> v
+      | _,_ -> raise (Invalid_argument "ae should not be a table")
+    and stren_V_Eff v ae = match v,ae with
+      | Table t, Relation rae -> stren_T stren_VE_Eff (fun env ae -> env) t ae |> table_to_value is_bot_R
+      | Tuple u, Relation rae -> Tuple (stren_Tuple_Eff u ae)
+      | _, Relation rae -> v
       | Top, _ -> ae
       | _, Bot -> Bot
       | _, Top -> v
@@ -654,12 +703,8 @@ module SemanticsDomain =
       match ve' with 
       | TETop -> failwith "todo: not implemented. need further insights"
       | _ -> ve'
-    and stren_ite_V v ae = match v, ae with
-      | Table t, Relation rae -> 
-         if is_bot_R rae then Table t else Table (stren_T stren_VE t ae)
-      | _, _ -> stren_V v ae
-    and stren_ite_VE ve ae = 
-      let ve' = temap ((fun v ->  stren_ite_V v ae), (fun e -> stren_Eff e ae)) ve in 
+    and stren_VE_Eff ve ae = 
+      let ve' = temap ((fun v -> stren_V_Eff v ae), (fun e -> stren_Eff e ae)) ve in 
       match ve' with 
       | TETop -> failwith "todo: not implemented. need further insights"
       | _ -> ve'
@@ -687,16 +732,16 @@ module SemanticsDomain =
        let v' = Relation (der_R expr r) in
        v' |> der_V e1 |> der_V e2
        | _, _ -> raise (Invalid_argument "derived values match incorrectly") *)
-    and proj_V v vars =
+    and proj_V v (acc_vars, qset) vars =
       match v with
       | Relation r -> Relation (proj_R r vars)
-      | Table t -> Table (proj_T proj_VE get_arg_vars_VE t vars)
+      | Table t -> proj_T proj_VE proj_R get_arg_vars_VE t (acc_vars, qset) vars |> table_to_value is_bot_R
       | Ary ary -> Ary (proj_Ary ary vars)
-      | Lst lst -> Lst (proj_Lst lst vars)
-      | Tuple u -> Tuple (proj_Tuple u vars)
+      | Lst lst -> Lst (proj_Lst lst (acc_vars, qset) vars)
+      | Tuple u -> Tuple (proj_Tuple u (acc_vars, qset) vars)
       | _ -> v
-    and proj_VE ve vars = 
-      temap ((fun v -> proj_V v vars), (fun e -> proj_Eff e vars)) ve
+    and proj_VE ve (acc_vars, qset) vars = 
+      temap ((fun v -> proj_V v (acc_vars, qset) vars), (fun e -> proj_Eff e vars)) ve
     and get_len_var_V = function
       | Ary ary -> get_len_var_Ary ary
       | Lst lst -> get_len_var_Lst lst
@@ -795,6 +840,7 @@ module SemanticsDomain =
       | Ary ary -> only_shape_Ary ary
       | Tuple u -> only_shape_Tuple u
       | Bot -> true
+      | Table v -> get_env_T v |> is_bot_R 
       | _ -> false
     and only_shape_VE = function
       | TEBot -> true
@@ -823,9 +869,8 @@ module SemanticsDomain =
          TypeAndEff ((item_shape_V v1 v2), e2)
       | _, _ -> te
     and bot_shape_V = function
-      | Bot | Top -> Bot
+      | Bot | Top | Table _ -> Bot
       | Relation r -> Relation (bot_shape_R r)
-      | Table t -> Table (bot_shape_T bot_shape_VE t)
       | Lst lst -> Lst (bot_shape_Lst lst)
       | Ary ary -> Ary (bot_shape_Ary ary)
       | Tuple u -> Tuple (bot_shape_Tuple u)
@@ -864,6 +909,17 @@ module SemanticsDomain =
     and get_ae_from_v v = match v with
       | Relation r -> get_ae_from_R r
       | Tuple u -> get_ae_from_Tuple u
+      | Table t -> Relation (get_env_T t)
+      | Bot -> Bot
+      | _ -> raise (Invalid_argument "get_ae_from_v: Wrong base type")
+    and get_ae_from_ve ve = match ve with
+      | TEBot | TETop -> Bot
+      | TypeAndEff (v, e) -> get_ae_from_v v
+    and get_ae_from_ev v = match v with
+      | Relation r -> get_ae_from_R r
+      | Tuple u -> get_ae_from_Tuple u
+      | Table t -> Relation (get_env_T t)
+      | Bot -> Bot
       | _ -> raise (Invalid_argument "get_ae_from_v: Wrong base type")
     and get_unit_from_v v = match v with
       | Relation r -> Relation (convert_r_to_unit r)
@@ -1104,9 +1160,9 @@ module SemanticsDomain =
     and stren_Lst lst ae = let ((l,e) as vars, (rl,vee)) = lst in
       let ae' = (forget_R e ae |> forget_R l) in
       (vars, (stren_R rl ae', stren_VE vee (Relation ae')))
-    and proj_Lst lst vars = let ((l,e), (rl,vee)) = lst in
+    and proj_Lst lst (acc_vars, qset) vars = let ((l,e), (rl,vee)) = lst in
       let vars' = e :: l :: vars in
-      ((l,e), (proj_R rl vars', proj_VE vee vars'))
+      ((l,e), (proj_R rl vars', proj_VE vee (acc_vars, qset) vars'))
     and alpha_rename_Lsts lst1 lst2 = 
       let (l1,e1), _ = lst1 in let (l2,e2), _ = lst2 in
       let lst2' = match l1 = l2, e1 = e2 with
@@ -1169,8 +1225,8 @@ module SemanticsDomain =
         | Relation r, Relation re -> 
           let re' = arrow_R e rl' (forget_R l r) |> join_R (meet_R (forget_R l re) rl') in
           TypeAndEff ((Relation re'), eff')
-        | Table t, Bot -> let t' = init_T (dx_T (TypeAndEff (v, empty_eff))) in
-          TypeAndEff ((Table t'), eff')
+        | Table t, Bot -> let t' = init_T (dx_T (TypeAndEff (v, empty_eff))) (get_env_T t) in (* TODO: this is probably wrong *)
+          TypeAndEff (Table t', eff')
         | Tuple u, Bot -> let u' = List.init (List.length u) (fun _ ->
              TEBot) in TypeAndEff ((Tuple u'), eff')
         | _, ve -> TypeAndEff ((join_V v ve), eff')
@@ -1241,6 +1297,8 @@ module SemanticsDomain =
       Tuple (List.init l (fun _ -> TEBot))
     and join_Tuple u1 u2 =
       List.map2 (fun v1 v2 -> join_VE v1 v2) u1 u2
+    and join_Tuple_Eff u1 u2 =
+      List.map2 (fun v1 v2 -> join_VE_Eff v1 v2) u1 u2
     and meet_Tuple u1 u2 =
       List.map2 (fun v1 v2 -> meet_VE v1 v2) u1 u2
     and leq_Tuple u1 u2 =
@@ -1251,12 +1309,16 @@ module SemanticsDomain =
       List.map2 (fun v1 v2 -> wid_VE v1 v2) u1 u2
     and arrow_Tuple var u v' = 
       List.map (fun v -> arrow_VE var v v') u
+    and arrow_Tuple_Eff var u v' = 
+      List.map (fun v -> arrow_VE_Eff var v v') u
     and stren_Tuple u ae = 
       List.map (fun v -> stren_VE v ae) u
+    and stren_Tuple_Eff u ae = 
+      List.map (fun v -> stren_VE_Eff v ae) u
     and add_tuple_item_Tuple u v =
       v :: u
-    and proj_Tuple u vars = 
-      List.map (fun v -> proj_VE v vars) u
+    and proj_Tuple u (acc_vars, qset) vars = 
+      List.map (fun v -> proj_VE v (acc_vars, qset) vars) u
     and forget_Tuple var u =
       List.map (fun v -> forget_VE var v) u
     and bot_shape_Tuple u = 
@@ -1266,9 +1328,9 @@ module SemanticsDomain =
     and get_vars_Tuple var u =
       List.map (fun i -> var^"."^(string_of_int i)) (List.length u |> first_n)
     and only_shape_Tuple u = 
-      List.fold_right (fun ve is_bot -> if is_bot then only_shape_VE ve else is_bot) u true
+      List.fold_right (fun ve is_bot -> if is_bot then is_bot else only_shape_VE ve) u false
     and get_ae_from_Tuple u =
-      List.fold_right (fun ve ae -> join_V (get_ae_from_v (extract_v ve)) ae) u Bot
+      List.fold_right (fun ve ae -> join_V (get_ae_from_v (extract_v ve)) ae) u (Relation bot_Env)
 
     (*
       ***************************************
@@ -1296,9 +1358,9 @@ module SemanticsDomain =
           end
         ); *)
         let v = wid_VE v1 v2 in
-        if !debug && get_label_snode n = "VN: 137;z25.z132.." then
+        (* if get_label_snode n = "38" then
           Format.fprintf Format.std_formatter "sem line 1230 @,v: @[%a@]@, @,v1: @[%a@]@, @,v2: @[%a@]@" 
-          pr_value_and_eff v pr_value_and_eff v1 pr_value_and_eff v2;
+          pr_value_and_eff v pr_value_and_eff v1 pr_value_and_eff v2; *)
         v
         ) m1 m2
     let leq_M (m1: exec_map_t) (m2: exec_map_t) : bool =
@@ -1336,10 +1398,10 @@ module SemanticsDomain =
         let t = 
           let t' = Table (construct_table (create_singleton_trace_call_loc var_e) 
                             ((init_VE_v (Relation rm)), 
-                            (init_VE_v (Ary ary)) |> construct_fout create_empty_trace)) in
+                            (init_VE_v (Ary ary)) |> construct_fout create_empty_trace) init_Env) in
           Table (construct_table (create_singleton_trace_call_loc var_l) 
                    ((init_VE_v (Relation rl)), 
-                   (init_VE_v t') |> construct_fout create_empty_trace)) in
+                   (init_VE_v t') |> construct_fout create_empty_trace) init_Env) in
         init_VE_v t
       in
       let n_len = construct_vnode env "Array.length" create_empty_trace in
@@ -1360,7 +1422,7 @@ module SemanticsDomain =
         let rlen = equal_R (top_R Plus) "l" in
         let t = Table (construct_table (create_singleton_trace_call_loc var_l) 
                  ((init_VE_v (Ary ary)), 
-                 (init_VE_v (Relation rlen) |> construct_fout create_empty_trace)))
+                 (init_VE_v (Relation rlen) |> construct_fout create_empty_trace)) init_Env)
         in
         init_VE_v t
       in
@@ -1385,10 +1447,10 @@ module SemanticsDomain =
         let t = 
           let t' = Table (construct_table (create_singleton_trace_call_loc var_zi) 
                             ((init_VE_v (Relation rm)), 
-                            (init_VE_v (Relation rr)) |> construct_fout create_empty_trace)) in
+                            (init_VE_v (Relation rr)) |> construct_fout create_empty_trace) init_Env) in
           Table (construct_table (create_singleton_trace_call_loc var_l) 
                    ((init_VE_v (Ary ary)), 
-                   (init_VE_v t') |> construct_fout create_empty_trace)) in
+                   (init_VE_v t') |> construct_fout create_empty_trace) init_Env) in
         init_VE_v t
       in
       let n_set = construct_vnode env "Array.set" create_empty_trace in
@@ -1414,13 +1476,13 @@ module SemanticsDomain =
         let t = 
           let t' = Table (construct_table (create_singleton_trace_call_loc var_e) 
                             ((init_VE_v (Relation rri)), 
-                            (init_VE_v (Tuple rrr)) |> construct_fout create_empty_trace)) in
+                            (init_VE_v (Tuple rrr)) |> construct_fout create_empty_trace) init_Env) in
           let t'' = Table (construct_table (create_singleton_trace_call_loc var_zi) 
                              ((init_VE_v (Relation rm)), 
-                             (init_VE_v t') |> construct_fout create_empty_trace)) in
+                             (init_VE_v t') |> construct_fout create_empty_trace) init_Env) in
           Table (construct_table (create_singleton_trace_call_loc var_l) 
                    ((init_VE_v (Ary ary)), 
-                   (init_VE_v t'') |> construct_fout create_empty_trace)) in
+                   (init_VE_v t'') |> construct_fout create_empty_trace) init_Env) in
         init_VE_v t
       in
       let m' = 
@@ -1452,7 +1514,7 @@ module SemanticsDomain =
         let rlen = equal_R (top_R Plus) "l" in
         let t = Table (construct_table (create_singleton_trace_call_loc var_l) 
                  ((init_VE_v (Lst list)), 
-                 (init_VE_v (Relation rlen)) |> construct_fout create_empty_trace))
+                 (init_VE_v (Relation rlen)) |> construct_fout create_empty_trace) init_Env)
         in init_VE_v t
       in
       let n_hd = construct_vnode env "List.hd" create_empty_trace in
@@ -1472,7 +1534,7 @@ module SemanticsDomain =
         let t =
           Table (construct_table (create_singleton_trace_call_loc var_h) 
                    ((init_VE_v (Lst list)), 
-                   (init_VE_v tr) |> construct_fout create_empty_trace)) in
+                   (init_VE_v tr) |> construct_fout create_empty_trace) init_Env) in
         init_VE_v t
       in
       let n_tl = construct_vnode env "List.tl" create_empty_trace in
@@ -1499,7 +1561,7 @@ module SemanticsDomain =
         let t =
           Table (construct_table (create_singleton_trace_call_loc var_t) 
                    ((init_VE_v (Lst list1)), 
-                   (init_VE_v (Lst list2)) |> construct_fout create_empty_trace)) in
+                   (init_VE_v (Lst list2)) |> construct_fout create_empty_trace) init_Env) in
         init_VE_v t
       in
       let n_cons = construct_vnode env "List.cons" create_empty_trace in
@@ -1528,9 +1590,9 @@ module SemanticsDomain =
         let t =
           let t' = Table (construct_table (create_singleton_trace_call_loc var_l) 
                             ((init_VE_v (Lst list1)), 
-                            (init_VE_v (Lst list2)) |> construct_fout create_empty_trace)) in
+                            (init_VE_v (Lst list2)) |> construct_fout create_empty_trace) init_Env) in
           Table (construct_table (create_singleton_trace_call_loc var_c) 
-                   (ve, (init_VE_v t') |> construct_fout create_empty_trace)) in
+                   (ve, (init_VE_v t') |> construct_fout create_empty_trace) init_Env) in
         init_VE_v t
       in
       let m' = 

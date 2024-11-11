@@ -1,4 +1,4 @@
-QSet   = [0;1;1]; 
+QSet   = [0;1]; 
 
 delta  = fun evx (q, acc) -> 
   if   (q = 0 && evx=1) then (0, acc+1)
@@ -6,4 +6,4 @@ delta  = fun evx (q, acc) ->
 
 IniCfg = (0, 0);
 
-assert = fun (q, acc) -> (q = 0 && (acc+acc <= prefm));
+assert = fun (q, acc) -> (q = 0 && (2*acc <= prefm));
