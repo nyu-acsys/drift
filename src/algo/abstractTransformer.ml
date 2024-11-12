@@ -1451,7 +1451,10 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                 else
                   replace_Eff (Effect ec') z x
               )
-              |> fun e -> stren_Eff e ae'
+              |> fun e -> let e = stren_Eff e ae' in ((if !debug then 
+                let pr = Format.fprintf Format.std_formatter in
+                pr "@.LINE 1068, e': @[%a@]@."
+                  pr_eff e); e)
               |> get_effmap
               |> StateMap.mapi (set_input_types_i x)
             in
@@ -1911,7 +1914,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           else
             let te' = begin match te1 with
                       | TypeAndEff ((Relation v), (Effect e)) -> 
-                        TypeAndEff (get_unit_from_v ae, Effect (ev penv e v))
+                        TypeAndEff (get_unit_from_v ae1, Effect (ev penv e v))
                       | _ -> te1
                       end
             in 
