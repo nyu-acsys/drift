@@ -11,6 +11,6 @@ let rec order d c b =
   end else 0
 
 let main (dd:int(*-:{v:Int | true}*)) (cc:int(*-:{v:Int | v > 0}*)) = 
-  let b = if nondet then 1 else 0 in
-  order dd cc b
+  let bb = if nondet then 1 else 0 in
+  order dd cc bb
 
