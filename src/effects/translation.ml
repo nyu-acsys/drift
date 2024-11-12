@@ -7,16 +7,33 @@ open Printer
  * Translation any program e is given by:
  *   tr e simpl_ev simpl_cfg0   
  *)
+
 let tr (e: term) (a: term) (acfg: term) (asst: term option) (asstFinal: term option) = 
   let ev_ = mk_fresh_var "ev_" in
-  let ret e cfg = TupleLst ([e; cfg], "") in
-  let rec tr_ (e: term) (acfg: term) = 
+  let ret e cfg = TupleLst ([e; cfg], "") in     
+  let rec tr_tuple_ (es: term list) (escfg : term) (acc : term list) = 
+    match es with
+    | [] -> TupleLst ([TupleLst (List.rev acc, ""); escfg], "")
+    | e'::es' -> begin
+       let tr_e' = tr_ e' escfg in
+       begin match tr_e' with
+       | TupleLst ([e''; ecfg''], "") -> tr_tuple_ es' ecfg'' (e'' :: acc)
+       | _ ->
+          let ex'', ecfgx'' = mk_fresh_var "x", mk_fresh_var "cfg" in
+          PatMat (tr_e', [
+                            mk_pattern_case 
+                              (TupleLst ([ex''; ecfgx''], ""))
+                              (tr_tuple_ es' ecfgx'' (ex'' :: acc))
+                          ], "")
+       end
+      end
+  and tr_ (e: term) (acfg: term) = 
     match e with
-    | TupleLst (e, l) -> TupleLst (List.map (fun e' -> tr_ e' acfg) e, l)
+    | TupleLst (e, l) -> tr_tuple_ e acfg []
     | (Const _ | Var _ | NonDet _) -> ret e acfg
     | Rec (fopt, px, def, l) ->
       let fc = fresh_var "cfg" in
-      ret (Rec (fopt, (fc, ""), Rec (None, px, tr_ def (Var (fc, "")), l), "")) acfg
+      ret (Rec (fopt, px, Rec (None, (fc, ""), tr_ def (Var (fc, "")), l), "")) acfg
     | App (e1, e2, l) ->
       let tr_e1 = tr_ e1 acfg in
       begin match tr_e1 with
@@ -24,13 +41,13 @@ let tr (e: term) (a: term) (acfg: term) (asst: term option) (asstFinal: term opt
           let tr_e2 = tr_ e2 ecfg1 in
           begin match tr_e2 with
             | TupleLst ([e2'; ecfg2], "") ->
-              App ((mk_app e1' ecfg2), e2', l)
+              App ((mk_app e1' e2'), ecfg2, l)
             | _ ->
               let e2x, acfg2x = mk_fresh_var "x", mk_fresh_var "cfg" in
               PatMat (tr_e2, [
                   mk_pattern_case 
                     (TupleLst ([e2x; acfg2x], ""))
-                    (App ((mk_app e1' acfg2x), e2x, l))
+                    (App ((mk_app e1' e2x), acfg2x, l))
                 ], "")
           end
         | _ ->
@@ -41,7 +58,7 @@ let tr (e: term) (a: term) (acfg: term) (asst: term option) (asstFinal: term opt
               PatMat (tr_e1, [
                   mk_pattern_case
                     (TupleLst ([e1x; acfg1x], ""))
-                    (App ((mk_app e1x ecfg2), e2', l))
+                    (App ((mk_app e1x e2'), ecfg2, l))
                     ], "")
             | _ ->              
               let e2x, acfg2x = mk_fresh_var "x", mk_fresh_var "cfg" in
@@ -51,7 +68,7 @@ let tr (e: term) (a: term) (acfg: term) (asst: term option) (asstFinal: term opt
                     (PatMat (tr_e2, [
                          mk_pattern_case 
                            (TupleLst ([e2x; acfg2x], ""))
-                           (App ((mk_app e1x acfg2x), e2x, l))
+                           (App ((mk_app e1x e2x), acfg2x, l))
                        ], ""))
                 ], "")
           end
