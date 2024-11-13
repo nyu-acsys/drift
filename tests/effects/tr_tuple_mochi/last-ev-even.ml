@@ -38,7 +38,7 @@ let asst_final0 cfg1 = (match cfg1 with
                         (q,acc) -> assert ((acc mod 2) = 0))
 
 
-let rec foo vv cfg2 = ((fun f cfg3 ->
+let rec foo vv (cfg2 : (int * int)) = ((fun f cfg3 ->
                           if (vv = 0) then ((() ; 0),((ev_step0 f) cfg3))
                           else (match (match ((foo (vv - 1)) ((ev_step0 vv) cfg3)) with 
                                        (x0,cfg4) -> ((x0 f) cfg4)) with  (x1,cfg5) -> ((() ; x1),cfg5))),cfg2) 

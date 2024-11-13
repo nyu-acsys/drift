@@ -97,7 +97,7 @@ let rec dequeue (l1_deq,l2_deq) cfg9 =
   else (0,cfg9)
 in
 
-let rec enqueue n_r cfg13 =
+let rec enqueue n_r (cfg13 : (int * (int * int * int))) =
   ((fun (l1_eq,l2_eq) cfg14 ->
       if (n_r = 0) then ((l1_eq,l2_eq),cfg14)
       else (match 

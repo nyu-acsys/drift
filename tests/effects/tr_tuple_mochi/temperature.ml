@@ -56,7 +56,7 @@ let ev_step_asst0 cfg1 =
    (q,acc) -> assert (q < 3))
 
 
-let rec f x cfg2 =
+let rec f x (cfg2 : (int * int)) =
   ((fun pos cfg3 ->
       ((fun neg cfg4 ->
           (match if ((x mod 2) = 0) then ((fun cfg6 ->
@@ -67,7 +67,6 @@ let rec f x cfg2 =
                                else (match (match ((f (x - 2)) cfg7) with 
                                             (x2,cfg9) -> ((x2 (pos + 1)) cfg9)) with  (x3,cfg10) -> ((x3 (neg - 1)) cfg10)) with 
                                (x1,cfg8) -> ((x0 ; x1),cfg8)))),cfg3)),cfg2) 
-
 
 let main (v:int(*-:{cur_v:Int | true = true}*)) (p:int(*-:{cur_v:Int | true = true}*)) (n:int(*-:{cur_v:Int | true = true}*)) =
   if ((p > 0) && (n < 0)) then (match (match ((f v) (0,0)) with 

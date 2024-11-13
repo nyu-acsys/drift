@@ -42,7 +42,7 @@ let asst_final0 cfg2 =
    (q,acc) -> assert (acc = 40))
 
 
-let sum x cfg3 =
+let sum x (cfg3 : (int * int)) =
   (match ((fun cfg4 ->
              ((ev_step_asst0 cfg4) ; ((),cfg4))) ((ev_step0 1) cfg3)) with 
    (x0,cfg5) -> (match ((fun y cfg7 ->

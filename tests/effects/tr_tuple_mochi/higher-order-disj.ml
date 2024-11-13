@@ -90,7 +90,7 @@ let rec apply f cfg2 = ((fun x cfg3 ->
                                                (x1,cfg5) -> ((x0 x1) cfg5)))),cfg2)
 
 
-let tick c cfg6 = ((fun t cfg7 ->
+let tick c (cfg6 : (int * int))  = ((fun t cfg7 ->
                       (match (match if ((t mod 2) = 0) then (c,cfg7)
                                     else ((- c),cfg7) with 
                               (x2,cfg9) -> ((fun cfg8 ->

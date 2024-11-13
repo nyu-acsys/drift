@@ -49,7 +49,7 @@ let ev_step_asst0 cfg1 =
    (q,acc) -> assert (q = 0))
 
 
-let rec reent d cfg2 =
+let rec reent d (cfg2 : (int * int)) =
   (match ((fun cfg3 ->
              ((ev_step_asst0 cfg3) ; ((),cfg3))) ((ev_step0 1) cfg2)) with 
    (x0,cfg4) -> (match if

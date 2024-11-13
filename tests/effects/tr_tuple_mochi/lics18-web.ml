@@ -103,7 +103,7 @@ let ev_step_asst0 cfg1 =
                 (pending,tick) -> assert ((q = 666) || (pending <= tick))))
 
 
-let rec listener i cfg2 =
+let rec listener i (cfg2 : (int * (int * int))) =
   ((fun npool cfg3 ->
       ((fun pend cfg4 ->
           if

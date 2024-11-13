@@ -91,7 +91,7 @@ let close n cfg7 =
                       (x3,cfg10) -> ((x2 ; x3),cfg10)))
 
 
-let rec bid i cfg11 =
+let rec bid i (cfg11 : (int * (int * int))) =
   if
     (Random.int(0) >= 0)
     then

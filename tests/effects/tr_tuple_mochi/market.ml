@@ -95,7 +95,7 @@ let activity f cfg16 =
                              (x9,cfg19) -> ((x8 ; x9),cfg19)))),cfg16)
 
 
-let rec repeat n4 cfg23 =
+let rec repeat n4 (cfg23 : (int * (int * int))) =
   if (n4 <= 0) then (0,cfg23)
   else
     (match (match ((activity buy) cfg23) with 

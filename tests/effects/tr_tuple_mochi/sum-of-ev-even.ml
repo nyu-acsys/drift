@@ -41,7 +41,7 @@ let asst_final0 cfg2 = (match cfg2 with
                         (q,acc) -> assert ((acc mod 2) = 0))
 
 
-let rec sum x cfg3 = (match ((fun cfg4 ->
+let rec sum x (cfg3 : (int * int)) = (match ((fun cfg4 ->
                                 ((ev_step_asst0 cfg4) ; ((),cfg4))) ((ev_step0 x) cfg3)) with 
                       (x0,cfg5) -> (match if (x <= 0) then (0,cfg5)
                                           else ((sum (x - 2)) cfg5) with 

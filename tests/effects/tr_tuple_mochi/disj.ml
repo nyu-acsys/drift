@@ -52,7 +52,7 @@ let ev_step_asst0 cfg1 = (match cfg1 with
                           (q,acc) -> assert (q < 3))
 
 
-let rec f x cfg2 = ((fun pos cfg3 ->
+let rec f x (cfg2 : (int * int)) = ((fun pos cfg3 ->
                        ((fun neg cfg4 ->
                            (match if ((x mod 2) = 0) then ((fun cfg6 ->
                                                               ((ev_step_asst0 cfg6) ; ((),cfg6))) ((ev_step0 pos) cfg4))

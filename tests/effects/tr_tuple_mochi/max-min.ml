@@ -54,7 +54,7 @@ let asst_final0 cfg1 =
                 (max,min) -> assert ((max + min) = 0)))
 
 
-let rec compute vv cfg2 =
+let rec compute vv (cfg2 : (int * (int * int))) =
   ((fun bound1 cfg3 ->
       ((fun inc cfg4 ->
           (match if (vv = bound1) then (0,((ev_step0 vv) cfg4))

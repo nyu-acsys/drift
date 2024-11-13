@@ -45,7 +45,7 @@ let asst_final0 cfg1 =
    (q,acc) -> assert (q = 2))
 
 
-let rec apply f cfg2 =
+let rec apply f (cfg2 : (int * int)) =
   ((fun x cfg3 ->
       (match if (x <= 0) then (0,((ev_step0 1) cfg3))
              else (match ((apply f) ((ev_step0 1) cfg3)) with 

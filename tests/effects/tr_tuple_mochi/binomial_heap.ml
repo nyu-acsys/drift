@@ -102,7 +102,7 @@ let rec link r cfg3 =
                  (x1,cfg6) -> ((x0 ; x1),cfg6)))
 in
 
-let rec insTree i cfg7 =
+let rec insTree i (cfg7 : (int * (int * int))) =
   ((fun k cfg8 ->
       ((fun l cfg9 ->
           if

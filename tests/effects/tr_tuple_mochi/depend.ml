@@ -28,6 +28,7 @@ assert = fun (q, acc) -> (acc >= 0);
 *)
 
 let main (prefv:int) =
+
 let ev_step0 evx cfg0 =
   (match cfg0 with 
    (q,acc) -> if (evx > prefv) then (q,(acc + evx))
