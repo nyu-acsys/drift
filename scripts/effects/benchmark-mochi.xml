@@ -17,9 +17,9 @@ SPDX-License-Identifier: Apache-2.0
      and C programs from SV-COMP need to be available in directory programs/
      (or input files need to be changed). -->
 <benchmark tool="drifttoolinfo.mochi"
-           timelimit="60s"
-           hardtimelimit="90s"
-           memlimit="1000 MB"
+           timelimit="900s"
+           hardtimelimit="900s"
+           memlimit="2000 MB"
            cpuCores="1">
 
   <rundefinition name="default">
@@ -29,7 +29,7 @@ SPDX-License-Identifier: Apache-2.0
 
 
   <tasks name="realmochibenchmarks">
-    <include>/tools/home/eric/drift/tests/effects/ml_tuple/*.ml</include>
+    <include>/tools/home/eric/drift/tests/effects/tr_tuple_mochi/*.ml</include>
   </tasks>
 
   <!-- Use an SV-COMP property file as specification

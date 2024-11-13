@@ -17,19 +17,19 @@ SPDX-License-Identifier: Apache-2.0
      and C programs from SV-COMP need to be available in directory programs/
      (or input files need to be changed). -->
 <benchmark tool="drifttoolinfo.coarmochi"
-           timelimit="60s"
-           hardtimelimit="90s"
-           memlimit="1000 MB"
+           timelimit="900s"
+           hardtimelimit="900s"
+           memlimit="2000 MB"
            cpuCores="1">
 
   <rundefinition name="default">
-    <option name="-c">/tools/home/eric/coar-clone-mihai/config/solver/dbg_rcaml_pcsat_tb_ar.json</option> 
+    <option name="-c">/tools/home/eric/coar/config/solver/dbg_rcaml_pcsat_tb_ar.json</option> 
     <option name="-p">ml</option>
   </rundefinition>
 
 
   <tasks name="mochibenchmarks">
-    <include>../../tests/effects/mochi/*.ml</include>
+    <include>../../tests/effects/tr_tuple_rcaml/*.ml</include>
   </tasks>
 
   <!-- Use an SV-COMP property file as specification

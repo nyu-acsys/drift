@@ -14,7 +14,8 @@ my @resultsfiles = (
     #"results/benchmark-coarmochi.2024-04-03_12-51-55.results.default.mochibenchmarks.csv",
     #"results/benchmark-coarmochi.2024-05-09_09-54-42.results.default.mochibenchmarks.csv",
     "results/benchmark-coarmochi.2024-07-02_17-08-26.results.default.mochibenchmarks.csv",
-    "results/benchmark-mochi.2024-09-16_21-13-49.results.default.realmochibenchmarks.csv",
+    #"results/benchmark-mochi.2024-09-16_21-13-49.results.default.realmochibenchmarks.csv",
+    "results/benchmark-mochi.2024-11-13_15-18-46.results.default.realmochibenchmarks.csv",
     #"results/results.2024-04-04_10-01-41.table.csv"
     #"results/results.2024-06-30_11-29-24.table.csv"
     "results/results.2024-07-02_16-55-09.table.csv"
@@ -110,9 +111,9 @@ sub parseResultsFile {
     my ($fn) = @_;
     open F, $fn or die "opening $fn - $!";
     # unfortunately the mochi output is a little different (one fewer column) then the other CSV
-    die "TODO parseResultsFile decide based on $fn";
-    my $isCoarMochi = ($fn =~ /mochi/ ? 1 : 0);
-    my $isRealMochi = ($fn =~ /mochi/ ? 1 : 0);
+    #warn "TODO parseResultsFile decide based on $fn";
+    my $isCoarMochi = ($fn =~ /coarmochi/ ? 1 : 0);
+    my $isRealMochi = ($fn =~ /realmochi/ ? 1 : 0);
 
     my @runSets; 
     while(<F>) {
@@ -128,6 +129,7 @@ sub parseResultsFile {
             # next if $bench =~ /lics18-web/;
             next if $bench =~ /higher-order-disj/;
             next if $bench =~ /traffic/;
+            next if $bench =~ /kobayashi/;
             # next if $bench =~ /reentr/;
             # next if $bench =~ /temperature/;
             $bench =~ s/cps_// if $isCoarMochi;
@@ -216,6 +218,7 @@ foreach my $b (sort keys %$d) {
         next if $tool =~ /BEST/;
         my $drift = ($tool =~ /TRtrans/ ? '\drift' : '\evdrift');
         my $isBest = ($d->{$b}->{BEST_DRIFTEV}->{rd} eq $tool ? '\hl ' : '    ');
+        print "now $b and $tool\n";
         print EXT sprintf("& $drift & $isBest %s & $isBest %-5s & $isBest %3.2f & $isBest %3.2f  \\\\\n",
            run2tool($tool),
            cleanRes($d->{$b}->{$tool}->{res}),
@@ -247,9 +250,15 @@ open UNSAFE, ">runall_unsafe" or die $!;
 my @geos_coarmochi; my @geos_realmochi; my @geos_evtrans; my @geos_direct;
 my $newOverCoarMochi = 0; my $newOverRealMochi = 0; my $newOverTrans = 0; my $benchCount = 0; $ct = 1;
 my $driftVerified = 0; my $evdriftVerified = 0;
-my @bothSolved;
+my $realmochiVerified = 0; my $rcamlVerified = 0;
+my @bothSolved; my @evAndMochiSolved; my @evAndRcamlSolved;
 #print Dumper($d->{overview1});
 foreach my $b (sort keys %$d) {
+    next if $b =~ /concurrent_sum/;
+    next if $b =~ /nondet_max/;
+    next if $b =~ /order-irrel-nondet/;
+    next if $b =~ /nums_evens/;
+    next if $b =~ /disj-nondet/;
     # next if $b =~ /auction/;
     # next if $b =~ /binomial_heap/;
     # next if $b =~ /ho-shrink/; # old name;
@@ -297,12 +306,18 @@ foreach my $b (sort keys %$d) {
     #
     $driftVerified++ if $d->{$b}->{BEST_TRANS}->{res} eq 'true'; 
     $evdriftVerified++ if $d->{$b}->{BEST_DRIFTEV}->{res} eq 'true'; 
+    $realmochiVerified++ if $d->{$b}->{$REALMOCHI_RD}->{res} eq 'true'; 
+    $rcamlVerified++ if $d->{$b}->{$COARMOCHI_RD}->{res} eq 'true'; 
     $newOverCoarMochi++ if $d->{$b}->{BEST_DRIFTEV}->{res} eq 'true' && $d->{$b}->{$COARMOCHI_RD}->{res} ne 'true';
     $newOverRealMochi++ if $d->{$b}->{BEST_DRIFTEV}->{res} eq 'true' && $d->{$b}->{$REALMOCHI_RD}->{res} ne 'true';
     $newOverTrans++ if $d->{$b}->{BEST_DRIFTEV}->{res} eq 'true' && $d->{$b}->{BEST_TRANS}->{res} ne 'true';
     $benchCount++;
     # remember which ones were solved by Drift for speedup calculation
     push @bothSolved, $b if $d->{$b}->{BEST_TRANS}->{res} eq 'true' && $d->{$b}->{BEST_DRIFTEV}->{res} eq 'true';
+    # remember which ones were solved by Drift and by real mochi
+    push @evAndMochiSolved, $b if $d->{$b}->{BEST_DRIFTEV}->{res} eq 'true' && $d->{$b}->{$REALMOCHI_RD}->{res} eq 'true';
+    # remember which ones were solved by Drift and by Rcaml
+    push @evAndRcamlSolved, $b if $d->{$b}->{BEST_DRIFTEV}->{res} eq 'true' && $d->{$b}->{$COARMOCHI_RD}->{res} eq 'true';
     # script for drift and evdrift
     print SCRIPT "# Drift on $b:\n".cfg2cmd('',$b,$d->{$b}->{BEST_TRANS}->{rd});
     print SCRIPT "# evDrift on $b:\n".cfg2cmd('',$b,$d->{$b}->{BEST_DRIFTEV}->{rd});
@@ -325,6 +340,17 @@ my @evDiftTimes = map { $d->{$_}->{BEST_DRIFTEV}->{cpu} } @bothSolved;
 # print "times:".Dumper(\@driftTimes, \@evDiftTimes);
 my $speedupEVoverDrift = geometric_mean(@driftTimes)/geometric_mean(@evDiftTimes);
 
+# calculate speedup of Real Mochi over evDrift
+warn "ev+mochi solved: ".Dumper(\@evAndMochiSolved);
+my @EVMO_ev_times = map { $d->{$_}->{BEST_DRIFTEV}->{cpu} } @evAndMochiSolved;
+my @EVMO_mo_times = map { $d->{$_}->{$REALMOCHI_RD}->{cpu} } @evAndMochiSolved;
+my $speedupEVoverRealMochi = geometric_mean(@EVMO_mo_times)/geometric_mean(@EVMO_ev_times);
+
+# calculate speedup of RCaml over evDrift
+warn "ev+rcaml solved: ".Dumper(\@evAndRcamlSolved);
+my @EVMO_ev_times = map { $d->{$_}->{BEST_DRIFTEV}->{cpu} } @evAndMochiSolved;
+my @EVMO_rc_times = map { $d->{$_}->{$COARMOCHI_RD}->{cpu} } @evAndRcamlSolved;
+my $speedupEVoverRcaml = geometric_mean(@EVMO_rc_times)/geometric_mean(@EVMO_ev_times);
 
 
 ### Generate trace partition comparison
@@ -420,6 +446,8 @@ print STATS join("\n", (
    ('\newcommand\expGMrealmochi{'.geometric_mean(@geos_realmochi).'}'),
    ('\newcommand\expGMdirect{'.geometric_mean(@geos_direct).'}'),
    ('\newcommand\expSpeedupEVoverDrift{'.$speedupEVoverDrift.'}'),
+   ('\newcommand\expSpeedupEVoverRcaml{'.$speedupEVoverRcaml.'}'),
+   ('\newcommand\expSpeedupEVoverRealMochi{'.$speedupEVoverRealMochi.'}'),
 #   ('\newcommand\expSpeedupEvtrans{'.sprintf("%0.1f", geometric_mean(@geos_evtrans)/geometric_mean(@geos_direct)).'}'),
 #   ('\newcommand\expSpeedupMochi{'.sprintf("%0.1f", geometric_mean(@geos_mochi)/geometric_mean(@geos_direct)).'}'),
    ('\newcommand\expNewOverCoarMochi{'.$newOverCoarMochi.'}'),
@@ -428,6 +456,8 @@ print STATS join("\n", (
    ('\newcommand\expBenchCount{'.$benchCount.'}'),
    ('\newcommand\expDriftVerified{'.$driftVerified.'}'),
    ('\newcommand\expEDriftVerified{'.$evdriftVerified.'}'),
+   ('\newcommand\expRealMochiVerified{'.$realmochiVerified.'}'),
+   ('\newcommand\expRcamlVerified{'.$rcamlVerified.'}'),
    "% TP Improvements:",
    ('\newcommand\expTPGMoffDrift{'.geometric_mean(@geos_notp_drift).'}'),
    ('\newcommand\expTPGMonDrift{'.geometric_mean(@geos_tp_drift).'}'),

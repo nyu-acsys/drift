@@ -24,7 +24,7 @@ class Tool(benchexec.tools.template.BaseTool2):
     REQUIRED_PATHS = ["bin", "include", "lib", "share"]
 
     def executable(self,tool_locator):
-        return tool_locator.find_executable("main.exe", subdir="/tools/home/eric/coar-clone-mihai/_build/default")
+        return tool_locator.find_executable("main.exe", subdir="/tools/home/eric/coar/_build/default")
 
     def program_files(self, executable):
         return self._program_files_from_executable(
@@ -37,7 +37,7 @@ class Tool(benchexec.tools.template.BaseTool2):
 #  ./drift.exe -file tests/effects/traffic_light_fo_simple.ml -eff-aut tests/effects/traffic_light_fo_simple.eff 
 
     def working_directory(self, executable):
-        return "/tools/home/eric/coar-clone-mihai/_build/default"
+        return "/tools/home/eric/coar/_build/default"
 
     def cmdline(self, executable, options, task, rlimits):
         #assert len(list(task.input_files)) == 1
