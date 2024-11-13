@@ -52,7 +52,7 @@ let cmd_options_spec =
    ("-if-part", Arg.String (fun s -> if s = "true" then if_part:=true else if_part:=false), ": Partition traces on if tokens");
    ("-cps-convert", Arg.String (fun s -> if s = "true" then (convert_to_cps:=true; ev_trans := false) 
                                       else convert_to_cps:=false), ": Convert prog to CPS");
-   ("-tuple-convert", Arg.String (fun s -> if s = "true" then (convert_to_tuple:=true; ev_trans := false) 
+   ("-tuple-convert", Arg.String (fun s -> if s = "true" then (convert_to_tuple:=true; ev_trans := true) 
                                       else convert_to_tuple:=false), ": Convert prog to tuple-encoding of the product program");
   ]
 
