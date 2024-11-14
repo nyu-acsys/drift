@@ -55,7 +55,7 @@ class Tool(benchexec.tools.template.BaseTool2):
     # see: https://github.com/sosy-lab/benchexec/blob/fde8a997ea8b522a73fedd3c2256140e635243ef/benchexec/result.py#L58
     def determine_result(self, run): 
         # Search for "sat,9    	@assert"
-        p = re.compile('sat,\d+\s+\@assert')
+        p = re.compile('sat,-?\d+\s+\@assert')
         for line in reversed(run.output):
             if p.match(line):
                 return result.RESULT_TRUE_PROP
