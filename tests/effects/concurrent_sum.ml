@@ -11,7 +11,7 @@ let choose x =
     0
   end
 
-let rec sum n =
+let rec sum n f =
   if n = 0 then 0
   else begin
     (* if nondet then *)
@@ -20,8 +20,8 @@ let rec sum n =
     (*   ev 2 *)
     (* else *)
     (*   ev 3; *)
-    choose ();
-    sum (n-1) end
+    f ();
+    sum (n-1) f end
 
 let main (n:int(*-:{v:Int | v>0}*)) = 
-  sum n
+  sum n choose
