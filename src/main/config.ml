@@ -24,6 +24,7 @@ let use_threshold = ref false
 let trace_len = ref 0
 let if_part = ref false
 let effect_on = ref false
+let io_effect_on = ref false
 let ev_trans = ref false
 let prop_file = ref "" 
 
@@ -47,7 +48,8 @@ let cmd_options_spec =
    ("-profile", Arg.Set profile, ": Profiling output");
    ("-bt", Arg.Set bt, ": Allow trace back");
    ("-prop", Arg.String (fun s -> effect_on := true; prop_file := s), ": Automata specification of safety property for effect analysis");
-   ("-ev-trans", Arg.String (fun s -> if s = "true" then ev_trans := true else ev_trans := false), "Translate Ev expressions"); 
+   ("-ev-trans", Arg.String (fun s -> if s = "true" then ev_trans := true else ev_trans := false), ": Translate Ev expressions"); 
+   ("-io-effects", Arg.String (fun s -> if (s = "true" && !effect_on && (not !ev_trans)) then io_effect_on := true else io_effect_on := false), ": Input-output relations for effects for greater precision"); 
    ("-trace-len", Arg.Int (fun s -> trace_len := s), ": Set maximum allowed trace length. 0 -> not context sensitive");
    ("-if-part", Arg.String (fun s -> if s = "true" then if_part:=true else if_part:=false), ": Partition traces on if tokens");
    ("-cps-convert", Arg.String (fun s -> if s = "true" then (convert_to_cps:=true; ev_trans := false) 

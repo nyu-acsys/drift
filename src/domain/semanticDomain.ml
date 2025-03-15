@@ -22,6 +22,7 @@ let pre_def_func = ref []
 module SemanticsDomain =
   struct
     let ve_have_effects () = !Config.effect_on && (not !Config.ev_trans)
+    let io_effects () = !Config.io_effect_on
     (*
     **********************************
     ** Abstract domain for Relation **

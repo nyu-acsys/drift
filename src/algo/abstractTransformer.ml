@@ -181,11 +181,14 @@ and prop_v (v1: value_tt) (v2: value_tt): (value_tt * value_tt) = match v1, v2 w
                   TEBot, TEBot
                 else
                   if opt_o then ve1ot, ve2o else
-                    let vals = get_effmap e2ip |> get_input_eff_relations z in
+                    let vals = 
+                      if io_effects () then get_effmap e2ip |> get_input_eff_relations z
+                      else []
+                    in
                     let ve1 = 
                       arrow_VE z ve1ot v2ip
                       |> fun ve -> (
-                        if ve_have_effects () then
+                        if io_effects () then
                           let l = List.map (fun v -> stren_VE_Eff ve (Relation v)) vals in
                           List.fold_left (fun ve1 ve2 -> join_VE_Eff ve1 ve2) (List.hd l) (List.tl l)
                         else ve)
@@ -193,7 +196,7 @@ and prop_v (v1: value_tt) (v2: value_tt): (value_tt * value_tt) = match v1, v2 w
                     let ve2 =
                       arrow_VE z ve2o v2ip
                       |> fun ve -> (
-                        if ve_have_effects () then
+                        if io_effects () then
                           let l = List.map (fun v -> stren_VE_Eff ve (Relation v)) vals in
                           List.fold_left (fun ve1 ve2 -> join_VE_Eff ve1 ve2) (List.hd l) (List.tl l)
                         else ve)
@@ -397,7 +400,9 @@ let get_env_list (env: env_t) (trace: trace_t) (m: exec_map_t) =
 
 let get_env_list e cs = measure_call "get_env_list" (get_env_list e cs)
 
-let get_spec_acc_qset () = (AbstractEv.acc_vars (), AbstractEv.spec_qset ())
+let get_spec_acc_qset () = 
+  if io_effects () then (AbstractEv.acc_vars (), AbstractEv.spec_qset ()) 
+  else ([], [])
 
 let rec add_tuple_to_env x tup_ve l trace env =
   let list_ve = get_tuple_list_VE tup_ve in
@@ -799,7 +804,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                  let pr = Format.fprintf Format.std_formatter in
                  pr "\nLINE 645, App, te1: @[%a@]@." pr_value_and_eff te1); *)
               let ec' = extract_ec te1 in
-              let ec' = stren_Eff (Effect ec') ae1 |> get_effmap in
+              let ec' = stren_Eff (Effect ec') ae1 |> get_effmap in (* TODO: try removing this line *)
               (* (if true then
                  let pr = Format.fprintf Format.std_formatter in
                  pr "@.LINE 688, App, loc: %s @,te1:@[%a@]@,@,ec':@[%a@]@,@,ae1:@[%a@]@."
@@ -959,7 +964,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             else 
               begin
                 let ec' = find n1 m1 |> extract_ec in
-                let ec' = stren_Eff (Effect ec') ae1 |> get_effmap in
+                let ec' = stren_Eff (Effect ec') ae1 |> get_effmap in (* TODO: try removing this line *)
                 let m2, tails2 = step e2 env trace1 ec' ae1 assertion is_rec m1 in
                 let te1 = find n1 m2 in
                 let map, tails = 
@@ -1145,7 +1150,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
               ); *)
               let t_false = extrac_bool_V (extract_v te0) false |> meet_V ae0 in
               let ec' = extract_ec te0 in
-              let ec' = stren_Eff (Effect ec') ae0 |> get_effmap in
+              let ec' = stren_Eff (Effect ec') ae0 |> get_effmap in (* TODO: try removing this line *)
               let ec_true = extrac_bool_V (extract_v te0) true |> stren_Eff (Effect ec') |> get_effmap in
               let ec_false = extrac_bool_V (extract_v te0) false |> stren_Eff (Effect ec') |> get_effmap in
               (* (if true then
@@ -1288,7 +1293,12 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             in
             let trace' = if is_rec' && x = "_" then trace' else trace in
             let nx = construct_vnode env lx trace in
-            let env' = env |> VarMap.add x (nx, false) |> add_input_acc_to_env x nx in
+            let env' = 
+              env |> VarMap.add x (nx, false) 
+              |> 
+                if io_effects () then add_input_acc_to_env x nx
+                else id
+            in
             let nx = construct_snode trace nx in
             let tex = find nx m in
             let env' = 
@@ -1321,8 +1331,10 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                     replace_VE (find n1' m) x z
                 )
                 |> fun ve -> 
-                  List.combine (acc_vars_list x) (acc_vars_list z)
-                  |> List.fold_left (fun ve (old_var, new_var) -> replace_VE ve old_var new_var) ve
+                  if io_effects () then
+                    List.combine (acc_vars_list x) (acc_vars_list z)
+                    |> List.fold_left (fun ve (old_var, new_var) -> replace_VE ve old_var new_var) ve
+                  else ve
                 in
               update_fout tail te1 fout
               ) init_fout tails in
@@ -1425,8 +1437,10 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                         replace_VE te1' z x
                   )
                   |> fun ve -> 
-                    List.combine (acc_vars_list z) (acc_vars_list x) 
-                    |> List.fold_left (fun ve (old_var, new_var) -> replace_VE ve old_var new_var) ve
+                    if io_effects () then
+                      List.combine (acc_vars_list z) (acc_vars_list x) 
+                      |> List.fold_left (fun ve (old_var, new_var) -> replace_VE ve old_var new_var) ve
+                    else ve
                 in
                 update false n1' te1' m1'
               ) m1 tails in
@@ -1437,7 +1451,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             let ae'' = get_ae_from_v (extract_v tex') in
             let ae' = if (x <> "_" && is_Relation (extract_v tex')) || is_tuple_VE tex' || is_List (extract_v tex') then 
               (* if only_shape_V tx then ae else  *)
-              (arrow_V x ae (extract_v tex')) else if only_shape_V ae'' then ae else stren_V ae ae''  
+              (arrow_V x ae (extract_v tex')) else if only_shape_V ae'' then ae else stren_V ae ae'' (* TODO: try only ae'' *)  
             in
             let ec' = extract_ec tex' in
             let ec' = (
@@ -1453,7 +1467,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
               )
               |> fun e -> stren_Eff e ae'
               |> get_effmap
-              |> StateMap.mapi (set_input_types_i x)
+              |> if io_effects () then StateMap.mapi (set_input_types_i x) else id
             in
             (if !debug then 
               let pr = Format.fprintf Format.std_formatter in
@@ -1574,7 +1588,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
         let tee = find ne m0' in
         let ae0 = get_ae_from_ve tee in
         let ec0 = extract_ec tee in
-        let ec0 = stren_Eff (Effect ec0) ae0 |> get_effmap in
+        let ec0 = stren_Eff (Effect ec0) ae0 |> get_effmap in (* TODO: try removing this line *)
         let m0' = update false ne tee m0' in
         (* (if !debug && (get_label_snode ne = "EN: 95;(z18*)") then 
           Format.fprintf Format.std_formatter "Line 1370 %a" pr_exec_map m'
@@ -1936,8 +1950,10 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           let n1 = loc e1 |> construct_enode env |> construct_snode trace in
           let te1 = find n1 m in
           let ae1 = get_ae_from_ve te1 in
-          if assertion then add_reg_asst (loc term) ae1 n;
-          m |> update false n te1
+          let ec' = extract_eff te1 in
+          if assertion then add_reg_asst (loc term) ae1 n1;
+          let te' = TypeAndEff (get_unit_from_v ae1, ec') in
+          m |> update false n te'
         ) m1 tails1, tails1
   in
   (if !debug then Format.fprintf Format.std_formatter "%s_%s end\n" (loc term) (get_trace_data trace));
@@ -2112,11 +2128,11 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
      let pr = Format.fprintf Format.std_formatter in
      pr "@.ae = @[%a@]" pr_value ae); *)
 
-  let pp_eff e = 
+  (* let pp_eff e = 
     let ppf = Format.std_formatter in
     if StateMap.is_empty e then Format.fprintf ppf "Empty\n" 
     else StateMap.bindings e 
-         |> Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_eff_binding ppf in
+         |> Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_eff_binding ppf in *)
   (* (if !debug then (Format.printf "\nEff0: "; pp_eff eff_i)); *)
   let m', tails = step e env create_empty_trace eff_i ae assertion false m_t in
   (* (if !debug then check_map m'); *)
