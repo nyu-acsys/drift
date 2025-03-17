@@ -1,13 +1,14 @@
 #!/usr/bin/perl
 
-my $prefix = 'NOTEjuly2';
+my $prefix = 'NOTE2025mar17';
 my $rdout = '';
 
+my @domArgs = qw/Polka_ls Polka_st Oct PolkaGrid/;
 my %domName = (
   PolkaGrid => 'pg',
   Polka_ls => 'ls', 
   Polka_st => 'st',
-  Oct => 'oct'
+  Oct => 'Oct'
 );
 my %texDomName = (
   PolkaGrid => 'PolkaGrid',
@@ -17,8 +18,8 @@ my %texDomName = (
 );
 open TEX, ">exp-rundefs.tex" or die $!;
 print "Adding run definitions:\n";
-foreach my $evTrans (qw/true false/) {
-foreach my $tracelen (qw/0 1 2/) {
+foreach my $evTrans (qw/false true/) {
+foreach my $tracelen (qw/0 1/) { # no 2
 foreach my $ifPart (qw/true false/) {
     # for ev-trans, only use TL=1 and ifPart=false
     next if ( ($evTrans eq 'true' && ($tracelen ne '1' || $ifPart eq 'true'))
@@ -26,7 +27,9 @@ foreach my $ifPart (qw/true false/) {
             && !($evTrans eq 'true' && $tracelen eq '0' && $ifPart eq 'false')
             # CA on Jul 2: TL1-TPtrue for TRtrans
             && !($evTrans eq 'true' && $tracelen eq '1' && $ifPart eq 'true') );
-foreach my $dom (qw/PolkaGrid Polka_ls Polka_st Oct/) {
+foreach my $io (qw/true false/) {
+  next if $evTrans eq 'true';
+foreach my $dom (@domArgs) {
     # CA says: "Although, there are some cases when with
     # ev-trans true, you need trace-len 2. Also, ev-trans
     # still doesn't work properly with if-part true"
@@ -45,24 +48,27 @@ foreach my $dom (qw/PolkaGrid Polka_ls Polka_st Oct/) {
         "TP$ifPart",
         "TH$thold",
         "DM$domName{$dom}",
+        "IO$io",
         "TR".($evTrans eq 'true' ? 'trans' : 'direct')
     );
     print "   $rdName\.effects\n";
-    print TEX ($evTrans eq 'true' ? '{\sc Drift}' : '{\bf ev}-{\sc Drift}')." & $tracelen & $ifPart & $thold & $texDomName{$dom} \\\\\n";
+    print TEX ($evTrans eq 'true' ? '{\sc Drift}' : '{\bf ev}-{\sc Drift}')." & $tracelen & $ifPart & $thold & $io & $texDomName{$dom} \\\\\n";
     $rdout .= <<EOT;
   <rundefinition name="$rdName">
     <option name="-ev-trans">$evTrans</option>
     <option name="-trace-len">$tracelen</option>
     <option name="-if-part">$ifPart</option>
-    <option name="-out">0</option>
+    <option name="-out">2</option>
     <option name="-domain">$dom</option>
     <option name="-thold">$thold</option>
+    <option name="-io-effects">$io</option>
   </rundefinition> 
 EOT
-}
-}
-}
-}
+} # dom
+} # io
+} # ifpart
+} # tracelen
+} # ev-trans
 close TEX;
 print "wrote: exp-rundefs.xml\n";
 
@@ -107,7 +113,7 @@ SPDX-License-Identifier: Apache-2.0
 RUN_DEFINITIONS_HERE
 
   <tasks name="effects">
-    <include>../../tests/effects/*.yml</include>
+    <include>../../tests/effects/tos/*.yml</include>
     <propertyfile>${taskdef_path}/${taskdef_name}.prp</propertyfile>
   </tasks>
 

@@ -71,7 +71,7 @@ sub cfg2cmd {
             '-ev-trans', $tr,
             '-trace-len', $tl,
             '-if-part', $tp,
-            '-out', 0,
+            '-out', 2,
             '-domain', $dm2domain{$dm},
             '-thold', $th
         ))."\n";
@@ -271,7 +271,8 @@ foreach my $b (sort keys %$d) {
     my $tt = $b; $tt =~ s/\_/\\_/g;
     $tt =~ s/negated/neg/;
     #warn "b: $b\n".Dumper($d->{$b});
-    print BODY "$ct. \\texttt{\\scriptsize $tt} "; ++$ct;
+    my $footnote = ($b =~ /^(last-ev-even|order-irrel|temperature|sum-of-ev-even|disj)$/ ? "\$^+\$" : '');
+    print BODY "$ct. \\texttt{\\scriptsize $tt$footnote} "; ++$ct;
     #warn "tool rd: ".Dumper($b,$d->{$b},$d->{$b}->{BEST_TRANS},$d->{$b}->{BEST_TRANS}->{rd});
     die "don't have a BEST_TRANS rundef for $b" unless $d->{$b}->{BEST_TRANS}->{rd} =~ /[a-z]/;
     die "don't have a $REALMOCHI_RD rundef for $b" unless $d->{$b}->{$REALMOCHI_RD}->{rd} =~ /[a-z]/;
