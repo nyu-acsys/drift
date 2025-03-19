@@ -1,0 +1,40 @@
+(* 
+ * Property to be checked (as described in the paper):
+ *  P => (Walk U Ha1 \/ Run U Ha2)
+ * 
+ * encoding of events: P(1), Walk(2), Ha1(3), Run(4), Ha(5)
+ * 
+ * Property automaton: tracks the expected order of events
+ * 
+ * (q0)--[P]-->(q1)
+ * (q1)--[P]-->(q1)
+ * (q1)--[Walk]-->(q2)
+ * (q2)--[Walk]-->(q2)
+ * (q2)--[Ha1]-->(q3)
+ * (q1)--[Run]-->(q4)
+ * (q4)--[Run]-->(q4)
+ * (q4)--[Ha2]-->(q5)
+
+ * (q6) is the error sink state
+ *)
+
+QSet = [0; 1; 2; 3; 4; 5; 6];
+
+delta = fun evx (q, acc) ->
+          if (q = 0 && evx = 1) then (1, acc)
+	  else if (q = 1 && evx = 1) then (1, acc)
+	  else if (q = 1 && evx = 2) then (2, acc)
+	  else if (q = 2 && evx = 2) then (2, acc)
+	  else if (q = 2 && evx = 3) then (3, acc)
+	  else if (q = 3 && evx = 3) then (3, acc)	  
+	  else if (q = 1 && evx = 4) then (4, acc)
+	  else if (q = 4 && evx = 4) then (4, acc)
+	  else if (q = 4 && evx = 5) then (5, acc)
+	  else if (q = 5 && evx = 5) then (5, acc)
+	  else (6, acc);
+	  
+IniCfg = (0, 0);
+
+assert = fun (q, acc) -> q < 6;
+
+assertFinal = fun (q, acc) -> (q = 3) || (q = 5);
