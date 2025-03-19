@@ -50,8 +50,8 @@ let main() = life (Random.int 0) *)
     4. After P and Run happens, the next action is Run or Ha2.
    The properties 2-4 are safety properties,
    which can be checked by plain MoCHi.
- *)
-(*{SPEC}
+
+{SPEC}
    fairness: (Always, P)  (* either P does not happen, or *)
    fairness: (Ha, Never) (* Ha happens eventually *)
 {SPEC}*)
@@ -60,18 +60,10 @@ let step i j  = j - i
 
 let app h x1 x2 = h x1 (step x2)
 
-let rec ha1 b = 
-  begin
-    ev 3;
-    ha1 b
-  end
-
-let rec ha2 a =
-  begin
-    ev 5;
-    ha2 a
-  end
-
+let ha1 b = ev 3
+  
+let ha2 a = ev 5
+  
 let rec walk z g = 
   begin
     ev 2;
