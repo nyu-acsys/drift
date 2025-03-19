@@ -54,7 +54,7 @@ foreach my $dom (@domArgs) {
     );
     print "   $rdName\.effects\n";
     print TEX ($evTrans eq 'true' ? '{\sc Drift} (tuple reduc.)' : '{\bf ev}-{\sc Drift}')." & $tracelen & $ifPart & $thold & $io & $texDomName{$dom} \\\\\n";
-  #next unless $rdName =~ /TL0-TPfalse-THtrue-DMls-IOfalse-TRtrans/;
+#next unless $rdName =~ /TL0-TPfalse-THtrue-DMls-IOfalse-TR/; # trans/;
     $rdout .= <<EOT;
   <rundefinition name="$rdName">
     <option name="-ev-trans">$evTrans</option>
@@ -107,9 +107,9 @@ SPDX-License-Identifier: Apache-2.0
      and C programs from SV-COMP need to be available in directory programs/
      (or input files need to be changed). -->
 <benchmark tool="drifttoolinfo.drift"
-           timelimit="750s"
-           hardtimelimit="750s"
-           memlimit="2000 MB"
+           timelimit="900s"
+           hardtimelimit="900s"
+           memlimit="1000 MB"
            cpuCores="1">
 
 RUN_DEFINITIONS_HERE

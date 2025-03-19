@@ -19,7 +19,7 @@ SPDX-License-Identifier: Apache-2.0
 <benchmark tool="drifttoolinfo.mochi"
            timelimit="900s"
            hardtimelimit="900s"
-           memlimit="2000 MB"
+           memlimit="1000 MB"
            cpuCores="1">
 
   <rundefinition name="default">

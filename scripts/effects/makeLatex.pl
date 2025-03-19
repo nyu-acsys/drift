@@ -15,15 +15,19 @@ my @resultsfiles = (
     # only 30s timeout:
     #"results/benchmark-coarmochi.2024-11-14_16-17-57.results.default.mochibenchmarks.csv",
     # now 900s:
-    "results/benchmark-coarmochi.2024-11-14_16-19-31.results.default.mochibenchmarks.csv",
+    # "results/benchmark-coarmochi.2024-11-14_16-19-31.results.default.mochibenchmarks.csv",
+    # OOPSLA'25 - fixed Err detection
+    "results/benchmark-coarmochi.2025-03-19_10-09-37.results.default.mochibenchmarks.csv",
 
     "results/benchmark-mochi.2024-11-13_15-18-46.results.default.realmochibenchmarks.csv",
     #"results/results.2024-04-04_10-01-41.table.csv"
     #"results/results.2024-06-30_11-29-24.table.csv"
-    "results/results.2025-03-17_13-51-39.table.csv" # OOPSLA 25
     # "results/results.2024-07-02_16-55-09.table.csv", # POPL submission
     # "results/results.2024-11-14_11-47-05.table.csv", # new benchmarks
     # "results/results.2024-11-14_16-06-29.table.csv", # new-tos
+     # OOPSLA 25
+    #"results/results.2025-03-17_13-51-39.table.csv"
+    "results/results.2025-03-19_12-09-01.table.csv"
 );
 
 # 2) load the RunDefinitions defined in the autogen XML file
@@ -46,11 +50,12 @@ sub run2tool {
     my ($rdName) = @_;
     return 'CPS+COaRRCaml' if $rdName eq 'default.mochibenchmarks';
     return 'Tuple+Mochi' if $rdName eq 'default.realmochibenchmarks';
-    if($rdName =~ /NOTE(.*)-TL(.*)-TP(.*)-TH(.*)-DM(.*)-TR([^\.]*)(\.effects)?/) {
+    if($rdName =~ /NOTE(.*)-TL(.*)-TP(.*)-TH(.*)-DM(.*)-IO([^-]+)-TR([^\.]*)(\.effects)?/) {
         my $tp = ($3 eq 'true' ? 'T' : 'F');
         my $th = ($4 eq 'true' ? 'T' : 'F');
-        my $isTrans = $6;
-        return "\\humanCfg".$isTrans."{$1}{$2}{$tp}{$th}{$5}"
+        my $io = ($6 eq 'true' ? 'T' : 'F');
+        my $isTrans = $7;
+        return "\\humanCfg".$isTrans."{$1}{$2}{$tp}{$th}{$5}{$io}"
     } else {
         die "don't know how to parse rundef: $rdName\n";
     }
@@ -93,7 +98,8 @@ use List::Util qw(product);
 use Math::Complex;
 sub geometric_mean {
     my @numbers = @_; # Get the list of integers passed to the function
-    return 0 unless @numbers; # Return 0 if the list is empty
+    warn "geo_mean on empty list".Dumper(\@numbers) unless @numbers;
+    return 1 unless @numbers; # Return 1 if the list is empty
 
     my $product = product(@numbers); # Calculate the product of all integers in the list
     my $n = scalar @numbers; # Count the total number of integers
@@ -136,8 +142,8 @@ sub parseResultsFile {
             next if $bench =~ /higher-order-disj/;
             next if $bench =~ /traffic/;
             next if $bench =~ /kobayashi/;
-            # next if $bench =~ /reentr/;
-            # next if $bench =~ /temperature/;
+            #next if $bench =~ /all-ev-pos|auction/;
+            next if $bench =~ /alt-inev/;
             $bench =~ s/cps_// if $isCoarMochi;
             $bench =~ s/\.y?ml$//;
             shift @RCWMs unless ($isCoarMochi || $isRealMochi);
@@ -346,7 +352,7 @@ my @driftTimes  = map { $d->{$_}->{BEST_TRANS}->{cpu} } @bothSolved;
 my @evDiftTimes = map { $d->{$_}->{BEST_DRIFTEV}->{cpu} } @bothSolved;
 # print "GM of evtrans:".Dumper(\@geos_evtrans, 0+@geos_evtrans);
 # print "GM of direct:".Dumper(\@geos_direct, 0+@geos_direct);
-# print "times:".Dumper(\@driftTimes, \@evDiftTimes);
+#print "times:".Dumper(\@driftTimes, \@evDiftTimes);
 my $speedupEVoverDrift = geometric_mean(@driftTimes)/geometric_mean(@evDiftTimes);
 
 # calculate speedup of Real Mochi over evDrift
@@ -448,6 +454,8 @@ close SCRIPT;
 print "wrote: exp-tp.tex\n";
 print "wrote: generate_table2\n";
 
+warn "empty list will cause problems for geomean - geos_tp_drift" unless @geos_tp_drift;
+warn "empty list will cause problems for geomean - geos_tp_evdrift" unless @geos_tp_evdrift;
 
 use Statistics::Basic qw(:all);
 open STATS, ">exp-stats.tex" or die $!;

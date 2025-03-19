@@ -67,6 +67,11 @@ class Tool(benchexec.tools.template.BaseTool2):
         for line in reversed(run.output):
             if p.match(line):
                 return result.RESULT_TRUE_PROP
+
+        p2 = re.compile('Uncaught exception')
+        for line in reversed(run.output):
+            if p2.match(line):
+                return result.RESULT_ERROR
         
         # Other possibilities
         # TODO
