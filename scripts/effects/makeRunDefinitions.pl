@@ -1,9 +1,9 @@
 #!/usr/bin/perl
 
-my $prefix = 'NOTE2025mar17';
+my $prefix = 'NOTEoopsla25mar18';
 my $rdout = '';
 
-my @domArgs = qw/Polka_ls Polka_st Oct PolkaGrid/;
+my @domArgs = qw/Polka_ls PolkaGrid/; # Polka_st Oct 
 my %domName = (
   PolkaGrid => 'pg',
   Polka_ls => 'ls', 
@@ -28,7 +28,8 @@ foreach my $ifPart (qw/true false/) {
             # CA on Jul 2: TL1-TPtrue for TRtrans
             && !($evTrans eq 'true' && $tracelen eq '1' && $ifPart eq 'true') );
 foreach my $io (qw/true false/) {
-  next if $evTrans eq 'true';
+  # io-effects does nothing for ev-trans
+  next if $io eq 'true' && $evTrans eq 'true';
 foreach my $dom (@domArgs) {
     # CA says: "Although, there are some cases when with
     # ev-trans true, you need trace-len 2. Also, ev-trans
@@ -52,7 +53,8 @@ foreach my $dom (@domArgs) {
         "TR".($evTrans eq 'true' ? 'trans' : 'direct')
     );
     print "   $rdName\.effects\n";
-    print TEX ($evTrans eq 'true' ? '{\sc Drift}' : '{\bf ev}-{\sc Drift}')." & $tracelen & $ifPart & $thold & $io & $texDomName{$dom} \\\\\n";
+    print TEX ($evTrans eq 'true' ? '{\sc Drift} (tuple reduc.)' : '{\bf ev}-{\sc Drift}')." & $tracelen & $ifPart & $thold & $io & $texDomName{$dom} \\\\\n";
+  #next unless $rdName =~ /TL0-TPfalse-THtrue-DMls-IOfalse-TRtrans/;
     $rdout .= <<EOT;
   <rundefinition name="$rdName">
     <option name="-ev-trans">$evTrans</option>
@@ -105,15 +107,15 @@ SPDX-License-Identifier: Apache-2.0
      and C programs from SV-COMP need to be available in directory programs/
      (or input files need to be changed). -->
 <benchmark tool="drifttoolinfo.drift"
-           timelimit="60s"
-           hardtimelimit="90s"
-           memlimit="1000 MB"
+           timelimit="750s"
+           hardtimelimit="750s"
+           memlimit="2000 MB"
            cpuCores="1">
 
 RUN_DEFINITIONS_HERE
 
   <tasks name="effects">
-    <include>../../tests/effects/tos/*.yml</include>
+    <include>../../tests/effects/*.yml</include>
     <propertyfile>${taskdef_path}/${taskdef_name}.prp</propertyfile>
   </tasks>
 

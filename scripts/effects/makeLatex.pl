@@ -20,9 +20,10 @@ my @resultsfiles = (
     "results/benchmark-mochi.2024-11-13_15-18-46.results.default.realmochibenchmarks.csv",
     #"results/results.2024-04-04_10-01-41.table.csv"
     #"results/results.2024-06-30_11-29-24.table.csv"
-    "results/results.2024-07-02_16-55-09.table.csv", # POPL submission
-    "results/results.2024-11-14_11-47-05.table.csv", # new benchmarks
-    "results/results.2024-11-14_16-06-29.table.csv", # new-tos
+    "results/results.2025-03-17_13-51-39.table.csv" # OOPSLA 25
+    # "results/results.2024-07-02_16-55-09.table.csv", # POPL submission
+    # "results/results.2024-11-14_11-47-05.table.csv", # new benchmarks
+    # "results/results.2024-11-14_16-06-29.table.csv", # new-tos
 );
 
 # 2) load the RunDefinitions defined in the autogen XML file
@@ -58,12 +59,12 @@ my %dm2domain = (
     ls => 'Polka_ls',
     st => 'Polka_st',
     pg => 'PolkaGrid',
-    oct => 'Octagon',
+    Oct => 'Octagon',
 );
 sub cfg2cmd {
     my ($subdir,$benchname, $cfg) = @_;
-    if ($cfg =~ /TL([^-]+)-TP([^-]+)-TH([^-]+)-DM([^-]+)-TR([^-]+)\.effects/) {
-        my ($tl,$tp,$th,$dm,$tr) = ($1,$2,$3,$4,$5);
+    if ($cfg =~ /TL([^-]+)-TP([^-]+)-TH([^-]+)-DM([^-]+)-IO([^-]+)-TR([^-]+)\.effects/) {
+        my ($tl,$tp,$th,$dm,$io,$tr) = ($1,$2,$3,$4,$5,$6);
         return join(' ', (
             './drift.exe',
             '-file', "tests/effects/$subdir$benchname.ml",
@@ -71,6 +72,7 @@ sub cfg2cmd {
             '-ev-trans', $tr,
             '-trace-len', $tl,
             '-if-part', $tp,
+            '-io-effects', $io,
             '-out', 2,
             '-domain', $dm2domain{$dm},
             '-thold', $th
