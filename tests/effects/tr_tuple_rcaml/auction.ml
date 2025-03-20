@@ -45,7 +45,7 @@ QSet = [0; 1; 2];
 delta = fun evx (q, (bidders, refunds)) ->
           if (q = 0 && evx = 1) then (q, (bidders+1, refunds))
 	  else if (q = 0 && evx = 2) then (1, (bidders, refunds))
-	  else if (q = 1 && evx = 3) then (1, (bidders, refunds+1))
+	  else if (q = 1 && evx = 3 && (bidders > refunds + 1)) then (1, (bidders, refunds+1))
 	  else (2, (bidders, refunds));
 
 IniCfg = (0, (0,0));
@@ -63,9 +63,10 @@ let ev_step0 evx cfg0 =
   (match cfg0 with 
    (q,acc0) -> (match acc0 with 
                 (bidders,refunds) -> if ((q = 0) && (evx = 1)) then (q,((bidders + 1),refunds))
-                                     else if ((q = 0) && (evx = 2)) then (1,(bidders,refunds))
-                                          else if ((q = 1) && (evx = 3)) then (1,(bidders,(refunds + 1)))
-                                               else (2,(bidders,refunds))))
+                                     else
+                                       if ((q = 0) && (evx = 2)) then (1,(bidders,refunds))
+                                       else if (((q = 1) && (evx = 3)) && (bidders > (refunds + 1))) then (1,(bidders,(refunds + 1)))
+                                            else (2,(bidders,refunds))))
 
 
 let ev_step_asst0 cfg1 =
@@ -128,6 +129,5 @@ let main (u:unit(*-:{cur_v:Unit | unit = unit}*)) =
   (match (match (match ((bid 1) (0,(0,0))) with 
                  (x12,cfg29) -> ((x12 1) cfg29)) with  (x13,cfg30) -> ((x13 idf) cfg30)) with 
           (e0,acfg0) -> ((asst_final0 acfg0) ; e0))
-
 
 [@@@assert "typeof(main) <: unit -> unit"]
