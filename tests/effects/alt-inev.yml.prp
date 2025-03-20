@@ -1,6 +1,6 @@
 (* 
  * Property to be checked (as described in the paper):
- *  P => (Walk U Ha1 \/ Run U Ha2)
+ *  P => X (Walk U Ha1 \/ Run U Ha2)
  * 
  * encoding of events: P(1), Walk(2), Ha1(3), Run(4), Ha(5)
  * 
@@ -26,11 +26,9 @@ delta = fun evx (q, acc) ->
 	  else if (q = 1 && evx = 2) then (2, acc)
 	  else if (q = 2 && evx = 2) then (2, acc)
 	  else if (q = 2 && evx = 3) then (3, acc)
-	  else if (q = 3 && evx = 3) then (3, acc)	  
 	  else if (q = 1 && evx = 4) then (4, acc)
 	  else if (q = 4 && evx = 4) then (4, acc)
 	  else if (q = 4 && evx = 5) then (5, acc)
-	  else if (q = 5 && evx = 5) then (5, acc)
 	  else (6, acc);
 	  
 IniCfg = (0, 0);
