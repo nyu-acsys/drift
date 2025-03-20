@@ -3,22 +3,25 @@ Tuple Encoding of Product Program.
 
 Source Program: 
 
-let rec refund j =
-  if j <= 0 then ()  
-  else begin ev 3; refund (j - 1) end
+let refund k kamt h _ = 
+  if k <= 1 then ()
+  else begin ev 3; h () end
 
-let close n = 
-  if n=0 then () 
-  else begin ev 2; refund (n-1) end
+let close j g = 
+  if j = 1 then ()
+  else begin ev 2; g () end
 
-let rec bid i =
-  if nondet then
-    begin ev 1; bid (i + 1) end
+let rec bid i amtW f =
+  let amt = amtW + 1 in
+  if nondet then 
+    begin ev 1; bid (i + 1) amt (refund i amtW f) end
   else
-    close i
+    close i f
+
+let idf _ = ()
 
 let main (u: unit(*-:{v: Unit | unit}*)) =
-  bid 0
+  bid 1 1 idf
 
 
 Property: 
@@ -75,33 +78,51 @@ let asst_final0 cfg2 =
                 (bidders,refunds) -> assert ((q = 0) || ((q = 1) && (refunds = (bidders - 1))))))
 
 
-let rec refund j cfg3 =
-  if (j <= 0) then ((),cfg3)
-  else (match ((fun cfg4 ->
-                  ((ev_step_asst0 cfg4) ; ((),cfg4))) ((ev_step0 3) cfg3)) with 
-        (x0,cfg5) -> (match ((refund (j - 1)) cfg5) with 
-                      (x1,cfg6) -> ((x0 ; x1),cfg6)))
+let refund k cfg3 =
+  ((fun kamt cfg4 ->
+      ((fun h cfg5 ->
+          ((fun _ cfg6 ->
+              if (k <= 1) then ((),cfg6)
+              else (match ((fun cfg7 ->
+                              ((ev_step_asst0 cfg7) ; ((),cfg7))) ((ev_step0 3) cfg6)) with 
+                    (x0,cfg8) -> (match ((h ()) cfg8) with 
+                                  (x1,cfg9) -> ((x0 ; x1),cfg9)))),cfg5)),cfg4)),cfg3)
 
 
-let close n cfg7 =
-  if (n = 0) then ((),cfg7)
-  else (match ((fun cfg8 ->
-                  ((ev_step_asst0 cfg8) ; ((),cfg8))) ((ev_step0 2) cfg7)) with 
-        (x2,cfg9) -> (match ((refund (n - 1)) cfg9) with 
-                      (x3,cfg10) -> ((x2 ; x3),cfg10)))
+let close j cfg10 =
+  ((fun g cfg11 ->
+      if (j = 1) then ((),cfg11)
+      else (match ((fun cfg12 ->
+                      ((ev_step_asst0 cfg12) ; ((),cfg12))) ((ev_step0 2) cfg11)) with 
+            (x2,cfg13) -> (match ((g ()) cfg13) with 
+                           (x3,cfg14) -> ((x2 ; x3),cfg14)))),cfg10)
 
 
-let rec bid i (cfg11 : (int * (int * int))) =
-  if
-    (Random.int(0) >= 0)
-    then
-    (match ((fun cfg12 ->
-               ((ev_step_asst0 cfg12) ; ((),cfg12))) ((ev_step0 1) cfg11)) with 
-     (x4,cfg13) -> (match ((bid (i + 1)) cfg13) with 
-                    (x5,cfg14) -> ((x4 ; x5),cfg14)))
-    else ((close i) cfg11) 
+let rec bid i cfg15 =
+  ((fun amtW cfg16 ->
+      ((fun f cfg17 ->
+          let amt0 = ((amtW + 1),cfg17) in 
+          (match amt0 with 
+           (amt,cfg18) -> if
+                            (Random.int(0) > 0)
+                            then
+                            (match ((fun cfg20 ->
+                                       ((ev_step_asst0 cfg20) ; ((),cfg20))) ((ev_step0 1) cfg18)) with 
+                             (x5,cfg21) -> (match (match (match ((bid (i + 1)) cfg21) with 
+                                                          (x7,cfg23) -> ((x7 amt) cfg23)) with 
+                                                         (x8,cfg24) -> (match (match (match ((refund i) cfg24) with 
+                                                                                      (x9,cfg25) -> ((x9 amtW) cfg25)) with  (x10,cfg26) -> ((x10 f) cfg26)) with 
+                                                                               (x11,cfg27) -> ((x8 x11) cfg27))) with 
+                                                         (x6,cfg22) -> ((x5 ; x6),cfg22)))
+                                            else (match ((close i) cfg18) with 
+                                                  (x4,cfg19) -> ((x4 f) cfg19)))),cfg16)),cfg15)
+
+
+let idf _ cfg28 =
+  ((),cfg28) 
 
 
 let main (u:unit(*-:{cur_v:Unit | unit = unit}*)) =
-  (match ((bid 0) (0,(0,0))) with 
-   (e0,acfg0) -> ((asst_final0 acfg0) ; e0))
+  (match (match (match ((bid 1) (0,(0,0))) with 
+                 (x12,cfg29) -> ((x12 1) cfg29)) with  (x13,cfg30) -> ((x13 idf) cfg30)) with 
+          (e0,acfg0) -> ((asst_final0 acfg0) ; e0))
