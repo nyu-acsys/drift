@@ -126,7 +126,7 @@ module BaseDomain(Manager : DomainManager) : Domain =
 
     let leq_without_lcenv v1 v2 = Abstract1.is_leq man v1 v2
 
-    let eq_without_lcenv v1 v2 = Abstract1.is_eq man v1 v2
+    (* let eq_without_lcenv v1 v2 = Abstract1.is_eq man v1 v2 *)
 
     let join v1 v2 = 
       let v1',v2' = lc_env v1 v2 in
@@ -363,10 +363,10 @@ module BaseDomain(Manager : DomainManager) : Domain =
         Abstract1.minimize_environment man res
           (* res *)
           
-    let licons_ref = 
+    (* let licons_ref = 
       let env = Environment.make [||] [||] in
       let ary = Lincons1.array_make env 0 in
-      ref ary
+      ref ary *)
 
     let licons_earray env (vars : string list) complex = 
       if complex = false then 
@@ -445,8 +445,8 @@ module BaseDomain(Manager : DomainManager) : Domain =
 
     let print_abs ppf v = Abstract1.print ppf v
 
-    let print_env ppf v = let env = Abstract1.env v in
-        Environment.print ppf env
+    (* let print_env ppf v = let env = Abstract1.env v in
+        Environment.print ppf env *)
 
     let widening v1 v2 = 
       if is_bot v2 then v1 else
@@ -465,7 +465,7 @@ module BaseDomain(Manager : DomainManager) : Domain =
 
     let make_var var = 
       try let _ = int_of_string var in None
-      with e -> Some (var |> Var.of_string)
+      with _ -> Some (var |> Var.of_string)
 
     (*let op_cache = Hashtbl.create 100 |> Obj.magic*)
     let operator vres vl vr op cons mod_eq_flag v =

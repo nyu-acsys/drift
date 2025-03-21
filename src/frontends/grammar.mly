@@ -2,11 +2,11 @@
 (* header *)
 (** {0} Grammar rules for parser of Mini-OCaml *)
 
-open Util
+(* open Util *)
 open Syntax
 open Lexing
 
-let mklocation s e = {
+let mklocation s _ = {
   pl = s.pos_lnum;
   pc = s.pos_cnum - s.pos_bol;
 }

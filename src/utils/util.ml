@@ -1,3 +1,4 @@
+open Config
 
 let uncurry f (x, y) = f x y
 
@@ -79,7 +80,7 @@ let rec zip_list xs ys =
   match xs with
       [] -> (match ys with
               [] -> []
-            | y::ys' -> failwith "oops, the lists seems to have different lengths")
+            | _ -> failwith "oops, the lists seems to have different lengths")
     | x::xs' -> (match ys with
             [] -> failwith "oops, the lists seems to have different lengths"
           | y::ys' -> (x,y) :: zip_list xs' ys')
@@ -139,26 +140,28 @@ let measures = Hashtbl.create 10
 let steps = Hashtbl.create 10
 
 let measure_call (id: string) fn arg =
-  let get_time () = 
-    let ptime = Unix.times () in
-    ptime.tms_utime
-  in
-  let (calls, time) =
-    if Hashtbl.mem measures id
-    then Hashtbl.find measures id
-    else (0, 0.)
-  in
-  let start_time = get_time () in
-  try
-    let res = fn arg in
-    let end_time = get_time () in
-    Hashtbl.replace measures id (calls + 1, time +. end_time -. start_time);
-    (if String.equal id "step" then Hashtbl.replace steps calls (end_time -. start_time));
-    res
-  with e ->
-    let end_time = get_time () in
-    Hashtbl.replace measures id (calls + 1, time +. end_time -. start_time);
-    raise e
+  if !profile then
+    let get_time () = 
+      let ptime = Unix.times () in
+      ptime.tms_utime
+    in
+    let (calls, time) =
+      if Hashtbl.mem measures id
+      then Hashtbl.find measures id
+      else (0, 0.)
+    in
+    let start_time = get_time () in
+    try
+      let res = fn arg in
+      let end_time = get_time () in
+      Hashtbl.replace measures id (calls + 1, time +. end_time -. start_time);
+      (if String.equal id "step" then Hashtbl.replace steps calls (end_time -. start_time));
+      res
+    with e ->
+      let end_time = get_time () in
+      Hashtbl.replace measures id (calls + 1, time +. end_time -. start_time);
+      raise e
+  else fn arg
 
 let rec print_steps n_steps step = 
   if step = n_steps then ()

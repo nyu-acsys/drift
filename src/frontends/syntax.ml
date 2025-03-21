@@ -393,7 +393,7 @@ let fo e =
 let mk_lambda p e =
   match p with
   | Var (x, _) -> Rec (None, (x, ""), e, "")
-  | t ->
+  | _ ->
       let x = fresh_var "x" in
       let e' = PatMat (Var (x, ""), [mk_pattern_case p e], "") in
       Rec (None, (x, ""), e', "")
@@ -427,7 +427,7 @@ let lam_to_mu f = function
 let mk_let_rec_in x def e = 
   mk_app (mk_lambda (Var (x, "")) e) (lam_to_mu x def)
 
-let pr_ary ppf ary = Array.fold_left (fun a e -> Format.printf "%s " e) () ary
+let pr_ary _ ary = Array.fold_left (fun _ e -> Format.printf "%s " e) () ary
 
 let mk_pre_apps xs e = List.fold_right (fun x e -> mk_app e (mk_var ("pref"^x))) xs e
 

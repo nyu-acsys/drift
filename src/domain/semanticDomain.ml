@@ -55,7 +55,7 @@ module SemanticsDomain =
       | Boolean false -> Bool (AbstractValue.bot, AbstractValue.from_int 0)
       | Integer i -> Int (AbstractValue.from_int i)
       | UnitLit -> Unit (AbstractValue.top)
-      | IntList lst -> raise (Invalid_argument "This should be cover on the upper level")
+      | IntList _ -> raise (Invalid_argument "This should be cover on the upper level")
     let init_Env = Env (AbstractValue.top)
     let join_R a1 a2 =
       match a1, a2 with
@@ -107,7 +107,7 @@ module SemanticsDomain =
       | Unit v, Bool (vt, vf) -> Unit (AbstractValue.join (AbstractValue.meet v vt) (AbstractValue.meet v vf))
       | Env v, Bool (vt, vf) -> Env (AbstractValue.join (AbstractValue.meet v vt) (AbstractValue.meet v vf))
       | Int v1, Unit v2 -> Int (AbstractValue.meet v1 v2)
-      | Bool (vt, vf), Unit v -> meet_R a1 (Bool (v, v))
+      | Bool _, Unit v -> meet_R a1 (Bool (v, v))
       | Env v1, Unit v2 -> Env (AbstractValue.meet v1 v2)
       | _, _ -> raise (Invalid_argument "arrow: second argument cannot be of env type")
     let forget_R var a = match a with
@@ -118,7 +118,7 @@ module SemanticsDomain =
     let equal_R a var = match a with
       | Int v -> Int (AbstractValue.equal_var v "cur_v" var)
       | Bool (vt, vf) -> Bool ((AbstractValue.equal_var vt "cur_v" var), (AbstractValue.equal_var vf "cur_v" var))
-      | Unit v -> a
+      | Unit _ -> a
       | _ -> raise (Invalid_argument "equal_R: Given a unit/env type")
     let equal_R_v a var1 var2 = match a with
       | Int v -> Int (AbstractValue.equal_var v var1 var2)
@@ -135,7 +135,7 @@ module SemanticsDomain =
       | Int v -> AbstractValue.sat_cons v x
       | Bool (vt, vf) -> AbstractValue.sat_cons vt x && AbstractValue.sat_cons vf x
       | _ -> false
-    let op_R_eq_mod res l r op cons a = (*cons for flag of linear constraints*)
+    let op_R_eq_mod res l r op _ a = (*cons for flag of linear constraints*)
       match op with
       | Eq | Ne -> (match a with
         | Int v -> Int (AbstractValue.operator res l r op (-1) true v)
@@ -160,7 +160,7 @@ module SemanticsDomain =
         | _ -> raise (Invalid_argument "opR: Given a unit/env type"))
       )
       | Cons | Seq | And | Or | Null -> raise (Invalid_argument ("Invalid operator matched " ^ (string_of_op op)))
-    let uop_R res op e cons a = (*cons for flag of linear constraints*)
+    let uop_R res op e _ a = (*cons for flag of linear constraints*)
       match op with
       | UMinus -> (match a with
         | Int v -> Int (AbstractValue.uoperator res e op (-1) v)
@@ -226,13 +226,13 @@ module SemanticsDomain =
       | _ -> false
     let rec convert_r_to_env r = match r with
       | Int ri -> Env (AbstractValue.forget_var "cur_v" ri)
-      | Bool (rt, rf) -> join_R (extrac_bool_R r true) (extrac_bool_R r false) |> convert_r_to_env
+      | Bool _ -> join_R (extrac_bool_R r true) (extrac_bool_R r false) |> convert_r_to_env
       | Unit ru -> Env (ru)
       | Env _ -> r
     let rec convert_r_to_unit r = match r with
       | Int ri -> Unit (AbstractValue.forget_var "cur_v" ri)
-      | Bool (rt, rf) -> join_R (extrac_bool_R r true) (extrac_bool_R r false) |> convert_r_to_unit
-      | Unit ru -> r
+      | Bool _ -> join_R (extrac_bool_R r true) (extrac_bool_R r false) |> convert_r_to_unit
+      | Unit _ -> r
       | Env r -> Unit (r)
     let get_ae_from_R r = Relation (convert_r_to_env r)
     let get_int_from_ae prevar ae = match ae with
@@ -245,11 +245,11 @@ module SemanticsDomain =
      ********************************************)
     let union_eff f eff1 eff2 = 
       StateMap.union 
-        (fun q acc1 acc2 -> Some (f acc1 acc2)) 
+        (fun _ acc1 acc2 -> Some (f acc1 acc2)) 
         eff1 eff2
     let merge_eff f eff1 eff2 = 
       StateMap.merge
-        (fun q macc1 macc2 ->
+        (fun _ macc1 macc2 ->
           match macc1, macc2 with 
           | None, _ | _, None -> None
           | Some acc1, Some acc2 -> 
@@ -261,12 +261,12 @@ module SemanticsDomain =
       'a -> 'a = 
       fun f g eff1 eff2 res -> 
       StateMap.merge 
-        (fun k macc1 macc2 -> match macc1, macc2 with None, None -> None | _, _ -> Some (macc1, macc2))
+        (fun _ macc1 macc2 -> match macc1, macc2 with None, None -> None | _, _ -> Some (macc1, macc2))
         eff1 eff2
       |> (fun ea -> StateMap.fold 
-                   (fun q (macc1, macc2) res -> if g res then res else f macc1 macc2) ea res)     
+                   (fun _ (macc1, macc2) res -> if g res then res else f macc1 macc2) ea res)     
     let alpha_rename_Eff e prevar var = 
-      effmapi (fun q eff -> alpha_rename_R eff prevar var) e
+      effmapi (fun _ eff -> alpha_rename_R eff prevar var) e
     let join_Eff e1 e2 = match e1, e2 with 
       | EffBot, _ | _, EffTop -> e2 
       | Effect eff1, Effect eff2 -> Effect (union_eff join_R eff1 eff2)
@@ -296,16 +296,16 @@ module SemanticsDomain =
                         | _, _ -> false)
            (not) e1 e2 true
       | _, _ -> false
-    let forget_Eff var e = effmapi (fun q acc -> forget_R var acc) e
+    let forget_Eff var e = effmapi (fun _ acc -> forget_R var acc) e
     let arrow_Eff var e r = match e with 
       | EffBot -> EffBot 
-      | Effect _ -> effmapi (fun q acc -> arrow_R var acc r) e
+      | Effect _ -> effmapi (fun _ acc -> arrow_R var acc r) e
       | EffTop -> raise (Invalid_argument "EffTop A should not be inferred")
     (* let equal_Eff e var = effmapi (fun q acc -> equal_R acc var) e *)
     let wid_Eff e1 e2 = match e1, e2 with 
       | Effect e1, Effect e2 -> Effect (union_eff wid_R e1 e2)
       | _, _ -> join_Eff e1 e2
-    let replace_Eff e var x = effmapi (fun q acc -> replace_R acc var x) e
+    let replace_Eff e var x = effmapi (fun _ acc -> replace_R acc var x) e
     let is_bot_acc acc = is_bot_R acc
     let minimize_eff = StateMap.filter (fun _ acc -> not @@ is_bot_acc acc)
     let is_bot_Eff e = match e with
@@ -314,16 +314,16 @@ module SemanticsDomain =
       | EffTop -> false
     let is_top_Eff e = match e with
       | EffBot -> true
-      | Effect map -> false
+      | Effect _ -> false
       | EffTop -> false
     let stren_Eff e ae = match e, ae with
       | EffBot, _ -> EffBot 
       | Effect _, Relation rae -> 
          if is_bot_R rae 
          then EffBot 
-         else (effmapi (fun q acc -> stren_R acc rae) e
+         else (effmapi (fun _ acc -> stren_R acc rae) e
                |> effmap minimize_eff)
-      | EffTop, Relation rae -> EffTop (* raise (Invalid_argument "EffTop B should not be inferred") *)
+      | EffTop, Relation _ -> EffTop (* raise (Invalid_argument "EffTop B should not be inferred") *)
          (* effmapi (fun q r -> stren_R r) rae) eff_Top; where eff_Top = StateMap.creat (Q.size) (top_R Plus) *)
          (* 
          begin match rae with 
@@ -333,8 +333,8 @@ module SemanticsDomain =
       | _, Top -> e
       | _, Bot -> EffBot
       | _ -> raise (Invalid_argument "ae should not be a table") 
-    let proj_Eff e vars = effmapi (fun q acc -> proj_R acc vars) e
-    let bot_R_Eff e = effmapi (fun q acc -> bot_R Plus) e
+    let proj_Eff e vars = effmapi (fun _ acc -> proj_R acc vars) e
+    let bot_R_Eff e = effmapi (fun _ _ -> bot_R Plus) e
     let bot_Eff = EffBot 
     let empty_eff = Effect (StateMap.empty)  (* todo: must revisit. it should be  a map where all states map to Bot *)
           
@@ -359,7 +359,7 @@ module SemanticsDomain =
               StateMap.empty
             | Effect e -> e)
           else
-            (fun te -> StateMap.empty)
+            (fun _ -> StateMap.empty)
     (* let get_ae_from_eff = function
       | EffBot -> Bot
       | EffTop -> Top
@@ -404,7 +404,7 @@ module SemanticsDomain =
       | Relation r -> (match v1 with
                       | Relation r' -> let tempr = alpha_rename_R r "cur_v" label in
                                       (try Relation (meet_R r' tempr)
-                                       with Invalid_argument s -> Relation r')
+                                       with Invalid_argument _ -> Relation r')
                       | _ -> v1)
       | _ -> v1
     and join_V (v1:value_tt) (v2:value_tt) :value_tt = match v1, v2 with
@@ -417,10 +417,10 @@ module SemanticsDomain =
       | _, _ -> Top
     and join_V_Eff (v1:value_tt) (v2:value_tt) :value_tt = match v1, v2 with
       | Top, v | v, Top -> v
-      | Relation r1, Relation r2 -> Relation r1
-      | Table t1, Table t2 -> Table (join_T join_VE_Eff (fun env v -> env) alpha_rename_VE t1 t2)
-      | Ary ary1, Ary ary2 -> Ary ary1
-      | Lst lst1, Lst lst2 -> Lst lst1
+      | Relation r1, Relation _ -> Relation r1
+      | Table t1, Table t2 -> Table (join_T join_VE_Eff (fun env _ -> env) alpha_rename_VE t1 t2)
+      | Ary ary1, Ary _ -> Ary ary1
+      | Lst lst1, Lst _ -> Lst lst1
       | Tuple u1, Tuple u2 -> Tuple (join_Tuple_Eff u1 u2)
       | _, _ -> Bot
     and join_VE (ve1: value_te) (ve2: value_te) :value_te = match ve1, ve2 with 
@@ -543,7 +543,7 @@ module SemanticsDomain =
                                        | TypeAndEff (Relation re2, _) ->
                                           if is_bot_R re2 then Relation r1'
                                           else Relation (meet_R r1' (proj_R re2 [e2]))
-                                       | TypeAndEff (Tuple ue, _) -> Relation r1'
+                                       | TypeAndEff (Tuple _, _) -> Relation r1'
                                        | TypeAndEff (ve2, _) -> arrow_V var (Relation r1') ve2
                                        | TETop -> Relation r1')
                     | Ary ary -> (match vee2 with
@@ -563,9 +563,9 @@ module SemanticsDomain =
                             else v
                     | _ -> v)
     and arrow_V_Eff var v v' = match v' with
-    | Relation r2 -> (
+    | Relation _ -> (
       match v with
-      | Table t -> arrow_T forget_V arrow_VE_Eff (fun var env v -> env) var t v' |> table_to_value is_bot_R
+      | Table t -> arrow_T forget_V arrow_VE_Eff (fun _ env _ -> env) var t v' |> table_to_value is_bot_R
       | Tuple u -> Tuple (arrow_Tuple_Eff var u v')
       | _ -> v
       )
@@ -573,7 +573,7 @@ module SemanticsDomain =
     (* todo: same here, the strengthening with Bot return the effect. Need to verify why is that? *)
     and arrow_EffV var e v' = 
       let arrow_Eff_with_lst eff l =
-          let ((l2,e2) as vars, (rl2, vee2)) = l in 
+          let ((l2,e2), (rl2, vee2)) = l in 
           let arrow_EffR er = 
             if is_bot_R rl2 then bot_shape_R er 
             else
@@ -586,14 +586,14 @@ module SemanticsDomain =
                | TypeAndEff (Relation re2, _) ->
                   if is_bot_R re2 then er'
                   else meet_R er' (proj_R re2 [e2])
-               | TypeAndEff (Tuple ue, _) -> er'
+               | TypeAndEff (Tuple _, _) -> er'
                | TypeAndEff (ve2, _) -> (match arrow_V var (Relation er') ve2 with
                                         | Relation er'' -> er''
                                         | _ -> raise (Invalid_argument ("Arrow operator applied to a " ^
                                                        "Relation should be relation")))
                | TETop -> er')
           in
-          effmapi (fun q acc -> arrow_EffR acc) eff
+          effmapi (fun _ acc -> arrow_EffR acc) eff
       in
       match e, v' with 
       | EffBot,  _ -> EffBot
@@ -605,7 +605,7 @@ module SemanticsDomain =
           match ve2 with 
           | TETop | TEBot -> e1
           | TypeAndEff (v2, _) -> arrow_EffV var_i e1 v2) e (List.length u2 |> first_n |> zip_list u2)
-      | _, Ary ary2 -> let (vars, (rl2, re2)) = ary2 in
+      | _, Ary ary2 -> let (_, (rl2, re2)) = ary2 in
                    let e' = arrow_Eff var e rl2 in 
                    if is_bot_R re2 then e' else arrow_Eff var e' re2
       | ((Effect _) as eff), Lst lst2 -> arrow_Eff_with_lst eff lst2                  
@@ -662,7 +662,7 @@ module SemanticsDomain =
     and bool_op_VE op ve1 ve2 = match ve1, ve2 with
       | TEBot, TypeAndEff (v,e) -> TypeAndEff ((bool_op_V op Bot v), e)
       | TETop, TypeAndEff (v,e) -> TypeAndEff ((bool_op_V op Top v), e)
-      | (TypeAndEff (v1, e1)), (TypeAndEff (v2, e2)) -> TypeAndEff ((bool_op_V op v1 v2), e2)
+      | (TypeAndEff (v1, _)), (TypeAndEff (v2, e2)) -> TypeAndEff ((bool_op_V op v1 v2), e2)
       | _, _ -> raise (Invalid_argument "Should be a relation type when using bool_op_VE")
     and is_Bot_V = function
       | Bot -> true
@@ -685,16 +685,16 @@ module SemanticsDomain =
                                      Relation (stren_R r rae)
       | Ary ary, Relation rae -> Ary (stren_Ary ary rae)
       | Lst lst, Relation rae -> Lst (stren_Lst lst rae)
-      | Table t, Relation rae -> stren_T stren_VE stren_V t ae |> table_to_value is_bot_R
-      | Tuple u, Relation rae -> Tuple (stren_Tuple u ae)
+      | Table t, Relation _ -> stren_T stren_VE stren_V t ae |> table_to_value is_bot_R
+      | Tuple u, Relation _ -> Tuple (stren_Tuple u ae)
       | Top, _ -> ae
       | _, Bot -> Bot
       | _, Top -> v
       | _,_ -> raise (Invalid_argument "ae should not be a table")
     and stren_V_Eff v ae = match v,ae with
-      | Table t, Relation rae -> stren_T stren_VE_Eff (fun env ae -> env) t ae |> table_to_value is_bot_R
-      | Tuple u, Relation rae -> Tuple (stren_Tuple_Eff u ae)
-      | _, Relation rae -> v
+      | Table t, Relation _ -> stren_T stren_VE_Eff (fun env _ -> env) t ae |> table_to_value is_bot_R
+      | Tuple u, Relation _ -> Tuple (stren_Tuple_Eff u ae)
+      | _, Relation _ -> v
       | Top, _ -> ae
       | _, Bot -> Bot
       | _, Top -> v
@@ -809,7 +809,7 @@ module SemanticsDomain =
       | (TypeAndEff (v, _)), (TypeAndEff ((Lst lst), e)) -> TypeAndEff ((Lst (list_cons_Lst v lst)), e)
       | _ -> raise (Invalid_argument "reduce length either a list or an array")
     and alpha_rename_Vs v1 v2 = match v1, v2 with
-      | Lst (((l1,e1), (rl1,vee1)) as lst1), Lst (((l2,e2), (rl2,vee2)) as lst2) ->
+      | Lst (((l1,e1), _) as lst1), Lst (((l2,e2), (rl2,vee2)) as lst2) ->
          if l1 = l2 && e1 = e2 then Lst lst1, Lst lst2 else
            let lst2 = 
              ((l2,e2), (rl2 |> forget_R l1 |> forget_R e1,
@@ -866,7 +866,7 @@ module SemanticsDomain =
          Lst (item_shape_Lst lste lst)
       | _, _ -> t
     and item_shape_VE tee te = match tee, te with 
-      | (TypeAndEff (v1, e1)), (TypeAndEff (v2, e2)) -> 
+      | (TypeAndEff (v1, _)), (TypeAndEff (v2, e2)) -> 
          TypeAndEff ((item_shape_V v1 v2), e2)
       | _, _ -> te
     and bot_shape_V = function
@@ -884,10 +884,10 @@ module SemanticsDomain =
       | Tuple u -> Tuple (add_tuple_item_Tuple u v')
       | _ -> raise (Invalid_argument "Tuple constrct should be value, tuple")
     and is_tuple_V = function
-      | Tuple u -> true
+      | Tuple _ -> true
       | _ -> false
     and is_tuple_VE = function
-      | TypeAndEff ((Tuple u), _) -> true
+      | TypeAndEff ((Tuple _), _) -> true
       | _ -> false
     and is_pure_Tuple ve =
       is_tuple_VE ve &&
@@ -915,7 +915,7 @@ module SemanticsDomain =
       | _ -> raise (Invalid_argument "get_ae_from_v: Wrong base type")
     and get_ae_from_ve ve = match ve with
       | TEBot | TETop -> Bot
-      | TypeAndEff (v, e) -> get_ae_from_v v
+      | TypeAndEff (v, _) -> get_ae_from_v v
     and get_ae_from_ev v = match v with
       | Relation r -> get_ae_from_R r
       | Tuple u -> get_ae_from_Tuple u
@@ -945,11 +945,11 @@ module SemanticsDomain =
     and empty_Ary vars = Array.make vars (top_R Plus)
     and join_Ary ary1 ary2 = 
       let ary1', ary2' = alpha_rename_Arys ary1 ary2 in
-      let vars1, (rl1,re1) = ary1' in let vars2, (rl2,re2) = ary2' in
+      let vars1, (rl1,re1) = ary1' in let _, (rl2,re2) = ary2' in
       vars1, (join_R rl1 rl2,join_R re1 re2)
     and meet_Ary ary1 ary2 = 
       let ary1', ary2' = alpha_rename_Arys ary1 ary2 in
-      let vars1, (rl1,re1) = ary1' in let vars2, (rl2,re2) = ary2' in
+      let vars1, (rl1,re1) = ary1' in let _, (rl2,re2) = ary2' in
       vars1, (meet_R rl1 rl2, meet_R re1 re2)
     and leq_Ary ary1 ary2 = 
       let (l1,e1), (rl1,re1) = ary1 in let (l2,e2), (rl2,re2) = ary2 in
@@ -961,7 +961,7 @@ module SemanticsDomain =
       if scop_check then eq_R rl1 rl2 && eq_R re1 re2 else false
     and wid_Ary ary1 ary2 =
       let ary1', ary2' = alpha_rename_Arys ary1 ary2 in
-      let vars1, (rl1,re1) = ary1' in let vars2, (rl2,re2) = ary2' in
+      let vars1, (rl1,re1) = ary1' in let _, (rl2,re2) = ary2' in
       vars1, (wid_R rl1 rl2,wid_R re1 re2)
     and arrow_Ary var ary r ropt = let ((l,e) as vars, (rl,re)) = ary in
       let r' = forget_R l r |> forget_R e in
@@ -979,7 +979,7 @@ module SemanticsDomain =
       let vars' = e :: l :: vars in
       ((l,e), (proj_R rl vars', proj_R re vars'))
     and alpha_rename_Arys ary1 ary2 = 
-      let (l1,e1), (rl1,re1) = ary1 in let (l2,e2), (rl2,re2) = ary2 in
+      let (l1,e1), _ = ary1 in let (l2,e2), _ = ary2 in
       let ary2' = match l1 = l2, e1 = e2 with
         | true, true -> ary2
         | false, true -> alpha_rename_Ary ary2 l2 l1
@@ -1006,7 +1006,7 @@ module SemanticsDomain =
       (l,e), (rl,re')
     and bot_shape_Ary (vars, (rl, re)) = 
       (vars, (rl, bot_shape_R re))
-    and only_shape_Ary (vars, (rl, re)) = 
+    and only_shape_Ary (_, (rl, re)) = 
       is_bot_R rl && is_bot_R re
     (*
       *******************************
@@ -1033,11 +1033,11 @@ module SemanticsDomain =
       vars, (bot_R Plus, TEBot)
     and get_len_var_Lst ((varl,_),_) = varl
     and get_item_var_Lst ((_,vare),_) = vare
-    and pattern_empty_Lst ((l,e) as vars, (_, vee)) = 
+    and pattern_empty_Lst ((l,_) as vars, (_, vee)) = 
       let rl' = top_R Plus |> op_R l l "0" Eq true in
       let vee' = bot_shape_VE vee in
       vars, (rl', vee')
-    and extrac_item_Lst vars ((_,vare), (_, vee)) =
+    and extrac_item_Lst _ ((_,vare), (_, vee)) =
       (* let vars' = vare :: vars in *)
       let vee' = match vee with
       | TypeAndEff (Relation _, _) -> alpha_rename_VE vee vare "cur_v" |> extract_v
@@ -1046,17 +1046,17 @@ module SemanticsDomain =
       in
       vee'
     and join_Lst lst1 lst2 = 
-      let (l1, e1), (rl1,vee1) = lst1 in
-      let (l2, e2), (rl2,vee2) = lst2 in
+      let (l1, _), _ = lst1 in
+      let _, (rl2,_) = lst2 in
       let lst1', lst2' = if l1 <> "l" && contains_var_R l1 rl2 then
         let a, b = alpha_rename_Lsts lst2 lst1 in 
         b, a
         else alpha_rename_Lsts lst1 lst2 in
-      let (l1, e1) as vars1, (rl1,vee1) = lst1' in let (l2, e2) as vars2, (rl2,vee2) = lst2' in
+      let _ as vars1, (rl1,vee1) = lst1' in let _, (rl2,vee2) = lst2' in
       vars1, (join_R rl1 rl2, join_VE vee1 vee2)
     and meet_Lst lst1 lst2 = 
       let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
-      let vars1, (rl1,vee1) = lst1' in let vars2, (rl2,vee2) = lst2' in
+      let vars1, (rl1,vee1) = lst1' in let _, (rl2,vee2) = lst2' in
       vars1, (meet_R rl1 rl2, meet_VE vee1 vee2)
     and leq_Lst lst1 lst2 = 
       let (l1,e1), (rl1,vee1) = lst1 in let (l2,e2), (rl2,vee2) = lst2 in
@@ -1076,7 +1076,7 @@ module SemanticsDomain =
       if scop_check then eq_R rl1 rl2 && eq_VE vee1 vee2 else false
     and wid_Lst lst1 lst2 =
       let lst1', lst2' = alpha_rename_Lsts lst1 lst2 in
-      let vars1, (rl1,vee1) = lst1' in let vars2, (rl2,vee2) = lst2' in
+      let vars1, (rl1,vee1) = lst1' in let _, (rl2,vee2) = lst2' in
       vars1, (wid_R rl1 rl2,wid_VE vee1 vee2)
     and arrow_Lst var lst v ropt = 
       let ((l,e) as vars, (rl,vee)) = lst in
@@ -1113,7 +1113,7 @@ module SemanticsDomain =
             let rl' = forget_R l rl' |> forget_R e in
             let r' = forget_R l r |> forget_R e in
           (vars, (arrow_R var rl rl', TypeAndEff ((Relation (arrow_R var re r')), eff')))
-        | Relation r, _ -> 
+        | Relation _, _ -> 
           if String.sub var 0 2 = "xs" then
            let rl = arrow_R var rl rl' in
            let re' = 
@@ -1234,9 +1234,9 @@ module SemanticsDomain =
       in
       (l,e), (rl',vee')
     and get_list_length_item_Lst ((l,e), _) = [l;e]
-    and only_shape_Lst ((l,e), (rl,vee)) = 
+    and only_shape_Lst (_, (rl,vee)) = 
       is_bot_R rl && vee = TEBot
-    and prop_Lst prop ((l1,e1) as vars1, (rl1,vee1)) ((l2,e2) as vars2, (rl2,vee2)) =
+    and prop_Lst prop (_ as vars1, (rl1,vee1)) (_ as vars2, (rl2,vee2)) =
       let rl1', rl2' = rl1, join_R rl1 rl2 in
       let vee1', vee2' = match vee1, vee2 with
       | _, TEBot | TEBot, _ -> vee1, vee1
@@ -1252,7 +1252,7 @@ module SemanticsDomain =
          TypeAndEff ((Ary ary1), eff1), TypeAndEff ((Ary (join_Ary ary1 ary2)), join_Eff eff1 eff2)
       | _, _ -> vee1, join_VE vee1 vee2 in
       (vars1, (rl1', vee1')), (vars2, (rl2', vee2'))
-    and cons_temp_lst_Lst ve ((l,e) as vars, (rl,vee)) = 
+    and cons_temp_lst_Lst ve ((_,e) as vars, (rl,vee)) = 
       let eff' = match extract_eff vee with 
         | (Effect _) as e  -> e
         | _ -> EffBot
@@ -1339,11 +1339,11 @@ module SemanticsDomain =
       ***************************************
       *)
     let meet_M (m1: exec_map_t) (m2: exec_map_t) : exec_map_t =
-      NodeMap.merge (fun n v1 v2 -> Some (meet_VE v1 v2)) m1 m2
+      NodeMap.merge (fun _ v1 v2 -> Some (meet_VE v1 v2)) m1 m2
     let join_M (m1: exec_map_t) (m2: exec_map_t) : exec_map_t =
-      NodeMap.union (fun n v1 v2 -> join_VE v1 v2) m1 m2
+      NodeMap.union (fun _ v1 v2 -> join_VE v1 v2) m1 m2
     let wid_M (m1: exec_map_t) (m2: exec_map_t) : exec_map_t =
-      NodeMap.union (fun n v1 v2 -> 
+      NodeMap.union (fun _ v1 v2 -> 
         (* ( 
           let l = get_label_snode n in
           if !debug then
@@ -1377,7 +1377,7 @@ module SemanticsDomain =
           raise (Pre_Def_Change ("Predefined node changed at " ^ l))
          )
       |> Opt.get_or_else (v1 = v1)) m1
-    let top_M m = NodeMap.map (fun a -> TETop) m
+    let top_M m = NodeMap.map (fun _ -> TETop) m
     let array_M env m = 
       let n_make = construct_vnode env "Array.make" create_empty_trace in
       let s_make = construct_snode create_empty_trace n_make in
@@ -1544,7 +1544,7 @@ module SemanticsDomain =
         (* tl |-> zt: { v: Int List (l, e) | l: [| l>=0; |] e: true } -> 
            { v: Int List (l1, e1) | l1: [| l1=l-1; |] e1: e } *)
         let var_t = "zt" in
-        let var_len, var_e = "l", "e" in
+        let var_len, _ = "l", "e" in
         (* let var_i = "i" in *)
         let list1 = 
           let l, e = "l", "e" in
@@ -1573,7 +1573,7 @@ module SemanticsDomain =
          *)
         let var_c = "zc" in
         let ve = TETop in
-        let var_len, var_e = "l", "e" in
+        let var_len, _ = "l", "e" in
         (* let var_i = "i" in *)
         let list1 = 
           let l, e = "l", "e" in
@@ -1615,12 +1615,12 @@ module SemanticsDomain =
               let n_var = construct_vnode env var create_empty_trace in
               let s_var = construct_snode create_empty_trace n_var in
               let t_var = match domain with
-                | {name = n; dtype = Int; left = l; op = bop; right = r} -> 
+                | {name = _; dtype = Int; left = l; op = bop; right = r} -> 
                    let rm = if l = "true" then 
                               (top_R Plus)
                             else top_R Plus |> op_R "" l r bop true
                    in Relation rm
-                | {name = n; dtype = Bool; left = l; op = bop; right = r} -> 
+                | {name = _; dtype = Bool; left = l; op = bop; right = r} -> 
                    let rm = if l = "true" then init_R_c (Boolean true)
                             else if l = "false" then
                               init_R_c (Boolean false)
@@ -1628,7 +1628,7 @@ module SemanticsDomain =
                               top_R Plus |> op_R "" l r bop true
                    in
                    Relation (rm)
-                | {name = n; dtype = Unit; left = l; op = _; right = r} ->
+                | {name = _; dtype = Unit; left = l; op = _; right = _} ->
                    if l = "unit" then Tuple []
                    else raise (Invalid_argument"Expected unit predicate as {v: Unit | unit }")
               in

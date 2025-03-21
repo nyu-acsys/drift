@@ -97,7 +97,7 @@ let eff_bot spec =
   List.fold_right (fun q e -> StateMap.add q bot_Env e) spec.qset (StateMap.empty)
 
 let eff0 () = 
-  let acc0_of_exp spec e =
+  let acc0_of_exp _ e =
     let acc_vars = acc_vars () in
     let accv_of_idx i = List.nth acc_vars i in 
     match e with 
@@ -133,7 +133,7 @@ let get_ae_from_eff: effect_t -> SenSemantics.value_tt = fun eff ->
   (* (if !debug then
     Format.fprintf Format.std_formatter "@.EV_ae. pre: @[%a@]"
     pr_eff_map eff); *)
-  let eff = StateMap.fold (fun (Q q) acc res ->
+  let eff = StateMap.fold (fun (Q _) acc res ->
     let spec = Option.get !property_spec in
     let qae' = List.fold_left (fun ae var ->
         forget_R var ae
@@ -601,7 +601,7 @@ let check_assert_bot eac =
   |> Opt.get_or_else true
 
 let check_assert_top eac = 
-  Opt.map (fun spec -> 
+  Opt.map (fun _ -> 
       match eac with 
       | EvAssert _ -> true
       | FinalAssert -> true

@@ -1,6 +1,6 @@
 (** Grammar rules for lexer of Effect Automata Specs *)
 {
-open Util
+(* open Util *)
 open EffectAutomataSyntax
 open EffectAutomataGrammar
 open Lexing
@@ -23,7 +23,7 @@ let _ =
       ("delta", DELTA);
       ("IniCfg", INICFG)])
 
-let lexical_error lexbuf msg =
+let lexical_error lexbuf _ =
   let pos = lexeme_start_p lexbuf in 
   let pos_line = pos.pos_lnum in
   let pos_col = pos.pos_cnum - pos.pos_bol in

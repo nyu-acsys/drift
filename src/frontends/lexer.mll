@@ -1,6 +1,5 @@
 (** Grammar rules for lexer of MiniML *)
 {
-open Util
 open Syntax
 open Grammar
 open Lexing
@@ -26,7 +25,7 @@ let _ =
       ("true", BOOLCONST true);
       ("nondet", NONDET)])
 
-let lexical_error lexbuf msg =
+let lexical_error lexbuf _ =
   let pos = lexeme_start_p lexbuf in 
   let pos_line = pos.pos_lnum in
   let pos_col = pos.pos_cnum - pos.pos_bol in

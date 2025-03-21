@@ -2,7 +2,7 @@
 (* header *)
 open Syntax
 open EffectAutomataSyntax
-open Lexing
+(* open Lexing *)
 
 
 let convert_var_name_apron_not_support s = 
