@@ -17,9 +17,10 @@ my @resultsfiles = (
     # now 900s:
     # "results/benchmark-coarmochi.2024-11-14_16-19-31.results.default.mochibenchmarks.csv",
     # OOPSLA'25 - fixed Err detection
-    "results/benchmark-coarmochi.2025-03-19_10-09-37.results.default.mochibenchmarks.csv",
+    #"results/benchmark-coarmochi.2025-03-19_10-09-37.results.default.mochibenchmarks.csv",
+    "results/benchmark-coarmochi.2025-03-20_17-56-40.results.default.mochibenchmarks.csv",
 
-    "results/benchmark-mochi.2024-11-13_15-18-46.results.default.realmochibenchmarks.csv",
+    "results/benchmark-mochi.2025-03-20_18-58-49.results.default.realmochibenchmarks.csv",
     #"results/results.2024-04-04_10-01-41.table.csv"
     #"results/results.2024-06-30_11-29-24.table.csv"
     # "results/results.2024-07-02_16-55-09.table.csv", # POPL submission
@@ -27,7 +28,7 @@ my @resultsfiles = (
     # "results/results.2024-11-14_16-06-29.table.csv", # new-tos
      # OOPSLA 25
     #"results/results.2025-03-17_13-51-39.table.csv"
-    "results/results.2025-03-19_12-09-01.table.csv"
+    "results/results.2025-03-19_14-51-38.table.csv"
 );
 
 # 2) load the RunDefinitions defined in the autogen XML file
@@ -111,6 +112,7 @@ sub cleanRes {
     my ($r) = @_;
     return '\Chk' if $r eq 'true';
     return '\TO' if $r eq 'TIMEOUT';
+    return '\TO' if $r > 900;
     return '\MO' if $r eq 'OUT OF MEMORY';
     return '\Unk' if $r eq 'unknown';
     return '\ERR' if $r eq 'ERROR (1)';
@@ -121,38 +123,61 @@ sub cleanRes {
 my $d;
 sub parseResultsFile {
     my ($fn) = @_;
+    warn $fn;
     open F, $fn or die "opening $fn - $!";
     # unfortunately the mochi output is a little different (one fewer column) then the other CSV
     #warn "TODO parseResultsFile decide based on $fn";
     my $isCoarMochi = ($fn =~ /coarmochi/ ? 1 : 0);
     my $isRealMochi = ($fn =~ /realmochi/ ? 1 : 0);
 
-    my @runSets; 
+#====
+# tool    mochi   mochi   mochi
+# run set default.realmochibenchmarks     default.realmochibenchmarks     default.realmochibenchmarks
+# ../../tests/effects/tr_tuple_mochi/     status  cputime (s)     walltime (s)
+# all-ev-pos.ml   true    1.377243        1.4184973880037433
+# alt-inev.ml     OUT OF MEMORY   295.228083      295.32891325000674
+#====
+# tool            drift 0.0.todo  drift 0.0.todo  drift 0.0.todo  drift 0.0.todo  drift 0.0.todo  drift 0.0.todo  drift 0.0.todo  drift 0.0.todo  drift 0.0.todo  drift 0.0.todo  drift 0.0.todo  drift 0.0.todo  drift 0.0.todo  drift 0.0.todo  d>
+# run set         NOTEoopsla25mar18-TL0-TPfalse-THtrue-DMls-IOtrue-TRdirect.effects       NOTEoopsla25mar18-TL0-TPfalse-THtrue-DMls-IOtrue-TRdirect.effects       NOTEoopsla25mar18-TL0-TPfalse-THtrue-DMls-IOtrue-TRdirect.effects       NOTEoopsl>
+# ../../tests/effects/            status  cputime (s)     walltime (s)    status  cputime (s)     walltime (s)    status  cputime (s)     walltime (s)    status  cputime (s)     walltime (s)    status  cputime (s)     walltime (s)    status  c>
+# all-ev-pos.yml  all-ev-pos.yml  true    0.300607        0.3039371459999529      unknown
+#
+    my @runSets;
     while(<F>) {
-        next if /\tstatus\t/;
-        next if /^tool/;
+        next if /^tool/; # ignore line 1
+        next if /\tstatus\t/; # ignore line 3
+        # capture the runDef names
+        # these will be repeated 3x starting with col idx 1: _ _ A A A B B B ...
         if (/^run set/) {
+            chomp($_);
             @runSets = split /\t/, $_;
+            # trim off the first column
             shift @runSets;
+            # trim another column for Drift
             shift @runSets unless ($isCoarMochi || $isRealMochi);
+            #warn Dumper(\@runSets);
 
         } else {
-            my ($bench,@RCWMs) = split /\t/, $_;
-            # next if $bench =~ /lics18-web/;
+            chomp($_);
+            # trim off the first column, saving it as the bench name
+            my ($bench,@RCWs) = split /\t/, $_;
+            # trim another column for Drift
+            shift @RCWs unless ($isCoarMochi || $isRealMochi);
+            # ignore some benchmarks
             next if $bench =~ /higher-order-disj/;
             next if $bench =~ /traffic/;
             next if $bench =~ /kobayashi/;
-            #next if $bench =~ /all-ev-pos|auction/;
-            next if $bench =~ /alt-inev/;
             $bench =~ s/cps_// if $isCoarMochi;
             $bench =~ s/\.y?ml$//;
-            shift @RCWMs unless ($isCoarMochi || $isRealMochi);
-            for(my $i=0; $i <= $#RCWMs; $i+=4) {
-                $d->{$bench}->{$runSets[$i]}->{res} = $RCWMs[$i];
-                $d->{$bench}->{$runSets[$i]}->{cpu} = $RCWMs[$i+1];
-                $d->{$bench}->{$runSets[$i]}->{wall} = $RCWMs[$i+2];
-                $d->{$bench}->{$runSets[$i]}->{mem} = $RCWMs[$i+3];
+            # traverse the columns 
+            for(my $i=0; $i <= $#RCWs; $i+=3) {
+                $d->{$bench}->{$runSets[$i]}->{res} = $RCWs[$i];
+                $d->{$bench}->{$runSets[$i]}->{cpu} = $RCWs[$i+1];
+                $d->{$bench}->{$runSets[$i]}->{wall} = $RCWs[$i+2];
+                $d->{$bench}->{$runSets[$i]}->{mem} = 'missing-BE'; # $RCWMs[$i+3];
                 $d->{$bench}->{$runSets[$i]}->{rd}  = $runSets[$i];
+                $d->{$bench}->{$runSets[$i]}->{bench}  = $bench;
+                #print Dumper(\@runSets,$d->{$bench}->{$runSets[$i]});
 #                push @RUNDEFINITIONS, $runSets[$i];
             }
             #my ($fn,$res,$cpu,$wall,$mem) = split /\t/, $_;
@@ -167,7 +192,6 @@ sub parseResultsFile {
 foreach my $fn (@resultsfiles) {
     parseResultsFile($fn);
 }
-
 sub newBest {
     my ($BEST,$bench,$rd) = @_;
     $d->{$bench}->{$BEST}->{res}  = $d->{$bench}->{$rd}->{res};
@@ -229,7 +253,6 @@ foreach my $b (sort keys %$d) {
         next if $tool =~ /BEST/;
         my $drift = ($tool =~ /TRtrans/ ? '\drift' : '\evdrift');
         my $isBest = ($d->{$b}->{BEST_DRIFTEV}->{rd} eq $tool ? '\hl ' : '    ');
-        print "now $b and $tool\n";
         print EXT sprintf("& $drift & $isBest %s & $isBest %-5s & $isBest %3.2f & $isBest %3.2f  \\\\\n",
            run2tool($tool),
            cleanRes($d->{$b}->{$tool}->{res}),

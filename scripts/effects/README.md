@@ -75,3 +75,11 @@ Run `table-generator` as instructed by the output of `benchexec`. You will then 
 Edit `makeLatex.pl` and provide these as arguments to `parseResultsFile`
 
 Run `perl makeLatex.pl`
+
+# (Saved, but dead instructions)
+
+```
+DEAD table-generator -x ./table-generator.xml -o . -n generated-realmochi OUTPOUT-BZ2-FILE-HERE
+DEAD table-generator -x ./table-generator.xml -o . -n generated-coarmochi OUTPOUT-BZ2-FILE-HERE
+DEAD table-generator -x ./table-generator.xml -o . -n generated-drift OUTPOUT-BZ2-FILE-HERE
+```
