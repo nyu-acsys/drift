@@ -253,12 +253,14 @@ foreach my $b (sort keys %$d) {
         next if $tool =~ /BEST/;
         my $drift = ($tool =~ /TRtrans/ ? '\drift' : '\evdrift');
         my $isBest = ($d->{$b}->{BEST_DRIFTEV}->{rd} eq $tool ? '\hl ' : '    ');
-        print EXT sprintf("& $drift & $isBest %s & $isBest %-5s & $isBest %3.2f & $isBest %3.2f  \\\\\n",
+        print EXT sprintf("& $drift & $isBest %s & $isBest %-5s & $isBest %3.2f \\\\\n", #  & $isBest %3.2f 
            run2tool($tool),
            cleanRes($d->{$b}->{$tool}->{res}),
            $d->{$b}->{$tool}->{cpu},
 #           $d->{$b}->{$tool}->{wall},
-           $d->{$b}->{$tool}->{mem}); # d->{$b}->{$tool}->{rd}));
+           #$d->{$b}->{$tool}->{mem}
+           ); 
+           # d->{$b}->{$tool}->{rd}));
     }
     print  EXT "\\hline\n";
 }
@@ -310,26 +312,28 @@ foreach my $b (sort keys %$d) {
     die "don't have a $COARMOCHI_RD rundef for $b" unless $d->{$b}->{$COARMOCHI_RD}->{rd} =~ /[a-z]/;
     die "don't have a BEST_DRIFTEV rundef for $b" unless $d->{$b}->{BEST_DRIFTEV}->{rd} =~ /[a-z]/;
     # Trans-Drift
-    print BODY sprintf("& %-5s & %3.1f & %3.1f & %s ",
+    print BODY sprintf("& %-5s & %3.1f & %s ", # %3.1f & 
            cleanRes($d->{$b}->{BEST_TRANS}->{res}),
            $d->{$b}->{BEST_TRANS}->{cpu},
-           $d->{$b}->{BEST_TRANS}->{mem},
+           #$d->{$b}->{BEST_TRANS}->{mem},
            run2tool($d->{$b}->{BEST_TRANS}->{rd}));
     # Trans-COARMochi
-    print BODY sprintf("& %-5s & %3.1f & %3.1f ",
+    print BODY sprintf("& %-5s & %3.1f ", # %3.1f & 
            cleanRes($d->{$b}->{$COARMOCHI_RD}->{res}),
            $d->{$b}->{$COARMOCHI_RD}->{cpu},
-           $d->{$b}->{$COARMOCHI_RD}->{mem});
+           #$d->{$b}->{$COARMOCHI_RD}->{mem}
+           );
     # Trans-Mochi
-    print BODY sprintf("& %-5s & %3.1f & %3.1f ",
+    print BODY sprintf("& %-5s & %3.1f ", # %3.1f & 
            cleanRes($d->{$b}->{$REALMOCHI_RD}->{res}),
            $d->{$b}->{$REALMOCHI_RD}->{cpu},
-           $d->{$b}->{$REALMOCHI_RD}->{mem});
+           #$d->{$b}->{$REALMOCHI_RD}->{mem}
+           );
     # DriftEV
-    print BODY sprintf("& %-5s & %3.1f & %3.1f & %s \\\\ \n",
+    print BODY sprintf("& %-5s & %3.1f & %s \\\\ \n",# %3.1f & 
            cleanRes($d->{$b}->{BEST_DRIFTEV}->{res}),
            $d->{$b}->{BEST_DRIFTEV}->{cpu},
-           $d->{$b}->{BEST_DRIFTEV}->{mem},
+           #$d->{$b}->{BEST_DRIFTEV}->{mem},
            run2tool($d->{$b}->{BEST_DRIFTEV}->{rd}));
     printf "best EDrift result for %-40s : %-10s : %s\n", $b, $d->{$b}->{BEST_DRIFTEV}->{res}, $d->{$b}->{BEST_DRIFTEV}->{rd};
     # save the runtimes for statistics
@@ -438,22 +442,22 @@ foreach my $b (sort keys %$d) {
     print TP "$ct. \\texttt{\\scriptsize $tt} "; ++$ct;
     #warn "tool rd: ".Dumper($b,$d->{$b},$d->{$b}->{BEST_TRANS},$d->{$b}->{BEST_TRANS}->{rd});
     # Best Drift+TP
-    print TP sprintf("& %-5s & %3.1f & %3.1f & %s ",
+    print TP sprintf("& %-5s & %3.1f & %s ", # & %3.1f 
            cleanRes($d->{$b}->{BEST_TPON_DRIFT}->{res}),
            $d->{$b}->{BEST_TPON_DRIFT}->{cpu},
-           $d->{$b}->{BEST_TPON_DRIFT}->{mem},
+           #$d->{$b}->{BEST_TPON_DRIFT}->{mem},
            run2tool($d->{$b}->{BEST_TPON_DRIFT}->{rd}));
     # Best EVDrift no TP
-    print TP sprintf("& %-5s & %3.1f & %3.1f & %s ",
+    print TP sprintf("& %-5s & %3.1f & %s ", # & %3.1f 
            cleanRes($d->{$b}->{BEST_TPOFF_EVDRIFT}->{res}),
            $d->{$b}->{BEST_TPOFF_EVDRIFT}->{cpu},
-           $d->{$b}->{BEST_TPOFF_EVDRIFT}->{mem},
+           #$d->{$b}->{BEST_TPOFF_EVDRIFT}->{mem},
            run2tool($d->{$b}->{BEST_TPOFF_EVDRIFT}->{rd}));
     # Best EVDrift+TP
-    print TP sprintf("& %-5s & %3.1f & %3.1f & %s \\\\ \n",
+    print TP sprintf("& %-5s & %3.1f & %s \\\\ \n", # & %3.1f 
            cleanRes($d->{$b}->{BEST_TPON_EVDRIFT}->{res}),
            $d->{$b}->{BEST_TPON_EVDRIFT}->{cpu},
-           $d->{$b}->{BEST_TPON_EVDRIFT}->{mem},
+           #$d->{$b}->{BEST_TPON_EVDRIFT}->{mem},
            run2tool($d->{$b}->{BEST_TPON_EVDRIFT}->{rd}));
 
     # save the runtimes for statistics
