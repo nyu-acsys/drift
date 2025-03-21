@@ -1,4 +1,3 @@
-open Util
 open Syntax
 open EffectAutomataSyntax
 open Printer
@@ -55,7 +54,7 @@ let rec cps_convert: term -> qvar -> accvar -> (qvar -> accvar -> xvar -> kterm)
   | Var (x,_) -> let x = if x = "main" then "_main" else x in tr_k q acc [x]
   | Rec (None, (x,_), e, _) -> 
      begin match e with 
-     | PatMat (Var (x, _), [Case (TupleLst ([Var (x1, _); Var (x2, _)], _), e')], _) ->
+     | PatMat (Var _, [Case (TupleLst ([Var (x1, _); Var (x2, _)], _), e')], _) ->
         let f = fresh_var "f" in
         let k0, q0, acc0 = fresh_k_q_acc () in
         let ke' = cps_convert e' q0 acc0 (fun q0' acc0' res0' -> KContApp (k0, q0', acc0', res0')) in
@@ -69,7 +68,7 @@ let rec cps_convert: term -> qvar -> accvar -> (qvar -> accvar -> xvar -> kterm)
      end
   | Rec (Some (f,_), (x,_), e, _) ->
      begin match e with
-     | PatMat (Var (x, _), [Case (TupleLst ([Var (x1, _); Var (x2, _)], _), e')], _) ->
+     | PatMat (Var _, [Case (TupleLst ([Var (x1, _); Var (x2, _)], _), e')], _) ->
         let k0, q0, acc0 = fresh_k_q_acc () in
         let ke' = cps_convert e' q0 acc0 (fun q0' acc0' res0' -> KContApp (k0, q0', acc0',res0')) in
         KFix (f, k0, q0, acc0, [x1; x2], ke', tr_k q acc [f])
@@ -203,7 +202,7 @@ let run e =
                             let k0 = fresh_var "k" in
                             let x0 = fresh_var "x" in
                             KLetCont (k0, ev_q, ev_acc, x0,
-                                      (cps_convert asstFinal ev_q ev_acc (fun q'' acc'' res'' ->
+                                      (cps_convert asstFinal ev_q ev_acc (fun _ _ res'' ->
                                            KAssert (List.hd res'', KExit x0))),
                                       KContApp (k0, q', acc', res'))
                          end) in

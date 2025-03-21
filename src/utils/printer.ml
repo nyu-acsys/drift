@@ -94,7 +94,7 @@ and pr_pattern pl ppf (Case (e1, e2)) =
 
 let print_exp out_ch e =
   let ppf = Format.formatter_of_out_channel out_ch in 
-  Format.pp_set_geometry ppf 190 200;
+  Format.pp_set_geometry ppf ~max_indent:190 ~margin:200;
   Format.fprintf ppf "%a@?" (pr_exp true) e
 
 let loc_of_node n = get_label_snode n
@@ -109,8 +109,8 @@ and pr_env ppf = function
 
 let rec pr_env_vars ppf = function
   | [] -> ()
-  | [x, (n, r)] -> Format.fprintf ppf "%s" x
-  | (x, (n,r)) :: env -> Format.fprintf ppf "%s,@ %a" x pr_env_vars env
+  | [x, _] -> Format.fprintf ppf "%s" x
+  | (x, _) :: env -> Format.fprintf ppf "%s,@ %a" x pr_env_vars env
 
 let string_of_node n = pr_node Format.str_formatter n; Format.flush_str_formatter ()
 
@@ -178,14 +178,14 @@ and pr_value_and_eff ppf ve = match ve with
 and pr_eff_map ppf e = 
   if StateMap.is_empty e then Format.fprintf ppf "Empty" 
   else StateMap.bindings e 
-       |> Format.pp_print_list ~pp_sep: (fun ppf () -> Format.printf ";@ ") pr_eff_binding ppf
+       |> Format.pp_print_list ~pp_sep: (fun _ () -> Format.printf ";@ ") pr_eff_binding ppf
 and pr_eff ppf eff = match eff with 
   | EffBot -> Format.fprintf ppf "_|_"
   | EffTop -> Format.fprintf ppf "T"
   | Effect e -> pr_eff_map ppf e
 and pr_eff_acc ppf acc = 
   Format.fprintf ppf "@[<1>%a@]" pr_relation acc
-and pr_eff_acc_binding ppf (v, r) =
+and pr_eff_acc_binding ppf (_, r) =
   (* Format.fprintf ppf "@[<1>(@ %s@ |->@ %a)@]" v pr_relation r *)
   Format.fprintf ppf "@[<1>%a@]" pr_relation r
 and pr_eff_binding ppf ((Q q), acc) = 
@@ -216,7 +216,7 @@ let sort_list (m: exec_map_t) =
 
 let print_value out_ch v = 
   let ppf = Format.formatter_of_out_channel out_ch in 
-  Format.pp_set_geometry ppf 190 200;
+  Format.pp_set_geometry ppf ~max_indent:190 ~margin:200;
   Format.fprintf ppf "%a@?" pr_value v
 
 let string_of_value v = pr_value Format.str_formatter v; Format.flush_str_formatter ()
@@ -243,7 +243,7 @@ let rec str_toplist str = function
 | (vr,ty)::l -> let s' = str^"("^vr^", "^(str_of_type ty)^"); " in (str_toplist s' l)
 
 let pr_pre_exp as_type ppf = function
-  | {name = n; dtype = d; left = l; right = r} ->
+  | {name = n; dtype = d; left = l; op = _; right = r} ->
      if as_type then begin
        if l = "top" then Format.fprintf ppf "%s(*-:{%s:%s | %s}*)" 
                            (mltype_of_inputType d) n (type_to_string d) l
@@ -273,7 +273,7 @@ let print_node_by_label m l =
   try
     let nst_n, v = List.nth lst (l + 4) in
     Format.fprintf ppf "@[<2>%a |->@ @[<2>%a@]@]\n\n" pr_node nst_n pr_value_and_eff v
-  with Failure s -> ()
+  with Failure _ -> ()
   in
   Format.fprintf Format.std_formatter "%a@?" pr_map_nst_node m
 
@@ -293,7 +293,7 @@ let rec pr_cps_term ppf = function
   | Const (c, _) -> Format.fprintf ppf "%a" pr_const c
   | Var (x, _) -> Format.fprintf ppf "%s" x
   | App (e1, e2, _) -> Format.fprintf ppf "%a %a" pr_cps_term e1 pr_cps_term e2
-  | Rec (None, (x, lx), e, _) -> Format.fprintf ppf "fun %s -> @[<v 2>%a@]" x pr_cps_term e
+  | Rec (None, (x, _), e, _) -> Format.fprintf ppf "fun %s -> @[<v 2>%a@]" x pr_cps_term e
   | Rec (Some (f, _), (x, _), e, _) -> Format.fprintf ppf "rec fun %s %s -> @[<v 2>%a@]" f x pr_cps_term e
   | Ite (e0, e1, e2, _) -> Format.fprintf ppf "if @[%a@] then @[<v>%a@] @;else @[<v>%a@]"
                             pr_cps_term e0 pr_cps_term e1 pr_cps_term e2

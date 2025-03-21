@@ -1,7 +1,5 @@
-open AbstractDomain
 open List
 open Syntax
-open Util
 open Format
 
 exception Trace_larger_than_tree
@@ -40,7 +38,7 @@ let create_singleton_trace_part_token token = [], List.init 1 (fun _ -> token)
 
 let rec remove_last semi_trace = match semi_trace with
   | [] -> []
-  | head :: [] -> []
+  | _ :: [] -> []
   | head :: tail -> head :: (remove_last tail)
 
 let rec prune_semi_trace semi_trace limit = if List.length semi_trace > limit 

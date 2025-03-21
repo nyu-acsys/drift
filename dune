@@ -12,7 +12,7 @@
 
 (env 
   (dev
-    (flags (:standard -rectypes -g -warn-error -A -w -27-33 ))
+    (flags (:standard -g -warn-error -A -w -27-33 ))
     ;(flags (:standard -rectypes -g))
 ))
 

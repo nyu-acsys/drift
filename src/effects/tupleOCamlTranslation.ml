@@ -1,7 +1,6 @@
 open Util
 open Syntax
 open EffectAutomataSyntax
-open Printer
 
 (* translate of an OCaml program into a tuple encoding *)
 (* - args: the parsed program (= a list of lambda-abstractions definitions. *)
@@ -19,17 +18,17 @@ open Printer
 
 let property_spec: (string * ml_aut_spec) option ref = ref None
 
-let parse_aut_spec file = 
+(* let parse_aut_spec file = 
   let chan = open_in file in
   let lexbuf = Lexing.from_channel chan in
   let a = EffectAutomataGrammar.top EffectAutomataLexer.token lexbuf in 
   let a_raw = (seek_in chan 0; really_input_string chan (in_channel_length chan)) in
   let _ = close_in chan in
-  (a_raw, a)
+  (a_raw, a) *)
 
-let parse_property_spec prop_file = 
+(* let parse_property_spec prop_file = 
   let spec = parse_aut_spec prop_file in
-  spec
+  spec *)
 
 let tr: mlterm -> mlterm -> mlterm -> mlterm option -> mlterm option -> mlterm = 
   fun e ev_step acfg asst asstFinal ->

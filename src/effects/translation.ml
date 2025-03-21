@@ -1,6 +1,5 @@
 open Syntax
 open EffectAutomataSyntax
-open Util
 open Printer
 
 (*
@@ -29,7 +28,7 @@ let tr (e: term) (a: term) (acfg: term) (asst: term option) (asstFinal: term opt
       end
   and tr_ (e: term) (acfg: term) = 
     match e with
-    | TupleLst (e, l) -> tr_tuple_ e acfg []
+    | TupleLst (e, _) -> tr_tuple_ e acfg []
     | (Const _ | Var _ | NonDet _) -> ret e acfg
     | Rec (fopt, px, def, l) ->
       let fc = fresh_var "cfg" in
@@ -128,7 +127,7 @@ let tr (e: term) (a: term) (acfg: term) (asst: term option) (asstFinal: term opt
                 (Ite (e1x, tr_ et acfg1x, tr_ ef acfg1x, l))
             ], "")
       end
-    | Event (e1, l) -> 
+    | Event (e1, _) -> 
        let tr_e1 = tr_ e1 acfg in
        begin match tr_e1, asst with
          | TupleLst ([e1'; e1cfg], ""), None -> 
