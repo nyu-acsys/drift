@@ -273,16 +273,15 @@ module NonSensitive: SemanticsType =
       | _ -> raise (Invalid_argument "Should be a relation"))
     let proj_T f fr g (t:table_t) (acc_vars, qset) vars = let (z, vi, vo, env) = t in
       let var = get_trace_data z in
-      let vars_o = 
-        let vars = var :: vars in
+      let vars_i = var :: vars |> List.append (g var vi) in
+      let vars_o =
         let acc_z_vars = 
           List.map (fun q -> List.map (get_input_acc_name var q) acc_vars) qset 
           |> List.flatten
         in
-        let vars = acc_z_vars @ vars in
-        List.append vars (g var vi)
+        acc_z_vars @ vars_i
       in
-      (z, f vi (acc_vars, qset) (var :: vars), f vo (acc_vars, qset) vars_o, fr env vars)
+      (z, f vi (acc_vars, qset) vars_i, f vo (acc_vars, qset) vars_o, fr env vars)
     let get_label_snode n = let SN (_, e1) = n in e1
     let construct_vnode env label _ = EN (env, label)
     let construct_enode env label = EN (env, label)
@@ -495,16 +494,15 @@ module Sensitive: SemanticsType =
       | x :: vars -> Format.fprintf ppf "%s,@ %a" x pr_vars vars *)
     let proj_T f fr g (mt, env) (acc_vars, qset) vars = TableMap.mapi (fun cs (vi, vo) -> 
       let var = get_trace_data cs in
-      let vars_o = 
-        let vars = var :: vars in
+      let vars_i = var :: vars |> List.append (g var vi) in
+      let vars_o =
         let acc_z_vars = 
           List.map (fun q -> List.map (get_input_acc_name var q) acc_vars) qset 
           |> List.flatten
         in
-        let vars = acc_z_vars @ vars in
-        List.append vars (g var vi)
+        acc_z_vars @ vars_i
       in
-      f vi (acc_vars, qset) (var :: vars), proj_fout f vo (acc_vars, qset) vars_o) mt, fr env vars
+      f vi (acc_vars, qset) vars_i, proj_fout f vo (acc_vars, qset) vars_o) mt, fr env vars
     let get_label_snode n = match n with 
       | SEN (x, l) -> "EN: "^x^";"^get_trace_data l
       | SVN (x, cl) -> "VN: "^x^";"^get_trace_data cl
