@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-my $prefix = 'NOTEoopsla25mar18';
+my $prefix = 'NOTEoopsla25mar23';
 my $rdout = '';
 
 my @domArgs = qw/Polka_ls PolkaGrid/; # Polka_st Oct 
@@ -27,6 +27,9 @@ foreach my $ifPart (qw/true false/) {
             && !($evTrans eq 'true' && $tracelen eq '0' && $ifPart eq 'false')
             # CA on Jul 2: TL1-TPtrue for TRtrans
             && !($evTrans eq 'true' && $tracelen eq '1' && $ifPart eq 'true') );
+    # for ev-trans, only TP-false:
+    next if ($evTrans eq 'true' && $ifPart eq 'true');
+    
 foreach my $io (qw/true false/) {
   # io-effects does nothing for ev-trans
   next if $io eq 'true' && $evTrans eq 'true';

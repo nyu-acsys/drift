@@ -28,7 +28,9 @@ my @resultsfiles = (
     # "results/results.2024-11-14_16-06-29.table.csv", # new-tos
      # OOPSLA 25
     #"results/results.2025-03-17_13-51-39.table.csv"
-    "results/results.2025-03-19_14-51-38.table.csv"
+    #"results/results.2025-03-19_14-51-38.table.csv"
+    #"results/results.2025-03-21_13-20-32.table.csv"
+    "results/results.2025-03-24_09-39-21.table.csv"
 );
 
 # 2) load the RunDefinitions defined in the autogen XML file
@@ -171,6 +173,8 @@ sub parseResultsFile {
             $bench =~ s/\.y?ml$//;
             # traverse the columns 
             for(my $i=0; $i <= $#RCWs; $i+=3) {
+                # we don't allow TP with Drift
+                next if $runSets[$i] =~ /TPtrue-.*TRtrans/;
                 $d->{$bench}->{$runSets[$i]}->{res} = $RCWs[$i];
                 $d->{$bench}->{$runSets[$i]}->{cpu} = $RCWs[$i+1];
                 $d->{$bench}->{$runSets[$i]}->{wall} = $RCWs[$i+2];
@@ -194,6 +198,9 @@ foreach my $fn (@resultsfiles) {
 }
 sub newBest {
     my ($BEST,$bench,$rd) = @_;
+    if ($bench eq 'disj-gte' and $BEST eq 'BEST_TRANS') {
+        print "Found new best for $BEST on $bench: $rd  - $d->{$bench}->{$rd}->{res}\n";
+    }
     $d->{$bench}->{$BEST}->{res}  = $d->{$bench}->{$rd}->{res};
     $d->{$bench}->{$BEST}->{cpu}  = $d->{$bench}->{$rd}->{cpu};
     $d->{$bench}->{$BEST}->{wall} = $d->{$bench}->{$rd}->{wall};
@@ -335,7 +342,8 @@ foreach my $b (sort keys %$d) {
            $d->{$b}->{BEST_DRIFTEV}->{cpu},
            #$d->{$b}->{BEST_DRIFTEV}->{mem},
            run2tool($d->{$b}->{BEST_DRIFTEV}->{rd}));
-    printf "best EDrift result for %-40s : %-10s : %s\n", $b, $d->{$b}->{BEST_DRIFTEV}->{res}, $d->{$b}->{BEST_DRIFTEV}->{rd};
+    #printf "best EDrift result for %-40s : %-10s : %s\n", $b, $d->{$b}->{BEST_DRIFTEV}->{res}, $d->{$b}->{BEST_DRIFTEV}->{rd};
+    printf "best Drift result for %-40s : %-10s : %s\n", $b, $d->{$b}->{BEST_TRANS}->{res}, $d->{$b}->{BEST_TRANS}->{rd};
     # save the runtimes for statistics
     push @geos_evtrans, $d->{$b}->{BEST_TRANS}->{cpu}
       if $d->{$b}->{BEST_TRANS}->{res} eq 'true' && $d->{$b}->{BEST_TRANS}->{cpu} < 900 && $d->{$b}->{BEST_TRANS}->{cpu} > 0;
@@ -383,13 +391,13 @@ my @evDiftTimes = map { $d->{$_}->{BEST_DRIFTEV}->{cpu} } @bothSolved;
 my $speedupEVoverDrift = geometric_mean(@driftTimes)/geometric_mean(@evDiftTimes);
 
 # calculate speedup of Real Mochi over evDrift
-warn "ev+mochi solved: ".Dumper(\@evAndMochiSolved);
+warn "ev+mochi solved: ".join(',',@evAndMochiSolved)."\n";
 my @EVMO_ev_times = map { $d->{$_}->{BEST_DRIFTEV}->{cpu} } @evAndMochiSolved;
 my @EVMO_mo_times = map { $d->{$_}->{$REALMOCHI_RD}->{cpu} } @evAndMochiSolved;
 my $speedupEVoverRealMochi = geometric_mean(@EVMO_mo_times)/geometric_mean(@EVMO_ev_times);
 
 # calculate speedup of RCaml over evDrift
-warn "ev+rcaml solved: ".Dumper(\@evAndRcamlSolved);
+warn "ev+rcaml solved: ".join(',',@evAndRcamlSolved)."\n";
 my @EVMO_ev_times = map { $d->{$_}->{BEST_DRIFTEV}->{cpu} } @evAndMochiSolved;
 my @EVMO_rc_times = map { $d->{$_}->{$COARMOCHI_RD}->{cpu} } @evAndRcamlSolved;
 my $speedupEVoverRcaml = geometric_mean(@EVMO_rc_times)/geometric_mean(@EVMO_ev_times);
@@ -491,8 +499,8 @@ print STATS join("\n", (
    ('\newcommand\expGMcoarmochi{'.geometric_mean(@geos_coarmochi).'}'),
    ('\newcommand\expGMrealmochi{'.geometric_mean(@geos_realmochi).'}'),
    ('\newcommand\expGMdirect{'.geometric_mean(@geos_direct).'}'),
-   ('\newcommand\expSpeedupEVoverDrift{'.$speedupEVoverDrift.'}'),
-   ('\newcommand\expSpeedupEVoverRcaml{'.$speedupEVoverRcaml.'}'),
+   ('\newcommand\expSpeedupEVoverDrift{'.sprintf("%0.1f", $speedupEVoverDrift).'}'),
+   ('\newcommand\expSpeedupEVoverRcaml{'.sprintf("%0.1f", $speedupEVoverRcaml).'}'),
    ('\newcommand\expSpeedupEVoverRealMochi{'.$speedupEVoverRealMochi.'}'),
 #   ('\newcommand\expSpeedupEvtrans{'.sprintf("%0.1f", geometric_mean(@geos_evtrans)/geometric_mean(@geos_direct)).'}'),
 #   ('\newcommand\expSpeedupMochi{'.sprintf("%0.1f", geometric_mean(@geos_mochi)/geometric_mean(@geos_direct)).'}'),
@@ -518,6 +526,8 @@ print STATS join("\n", (
    "% Overview temperature example:",
    ('\newcommand\expBestTempEVDrift{'.sprintf("%d", $d->{temperature}->{BEST_DRIFTEV}->{cpu}).'}'),
    ('\newcommand\expBestTempTrans{'.sprintf("%d", $d->{temperature}->{BEST_TRANS}->{cpu}).'}'),
+   ('\newcommand\expBestAuctionEVDrift{'.sprintf("%d", $d->{auction}->{BEST_DRIFTEV}->{cpu}).'}'),
+   ('\newcommand\expBestAuctionTrans{'.sprintf("%d", $d->{auction}->{BEST_TRANS}->{cpu}).'}'),
 ))."\n";
 close STATS;
 print "wrote: exp-stats.tex\n" or die $!;
