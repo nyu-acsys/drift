@@ -1,8 +1,0 @@
-
-QSet   = [0]; 
-
-delta  = fun evx (q, acc) -> (q, acc);
-
-IniCfg = (0, 0);
-
-assert = fun (q, acc) -> true;

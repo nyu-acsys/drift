@@ -1,9 +1,0 @@
-QSet   = [0;1]; 
-
-delta  = fun evx (q, acc) -> 
-    if (q = 0 && evx = 5) then (1, evx)
-    else (q, acc);
-
-IniCfg = (0, 0);
-
-assertFinal = fun (q, acc) -> acc = 5;
