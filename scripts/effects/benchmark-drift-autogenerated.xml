@@ -153,6 +153,24 @@ SPDX-License-Identifier: Apache-2.0
     <option name="-thold">false</option>
     <option name="-io-effects">false</option>
   </rundefinition> 
+  <rundefinition name="NOTEoopsla25mar23-TL1-TPtrue-THtrue-DMls-IOfalse-TRtrans">
+    <option name="-ev-trans">true</option>
+    <option name="-trace-len">1</option>
+    <option name="-if-part">true</option>
+    <option name="-out">2</option>
+    <option name="-domain">Polka_ls</option>
+    <option name="-thold">true</option>
+    <option name="-io-effects">false</option>
+  </rundefinition> 
+  <rundefinition name="NOTEoopsla25mar23-TL1-TPtrue-THfalse-DMpg-IOfalse-TRtrans">
+    <option name="-ev-trans">true</option>
+    <option name="-trace-len">1</option>
+    <option name="-if-part">true</option>
+    <option name="-out">2</option>
+    <option name="-domain">PolkaGrid</option>
+    <option name="-thold">false</option>
+    <option name="-io-effects">false</option>
+  </rundefinition> 
   <rundefinition name="NOTEoopsla25mar23-TL1-TPfalse-THtrue-DMls-IOfalse-TRtrans">
     <option name="-ev-trans">true</option>
     <option name="-trace-len">1</option>

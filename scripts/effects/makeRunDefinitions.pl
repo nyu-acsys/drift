@@ -28,7 +28,8 @@ foreach my $ifPart (qw/true false/) {
             # CA on Jul 2: TL1-TPtrue for TRtrans
             && !($evTrans eq 'true' && $tracelen eq '1' && $ifPart eq 'true') );
     # for ev-trans, only TP-false:
-    next if ($evTrans eq 'true' && $ifPart eq 'true');
+    #   Actually, we do need it for the TP Table
+    # next if ($evTrans eq 'true' && $ifPart eq 'true');
     
 foreach my $io (qw/true false/) {
   # io-effects does nothing for ev-trans

@@ -173,8 +173,6 @@ sub parseResultsFile {
             $bench =~ s/\.y?ml$//;
             # traverse the columns 
             for(my $i=0; $i <= $#RCWs; $i+=3) {
-                # we don't allow TP with Drift
-                next if $runSets[$i] =~ /TPtrue-.*TRtrans/;
                 $d->{$bench}->{$runSets[$i]}->{res} = $RCWs[$i];
                 $d->{$bench}->{$runSets[$i]}->{cpu} = $RCWs[$i+1];
                 $d->{$bench}->{$runSets[$i]}->{wall} = $RCWs[$i+2];
@@ -201,6 +199,12 @@ sub newBest {
     if ($bench eq 'disj-gte' and $BEST eq 'BEST_TRANS') {
         print "Found new best for $BEST on $bench: $rd  - $d->{$bench}->{$rd}->{res}\n";
     }
+    # We only TP with Drift when it's for BEST_TPON_DRIFT
+    if ($rd =~ /TPtrue-.*TRtrans/) {
+        # don't allow adoption of this possible new best
+        return unless $BEST =~ /BEST_TP/;
+    }
+
     $d->{$bench}->{$BEST}->{res}  = $d->{$bench}->{$rd}->{res};
     $d->{$bench}->{$BEST}->{cpu}  = $d->{$bench}->{$rd}->{cpu};
     $d->{$bench}->{$BEST}->{wall} = $d->{$bench}->{$rd}->{wall};
@@ -443,7 +447,7 @@ my $newTPOverNoTPevDrift = 0;
 my @geos_notp_drift;   my @geos_tp_drift; 
 my @geos_notp_evdrift; my @geos_tp_evdrift;
 foreach my $b (sort keys %$d) {
-    #print "b: $b\n";
+    print "b: $b\n";
     next if $b =~ /nums?_even/;
     my $tt = $b; $tt =~ s/\_/\\_/g;
     $tt =~ s/negated/neg/;
