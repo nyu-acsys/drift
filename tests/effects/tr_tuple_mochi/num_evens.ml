@@ -49,7 +49,7 @@ let ev_step_asst0 cfg1 =
    (q,acc) -> assert ((q = 0) && ((acc + acc) <= prefm))) 
 in
 
-
+if prefm >0 then
   let flip0 = ((fun x cfg12 ->
                   if (x = 1) then (0,cfg12)
                   else (1,cfg12)),(0,0)) in 
@@ -72,3 +72,5 @@ in
                                (match f0 with 
                                 (f,cfg3) -> (match ((f prefm) cfg3) with 
                                              (x0,cfg4) -> ((x0 0) cfg4))))
+else
+  ((), (0, 0))

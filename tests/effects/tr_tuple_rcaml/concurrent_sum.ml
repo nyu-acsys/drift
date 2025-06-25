@@ -75,7 +75,10 @@ let rec sum n cfg3 =
                       (x1,cfg5) -> ((x0 ; x1),cfg5))) 
 in
 
+if prefn > 0 then 
   (match ((sum prefn) (0,0)) with 
    (e0,acfg0) -> ((asst_final0 acfg0) ; e0))
+else
+  0
 
 [@@@assert "typeof(main) <: int -> int"]

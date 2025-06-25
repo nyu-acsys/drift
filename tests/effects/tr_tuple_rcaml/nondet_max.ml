@@ -67,6 +67,7 @@ let rec make_list n cfg2 =
                                     (x3,cfg8) -> ((x3 f) cfg8)) with  (x2,cfg7) -> ((x1 ; x2),cfg7)))),cfg2) 
 in
 
+if prefn > 0 then
   let get_random_int0 = ((let rec get_random_int n1 cfg11 =
                             if (n1 = 0) then (0,cfg11)
                             else if (nondet_bool ()) then ((get_random_int (n1 - 1)) cfg11)
@@ -75,5 +76,7 @@ in
   (match get_random_int0 with 
    (get_random_int,cfg9) -> (match ((make_list prefn) cfg9) with 
                              (x4,cfg10) -> ((x4 get_random_int) cfg10)))
+else
+  (0, (0, 0))
 
 [@@@assert "typeof(main) <: int -> int * (int * int)"]

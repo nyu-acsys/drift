@@ -64,8 +64,11 @@ let rec order d cfg2 = ((fun c cfg3 ->
                                     else (0,cfg3)),cfg2) 
 
 
-let main (dd:int(*-:{cur_v:Int | true = true}*)) (cc:int(*-:{cur_v:Int | cur_v = 0}*)) = (match (match ((order dd) (0,0)) with 
-                                                                                                 (x4,cfg8) -> ((x4 cc) cfg8)) with 
-                                                                                                (e0,acfg0) -> ((asst_final0 acfg0) ; e0))
+let main (dd:int(*-:{cur_v:Int | true = true}*)) (cc:int(*-:{cur_v:Int | cur_v = 0}*)) = 
+  if cc > 0 then
+  (match (match ((order dd) (0,0)) with 
+     (x4,cfg8) -> ((x4 cc) cfg8)) with 
+    (e0,acfg0) -> ((asst_final0 acfg0) ; e0))
+  else 0
 
 [@@@assert "typeof(main) <: int -> int -> int"]

@@ -71,8 +71,11 @@ let rec order d (cfg2 : (int * int)) =
 
 
 let main (dd:int(*-:{cur_v:Int | true = true}*)) (cc:int(*-:{cur_v:Int | cur_v = 0}*)) =
-  (match let bb0 = if (Random.int(0) >= 0) then (1,(0,0))
-                   else (0,(0,0)) in 
-         (match bb0 with 
-          (bb,cfg10) -> (match (match ((order dd) cfg10) with 
-                                (x5,cfg11) -> ((x5 cc) cfg11)) with  (x6,cfg12) -> ((x6 bb) cfg12))) with  (e0,acfg0) -> ((asst_final0 acfg0) ; e0))
+  if cc > 0 then
+    (match let bb0 = if (Random.int(0) >= 0) then (1,(0,0))
+                    else (0,(0,0)) in 
+          (match bb0 with 
+            (bb,cfg10) -> (match (match ((order dd) cfg10) with 
+                                  (x5,cfg11) -> ((x5 cc) cfg11)) with  (x6,cfg12) -> ((x6 bb) cfg12))) with  (e0,acfg0) -> ((asst_final0 acfg0) ; e0))
+  else
+    0
