@@ -1173,7 +1173,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
               let (map_true, te_true), tails1 = List.fold_left_map 
                 (fun (m1', _) tail1 ->
                   let trace1 = extend_trace tail1 trace in
-                  let tail1 = if !if_part && trace_isempty tail1 then append_part_trace (create_if_token (loc term) (loc e1)) tail1 else tail1 in
+                  let tail1 = if !if_part && trace_isempty tail1 then append_part_trace (create_if_token (loc term) true) tail1 else tail1 in
                   let trace = extend_trace tail1 trace in
                   let n = loc term |> construct_enode env |> construct_snode trace in
                   let te = find n m0 in
@@ -1200,7 +1200,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
               let (map_false, te_false), tails2 = List.fold_left_map
                 (fun (m2', _) tail2 ->
                   let trace2 = extend_trace tail2 trace in
-                  let tail2 = if !if_part && trace_isempty tail2 then append_part_trace (create_if_token (loc term) (loc e2)) tail2 else tail2 in
+                  let tail2 = if !if_part && trace_isempty tail2 then append_part_trace (create_if_token (loc term) false) tail2 else tail2 in
                   let trace = extend_trace tail2 trace in
                   let n = loc term |> construct_enode env |> construct_snode trace in
                   let te = find n m0 in

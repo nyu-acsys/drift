@@ -5,13 +5,13 @@ open Format
 exception Trace_larger_than_tree
 
 type partition_token_t = 
-  | If_Case of loc * loc
+  | If_Case of loc * bool
   | Pat_Case of loc * loc
 
 type trace_t = loc list * partition_token_t list
 
 let print_part_token ppf loc_token = match loc_token with
-  | If_Case (loc1, loc2) -> Format.fprintf ppf "@[<2>%s:%s %s@]" "If" loc1 loc2
+  | If_Case (loc1, loc2) -> Format.fprintf ppf "@[<2>%s:%s %b@]" "If" loc1 loc2
   | Pat_Case (loc1, loc2) -> Format.fprintf ppf "@[<2>%s:%s %s@]" "PatMatch" loc1 loc2
 
 let rec print_part_trace ppf trace = match trace with
@@ -26,7 +26,7 @@ let rec print_call_trace ppf trace = match trace with
 
 let print_trace ppf (call_trace, part_trace) = Format.fprintf ppf "[Callsite trace: %a] * [Partition trace: %a]" print_call_trace call_trace print_part_trace part_trace
 
-let create_if_token if_loc block_loc = If_Case (if_loc, block_loc)
+let create_if_token if_loc case = If_Case (if_loc, case)
 
 let create_pat_token pat_loc block_loc = Pat_Case (pat_loc, block_loc)
 
@@ -46,7 +46,8 @@ let rec prune_semi_trace semi_trace limit = if List.length semi_trace > limit
   else semi_trace
 
 let get_part_token_loc loc_token = match loc_token with
-  | If_Case (loc1,loc2) | Pat_Case (loc1,loc2) -> loc1^"_"^loc2
+  | If_Case (loc1,loc2 ) -> loc1^"_"^(string_of_bool loc2)
+  | Pat_Case (loc1,loc2) -> loc1^" "^loc2
 
 let comp_loc loc1 loc2 = 
   let l1 = try int_of_string loc1 with _ -> -1 in
@@ -65,7 +66,7 @@ let comp_part_token token1 token2 =
     | If_Case (_, loc21) -> 
       (
         match token2 with
-        | If_Case (_, loc22) -> comp_loc loc21 loc22
+        | If_Case (_, loc22) -> Bool.compare loc21 loc22
         | _ -> 1
       )
     | Pat_Case (_, loc21) ->
