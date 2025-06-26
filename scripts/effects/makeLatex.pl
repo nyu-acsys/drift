@@ -322,6 +322,8 @@ foreach my $b (sort keys %$d) {
     die "don't have a $REALMOCHI_RD rundef for $b" unless $d->{$b}->{$REALMOCHI_RD}->{rd} =~ /[a-z]/;
     die "don't have a $COARMOCHI_RD rundef for $b" unless $d->{$b}->{$COARMOCHI_RD}->{rd} =~ /[a-z]/;
     die "don't have a BEST_DRIFTEV rundef for $b" unless $d->{$b}->{BEST_DRIFTEV}->{rd} =~ /[a-z]/;
+    print SCRIPT "\n#\n# Benchmark: $b\n#\n";
+
     # Trans-Drift
     print BODY sprintf("& %-5s & %3.1f & %s ", # %3.1f & 
            cleanRes($d->{$b}->{BEST_TRANS}->{res}),
@@ -373,10 +375,15 @@ foreach my $b (sort keys %$d) {
     # remember which ones were solved by Drift and by Rcaml
     push @evAndRcamlSolved, $b if $d->{$b}->{BEST_DRIFTEV}->{res} eq 'true' && $d->{$b}->{$COARMOCHI_RD}->{res} eq 'true';
     # script for drift and evdrift
-    print SCRIPT "# Drift on $b:\n".cfg2cmd('',$b,$d->{$b}->{BEST_TRANS}->{rd});
-    print SCRIPT "# evDrift on $b:\n".cfg2cmd('',$b,$d->{$b}->{BEST_DRIFTEV}->{rd});
+    print SCRIPT "# Drift\n".cfg2cmd('',$b,$d->{$b}->{BEST_TRANS}->{rd});
+    print SCRIPT "# evDrift\n".cfg2cmd('',$b,$d->{$b}->{BEST_DRIFTEV}->{rd});
     #print UNSAFE "# Drift on $b:\n".cfg2cmd('unsafe/',$b,$d->{$b}->{BEST_TRANS}->{rd});
     #print UNSAFE "# evDrift on $b:\n".cfg2cmd('unsafe/',$b,$d->{$b}->{BEST_DRIFTEV}->{rd});
+    print SCRIPT "# MoCHi\n"
+       ."./mochi.exe -use-temp tests/effects/tr_tuple_mochi/$b.ml\n";
+    print SCRIPT "# RCaml\n"
+       ."./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml "
+       ."   tests/effects/tr_tuple_rcaml/$b.ml\n";
     print UNSAFE cfg2cmd('unsafe/',$b,$d->{$b}->{BEST_DRIFTEV}->{rd});
 }
 close BODY;
