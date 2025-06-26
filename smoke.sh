@@ -10,3 +10,39 @@
 ./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans trans -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift on overview1:
 ./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+
+#
+# Benchmark: all-ev-pos
+#
+# Drift
+./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+# evDrift
+./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+# MoCHi
+./mochi.exe -use-temp tests/effects/tr_tuple_mochi/all-ev-pos.ml
+# RCaml
+./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/all-ev-pos.ml
+
+#
+# Benchmark: depend
+#
+# Drift
+./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+# evDrift
+./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+# MoCHi
+./mochi.exe -use-temp tests/effects/tr_tuple_mochi/depend.ml
+# RCaml
+./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/depend.ml
+
+#
+# Benchmark: overview1
+#
+# Drift
+./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans trans -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+# evDrift
+./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+# MoCHi
+./mochi.exe -use-temp tests/effects/tr_tuple_mochi/overview1.ml
+# RCaml
+./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/overview1.ml
