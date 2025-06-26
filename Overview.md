@@ -68,8 +68,8 @@ or
 ```
 usage: ./drift.exe [-file <file path>] [-domain <Oct/Polka_st/Polka_ls/PolkaGrid>] [-thold <true/false>] [-prop <file name>] [-trace-len <num>] [-if-part <true/false>] [-io-effects <true/false>] [-ev-trans <true/false>] [-cps-convert <true/false>] [-tuple-convert <true/false>] [-out <num:[0,2]>] [-debug] [-bt]
   -file : Input file path
-  -domain : Abstract domain specification (Oct/Polka_st/Polka_ls/PolkaGrid). "Oct" stands for the Octagon domain. "Polka_st" stands for the strict Polyhedra domain. "Polka_ls" stands for the loose Polyhedra domain.
-  "PolkaGrid" stands for the grid-polyhedra domain - a product domain composed with the loose Polyhedra and Grid domains.
+  -domain : Abstract domain specification (Oct/Polka_st/Polka_ls/PolkaGrid). "Oct" stands for the Octagon domain. "Polka_st" stands for the strict-Polyhedra domain. "Polka_ls" stands for the loose-Polyhedra domain.
+  "PolkaGrid" stands for the grid-polyhedra domain - a product domain composed of the loose-Polyhedra and Grid domains.
   -thold : Use widening with thresholds (Plain widening is default). Increases precision, but also increases running time. Note: not supported for PolkaGrid domain.
   -if-part : Partition traces on if tokens. Increases precision, but also increases running time.
   -trace-len : Number of call-sites and if-partitions (if enabled) remembered. 0 -> not context sensitive. Increasing this increases precision, but also increases running time.
@@ -88,11 +88,15 @@ usage: ./drift.exe [-file <file path>] [-domain <Oct/Polka_st/Polka_ls/PolkaGrid
   -help  Display this list of options
   --help  Display this list of options
 ```
-### Input file
+### Input
 
-As mentioned in Section 3 of the paper, for now we support a very simple subset of OCaml.
-Our example programs provide a good subset of what is working properly.
+#### Program file
+
+Our tool supports integers, booleans, and tuples, along with higher-order recursive functions and if-then-else expressions.
+Our example programs provide a good subset of the language terms that are properly supported.
 One can extend the language by adding analysis for the respective clauses in the `step` function in `abstractTransformer.ml` file.
+Additional abstract domains might also be needed for other data types like strings, lists and arrays, which can be added in the `semanticDomain.ml` (interface with the abstract transformer) and `abstractDomain.ml` (interface with the Apron library) files.
+See the Drift paper [[1]](#1) for more details.
 
 #### Config file
 
@@ -100,13 +104,13 @@ TODO
 
 ### Output levels
 - Level 2: Only returns the result: whether the program is "safe", i.e. all assertions are satisfied. Or, the program "might be unsafe", i.e., some assertions may or may not be satisfied.
-- Level 1: Also produces the final execution map (See [[1]](#1) for more details about these.).
-An execution map maps every program node by location to its refinement type-and-effect.
+- Level 1: Also produces the final execution map (See [[1]](#1) for more details.).
+An execution map maps every program node by location (the program locations are assigned statically) to its refinement type-and-effect.
 When `trace-len` is not zero, every node is tagged by a context, which the map shows in the following syntax:
 
   `EN: 31;z180..251_true`
 
-  This denotes execution node 31, reached through call-site at location 180, and taking the true branch at the if-block at 281. There may be multiple call-sites to the left of, and/or multiple if-blocks to the right of `..`.
+  This denotes execution node 31 (we also have variable nodes denoted by `VN` that are essentially the nodes where functions are defined. See [[1]](#1) for more details.), reached through call-site at location 180, and taking the true branch at the if-block at 281. There may be multiple call-sites to the left of, and/or multiple if-blocks to the right of `..`.
 
   For evDrift, this may have a type-and-effect that may look as follows:
     ```
