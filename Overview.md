@@ -113,7 +113,7 @@ When `trace-len` is not zero, every node is tagged by a context, which the map s
   This denotes execution node 31 (we also have variable nodes denoted by `VN` that are essentially the nodes where functions are defined. See [[1]](#1) for more details.), reached through call-site at location 180, and taking the true branch at the if-block at 281. There may be multiple call-sites to the left of, and/or multiple if-blocks to the right of `..`.
 
   For evDrift, this may have a type-and-effect that may look as follows:
-    ```
+```
   (
   t: [ z39..:
          ((
@@ -150,10 +150,21 @@ The sources can be found in `tests/effects/*.ml`, along with properties
 in `tests/effects/*.yml.prp`. Unsafe versions of the benchmarks are 
 found in `tests/effects/unsafe/*.ml`.
 
-The scripts to generate Drift-(with tuple translation) and evDrift
-results for tables 1 and table 2 are as follows:
+The scripts to re-produce the experiments that are reported in Table 1
+and Table 2 are described below. Note that we have used BenchExec
+(https://github.com/sosy-lab/benchexec/), which is a nearly industral-level
+benchmarking tool, that uses Linux CGroups to measure CPU and memory
+usage with high precision. We use BenchExec to run Drift and evDrift across
+all possible configurations. If interested, these full experiments
+can be reproduced according to the instructions found in
+`scripts/effects/README.md`.
 
-1. Reproduce Table 1 (including the Drift+Translation and evDrift columns):
+To avoid the need to install and configure BenchExec, we have created
+scripts that simply run the best-performing configurations, which are
+those reported in Table 1. These scripts operate as follows:
+
+
+1. Reproduce Table 1:
 ```
 sh generate_table1
 ```
