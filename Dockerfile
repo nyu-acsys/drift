@@ -52,9 +52,9 @@ RUN opam switch 4.11.1
 RUN export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPAM_SWITCH_PREFIX/share/apron/lib"
 # ENV LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPAM_SWITCH_PREFIX/share/apron/lib" 
 
-# Drift source code and compilation
-RUN git clone https://github.com/nyu-acsys/drift.git
-WORKDIR /oopsla25/drift
+# evDrift source code and compilation
+RUN git clone https://github.com/nyu-acsys/drift.git evDrift
+WORKDIR /oopsla25/evDrift
 
 # Drift executable
 RUN opam install -y dune \
@@ -95,7 +95,7 @@ RUN opam install -y dune \
   && dune build main.exe
 
 # Symbolic links needed for running the tools
-WORKDIR /oopsla25/drift
+WORKDIR /oopsla25/evDrift
 RUN ln -s /oopsla25/MoCHi/src/mochi.exe mochi.exe
 RUN ln -s /oopsla25/coar/_build/default/main.exe rcaml.exe
 RUN ln -s /oopsla25/coar/config config
