@@ -245,9 +245,9 @@ for config in configs:
                 elif "The program may not be safe" in content:
                     result = "unknown"
                 elif "MemoryError" in content:
-                    result = "memout"
+                    result = "memout/error"
                 else:
-                    result = "memout"
+                    result = "memout/error"
             elif mode == "rcaml":
                 if "TimeoutExpired" in content:
                     result = "timeout"
@@ -256,23 +256,23 @@ for config in configs:
                 elif pexcep_rcaml.match(content):
                     result = "Excep"
                 elif "MemoryError" in content:
-                    result = "memout"
+                    result = "memout/error"
                 else:
-                    result = "memout"
+                    result = "memout/error"
             elif mode == "mochi":
                 if "TimeoutExpired" in content:
                     result = "timeout"
                 elif "Safe!" in content:
                     result = "verif."
                 elif "MemoryError" in content:
-                    result = "memout"
+                    result = "memout/error"
                 else:
-                    result = "memout"
+                    result = "memout/error"
             else:
-                result = "memout"
+                result = "memout/error"
 
     except Exception:
-        result = "memout"
+        result = "memout/error"
     table[name][mode] = result
 
 header = ["name", "drift", "rcaml", "mochi", "evDrift"]
