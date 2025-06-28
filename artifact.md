@@ -58,8 +58,7 @@ The sources can be found in `/oopsla25/evDrift/tests/effects/*.ml`, along with p
 in `/oopsla25/evDrift/tests/effects/*.yml.prp`. Unsafe versions of the benchmarks are 
 found in `/oopsla25/evDrift/tests/effects/unsafe/*.ml`.
 
-The scripts to re-produce the experiments that are reported in Table 1
-and Table 2 are described below. Note that we have used BenchExec
+The scripts to re-produce the experiments that are reported in Table 1 described below. Note that we have used BenchExec
 (https://github.com/sosy-lab/benchexec/), which is a nearly industral-level
 benchmarking tool, that uses Linux CGroups to measure CPU and memory
 usage with high precision. We use BenchExec to run Drift and evDrift across
@@ -68,18 +67,21 @@ can be reproduced according to the instructions found in
 `/oopsla25/evDrift/scripts/effects/README.md`.
 
 To avoid the need to install and configure BenchExec, we have created
-a script that simply run the best-performing configurations, which are
-those reported in Table 1.
-The results of the each run can be found at `/oopsla25/evDrift/result/<benchmark_name>_<tool_name>.txt`.
-To reproduce Table 1 results, run:
+a script that simply run the best-performing configurations, which are those reported in Table 1. To reproduce the results in the paper, run:
 
 ```
 python3 run_expeeriments.py all
 ```
 
+The output for each run can be found at: `/oopsla25/evDrift/result/<benchmark_name>_<tool_name>.txt`.
+
+Note that the 900-second timeout per run causes the full experiment to take around 4 hours.
+
+You can exit the container by typing `exit`. After exiting the container, the command ``docker rm <container_id_or_name>`` can be used to remove the container. 
+
 ## Reusability
 The source code for `evDrift` is located in `/oopsla25/evDrift` directory of the container and on Github at https://github.com/nyu-acsys/drift
 
-See the `Overview.md` file for complete installation instructions across platforms and guidance on running the tool with different configuration options.
+See the `README.md` file for complete installation instructions across platforms and guidance on running the tool with different configuration options.
 
 
