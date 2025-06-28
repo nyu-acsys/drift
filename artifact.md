@@ -40,13 +40,16 @@ When finished, you can stop and remove the container by passing the command `doc
 
 To run a subset of the experiments, use 
 ```bash
-python3 ...
+python3 run_expeeriments.py smoke
 ```
 This will detect any technical issues during the smoke test phase. 
 If finished successfully, the evaluation script should print
 ```
-....
-Experiments ended.
+name        drift   rcaml   mochi   evDrift
+-------------------------------------------
+all-ev-pos  verif.  verif.  verif.  verif. 
+depend      verif.  verif.  verif.  verif. 
+overview1   verif.  verif.  verif.  verif. 
 ```
 
 ## Running full experiments 
@@ -65,21 +68,13 @@ can be reproduced according to the instructions found in
 `/oopsla25/evDrift/scripts/effects/README.md`.
 
 To avoid the need to install and configure BenchExec, we have created
-scripts that simply run the best-performing configurations, which are
-those reported in Table 1. These scripts operate as follows:
+a script that simply run the best-performing configurations, which are
+those reported in Table 1.
+The results of the each run can be found at `/oopsla25/evDrift/result/<benchmark_name>_<tool_name>.txt`.
+To reproduce Table 1 results, run:
 
-
-1. Reproduce Table 1:
 ```
-sh generate_table1
-```
-2. Reproduce Table 2
-```
-sh generate_table2
-```
-3. Run evDrift on the /unsafe/ versions of the programs:
-```
-sh runall_unsafe
+python3 run_expeeriments.py all
 ```
 
 ## Reusability
