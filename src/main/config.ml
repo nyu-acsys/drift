@@ -31,7 +31,7 @@ let prop_file = ref ""
 let convert_to_cps = ref false
 let convert_to_tuple = ref false
 
-let usage = "usage: " ^ Sys.argv.(0) ^ " [-file <file name>] [-domain <domain name>] [-thold <true/false>] [-prop <file name>] [-trace-len <num>] [-if-part <true/false>] [-io-effects <true/false>] [-ev-trans <true/false>] [-cps-convert <true/false>] [-tuple-convert <true/false>] [-out <num:[0,2]>] [-debug] [-bt]"
+let usage = "usage: " ^ Sys.argv.(0) ^ " [-file <file name>] [-domain <domain name>] [-thold <true/false>] [-prop <file name>] [-trace-len <num>] [-if-part <true/false>] [-io-effects <true/false>] [-ev-trans <trans/direct>] [-cps-convert <true/false>] [-tuple-convert <true/false>] [-out <num:[0,2]>] [-debug] [-bt]"
 
 let cmd_options_spec =
   [("-file", Arg.String (fun s -> parse_file := true; file := s), ": Input file specification");
@@ -42,8 +42,8 @@ let cmd_options_spec =
    (* ("-delay-wid", Arg.Int (fun s -> delay_wid := s), ": Set number of delay widening steps (depricated)"); *)
    (* ("-nar", Arg.String (fun s -> if s = "true" then narrow:=true else narrow:=false), ": Use narrowing procedure (depricated)"); *)
    ("-prop", Arg.String (fun s -> effect_on := true; prop_file := s), ": Automata specification of safety property for effect analysis");
-   ("-io-effects", Arg.String (fun s -> if (s = "true" && !effect_on && (not !ev_trans)) then io_effect_on := true else io_effect_on := false), ": Input-output relations for effects for greater precision"); 
-   ("-ev-trans", Arg.String (fun s -> if s = "true" then ev_trans := true else ev_trans := false), ": Translate Ev expressions"); 
+   ("-ev-trans", Arg.String (fun s -> if s = "trans" then ev_trans := true else ev_trans := false), ": Translate Ev expressions");
+   ("-io-effects", Arg.String (fun s -> if (s = "true" && !effect_on && (not !ev_trans)) then io_effect_on := true else io_effect_on := false), ": Input-output relations for effects for greater precision");  
    ("-cps-convert", Arg.String (fun s -> if s = "true" then (convert_to_cps:=true; ev_trans := false) 
                                       else convert_to_cps:=false), ": Convert prog to CPS");
    ("-tuple-convert", Arg.String (fun s -> if s = "true" then (convert_to_tuple:=true; ev_trans := true) 
