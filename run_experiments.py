@@ -199,13 +199,18 @@ for config in configs:
         mode = "rcaml"
 
     output_file = results_folder + name + "_" + mode + ".txt"
-    cmd = config + " > " + output_file
+    cmd = config
 
     print("Running "+mode+" on "+name)
     code, out, err = run_command_with_limits(cmd)
     if code == -1:
         with open(output_file, "w") as f:
+            # print(err)
             f.write(err+"\n")
+    else:
+        with open(output_file, "w") as f:
+            # print(out)
+            f.write(out+"\n")
 
 table = {}
 
@@ -230,7 +235,7 @@ for config in configs:
     if name not in table:
         table[name] = {"drift": "", "evDrift": "", "mochi": "", "rcaml": ""}
     try:
-        with open(output_file) as f:
+        with open(output_file, 'r') as f:
             content = f.read().strip()
             if mode in ["drift", "evDrift"]:
                 if "TimeoutExpired" in content:
