@@ -55,50 +55,83 @@ or
 ```
 
 ### Options
-```bash
-usage: ./drift.exe [-file <file name>] [-domain <domain name>] [-thold <true/false>] [-delay-wid <num>] [-nar <true/false>] [-prop <file name>] [-ev-trans <true/false>] [-cps-convert <true/false>] [-out <num>] [-debug] [-bt]
-  -file : Input file specification
-  -domain : Abstract domain specification (Oct, Polka_st, Polka_ls, PolkaGrid)
-  -thold : Use threshold widening
-  -delay-wid : Set number of delay widening steps (depricated)
-  -nar : Use narrowing procedure (depricated)
-  -out : Output result level
-
-         0: Output map after each step
-
-         1: Output map only for the last step
-
-         2: Output the result only
-  -debug : Debug mode
-  -profile : Profiling output
-  -bt : Allow trace back
-  -prop : Automata specification of safety property for effect analysis
-  -ev-trans Translate Ev expressions
-  -trace-len : Set maximum allowed trace length. 0 -> not context sensitive
-  -if-part : Partition traces on if tokens
+```
+usage: ./drift.exe [-file <file path>] [-domain <Oct/Polka_st/Polka_ls/PolkaGrid>] [-thold <true/false>] [-prop <file name>] [-trace-len <num>] [-if-part <true/false>] [-io-effects <true/false>] [-ev-trans <true/false>] [-cps-convert <true/false>] [-tuple-convert <true/false>] [-out <num:[0,2]>] [-debug] [-bt]
+  -file : Input file path
+  -domain : Abstract domain specification (Oct/Polka_st/Polka_ls/PolkaGrid). "Oct" stands for the Octagon domain. "Polka_st" stands for the strict-Polyhedra domain. "Polka_ls" stands for the loose-Polyhedra domain.
+  "PolkaGrid" stands for the grid-polyhedra domain - a product domain composed of the loose-Polyhedra and Grid domains.
+  -thold : Use widening with thresholds (Plain widening is default). Increases precision, but also increases running time. Note: not supported for PolkaGrid domain.
+  -if-part : Partition traces on if tokens. Increases precision, but also increases running time.
+  -trace-len : Number of call-sites and if-partitions (if enabled) remembered. 0 -> not context sensitive. Increasing this increases precision, but also increases running time.
+  -prop : Automata specification file path.
+  -ev-trans : Translate Ev expressions (run Drift with tuple translation).
+  -io-effects : Input-output relations for effects for greater precision. Increases precision, but also increases running time. Has no effect when ev-trans is true.
   -cps-convert : Convert prog to CPS
+  -tuple-convert : Convert prog to tuple-encoding of the product program
+  -out : Output result level (See below for a description of what this output means).
+    0: Output map after each step
+    1: Output map only for the last step
+    2: Output the result only
+  -debug : Debug mode
+  -profile : Profiling output.
+  -bt : Allow trace back
   -help  Display this list of options
   --help  Display this list of options
 ```
+### Input
 
-## Guides for Running Experiments 
+#### Program file
 
-The sources can be found in `tests/effects/*.ml`, along with properties
-in `tests/effects/*.yml.prp`. Unsafe versions of the benchmarks are 
-found in `tests/effects/unsafe/*.ml`.
+Our tool supports integers, booleans, and tuples, along with higher-order recursive functions and if-then-else expressions.
+Our example programs provide a good subset of the language terms that are properly supported.
+One can extend the language by adding analysis for the respective clauses in the `step` function in `abstractTransformer.ml` file.
+Additional abstract domains might also be needed for other data types like strings, lists and arrays, which can be added in the `semanticDomain.ml` (interface with the abstract transformer) and `abstractDomain.ml` (interface with the Apron library) files.
+See the Drift paper [[1]](#1) for more details.
 
-The scripts to generate Drift-(with tuple translation) and evDrift
-results for tables 1 and table 2 are as follows:
+#### Config file
 
-1. Reproduce Table 1 (including the Drift+Translation and evDrift columns):
+TODO
+
+### Output levels
+- Level 2: Only returns the result: whether the program is "safe", i.e. all assertions are satisfied. Or, the program "might be unsafe", i.e., some assertions may or may not be satisfied.
+- Level 1: Also produces the final execution map (See [[1]](#1) for more details.).
+An execution map maps every program node by location (the program locations are assigned statically) to its refinement type-and-effect.
+When `trace-len` is not zero, every node is tagged by a context, which the map shows in the following syntax:
+
+  `EN: 31;z180..251_true`
+
+  This denotes execution node 31 (we also have variable nodes denoted by `VN` that are essentially the nodes where functions are defined. See [[1]](#1) for more details.), reached through call-site at location 180, and taking the true branch at the if-block at 281. There may be multiple call-sites to the left of, and/or multiple if-blocks to the right of `..`.
+
+  For evDrift, this may have a type-and-effect that may look as follows:
 ```
-sh generate_table1
-```
-2. Reproduce Table 2
-```
-sh generate_table2
-```
-3. Run evDrift on the /unsafe/ versions of the programs:
-```
-sh runall_unsafe
-```
+  (
+  t: [ z39..:
+         ((
+          t: { cur_v: Int | [|-l2_deq+x11=0; x10=0; l1_deq=0; cur_v-l2_deq+l_aux=0; -cur_v+l2_deq>=0; -l2_deq+prefl2+prefn>=0; prefn>=0; prefl2>=0; prefl1>=0; cur_v-1>=0|] },
+          eff: ( 0 |->
+                [|-deq-l2_deq+l_aux+prefl1+tick=0; -deq+enq-l2_deq+prefl1+prefl2=0; -enq+prefn=0; -l2_deq+x11=0; -l2_deq+l_aux+z39..=0; x10=0; l1_deq=0; prefl1>=0; l_aux>=0; l2_deq-l_aux-1>=0;
+                  enq>=0; deq-enq+l2_deq-prefl1>=0; deq-prefl1>=0|])) ->
+         < ..:
+             (
+             t: { cur_v: Int | [|-cur_v+x11=0; -cur_v+l_aux+z39..=0; -cur_v+l2_deq=0; x10=0; l1_deq=0; -cur_v+prefl2+prefn>=0; prefn>=0; prefl2>=0; prefl1>=0; l_aux>=0; cur_v-l_aux-1>=0|] },
+             eff: ( 0 |->
+                   [|-deq-l2_deq+prefl1+tick=0; -deq+enq-l2_deq+prefl1+prefl2=0; -enq+prefn=0; -l2_deq+x11=0; -l2_deq+l_aux+z39..=0; x10=0; l1_deq=0; prefl1>=0; l_aux>=0; l2_deq-l_aux-1>=0; 
+                     enq>=0; deq-enq+l2_deq-prefl1>=0; deq-prefl1>=0|])) >) ],
+  eff: ( 0 |->
+        [|-deq-l2_deq+l_aux+prefl1+tick=0; -deq+enq-l2_deq+prefl1+prefl2=0; -enq+prefn=0; -l2_deq+x11=0; x10=0; l1_deq=0; prefl1>=0; l_aux>=0; l2_deq-l_aux-1>=0; enq>=0; deq-enq+l2_deq-prefl1>=0;
+          deq-prefl1>=0|]))
+  ```
+
+  `t` shows the type, and `eff` shows the effect.
+  
+  In this case, the node is a table type (indicated by the square brackets), which has a single call-site at location 39, with input type-and-effect as shown above (Note that it is an integer type). In cases of integer types, the node in question appears as `cur_v` in the constraint.
+  The input type can appear in the abstract environment of the input effect (See z39..), and can also appears in the output type.
+  The output type (separated by a `->`) is a mapping of type-and-effects by contexts (think different branches taken within a function produce different outputs). In this case, there might have been no branchings in the function, so we just have a single entry `..`.
+
+  Effects are mappings from state to abstract environments that additionally include the accumulator variables (not `cur_v` in this case, rather the names of the accumulator variables.).
+
+- Level 0: Show the intermediate execution maps after every iteration of the algorithm.
+
+## References
+<a id="1">[1]</a> 
+Pavlinovic, Zvonimir and Su, Yusen and Wies, Thomas (2021). Data flow refinement type inference. Proceedings of the ACM on Programming Languages.
