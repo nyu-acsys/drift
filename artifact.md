@@ -1,9 +1,11 @@
 # Artifact for "Abstract Interpretation of Temporal Safety Effects of Higher Order Programs"
 
-This artifact includes the complete source code and all necessary materials to run the experiments and reproduce the results presented in Table 1 (Section 8) and Table 2 (Appendix).
+This artifact includes the complete source code and all necessary materials to run the experiments and reproduce the results presented in Table 1 (Section 8).
 
 We claim the available and reusable badges for `evDrift`.
 
+## Hardware requirements
+ Docker-capable host with at least 4GB of RAM and 20GB of available space.
 
 ## Getting started
 
@@ -14,9 +16,9 @@ Use Docker Desktop version v4.34.3 or later, and enable "Use Rosetta for x86_64/
 
 The artifact uses Docker to run all experiments. Ensure you have at least 20GB of available disk space. The uncompressed Docker image is approximately 8GB and includes the Git repositories used to build all tools included in the comparison. 
 
-A compressed archive containing the pre-built Docker image is available at zenodo as oopsla25.tar.xz. Use the following command to extract it:
+A compressed archive containing the pre-built Docker image is available at Zenodo as paper750.tar.gz. Use the following command to extract it:
 ```bash
-tar -xJvf oopsla25.tar.xz
+tar -xzvf paper750.tar.gz
 ```
 
 Load the docker image `oopsla25-evdrift` from the tar archive
@@ -58,12 +60,8 @@ The sources can be found in `/oopsla25/evDrift/tests/effects/*.ml`, along with p
 in `/oopsla25/evDrift/tests/effects/*.yml.prp`. Unsafe versions of the benchmarks are 
 found in `/oopsla25/evDrift/tests/effects/unsafe/*.ml`.
 
-The scripts to re-produce the experiments that are reported in Table 1 described below. Note that we have used BenchExec
-(https://github.com/sosy-lab/benchexec/), which is a nearly industral-level
-benchmarking tool, that uses Linux CGroups to measure CPU and memory
-usage with high precision. We use BenchExec to run Drift and evDrift across
-all possible configurations. If interested, these full experiments
-can be reproduced according to the instructions found in
+The scripts to re-produce the experiments that are reported in Table 1 are described below. Note that we have used BenchExec
+(https://github.com/sosy-lab/benchexec/), which is a nearly industral-level benchmarking tool, that uses Linux CGroups to measure CPU and memory usage with high precision. We use BenchExec to run Drift and evDrift across all possible configurations. If interested, these full experiments can be reproduced according to the instructions found in
 `/oopsla25/evDrift/scripts/effects/README.md`.
 
 To avoid the need to install and configure BenchExec, we have created
@@ -82,6 +80,6 @@ You can exit the container by typing `exit`. After exiting the container, the co
 ## Reusability
 The source code for `evDrift` is located in `/oopsla25/evDrift` directory of the container and on Github at https://github.com/nyu-acsys/drift
 
-See the `README.md` file for complete installation instructions across platforms and guidance on running the tool with different configuration options.
+See the `README.md` file inside the source directory for complete installation instructions across platforms and guidance on running the tool with different configuration options.
 
 
