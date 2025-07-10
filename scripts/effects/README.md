@@ -40,6 +40,7 @@ sudo ln -s $DRIFT_REPO/drift.exe /usr/local/bin
 nano $DRIFT_REPO/scripts/benchexec-drifttoolinfo/drifttoolinfo/coarmochi.py
 nano $DRIFT_REPO/scripts/benchexec-drifttoolinfo/drifttoolinfo/mochi.py
 nano $DRIFT_REPO/scripts/benchexec-drifttoolinfo/drifttoolinfo/drift.py
+nano $DRIFT_REPO/scripts/benchexec-drifttoolinfo/drifttoolinfo/driftwrapper.py
 ```
 * Build the BenchExec toolinfo modules:
 

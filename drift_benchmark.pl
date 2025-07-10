@@ -10,12 +10,12 @@
 use strict;
 use warnings;
 
-# Check for exactly 3 arguments
-if (@ARGV != 3) {
-    die "Usage: $0 [Drift|evDrift] best_configs.csv <benchmark.ml>\n";
+# Check for exactly 2 arguments
+if (@ARGV != 2) {
+    die "Usage: $0 best_configs_evdrift.csv <tests/effects/benchmark.ml>\n";
 }
 
-my ($DriftOrEv,$config_file,$benchmark) = @ARGV[0..2];
+my ($config_file,$benchmark) = @ARGV[0..1];
 
 # Open the config file
 open(my $fh, '<', $config_file) or die "Could not open '$config_file': $!";
@@ -36,8 +36,8 @@ close($fh);
 
 # If no matching benchmark found
 if (!@args) {
-    die "Benchmark '$benchmark' not found or has no arguments in config file.\n";
+    die "./drift_benchmark.pl: Benchmark '$benchmark' not found or has no arguments in config file.\n";
 }
 
-# Replace the current process with the new program Y and its arguments
-exec('echo', @args) or die "Failed to exec Drift: $!\n";
+print "./drift_benchmark.pl: now Executing:\n  drift.exe ".join(' ',@args)."\n";
+exec('drift.exe', @args) or die "Failed to exec Drift: $!\n";

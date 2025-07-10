@@ -283,6 +283,8 @@ print "wrote: exp-apx.tex\n";
 open BODY, ">exp-body.tex" or die $!;
 open SCRIPT, ">generate_table1" or die $!;
 open UNSAFE, ">runall_unsafe" or die $!;
+open CFG_DRIFT, ">best_configs_drift.csv" or die $!;
+open CFG_EVDRIFT, ">best_configs_evdrift.csv" or die $!;
 # print BODY "     ";
 # foreach my $tool (@RUNDEFINITIONS) {
 #     print BODY " & \\multicolumn{3}{|c||}{$run2tool{$tool}}";
@@ -377,6 +379,13 @@ foreach my $b (sort keys %$d) {
     # script for drift and evdrift
     print SCRIPT "# Drift\n".cfg2cmd('',$b,$d->{$b}->{BEST_TRANS}->{rd});
     print SCRIPT "# evDrift\n".cfg2cmd('',$b,$d->{$b}->{BEST_DRIFTEV}->{rd});
+    # save the best configurations for Drift/evDrift:
+    my $args = cfg2cmd('',$b,$d->{$b}->{BEST_TRANS}->{rd});
+    $args =~ s/^\.\/drift.exe //;
+    print CFG_DRIFT "tests/effects/$b.ml|$args";
+    $args = cfg2cmd('',$b,$d->{$b}->{BEST_DRIFTEV}->{rd});
+    $args =~ s/^\.\/drift.exe //;
+    print CFG_EVDRIFT "tests/effects/$b.ml|$args";
     #print UNSAFE "# Drift on $b:\n".cfg2cmd('unsafe/',$b,$d->{$b}->{BEST_TRANS}->{rd});
     #print UNSAFE "# evDrift on $b:\n".cfg2cmd('unsafe/',$b,$d->{$b}->{BEST_DRIFTEV}->{rd});
     print SCRIPT "# MoCHi\n"
@@ -389,9 +398,13 @@ foreach my $b (sort keys %$d) {
 close BODY;
 close SCRIPT;
 close UNSAFE;
+close CFG_DRIFT;
+close CFG_EVDRIFT;
 print "wrote: exp-body.tex\n";
 print "wrote: generate_table1\n";
 print "wrote: runall_unsafe\n";
+print "wrote: best_configs_drift.csv\n";
+print "wrote: best_configs_evdrift.csv\n";
 
 # calculate the speedup on the ones that Drift and evDrift BOTH solved
 my @driftTimes  = map { $d->{$_}->{BEST_TRANS}->{cpu} } @bothSolved;
@@ -454,7 +467,7 @@ my $newTPOverNoTPevDrift = 0;
 my @geos_notp_drift;   my @geos_tp_drift; 
 my @geos_notp_evdrift; my @geos_tp_evdrift;
 foreach my $b (sort keys %$d) {
-    print "b: $b\n";
+    #print "b: $b\n";
     next if $b =~ /nums?_even/;
     my $tt = $b; $tt =~ s/\_/\\_/g;
     $tt =~ s/negated/neg/;
