@@ -1,156 +1,156 @@
 # Drift + Trace partitioning all-ev-pos:
-./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning all-ev-pos:
-./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning all-ev-pos:
-./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning alt-inev:
-./drift.exe -file tests/effects/alt-inev.ml -prop tests/effects/alt-inev.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/alt-inev.ml -prop tests/effects/alt-inev.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning alt-inev:
-./drift.exe -file tests/effects/alt-inev.ml -prop tests/effects/alt-inev.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/alt-inev.ml -prop tests/effects/alt-inev.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning alt-inev:
-./drift.exe -file tests/effects/alt-inev.ml -prop tests/effects/alt-inev.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/alt-inev.ml -prop tests/effects/alt-inev.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning auction:
-./drift.exe -file tests/effects/auction.ml -prop tests/effects/auction.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/auction.ml -prop tests/effects/auction.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift without Trace partitioning auction:
-./drift.exe -file tests/effects/auction.ml -prop tests/effects/auction.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/auction.ml -prop tests/effects/auction.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning auction:
-./drift.exe -file tests/effects/auction.ml -prop tests/effects/auction.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/auction.ml -prop tests/effects/auction.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning binomial_heap:
-./drift.exe -file tests/effects/binomial_heap.ml -prop tests/effects/binomial_heap.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/binomial_heap.ml -prop tests/effects/binomial_heap.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning binomial_heap:
-./drift.exe -file tests/effects/binomial_heap.ml -prop tests/effects/binomial_heap.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/binomial_heap.ml -prop tests/effects/binomial_heap.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning binomial_heap:
-./drift.exe -file tests/effects/binomial_heap.ml -prop tests/effects/binomial_heap.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/binomial_heap.ml -prop tests/effects/binomial_heap.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning concurrent_sum:
-./drift.exe -file tests/effects/concurrent_sum.ml -prop tests/effects/concurrent_sum.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/concurrent_sum.ml -prop tests/effects/concurrent_sum.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning concurrent_sum:
-./drift.exe -file tests/effects/concurrent_sum.ml -prop tests/effects/concurrent_sum.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/concurrent_sum.ml -prop tests/effects/concurrent_sum.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning concurrent_sum:
-./drift.exe -file tests/effects/concurrent_sum.ml -prop tests/effects/concurrent_sum.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/concurrent_sum.ml -prop tests/effects/concurrent_sum.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning depend:
-./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning depend:
-./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning depend:
-./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning disj:
-./drift.exe -file tests/effects/disj.ml -prop tests/effects/disj.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/disj.ml -prop tests/effects/disj.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning disj:
-./drift.exe -file tests/effects/disj.ml -prop tests/effects/disj.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/disj.ml -prop tests/effects/disj.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
 # evDrift + Trace partitioning disj:
-./drift.exe -file tests/effects/disj.ml -prop tests/effects/disj.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/disj.ml -prop tests/effects/disj.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
 # Drift + Trace partitioning disj-gte:
-./drift.exe -file tests/effects/disj-gte.ml -prop tests/effects/disj-gte.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/disj-gte.ml -prop tests/effects/disj-gte.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning disj-gte:
-./drift.exe -file tests/effects/disj-gte.ml -prop tests/effects/disj-gte.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/disj-gte.ml -prop tests/effects/disj-gte.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning disj-gte:
-./drift.exe -file tests/effects/disj-gte.ml -prop tests/effects/disj-gte.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/disj-gte.ml -prop tests/effects/disj-gte.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning disj-nondet:
-./drift.exe -file tests/effects/disj-nondet.ml -prop tests/effects/disj-nondet.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/disj-nondet.ml -prop tests/effects/disj-nondet.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning disj-nondet:
-./drift.exe -file tests/effects/disj-nondet.ml -prop tests/effects/disj-nondet.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/disj-nondet.ml -prop tests/effects/disj-nondet.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning disj-nondet:
-./drift.exe -file tests/effects/disj-nondet.ml -prop tests/effects/disj-nondet.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/disj-nondet.ml -prop tests/effects/disj-nondet.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning higher-order:
-./drift.exe -file tests/effects/higher-order.ml -prop tests/effects/higher-order.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/higher-order.ml -prop tests/effects/higher-order.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning higher-order:
-./drift.exe -file tests/effects/higher-order.ml -prop tests/effects/higher-order.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/higher-order.ml -prop tests/effects/higher-order.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning higher-order:
-./drift.exe -file tests/effects/higher-order.ml -prop tests/effects/higher-order.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/higher-order.ml -prop tests/effects/higher-order.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning last-ev-even:
-./drift.exe -file tests/effects/last-ev-even.ml -prop tests/effects/last-ev-even.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/last-ev-even.ml -prop tests/effects/last-ev-even.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift without Trace partitioning last-ev-even:
-./drift.exe -file tests/effects/last-ev-even.ml -prop tests/effects/last-ev-even.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/last-ev-even.ml -prop tests/effects/last-ev-even.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning last-ev-even:
-./drift.exe -file tests/effects/last-ev-even.ml -prop tests/effects/last-ev-even.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/last-ev-even.ml -prop tests/effects/last-ev-even.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning lics18-amortized:
-./drift.exe -file tests/effects/lics18-amortized.ml -prop tests/effects/lics18-amortized.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/lics18-amortized.ml -prop tests/effects/lics18-amortized.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift without Trace partitioning lics18-amortized:
-./drift.exe -file tests/effects/lics18-amortized.ml -prop tests/effects/lics18-amortized.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/lics18-amortized.ml -prop tests/effects/lics18-amortized.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning lics18-amortized:
-./drift.exe -file tests/effects/lics18-amortized.ml -prop tests/effects/lics18-amortized.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/lics18-amortized.ml -prop tests/effects/lics18-amortized.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning lics18-hoshrink:
-./drift.exe -file tests/effects/lics18-hoshrink.ml -prop tests/effects/lics18-hoshrink.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/lics18-hoshrink.ml -prop tests/effects/lics18-hoshrink.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning lics18-hoshrink:
-./drift.exe -file tests/effects/lics18-hoshrink.ml -prop tests/effects/lics18-hoshrink.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/lics18-hoshrink.ml -prop tests/effects/lics18-hoshrink.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning lics18-hoshrink:
-./drift.exe -file tests/effects/lics18-hoshrink.ml -prop tests/effects/lics18-hoshrink.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/lics18-hoshrink.ml -prop tests/effects/lics18-hoshrink.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning lics18-web:
-./drift.exe -file tests/effects/lics18-web.ml -prop tests/effects/lics18-web.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/lics18-web.ml -prop tests/effects/lics18-web.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning lics18-web:
-./drift.exe -file tests/effects/lics18-web.ml -prop tests/effects/lics18-web.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/lics18-web.ml -prop tests/effects/lics18-web.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning lics18-web:
-./drift.exe -file tests/effects/lics18-web.ml -prop tests/effects/lics18-web.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/lics18-web.ml -prop tests/effects/lics18-web.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning market:
-./drift.exe -file tests/effects/market.ml -prop tests/effects/market.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/market.ml -prop tests/effects/market.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift without Trace partitioning market:
-./drift.exe -file tests/effects/market.ml -prop tests/effects/market.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/market.ml -prop tests/effects/market.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
 # evDrift + Trace partitioning market:
-./drift.exe -file tests/effects/market.ml -prop tests/effects/market.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/market.ml -prop tests/effects/market.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
 # Drift + Trace partitioning max-min:
-./drift.exe -file tests/effects/max-min.ml -prop tests/effects/max-min.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/max-min.ml -prop tests/effects/max-min.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift without Trace partitioning max-min:
-./drift.exe -file tests/effects/max-min.ml -prop tests/effects/max-min.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/max-min.ml -prop tests/effects/max-min.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
 # evDrift + Trace partitioning max-min:
-./drift.exe -file tests/effects/max-min.ml -prop tests/effects/max-min.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/max-min.ml -prop tests/effects/max-min.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
 # Drift + Trace partitioning monotonic:
-./drift.exe -file tests/effects/monotonic.ml -prop tests/effects/monotonic.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/monotonic.ml -prop tests/effects/monotonic.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning monotonic:
-./drift.exe -file tests/effects/monotonic.ml -prop tests/effects/monotonic.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/monotonic.ml -prop tests/effects/monotonic.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning monotonic:
-./drift.exe -file tests/effects/monotonic.ml -prop tests/effects/monotonic.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/monotonic.ml -prop tests/effects/monotonic.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning nondet_max:
-./drift.exe -file tests/effects/nondet_max.ml -prop tests/effects/nondet_max.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/nondet_max.ml -prop tests/effects/nondet_max.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning nondet_max:
-./drift.exe -file tests/effects/nondet_max.ml -prop tests/effects/nondet_max.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/nondet_max.ml -prop tests/effects/nondet_max.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning nondet_max:
-./drift.exe -file tests/effects/nondet_max.ml -prop tests/effects/nondet_max.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/nondet_max.ml -prop tests/effects/nondet_max.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning order-irrel:
-./drift.exe -file tests/effects/order-irrel.ml -prop tests/effects/order-irrel.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/order-irrel.ml -prop tests/effects/order-irrel.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning order-irrel:
-./drift.exe -file tests/effects/order-irrel.ml -prop tests/effects/order-irrel.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/order-irrel.ml -prop tests/effects/order-irrel.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning order-irrel:
-./drift.exe -file tests/effects/order-irrel.ml -prop tests/effects/order-irrel.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/order-irrel.ml -prop tests/effects/order-irrel.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning order-irrel-nondet:
-./drift.exe -file tests/effects/order-irrel-nondet.ml -prop tests/effects/order-irrel-nondet.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/order-irrel-nondet.ml -prop tests/effects/order-irrel-nondet.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift without Trace partitioning order-irrel-nondet:
-./drift.exe -file tests/effects/order-irrel-nondet.ml -prop tests/effects/order-irrel-nondet.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/order-irrel-nondet.ml -prop tests/effects/order-irrel-nondet.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning order-irrel-nondet:
-./drift.exe -file tests/effects/order-irrel-nondet.ml -prop tests/effects/order-irrel-nondet.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/order-irrel-nondet.ml -prop tests/effects/order-irrel-nondet.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning overview1:
-./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning overview1:
-./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning overview1:
-./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning reentr:
-./drift.exe -file tests/effects/reentr.ml -prop tests/effects/reentr.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/reentr.ml -prop tests/effects/reentr.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning reentr:
-./drift.exe -file tests/effects/reentr.ml -prop tests/effects/reentr.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/reentr.ml -prop tests/effects/reentr.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning reentr:
-./drift.exe -file tests/effects/reentr.ml -prop tests/effects/reentr.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/reentr.ml -prop tests/effects/reentr.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning resource-analysis:
-./drift.exe -file tests/effects/resource-analysis.ml -prop tests/effects/resource-analysis.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/resource-analysis.ml -prop tests/effects/resource-analysis.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning resource-analysis:
-./drift.exe -file tests/effects/resource-analysis.ml -prop tests/effects/resource-analysis.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/resource-analysis.ml -prop tests/effects/resource-analysis.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning resource-analysis:
-./drift.exe -file tests/effects/resource-analysis.ml -prop tests/effects/resource-analysis.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/resource-analysis.ml -prop tests/effects/resource-analysis.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning sum-appendix:
-./drift.exe -file tests/effects/sum-appendix.ml -prop tests/effects/sum-appendix.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/sum-appendix.ml -prop tests/effects/sum-appendix.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning sum-appendix:
-./drift.exe -file tests/effects/sum-appendix.ml -prop tests/effects/sum-appendix.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/sum-appendix.ml -prop tests/effects/sum-appendix.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # evDrift + Trace partitioning sum-appendix:
-./drift.exe -file tests/effects/sum-appendix.ml -prop tests/effects/sum-appendix.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/sum-appendix.ml -prop tests/effects/sum-appendix.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # Drift + Trace partitioning sum-of-ev-even:
-./drift.exe -file tests/effects/sum-of-ev-even.ml -prop tests/effects/sum-of-ev-even.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/sum-of-ev-even.ml -prop tests/effects/sum-of-ev-even.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift without Trace partitioning sum-of-ev-even:
-./drift.exe -file tests/effects/sum-of-ev-even.ml -prop tests/effects/sum-of-ev-even.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/sum-of-ev-even.ml -prop tests/effects/sum-of-ev-even.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
 # evDrift + Trace partitioning sum-of-ev-even:
-./drift.exe -file tests/effects/sum-of-ev-even.ml -prop tests/effects/sum-of-ev-even.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/sum-of-ev-even.ml -prop tests/effects/sum-of-ev-even.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
 # Drift + Trace partitioning temperature:
-./drift.exe -file tests/effects/temperature.ml -prop tests/effects/temperature.yml.prp -ev-trans trans -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/temperature.ml -prop tests/effects/temperature.yml.prp -ev-trans true -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift without Trace partitioning temperature:
-./drift.exe -file tests/effects/temperature.ml -prop tests/effects/temperature.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/temperature.ml -prop tests/effects/temperature.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift + Trace partitioning temperature:
-./drift.exe -file tests/effects/temperature.ml -prop tests/effects/temperature.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/temperature.ml -prop tests/effects/temperature.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false

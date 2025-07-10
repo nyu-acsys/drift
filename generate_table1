@@ -3,9 +3,9 @@
 # Benchmark: all-ev-pos
 #
 # Drift
-./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift
-./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/all-ev-pos.ml
 # RCaml
@@ -15,9 +15,9 @@
 # Benchmark: alt-inev
 #
 # Drift
-./drift.exe -file tests/effects/alt-inev.ml -prop tests/effects/alt-inev.yml.prp -ev-trans trans -trace-len 1 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/alt-inev.ml -prop tests/effects/alt-inev.yml.prp -ev-trans true -trace-len 1 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift
-./drift.exe -file tests/effects/alt-inev.ml -prop tests/effects/alt-inev.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/alt-inev.ml -prop tests/effects/alt-inev.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/alt-inev.ml
 # RCaml
@@ -27,9 +27,9 @@
 # Benchmark: auction
 #
 # Drift
-./drift.exe -file tests/effects/auction.ml -prop tests/effects/auction.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/auction.ml -prop tests/effects/auction.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift
-./drift.exe -file tests/effects/auction.ml -prop tests/effects/auction.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/auction.ml -prop tests/effects/auction.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/auction.ml
 # RCaml
@@ -39,9 +39,9 @@
 # Benchmark: binomial_heap
 #
 # Drift
-./drift.exe -file tests/effects/binomial_heap.ml -prop tests/effects/binomial_heap.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/binomial_heap.ml -prop tests/effects/binomial_heap.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift
-./drift.exe -file tests/effects/binomial_heap.ml -prop tests/effects/binomial_heap.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/binomial_heap.ml -prop tests/effects/binomial_heap.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/binomial_heap.ml
 # RCaml
@@ -51,9 +51,9 @@
 # Benchmark: concurrent_sum
 #
 # Drift
-./drift.exe -file tests/effects/concurrent_sum.ml -prop tests/effects/concurrent_sum.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/concurrent_sum.ml -prop tests/effects/concurrent_sum.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift
-./drift.exe -file tests/effects/concurrent_sum.ml -prop tests/effects/concurrent_sum.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/concurrent_sum.ml -prop tests/effects/concurrent_sum.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/concurrent_sum.ml
 # RCaml
@@ -63,9 +63,9 @@
 # Benchmark: depend
 #
 # Drift
-./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift
-./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/depend.ml
 # RCaml
@@ -75,9 +75,9 @@
 # Benchmark: disj
 #
 # Drift
-./drift.exe -file tests/effects/disj.ml -prop tests/effects/disj.yml.prp -ev-trans trans -trace-len 1 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/disj.ml -prop tests/effects/disj.yml.prp -ev-trans true -trace-len 1 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift
-./drift.exe -file tests/effects/disj.ml -prop tests/effects/disj.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/disj.ml -prop tests/effects/disj.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/disj.ml
 # RCaml
@@ -87,9 +87,9 @@
 # Benchmark: disj-gte
 #
 # Drift
-./drift.exe -file tests/effects/disj-gte.ml -prop tests/effects/disj-gte.yml.prp -ev-trans trans -trace-len 1 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/disj-gte.ml -prop tests/effects/disj-gte.yml.prp -ev-trans true -trace-len 1 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift
-./drift.exe -file tests/effects/disj-gte.ml -prop tests/effects/disj-gte.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/disj-gte.ml -prop tests/effects/disj-gte.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/disj-gte.ml
 # RCaml
@@ -99,9 +99,9 @@
 # Benchmark: disj-nondet
 #
 # Drift
-./drift.exe -file tests/effects/disj-nondet.ml -prop tests/effects/disj-nondet.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/disj-nondet.ml -prop tests/effects/disj-nondet.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift
-./drift.exe -file tests/effects/disj-nondet.ml -prop tests/effects/disj-nondet.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/disj-nondet.ml -prop tests/effects/disj-nondet.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/disj-nondet.ml
 # RCaml
@@ -111,9 +111,9 @@
 # Benchmark: higher-order
 #
 # Drift
-./drift.exe -file tests/effects/higher-order.ml -prop tests/effects/higher-order.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/higher-order.ml -prop tests/effects/higher-order.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift
-./drift.exe -file tests/effects/higher-order.ml -prop tests/effects/higher-order.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/higher-order.ml -prop tests/effects/higher-order.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/higher-order.ml
 # RCaml
@@ -123,9 +123,9 @@
 # Benchmark: last-ev-even
 #
 # Drift
-./drift.exe -file tests/effects/last-ev-even.ml -prop tests/effects/last-ev-even.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/last-ev-even.ml -prop tests/effects/last-ev-even.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift
-./drift.exe -file tests/effects/last-ev-even.ml -prop tests/effects/last-ev-even.yml.prp -ev-trans direct -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/last-ev-even.ml -prop tests/effects/last-ev-even.yml.prp -ev-trans false -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/last-ev-even.ml
 # RCaml
@@ -135,9 +135,9 @@
 # Benchmark: lics18-amortized
 #
 # Drift
-./drift.exe -file tests/effects/lics18-amortized.ml -prop tests/effects/lics18-amortized.yml.prp -ev-trans trans -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/lics18-amortized.ml -prop tests/effects/lics18-amortized.yml.prp -ev-trans true -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift
-./drift.exe -file tests/effects/lics18-amortized.ml -prop tests/effects/lics18-amortized.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/lics18-amortized.ml -prop tests/effects/lics18-amortized.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/lics18-amortized.ml
 # RCaml
@@ -147,9 +147,9 @@
 # Benchmark: lics18-hoshrink
 #
 # Drift
-./drift.exe -file tests/effects/lics18-hoshrink.ml -prop tests/effects/lics18-hoshrink.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/lics18-hoshrink.ml -prop tests/effects/lics18-hoshrink.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift
-./drift.exe -file tests/effects/lics18-hoshrink.ml -prop tests/effects/lics18-hoshrink.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/lics18-hoshrink.ml -prop tests/effects/lics18-hoshrink.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/lics18-hoshrink.ml
 # RCaml
@@ -159,9 +159,9 @@
 # Benchmark: lics18-web
 #
 # Drift
-./drift.exe -file tests/effects/lics18-web.ml -prop tests/effects/lics18-web.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/lics18-web.ml -prop tests/effects/lics18-web.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift
-./drift.exe -file tests/effects/lics18-web.ml -prop tests/effects/lics18-web.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/lics18-web.ml -prop tests/effects/lics18-web.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/lics18-web.ml
 # RCaml
@@ -171,9 +171,9 @@
 # Benchmark: market
 #
 # Drift
-./drift.exe -file tests/effects/market.ml -prop tests/effects/market.yml.prp -ev-trans trans -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/market.ml -prop tests/effects/market.yml.prp -ev-trans true -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift
-./drift.exe -file tests/effects/market.ml -prop tests/effects/market.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/market.ml -prop tests/effects/market.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/market.ml
 # RCaml
@@ -183,9 +183,9 @@
 # Benchmark: max-min
 #
 # Drift
-./drift.exe -file tests/effects/max-min.ml -prop tests/effects/max-min.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/max-min.ml -prop tests/effects/max-min.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift
-./drift.exe -file tests/effects/max-min.ml -prop tests/effects/max-min.yml.prp -ev-trans direct -trace-len 1 -if-part true -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/max-min.ml -prop tests/effects/max-min.yml.prp -ev-trans false -trace-len 1 -if-part true -io-effects true -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/max-min.ml
 # RCaml
@@ -195,9 +195,9 @@
 # Benchmark: monotonic
 #
 # Drift
-./drift.exe -file tests/effects/monotonic.ml -prop tests/effects/monotonic.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/monotonic.ml -prop tests/effects/monotonic.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift
-./drift.exe -file tests/effects/monotonic.ml -prop tests/effects/monotonic.yml.prp -ev-trans direct -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/monotonic.ml -prop tests/effects/monotonic.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/monotonic.ml
 # RCaml
@@ -207,9 +207,9 @@
 # Benchmark: nondet_max
 #
 # Drift
-./drift.exe -file tests/effects/nondet_max.ml -prop tests/effects/nondet_max.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/nondet_max.ml -prop tests/effects/nondet_max.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift
-./drift.exe -file tests/effects/nondet_max.ml -prop tests/effects/nondet_max.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/nondet_max.ml -prop tests/effects/nondet_max.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/nondet_max.ml
 # RCaml
@@ -219,9 +219,9 @@
 # Benchmark: order-irrel
 #
 # Drift
-./drift.exe -file tests/effects/order-irrel.ml -prop tests/effects/order-irrel.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/order-irrel.ml -prop tests/effects/order-irrel.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift
-./drift.exe -file tests/effects/order-irrel.ml -prop tests/effects/order-irrel.yml.prp -ev-trans direct -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/order-irrel.ml -prop tests/effects/order-irrel.yml.prp -ev-trans false -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/order-irrel.ml
 # RCaml
@@ -231,9 +231,9 @@
 # Benchmark: order-irrel-nondet
 #
 # Drift
-./drift.exe -file tests/effects/order-irrel-nondet.ml -prop tests/effects/order-irrel-nondet.yml.prp -ev-trans trans -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/order-irrel-nondet.ml -prop tests/effects/order-irrel-nondet.yml.prp -ev-trans true -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift
-./drift.exe -file tests/effects/order-irrel-nondet.ml -prop tests/effects/order-irrel-nondet.yml.prp -ev-trans direct -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/order-irrel-nondet.ml -prop tests/effects/order-irrel-nondet.yml.prp -ev-trans false -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/order-irrel-nondet.ml
 # RCaml
@@ -243,9 +243,9 @@
 # Benchmark: overview1
 #
 # Drift
-./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans trans -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans true -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift
-./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/overview1.ml
 # RCaml
@@ -255,9 +255,9 @@
 # Benchmark: reentr
 #
 # Drift
-./drift.exe -file tests/effects/reentr.ml -prop tests/effects/reentr.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/reentr.ml -prop tests/effects/reentr.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift
-./drift.exe -file tests/effects/reentr.ml -prop tests/effects/reentr.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/reentr.ml -prop tests/effects/reentr.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/reentr.ml
 # RCaml
@@ -267,9 +267,9 @@
 # Benchmark: resource-analysis
 #
 # Drift
-./drift.exe -file tests/effects/resource-analysis.ml -prop tests/effects/resource-analysis.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/resource-analysis.ml -prop tests/effects/resource-analysis.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift
-./drift.exe -file tests/effects/resource-analysis.ml -prop tests/effects/resource-analysis.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/resource-analysis.ml -prop tests/effects/resource-analysis.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/resource-analysis.ml
 # RCaml
@@ -279,9 +279,9 @@
 # Benchmark: sum-appendix
 #
 # Drift
-./drift.exe -file tests/effects/sum-appendix.ml -prop tests/effects/sum-appendix.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/sum-appendix.ml -prop tests/effects/sum-appendix.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true
 # evDrift
-./drift.exe -file tests/effects/sum-appendix.ml -prop tests/effects/sum-appendix.yml.prp -ev-trans direct -trace-len 1 -if-part true -io-effects true -out 2 -domain Polka_ls -thold true
+./drift.exe -file tests/effects/sum-appendix.ml -prop tests/effects/sum-appendix.yml.prp -ev-trans false -trace-len 1 -if-part true -io-effects true -out 2 -domain Polka_ls -thold true
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/sum-appendix.ml
 # RCaml
@@ -291,9 +291,9 @@
 # Benchmark: sum-of-ev-even
 #
 # Drift
-./drift.exe -file tests/effects/sum-of-ev-even.ml -prop tests/effects/sum-of-ev-even.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/sum-of-ev-even.ml -prop tests/effects/sum-of-ev-even.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift
-./drift.exe -file tests/effects/sum-of-ev-even.ml -prop tests/effects/sum-of-ev-even.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/sum-of-ev-even.ml -prop tests/effects/sum-of-ev-even.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/sum-of-ev-even.ml
 # RCaml
@@ -303,9 +303,9 @@
 # Benchmark: temperature
 #
 # Drift
-./drift.exe -file tests/effects/temperature.ml -prop tests/effects/temperature.yml.prp -ev-trans trans -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/temperature.ml -prop tests/effects/temperature.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
 # evDrift
-./drift.exe -file tests/effects/temperature.ml -prop tests/effects/temperature.yml.prp -ev-trans direct -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
+./drift.exe -file tests/effects/temperature.ml -prop tests/effects/temperature.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false
 # MoCHi
 ./mochi.exe -only-result tests/effects/tr_tuple_mochi/temperature.ml
 # RCaml
