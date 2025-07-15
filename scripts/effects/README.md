@@ -47,9 +47,9 @@ nano $DRIFT_REPO/scripts/benchexec-drifttoolinfo/drifttoolinfo/driftwrapper.py
 ```
 # May need to be root.
 cd $DRIFT_REPO/scripts/benchexec-drifttoolinfo
-sudo pip uninstall drifttoolinfo # (if needed)
-sudo python3 setup.py sdist bdist_wheel
-sudo pip install .
+pip uninstall drifttoolinfo # (if needed)
+python3 setup.py sdist bdist_wheel
+pip install .
 ```
 
 
@@ -81,6 +81,15 @@ benchexec benchmark-mochi.xml @benchexec.cfg
 ```
 
 It will then tell you what `table-generator` command to run.
+
+#### 3.d Running Rethfl
+
+```
+export MOCHI_EXE="$HOME/MoCHi/src/mochi.exe"
+cd $DRIFT_REPO/scripts/effects/
+perl ml_rethfl_translate.pl $MOCHI_EXE ../../tests/effects/tr_tuple_mochi/ ../../tests/effects/tr_tuple_hflz
+benchexec benchmark-rethfl.xml @benchexec.cfg
+```
 
 ### 4. Generating LaTeX
 
