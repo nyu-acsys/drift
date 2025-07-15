@@ -27,7 +27,7 @@ SPDX-License-Identifier: Apache-2.0
   </rundefinition>
 
 
-  <tasks name="realmochibenchmarks">
+  <tasks name="rethflbenchmarks">
     <include>/tools/home/eric/drift/tests/effects/tr_tuple_hflz/*.ml</include>
   </tasks>
 
