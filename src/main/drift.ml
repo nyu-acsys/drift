@@ -315,18 +315,32 @@ let add x = x + 1 in f add 0"
 
 let tests = []
   
+let reporter ppf =
+  let report src level ~over k msgf =
+    let k _ = over (); k () in
+    let log_msg h tags k ppf fmt =
+      (* Format.kfprintf k ppf ("%a@[" ^^ fmt ^^ "@]@.") Logs.pp_header (level, h) *)
+      Format.kfprintf k ppf ("@[" ^^ fmt ^^ "@]@.")
+    in
+    msgf @@ fun ?header ?tags fmt -> log_msg header tags k ppf fmt
+  in
+  { Logs.report = report }
+
 let _ =
-  Format.set_geometry 190 200;
+  (* Format.set_geometry 190 200; *)
+  Format.set_geometry 110 120;
   try
     Config.parse;
     Printexc.record_backtrace !Config.bt;
+    Logs.set_reporter (reporter (Format.std_formatter));
+    (if !Config.debug then Logs.set_level (Some Logs.Debug) else Logs.set_level (Some Logs.App));
     let t = if !Config.parse_file then 
-      begin
-        pre_vars := VarDefMap.empty;
-        thresholdsSet := ThresholdsSetType.empty;
-        [parse_from_file !Config.file]
-      end
-    else tests in
+              begin
+                pre_vars := VarDefMap.empty;
+                thresholdsSet := ThresholdsSetType.empty;
+                [parse_from_file !Config.file]
+              end
+            else tests in
     if !Config.convert_to_cps then begin
         CpsConversion.(property_spec := 
                          if !Config.effect_on then Some (parse_property_spec !Config.prop_file)
@@ -341,12 +355,12 @@ let _ =
                   pr_cps_kterm) t) 
       end
     else if !Config.convert_to_tuple then begin
-        TupleOCamlTranslation.(property_spec := 
+        TupleOCamlSltStoreTranslation.(property_spec := 
                                  if !Config.effect_on then 
                                    Some (parse_property_spec !Config.prop_file)
                                  else None);
         (List.iter (fun (prog, (mle, _)) ->
-             TupleOCamlTranslation.run mle
+             TupleOCamlSltStoreTranslation.run mle
              |> Format.fprintf Format.std_formatter
                   ("(*@.Tuple Encoding of Product Program.@.@.Source Program: @.@.@[%s@]@.@." ^^
                      "Property: @.@.@[%s@]@.@.*)" ^^

@@ -91,7 +91,7 @@ module Fact =
       | TFun (v1i, v1o, a1), TFun (v2i, v2o, a2) ->
          let v2i', v1i' = prop_ty v2i v1i in
          let v1o', v2o' = prop_ty v1o v2o in
-         let a1', a2' = a1, join_eff a1 a2 in
+         let a1', a2' = join_eff a1 a2, join_eff a1 a2 in
          (TFun (v1i', v1o', a1'), TFun (v2i', v2o', a2'))
       | TTuple vs1, TTuple vs2 -> List.combine vs1 vs2 |> List.map (fun (v1, v2) -> prop_ty v1 v2) |> List.split
                                  |> (fun (vs1', vs2') -> TTuple vs1', TTuple vs2')
@@ -152,7 +152,7 @@ module CFAMap =
     
     (* pretty printing *)
     let pr_mapping ppf (x, v) = 
-      Format.fprintf ppf "@<10>%s \u{21A6}\t  %a" x Fact.pr_t v
+      Format.fprintf ppf "@[@<10>%s |->\t  %a@]" x Fact.pr_t v
 
     let pr_map ppf m = 
       let compare_key x1 x2 = 
@@ -165,7 +165,7 @@ module CFAMap =
       in
       StringMap.bindings m 
       |> List.sort (fun (x1, v1) (x2, v2) -> compare_key x1 x2)  
-      |> Format.pp_print_list ~pp_sep: (fun _ () -> Format.printf ";@.") pr_mapping ppf 
+      |> Format.pp_print_list ~pp_sep: (fun _ () -> Format.printf "@.") pr_mapping ppf 
 
     (* empty map *)
     let empty = StringMap.empty
@@ -230,16 +230,16 @@ let rec flow (env : env) (e : term) (m : CFAMap.t) : CFAMap.t =
   match e with
     | Const (k, l) -> update_map l (Val (TBase, CertNot)) m
     | Var (x, l) -> 
-       Format.fprintf Format.std_formatter "env_lookup %s@ Env:@[%a@]@." x pr_env env;
+       Logs.debug (fun m -> m "env_lookup %s@ Env:@[%a@]@." x pr_env env);
        let lx = lookup_env env x in
        let vex, ve = find_map m lx, find_map m l in
        let ve = match ve with Bot -> Val (TBot, CertNot) | _ -> ve in 
        let (vex', ve') = Fact.prop vex ve in
        update_map lx vex' m |> update_map l ve'
     | Rec (f_opt, (x, lx), e1, l) ->
-       Format.fprintf Format.std_formatter "@[<2>Rec^%s: %a@]@." (loc e) (Printer.pr_exp true) e;
+       Logs.debug (fun m -> m "@[<2>Rec^%s: %a@]@." (loc e) (Printer.pr_exp true) e);
        let ve = find_map m l in
-       Format.fprintf Format.std_formatter "Rec^%s \u{21A6} @[%a@]@." (loc e) Fact.pr_t ve;
+       Logs.debug (fun m -> m "Rec^%s |-> @[%a@]@." (loc e) Fact.pr_t ve);
        let v, eff = begin match ve with
                     | Bot -> TFun (TBot, TBot, EBot), CertNot 
                     | Val (TBot, eff) -> TFun (TBot, TBot, EBot), eff
@@ -257,7 +257,7 @@ let rec flow (env : env) (e : term) (m : CFAMap.t) : CFAMap.t =
          |> (fun m'' -> Option.map (fun (_, lf) -> update_map lf ve m'') f_opt |> Opt.get_or_else m'') 
        else 
          begin
-           Format.fprintf Format.std_formatter "Rec^%s, type for %s: @[%a@]@." (loc e) x Fact.pr_ty vx;
+           Logs.debug (fun m -> m "Rec^%s, type for %s: @[%a@]@." (loc e) x Fact.pr_ty vx);
            let env'' = extend_env env' x lx in
            let m'' = flow env'' e1 m' in           
            let vex = find_map m'' lx in
@@ -265,11 +265,9 @@ let rec flow (env : env) (e : term) (m : CFAMap.t) : CFAMap.t =
            let ve1 = find_map m'' (loc e1) in           
            let v1, eff1 =  extract_v_eff ve1 in
            let ver = Val (TFun (vx, v1, eff1), EBot) in
-           Format.fprintf Format.std_formatter "Rec^%s, Prop oper: %a JOIN %a@." 
-             l Fact.pr_t ver Fact.pr_t ve;  
+           Logs.debug (fun m -> m "Rec^%s, Prop oper: %a JOIN %a@." l Fact.pr_t ver Fact.pr_t ve);  
            let ver', ve' = Fact.prop ver ve in
-           Format.fprintf Format.std_formatter "Rec^%s, Prop oper res: ver' = %a, ve'= %a@." 
-             l Fact.pr_t ver' Fact.pr_t ve';
+           Logs.debug (fun m -> m "Rec^%s, Prop oper res: ver' = %a, ve'= %a@." l Fact.pr_t ver' Fact.pr_t ve');
            let vx', v1', eff' = match ver' with
              | Val (TFun (vx, vo, eff), _) -> vx, vo, eff 
              | _ -> raise (CFAError "Fun shape expected")
@@ -280,10 +278,11 @@ let rec flow (env : env) (e : term) (m : CFAMap.t) : CFAMap.t =
            |> (fun m''' -> Option.map (fun (_, lf) ->
                             let vf = find_map m''' lf in
                             let ve', vf' = Fact.prop ve' vf in
-                            update_map lf vf' m''') f_opt |> Opt.get_or_else m''') 
+                            update_map lf vf' m'''
+                            |> update_map l ve') f_opt |> Opt.get_or_else m''') 
          end
     | App (e1, e2, l) ->
-       Format.fprintf Format.std_formatter "@[<2>App^%s: %a@]@." (loc e) (Printer.pr_exp true) e;
+       Logs.debug (fun m -> m "@[<2>App^%s: %a@]@." (loc e) (Printer.pr_exp true) e);
        let m' = flow env e1 m in
        let m'' = flow env e2 m' in
        let ve1 = find_map m'' (loc e1) in
@@ -300,18 +299,16 @@ let rec flow (env : env) (e : term) (m : CFAMap.t) : CFAMap.t =
            let v, eff = extract_v_eff ve in
            (* propagate args from call-sites to def-sites and results back from def-sites to call-sites *)
            let vec = Val (TFun (v2, v, EBot), EBot) in
-           Format.fprintf Format.std_formatter "App^%s, Prop oper: %a JOIN %a@." 
-             l Fact.pr_t ve1 Fact.pr_t vec;  
+           Logs.debug (fun m -> m "App^%s, Prop oper: %a JOIN %a@." l Fact.pr_t ve1 Fact.pr_t vec);  
            let ve1', vec' = Fact.prop ve1 vec in       
-           Format.fprintf Format.std_formatter "App^%s, Prop oper res: ve1' = %a, vec'= %a@." 
-             l Fact.pr_t ve1' Fact.pr_t vec';
+           Logs.debug (fun m -> m "App^%s, Prop oper res: ve1' = %a, vec'= %a@." l Fact.pr_t ve1' Fact.pr_t vec');
            let v2', v', eff' = begin match vec' with 
                           | Fact.(Val (TFun (v2', v', eff'), _)) -> v2', v', eff'
                           | _ -> raise (CFAError "Expected a function") 
                           end in
-           Format.fprintf Format.std_formatter "App^%s[e1^%s] \u{21A6} @[%a@]@." l (loc e1) Fact.pr_t ve1';
-           Format.fprintf Format.std_formatter "App^%s[e2^%s] \u{21A6} @[%a@]@." l (loc e2) Fact.pr_t ve2;
-           Format.fprintf Format.std_formatter "App^%s \u{21A6} @[%a@]@." l Fact.pr_t Fact.(Val (v', eff'));
+           Logs.debug (fun m -> m "App^%s[e1^%s] |-> @[%a@]@." l (loc e1) Fact.pr_t ve1');
+           Logs.debug (fun m -> m "App^%s[e2^%s] |-> @[%a@]@." l (loc e2) Fact.pr_t ve2);
+           Logs.debug (fun m -> m "App^%s |-> @[%a@]@." l Fact.pr_t Fact.(Val (v', eff')));
 
            update_map (loc e1) ve1' m''
            |> update_map (loc e2) (Val (v2', eff2))
@@ -362,9 +359,9 @@ let rec flow (env : env) (e : term) (m : CFAMap.t) : CFAMap.t =
          List.fold_left (fun (v', eff', m') (Case (e1, e2)) ->
              match e1 with
              | Const (c, l) -> 
-                failwith "CFA support for PatMat not implemented"
-             | Var (x, l) -> failwith "CFA support for not implemented"
-             | TupleLst (es, l) -> failwith "CFA support for not implemented"
+                failwith "CFA support for PatMat with Const pattern not implemented"
+             | Var (x, l) -> failwith "CFA support for PatMat with Var pattern not implemented"
+             | TupleLst (es, l) -> failwith "CFA support for PatMat with Tuple pattern not implemented"
              | _ -> raise (CFAError "Pattern Matching: not supported patterns other than const/var/tuples of vars" ) 
            ) (v, eff, m') patlst in
        update_map l (Val (v', eff')) m'
@@ -377,10 +374,10 @@ let rec flow (env : env) (e : term) (m : CFAMap.t) : CFAMap.t =
 (* Fixpoint *)
 let rec fix i env e m = 
   let open CFAMap in 
-  Format.printf "@.Iteration %d [Start]@." i;
+  Logs.debug (fun m -> m "@.Iteration %d [Start]@." i);
   let m' = flow env e m in
-  Format.fprintf Format.std_formatter "\n\nAnalysis Map (end)@.@[<v>%a@]@." CFAMap.pr_map m';
-  Format.printf "@.Iteration %d [End]@." i;
+  Logs.debug (fun m -> m "\n\nAnalysis Map (end)@.@[<v>%a@]@." CFAMap.pr_map m');
+  Logs.debug (fun m -> m "@.Iteration %d [End]@." i);
   if leq m' m then m
   else fix (i+1) env e m'
 
@@ -477,8 +474,8 @@ let annotate_eff e =
                      let m' = CFAMap.add lprefx (Fact.Val (TBase, EBot)) m in
                      let env' = extend_env env prefx lprefx in
                      (m', env')) fv_e (CFAMap.empty, env_empty ()) in
-  Format.fprintf Format.std_formatter "\nMap0:@.@[%a@]@.@." CFAMap.pr_map m0;
+  Logs.debug (fun m -> m "\nMap0:@.@[%a@]@.@." CFAMap.pr_map m0);
   let m = fix 1 env0 e m0 in
-  Format.printf "\nAnalysis Ended@.@.";
-  Format.fprintf Format.std_formatter "Prog :@[%a@]@.@." (Printer.pr_exp true) e;
+  Logs.debug (fun m -> m "\nAnalysis Ended@.@.");
+  Logs.debug (fun m -> m "Prog :@[%a@]@.@." (Printer.pr_exp true) e);
   fterm_of_term e m

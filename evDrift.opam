@@ -17,6 +17,7 @@ depends: [
   "menhir" {>= "20230608"}
   "conf-ppl" {>= "1"}
   "apron" {= "0.9.14"}
+  "logs" {>= "0.7.0"}
   "odoc" {with-doc}
 ]
 build: [

@@ -58,7 +58,31 @@ let tr: fterm -> mlterm -> mlterm -> mlterm option -> mlterm option -> mlterm =
        | _ -> failwith "Analysis Fact not found for AnnRec"
        end
 
-    | AnnApp (e1, e2, a) ->       
+    (* | AnnApp (e1, e2, a) ->   *)
+    (*    let is_fun = function  *)
+    (*      | AnnRec (_, _, _, _) -> true *)
+    (*      | _ -> false *)
+    (*    in *)
+    (*    begin match e1, e2 with *)
+    (*    | AnnRec (None, x, e1_body, _), (_, Val (_, CertNot)) when not @@ is_fun e1_body && not @@ is_fun e2 -> *)
+    (*       get_trtuple e1_body  *)
+
+    (*    fst @@ get_trtuple e1 ecfg (fun (e1', ecfg1') -> *)
+    (*               get_trtuple e2 ecfg1' (fun (e2', ecfg2') -> *)
+    (*                   let dummy_cfg = mk_fresh_var "dummycfg" in *)
+    (*                   match (ann e1) with *)
+    (*                   | Fact.(Val (TFun (_, _, CertNot), _)) -> *)
+    (*                      (\* convert App into LetIn*\) *)
+    (*                      begin match e1, e2 with *)
+    (*                      | AnnRec (None, x, e1_body, _), _ when not @@ is_fun e1_body && not is_fun e2 -> *)
+    (*                         (ret (MlLetIn (x, e2', e1')) a ecfg2', dummy_cfg) *)
+    (*                      | _ -> (ret (MlApp (e1', e2')) a ecfg2', dummy_cfg) *)
+    (*                      end *)
+    (*                   | Fact.(Val (TFun (_, _, ETop), _)) -> *)
+    (*                      (MlApp (MlApp (e1', e2'), ecfg2'), dummy_cfg) *)
+    (*                   | _ -> failwith "Analysis Fact invalid for e1 in AnnAp (e1, e2, a)" )) *)
+
+    | AnnApp (e1, e2, a) ->  
        fst @@ get_trtuple e1 ecfg (fun (e1', ecfg1') ->
                   get_trtuple e2 ecfg1' (fun (e2', ecfg2') ->
                       let dummy_cfg = mk_fresh_var "dummycfg" in
@@ -197,8 +221,9 @@ let run (mle: mlterm) =
   (* Run analysis after converting mlterm into term and labeling all sub-expressions *)
   let e = term_of_ml mle in
   let e = label e in
-  Format.fprintf Format.std_formatter "Prog:@,@[%a@]@.@.@." (Printer.pr_exp true) e;
+  Logs.debug (fun m -> m "Prog:@,@[%a@]@.@.@." (Printer.pr_exp true) e);
   let ea = annotate_eff e in
+  
   let (ges, main_opt) = gdefs_of_ea ea ([], None) in
   (* Run translation back into mlterm. Use the types to guide the translation  *)
   let ev_step = fresh_var "ev_step" in 
@@ -214,7 +239,7 @@ let run (mle: mlterm) =
      let vev_step = MlVar ev_step in
      let vasst = Option.map (fun _ -> MlVar asst) spec.ml_asst in
      let vasstF = Option.map (fun _ -> MlVar asstFinal) spec.ml_asstFinal in
-     Format.fprintf Format.std_formatter "AnnTerm before tr: @[%a@]@." Ev_cfa.pr_fterm ea;     
+     Logs.debug (fun m -> m "AnnTerm before tr: @[%a@]@." Ev_cfa.pr_fterm ea);     
      (* global defs *)
      let ges' = List.map (fun gdef -> (fst gdef, tr_gdef gdef vev_step spec.ml_cfg0 vasst)) ges in
      (* main *)
@@ -234,45 +259,10 @@ let run (mle: mlterm) =
        | _ -> failwith "Invalid main term"
        end in
      let ges'' = [(ev_step, spec.ml_delta)] @ gasst @ gasstF @ ges' in
-     Format.fprintf Format.std_formatter "tr_main : @[%a@]@." Printer.pr_mlterm main;
+     Logs.debug (fun m -> m "tr_main : @[%a@]@." Printer.pr_mlterm main);
      MlGDefs (ges'', Some (MlGDefMain main))
      (* MlGDefs (ges'', Some (MlGDefMain (MlRec (Some "main", [], tr_main_body)))) *)
   | None -> raise (Invalid_argument "Prop file is not provided")
 
-  (* match !property_spec  with *)
-  (* | Some (s_, spec) -> *)
-  (*    let gasst = Option.map (fun e -> [(asst, e)]) spec.ml_asst *)
-  (*                |> Option.value ~default:[] in *)
-  (*    let gasstF = Option.map (fun e -> [(asstFinal, e)]) spec.ml_asstFinal *)
-  (*                 |> Option.value ~default:[] in *)
-  (*    let vev_step = MlVar ev_step in *)
-  (*    let vasst = Option.map (fun _ -> MlVar asst) spec.ml_asst in *)
-  (*    let vasstF = Option.map (fun _ -> MlVar asstFinal) spec.ml_asstFinal in *)
-  (*    Format.fprintf Format.std_formatter "AnnTerm before tr: @[%a@]" Ev_cfa.pr_fterm ea; *)
-  (*    let tr_e = tr ea vev_step spec.ml_cfg0 vasst vasstF in *)
-     
-  (*    let ges'' = [(ev_step, spec.ml_delta)] @ gasst @ gasstF in *)
-  (*    let tr_main_body = tr_e in *)
-  (*    MlGDefs (ges'', Some (MlGDefMain (MlRec (Some "main", [], tr_main_body)))) *)
-  (* | None -> raise (Invalid_argument "Prop file is not provided") *)
-
-  
-  (* | MlGDefs (ges, Some (MlGDefMain (MlRec (fopt, xs, main_body)))), Some (_, spec) -> *)
-  (*    let gasst = Option.map (fun e -> [(asst, e)]) spec.ml_asst *)
-  (*                |> Option.value ~default:[] in *)
-  (*    let gasstF = Option.map (fun e -> [(asstFinal, e)]) spec.ml_asstFinal *)
-  (*                 |> Option.value ~default:[] in *)
-  (*    let vev_step = MlVar ev_step in *)
-  (*    let vasst = Option.map (fun _ -> MlVar asst) spec.ml_asst in *)
-  (*    let vasstF = Option.map (fun _ -> MlVar asstFinal) spec.ml_asstFinal in *)
-  (*    let tr_ges e = match tr e vev_step spec.ml_cfg0 vasst None with *)
-  (*      | MlTupleLst [e'; _] -> e' *)
-  (*      | _ -> raise (Invalid_argument "Unexpected translated term") *)
-  (*    in *)
-  (*    let ges' = List.map (fun (name, e) -> (name, tr_ges e)) ges in *)
-  (*    let ges'' = [(ev_step, spec.ml_delta)] @ gasst @ gasstF @ ges' in *)
-  (*    let tr_main_body = tr main_body vev_step spec.ml_cfg0 vasst vasstF in *)
-  (*    MlGDefs (ges'', Some (MlGDefMain (MlRec (fopt, xs, tr_main_body)))) *)
-  (* | _, _ -> raise (Invalid_argument "Either Main is missing or the Prop file is not provided") *)
 
   

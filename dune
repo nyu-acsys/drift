@@ -7,9 +7,8 @@
   (libraries gmp apron apron.boxD apron.boxMPFR apron.boxMPQ 
              apron.octD apron.octMPQ apron.polkaRll 
              apron.ppl apron.t1pD apron.t1pMPFR apron.t1pMPQ apron.polkaGrid
-             unix str)
+             unix str logs)
   (promote (until-clean)))
-
 (env 
   (dev
     (flags (:standard -g -warn-error -A -w -27-33 ))
