@@ -31,7 +31,7 @@ SPDX-License-Identifier: Apache-2.0
   </rundefinition>
 
   <tasks name="drifttasks">
-    <include>../../tests/effects/*.ml</include>
+    <include>/tools/home/eric/drift/tests/effects/*.ml</include>
   </tasks>
 
 </benchmark>

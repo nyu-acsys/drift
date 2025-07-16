@@ -24,7 +24,7 @@ class Tool(benchexec.tools.template.BaseTool2):
     REQUIRED_PATHS = ["bin", "include", "lib", "share"]
 
     def executable(self,tool_locator):
-        return tool_locator.find_executable("drift_benchmark.pl", subdir="/usr/local/bin")
+        return tool_locator.find_executable("perl", subdir="/usr/bin/")
 
     def program_files(self, executable):
         return self._program_files_from_executable(
@@ -36,9 +36,13 @@ class Tool(benchexec.tools.template.BaseTool2):
 
 #  ./drift.exe -file tests/effects/traffic_light_fo_simple.ml -eff-aut tests/effects/traffic_light_fo_simple.eff 
 
-    def cmdline(self, executable, options, task, rlimits):
+    def working_directory(self, executable):
+        grandparent_abs = os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir))
+        return grandparent_abs
 
-        cmd = [executable] + options.get("-cfg")
+    def cmdline(self, executable, options, task, rlimits):
+        cmd = [executable] + ['~/drift/drift_benchmark.pl'] + [options[1]] + [task.single_input_file]
+        print(cmd)
 
         #if task.options is not None and "data_model" in task.options:
         #    options += ["--arch", task.options.get("data_model")]

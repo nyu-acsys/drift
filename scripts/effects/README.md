@@ -42,14 +42,11 @@ nano $DRIFT_REPO/scripts/benchexec-drifttoolinfo/drifttoolinfo/mochi.py
 nano $DRIFT_REPO/scripts/benchexec-drifttoolinfo/drifttoolinfo/drift.py
 nano $DRIFT_REPO/scripts/benchexec-drifttoolinfo/drifttoolinfo/driftwrapper.py
 ```
-* Build the BenchExec toolinfo modules:
+* Build and install the BenchExec toolinfo modules:
 
 ```
-# May need to be root.
 cd $DRIFT_REPO/scripts/benchexec-drifttoolinfo
-pip uninstall drifttoolinfo # (if needed)
-python3 setup.py sdist bdist_wheel
-pip install .
+make
 ```
 
 

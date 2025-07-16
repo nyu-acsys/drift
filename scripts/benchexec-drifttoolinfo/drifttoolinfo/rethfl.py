@@ -39,35 +39,28 @@ class Tool(benchexec.tools.template.BaseTool2):
     def name(self):
         return "rethfl"
 
-#  ./drift.exe -file tests/effects/traffic_light_fo_simple.ml -eff-aut tests/effects/traffic_light_fo_simple.eff 
-
     def working_directory(self, executable):
         return "."
 
     def cmdline(self, executable, options, task, rlimits):
         #assert len(list(task.input_files)) == 1
         cmd = [executable] + options + [task.single_input_file]
-        if task.property_file:
-            print ("coarmochi.py: todo: cmdline property\n")
-            cmd += ["-eff-aut", task.property_file]
         return cmd
 
     def version(self, executable):
         #return "0.0.todo"
         return self._version_from_tool(executable)
 
-    #returncode, returnsignal, output, isTimeout):
     # see: https://github.com/sosy-lab/benchexec/blob/fde8a997ea8b522a73fedd3c2256140e635243ef/benchexec/result.py#L58
     def determine_result(self, run): 
         # Search for "sat,9    	@assert"
-        p = re.compile('sat,-?\d+\s+\@assert')
+        #p = re.compile('sat,-?\d+\s+\@assert')
+        pValid = re.compile('^  Valid')
+        pParse = re.compile('Failure "Parse error "')
         for line in reversed(run.output):
-            if p.match(line):
+            if pValid.match(line):
                 return result.RESULT_TRUE_PROP
-
-        p2 = re.compile('Uncaught exception')
-        for line in reversed(run.output):
-            if p2.match(line):
+            if pParse.match(line):
                 return result.RESULT_ERROR
         
         # Other possibilities

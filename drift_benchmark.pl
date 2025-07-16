@@ -16,6 +16,7 @@ if (@ARGV != 2) {
 }
 
 my ($config_file,$benchmark) = @ARGV[0..1];
+$benchmark =~ s{^.*tests/effects/}{tests/effects/};
 
 # Open the config file
 open(my $fh, '<', $config_file) or die "Could not open '$config_file': $!";
