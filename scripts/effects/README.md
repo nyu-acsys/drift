@@ -21,6 +21,8 @@ https://github.com/sosy-lab/benchexec
 cpan -i Statistics::Basic
 cpan -i List::Util
 cpan -i Math::Complex
+cpan -i DateTime
+cpan -i Time::ParseDate
 ```
 
 ### 2. Set up BenchExec

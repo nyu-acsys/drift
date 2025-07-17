@@ -27,7 +27,7 @@ while (my $line = <$fh>) {
     next if $line =~ /^\s*$/;        # Skip empty lines
     next if $line =~ /^\s*#/;        # Skip comments
 
-    my ($bench, $argstr) = split(/\|/, $line, 2);
+    my ($bench, $argstr, $rdName) = split(/\|/, $line, 2);
     if (defined $bench && $bench eq $benchmark) {
         @args = split(/\s+/, $argstr // '');
         last;
