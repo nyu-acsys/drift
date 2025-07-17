@@ -26,7 +26,7 @@ best_config_csvs:
 	@echo "  "
  
 best_trace_part_configs:
-	perl makeTracePart.pl `ls -t results/results.202*.table.csv | grep -E '[0-9][0-9].table.csv' | head -n 1`
+	perl makeTracePart.pl `ls -t results/results.202*.table.csv | head -n 1`
 
 precise:
 	perl makeYamls.pl

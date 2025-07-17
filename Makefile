@@ -27,10 +27,10 @@ best_config_csvs:
 
 best_trace_part_configs:
 	cd scripts/effects && make best_trace_part_configs
-	cp scripts/effects/best_configs_tp_drift.csv .
-	cp scripts/effects/best_configs_tp_evdrift.csv .
-	cp scripts/effects/best_configs_notp_drift.csv .
-	cp scripts/effects/best_configs_notp_evdrift.csv .
+	cp scripts/effects/tpoff_best_configs_drift.csv .
+	cp scripts/effects/tpon_best_configs_drift.csv .
+	cp scripts/effects/tpoff_best_configs_evdrift.csv .
+	cp scripts/effects/tpon_best_configs_evdrift.csv .
 
 precise:
 	cd scripts/effects && make precise

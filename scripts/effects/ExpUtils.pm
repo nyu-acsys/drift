@@ -12,16 +12,18 @@ use strict;
 sub newBest {
     my ($d,$BEST,$bench,$rd) = @_;
     # We only TP with Drift when it's for BEST_TPON_DRIFT
-    if ($rd =~ /TPtrue-.*TRtrans/) {
-        # don't allow adoption of this possible new best
-        return unless $BEST =~ /BEST_TP/;
-    }
-
+    # if ($rd =~ /TPtrue-.*TRtrans/) {
+    #     # don't allow adoption of this possible new best
+    #     die "hm";
+    #     return unless $BEST =~ /BEST_TP/;
+    # }
+    # print "rd: $rd\n";
     $d->{$bench}->{$BEST}->{res}  = $d->{$bench}->{$rd}->{res};
     $d->{$bench}->{$BEST}->{cpu}  = $d->{$bench}->{$rd}->{cpu};
     $d->{$bench}->{$BEST}->{wall} = $d->{$bench}->{$rd}->{wall};
     $d->{$bench}->{$BEST}->{mem}  = $d->{$bench}->{$rd}->{mem};
     $d->{$bench}->{$BEST}->{rd}   = $rd;
+    return $d;
 }
 sub compute_best_drift {
     my ($d) = @_;
@@ -47,14 +49,14 @@ sub compute_best_drift {
             # we have nothing yet, so we take it
             if ($d->{$bench}->{$BEST}->{rd} !~ /[a-z]/) {
                 if ($BEST eq 'BEST_DRIFTEV') { ++$done; die "bad" if $done++ > 1; }
-                newBest($d,$BEST,$bench,$rd);
+                $d = newBest($d,$BEST,$bench,$rd);
             # does it improve because previously BEST coudln't prove it?
             } elsif ($d->{$bench}->{$BEST}->{res} ne 'true') {
-                newBest($d,$BEST,$bench,$rd);
+                $d = newBest($d,$BEST,$bench,$rd);
             # does it improve because it's faster?
             } elsif ($d->{$bench}->{$rd}->{res} eq 'true'
                     && $d->{$bench}->{$rd}->{cpu} < $d->{$bench}->{$BEST}->{cpu}) {
-                newBest($d,$BEST,$bench,$rd);
+                $d = newBest($d,$BEST,$bench,$rd);
             } else {
                 # warn "not better\n";
             }
@@ -105,15 +107,7 @@ sub cfg2cmd {
         ))."\n";
     }
 }
-# my %run2tool = (
-#     'drift-new-len0.effects' => 'EDrift len0',
-#     'drift-new-len1.effects' => 'EDrift len1',
-#     'drift-trans-len0.effects' => 'Trans+Drift len0',
-#     'drift-trans-len1.effects' => 'Trans+Drift len1',
-#     'default.mochibenchmarks' => 'CPS+Mochi',
-#     'CA-March20.effects' => '3/20/24 TP',
-#     'CA-March20-trans.effects' => '3/20/24 TP + trans'
-# );
+
 ######################################################################
 use List::Util qw(product);
 use Math::Complex;
