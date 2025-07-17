@@ -24,7 +24,7 @@ while(<CSVS>){
     push @resultsfiles, $_;
 }
 print "makeLatex.pl: using CSVs: ".join(', ', @resultsfiles)."\n";
-exit;
+#exit;
 
     # "results/benchmark-coarmochi.2025-03-20_17-56-40.results.default.mochibenchmarks.csv",
     # "results/benchmark-mochi.2025-03-20_18-58-49.results.default.realmochibenchmarks.csv",
@@ -35,7 +35,9 @@ exit;
 my @RUNDEFINITIONS = (
     'default.mochibenchmarks',
     'default.realmochibenchmarks',
-    'default.rethflbenchmarks');
+    'default.rethflbenchmarks',
+    'default.driftwrapperbenchmarks',
+    );
 
 # 3) which one to use for mochi?
 my $COARMOCHI_RD = 'default.mochibenchmarks';
@@ -53,7 +55,9 @@ sub run2tool {
         my $th = ($4 eq 'true' ? 'T' : 'F');
         my $io = ($6 eq 'true' ? 'T' : 'F');
         my $isTrans = $7;
-        return "\\humanCfg".$isTrans."{$1}{$2}{$tp}{$th}{$5}{$io}"
+        return "\\humanCfg".$isTrans."{$1}{$2}{$tp}{$th}{$5}{$io}";
+    } elsif ($rdName =~ /^(e?v?drift)-best/) {
+        return "\\bestCfg".$1."{}";
     } else {
         die "don't know how to parse rundef: $rdName\n";
     }
@@ -120,13 +124,13 @@ sub cleanRes {
 my $d;
 sub parseResultsFile {
     my ($fn) = @_;
-    warn $fn;
     open F, $fn or die "opening $fn - $!";
     # unfortunately the mochi output is a little different (one fewer column) then the other CSV
     #warn "TODO parseResultsFile decide based on $fn";
     my $isCoarMochi = ($fn =~ /coarmochi/ ? 1 : 0);
     my $isRealMochi = ($fn =~ /realmochi/ ? 1 : 0);
     my $isRethfl    = ($fn =~ /rethfl/ ? 1 : 0);
+    my $isDriftWrap = ($fn =~ /driftwrap/ ? 1 : 0);
 
 #====
 # tool    mochi   mochi   mochi
@@ -151,16 +155,16 @@ sub parseResultsFile {
             @runSets = split /\t/, $_;
             # trim off the first column
             shift @runSets;
-            # trim another column for Drift
-            shift @runSets unless ($isCoarMochi || $isRealMochi || $isRethfl);
-            #warn Dumper(\@runSets);
+            # trim another column, but only when we are exploring all possible drift configs
+            shift @runSets unless ($isCoarMochi || $isRealMochi || $isRethfl || $isDriftWrap);
+            #die Dumper(\@runSets) if $isDriftWrap;
 
         } else {
             chomp($_);
             # trim off the first column, saving it as the bench name
             my ($bench,@RCWs) = split /\t/, $_;
             # trim another column for Drift
-            shift @RCWs unless ($isCoarMochi || $isRealMochi || $isRethfl);
+            shift @RCWs unless ($isCoarMochi || $isRealMochi || $isRethfl || $isDriftWrap);
             # ignore some benchmarks
             next if $bench =~ /higher-order-disj/;
             next if $bench =~ /traffic/;
@@ -190,6 +194,7 @@ sub parseResultsFile {
 foreach my $fn (@resultsfiles) {
     parseResultsFile($fn);
 }
+#die "here\n".Dumper($d->{'all-ev-pos'});
 sub newBest {
     my ($BEST,$bench,$rd) = @_;
     if ($bench eq 'disj-gte' and $BEST eq 'BEST_TRANS') {
@@ -217,8 +222,15 @@ foreach my $bench (sort keys %$d) {
         # For Drift+Trans, don't allow Trace Partitioning
         next if $rd =~ /TRtrans/ && $rd =~ /TPtrue/;
 #        next unless $d->{$bench}->{$rd}->{res} eq 'true';
-        # which are we improving?
-        my $BEST = ($rd =~ /trans/i ? 'BEST_TRANS' : 'BEST_DRIFTEV');
+        # which are we improving, Drift or evDrift?
+        my $BEST;
+        if ($rd =~ /best/) {
+            # this rundef is from driftwrapped
+            $BEST = ($rd =~ /evdrift-best/i ? 'BEST_DRIFTEV' : 'BEST_TRANS');
+        } else {
+            # this rundef is from the collections of rundefs
+            $BEST = ($rd =~ /trans/i ? 'BEST_TRANS' : 'BEST_DRIFTEV');
+        }
         # we have nothing yet, so we take it
         if ($d->{$bench}->{$BEST}->{rd} !~ /[a-z]/) {
             if ($BEST eq 'BEST_DRIFTEV') { ++$done; die "bad" if $done++ > 1; }
@@ -261,6 +273,7 @@ foreach my $b (sort keys %$d) {
         next if $tool =~ /BEST/;
         my $drift = ($tool =~ /TRtrans/ ? '\drift' : '\evdrift');
         my $isBest = ($d->{$b}->{BEST_DRIFTEV}->{rd} eq $tool ? '\hl ' : '    ');
+        warn "run2tool($tool)\n";
         print EXT sprintf("& $drift & $isBest %s & $isBest %-5s & $isBest %3.2f \\\\\n", #  & $isBest %3.2f 
            run2tool($tool),
            cleanRes($d->{$b}->{$tool}->{res}),
@@ -304,6 +317,8 @@ foreach my $b (sort keys %$d) {
     #next if $b =~ /concurrent_sum/;
     #next if $b =~ /nondet_max/;
     #next if $b =~ /order-irrel-nondet/;
+    next if $b =~ /mochi-sum/;
+    next if $b =~ /mochi-test/;
     next if $b =~ /nums_evens/;
     next if $b =~ /num_evens/;
     #next if $b =~ /disj-nondet/;
@@ -355,7 +370,8 @@ foreach my $b (sort keys %$d) {
            #$d->{$b}->{BEST_DRIFTEV}->{mem},
            run2tool($d->{$b}->{BEST_DRIFTEV}->{rd}));
     #printf "best EDrift result for %-40s : %-10s : %s\n", $b, $d->{$b}->{BEST_DRIFTEV}->{res}, $d->{$b}->{BEST_DRIFTEV}->{rd};
-    printf "best Drift result for %-40s : %-10s : %s\n", $b, $d->{$b}->{BEST_TRANS}->{res}, $d->{$b}->{BEST_TRANS}->{rd};
+    printf "best Drift   result for %-40s : %-10s : %s\n", $b, $d->{$b}->{BEST_TRANS}->{res}, $d->{$b}->{BEST_TRANS}->{rd};
+    printf "best evDrift result for %-40s : %-10s : %s\n", $b, $d->{$b}->{BEST_DRIFTEV}->{res}, $d->{$b}->{BEST_DRIFTEV}->{rd};
     # save the runtimes for statistics
     push @geos_evtrans, $d->{$b}->{BEST_TRANS}->{cpu}
       if $d->{$b}->{BEST_TRANS}->{res} eq 'true' && $d->{$b}->{BEST_TRANS}->{cpu} < 900 && $d->{$b}->{BEST_TRANS}->{cpu} > 0;
@@ -391,11 +407,11 @@ foreach my $b (sort keys %$d) {
     print SCRIPT "# evDrift\n".cfg2cmd('',$b,$d->{$b}->{BEST_DRIFTEV}->{rd});
     # save the best configurations for Drift/evDrift:
     my $args = cfg2cmd('',$b,$d->{$b}->{BEST_TRANS}->{rd});
-    $args =~ s/^\.\/drift.exe //;
-    print CFG_DRIFT "tests/effects/$b.ml|$args";
+    $args =~ s/^\.\/drift.exe //; $args =~ s/\n//;
+    print CFG_DRIFT "tests/effects/$b.ml|$args|$d->{$b}->{BEST_TRANS}->{rd}\n";
     $args = cfg2cmd('',$b,$d->{$b}->{BEST_DRIFTEV}->{rd});
-    $args =~ s/^\.\/drift.exe //;
-    print CFG_EVDRIFT "tests/effects/$b.ml|$args";
+    $args =~ s/^\.\/drift.exe //; $args =~ s/\n//;
+    print CFG_EVDRIFT "tests/effects/$b.ml|$args|$d->{$b}->{BEST_DRIFTEV}->{rd}\n";
     #print UNSAFE "# Drift on $b:\n".cfg2cmd('unsafe/',$b,$d->{$b}->{BEST_TRANS}->{rd});
     #print UNSAFE "# evDrift on $b:\n".cfg2cmd('unsafe/',$b,$d->{$b}->{BEST_DRIFTEV}->{rd});
     print SCRIPT "# MoCHi\n"
