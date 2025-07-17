@@ -365,7 +365,7 @@ let _ =
                   ("(*@.Tuple Encoding of Product Program.@.@.Source Program: @.@.@[%s@]@.@." ^^
                      "Property: @.@.@[%s@]@.@.*)" ^^
                       "@.@.@[%a@]")
-                  prog (Option.map fst !TupleOCamlTranslation.property_spec
+                  prog (Option.map fst !TupleOCamlSltStoreTranslation.property_spec
                         |> Option.value ~default:"")
                   pr_mlterm) t) 
       end

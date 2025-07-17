@@ -29,13 +29,20 @@ let tr: fterm -> mlterm -> mlterm -> mlterm option -> mlterm option -> mlterm =
   let ret e a cfg = match a with Fact.Val (_, Fact.ETop) -> MlTupleLst [e; cfg] | _ -> e in    
   let rec tr_ (e: fterm) (ecfg : mlterm) =
     let get_trtuple e ecfg k =
-      (* Format.fprintf Format.std_formatter "get_trtuple @[e:%a ecfg=%a@]@." Ev_cfa.pr_fterm e Printer.pr_mlterm ecfg; *)
+      let is_ev = function
+        | MlLetIn (x, MlApp (MlApp ((MlVar "ev_step0"), _), _), MlApp ((MlVar "ev_step_asst0"), _)) ->
+           true
+        | _ -> false
+      in
       match ann e with
       | Fact.(Val (_, CertNot)) -> k (tr_ e ecfg, ecfg)
       | Fact.(Val(_, ETop)) ->
          let tr_e = tr_ e ecfg in
          begin match tr_e with
          | MlTupleLst [e'; ecfg'] -> k (e', ecfg')
+         | MlLetIn (x, def, body) when is_ev tr_e ->
+            let e', ecfg' = k (MlConst UnitLit, MlVar x) in
+            (MlLetIn (x, def, MlBinOp (Seq, body, e')), ecfg')
          | _ ->
             let ex, ecfgx = mk_fresh_var "x", mk_fresh_var "cfg" in
             let e', ecfg' = k (ex, ecfgx) in
@@ -58,40 +65,34 @@ let tr: fterm -> mlterm -> mlterm -> mlterm option -> mlterm option -> mlterm =
        | _ -> failwith "Analysis Fact not found for AnnRec"
        end
 
-    (* | AnnApp (e1, e2, a) ->   *)
-    (*    let is_fun = function  *)
-    (*      | AnnRec (_, _, _, _) -> true *)
-    (*      | _ -> false *)
-    (*    in *)
-    (*    begin match e1, e2 with *)
-    (*    | AnnRec (None, x, e1_body, _), (_, Val (_, CertNot)) when not @@ is_fun e1_body && not @@ is_fun e2 -> *)
-    (*       get_trtuple e1_body  *)
-
-    (*    fst @@ get_trtuple e1 ecfg (fun (e1', ecfg1') -> *)
-    (*               get_trtuple e2 ecfg1' (fun (e2', ecfg2') -> *)
-    (*                   let dummy_cfg = mk_fresh_var "dummycfg" in *)
-    (*                   match (ann e1) with *)
-    (*                   | Fact.(Val (TFun (_, _, CertNot), _)) -> *)
-    (*                      (\* convert App into LetIn*\) *)
-    (*                      begin match e1, e2 with *)
-    (*                      | AnnRec (None, x, e1_body, _), _ when not @@ is_fun e1_body && not is_fun e2 -> *)
-    (*                         (ret (MlLetIn (x, e2', e1')) a ecfg2', dummy_cfg) *)
-    (*                      | _ -> (ret (MlApp (e1', e2')) a ecfg2', dummy_cfg) *)
-    (*                      end *)
-    (*                   | Fact.(Val (TFun (_, _, ETop), _)) -> *)
-    (*                      (MlApp (MlApp (e1', e2'), ecfg2'), dummy_cfg) *)
-    (*                   | _ -> failwith "Analysis Fact invalid for e1 in AnnAp (e1, e2, a)" )) *)
-
-    | AnnApp (e1, e2, a) ->  
-       fst @@ get_trtuple e1 ecfg (fun (e1', ecfg1') ->
-                  get_trtuple e2 ecfg1' (fun (e2', ecfg2') ->
-                      let dummy_cfg = mk_fresh_var "dummycfg" in
-                      match (ann e1) with
-                      | Fact.(Val (TFun (_, _, CertNot), _)) ->
-                         (ret (MlApp (e1', e2')) a ecfg2', dummy_cfg)
-                      | Fact.(Val (TFun (_, _, ETop), _)) ->
-                         (MlApp (MlApp (e1', e2'), ecfg2'), dummy_cfg)
-                      | _ -> failwith "Analysis Fact invalid for e1 in AnnAp (e1, e2, a)" ))
+    | AnnApp (e1, e2, a) ->
+       let is_fun = function
+         | AnnRec (_, _, _, _) -> true
+         | _ -> false
+       in
+       let is_not_fun_and_E = function
+         | AnnRec (_, _, _, Fact.(Val (_, ETop))) -> false
+         | _ -> true
+       in
+       begin match e1, e2 with
+       (* chase App that have been the conversion of a LetIn *)
+       | AnnRec (None, x, e1_body, (Val (TFun (v1i, v1o, a1), CertNot))), _
+            when not @@ is_fun e1_body && is_not_fun_and_E e2 ->
+          fst @@get_trtuple e2 ecfg (fun (e2', ecfg2') ->
+                    (MlLetIn (x, e2', tr_ e1_body ecfg2'), mk_fresh_var "dummy_cfg"))
+       
+       (* fallback to app*)
+       | _ -> 
+             fst @@ get_trtuple e1 ecfg (fun (e1', ecfg1') ->
+                        get_trtuple e2 ecfg1' (fun (e2', ecfg2') ->
+                            let dummy_cfg = mk_fresh_var "dummycfg" in
+                            match (ann e1) with
+                            | Fact.(Val (TFun (_, _, CertNot), _)) ->
+                               (ret (MlApp (e1', e2')) a ecfg2', dummy_cfg)
+                            | Fact.(Val (TFun (_, _, ETop), _)) ->
+                               (MlApp (MlApp (e1', e2'), ecfg2'), dummy_cfg)
+                            | _ -> failwith "Analysis Fact invalid for e1 in AnnAp (e1, e2, a)" ))
+       end
 
     | AnnUnOp (uop, e1, a) ->
        fst @@ get_trtuple e1 ecfg (fun (e1', ecfg1') ->                           
@@ -116,10 +117,16 @@ let tr: fterm -> mlterm -> mlterm -> mlterm option -> mlterm option -> mlterm =
                      (MlTupleLst [MlConst UnitLit; MlApp (MlApp (ev_step, e1'), ecfg1')], mk_fresh_var "dummy_cfg")
                   | Some asst ->
                      let ecfgx = mk_fresh_var "cfg" in
-                     (MlApp (MlRec (None, [ecfgx], 
-                                    MlBinOp (Seq, MlApp (asst, ecfgx), MlTupleLst [MlConst UnitLit; ecfgx])),
-                             MlApp (MlApp (ev_step, e1'), ecfg1')), 
-                      mk_fresh_var "dummy_cfg"))
+                     let ecfgx_name = match ecfgx with MlVar x -> x | _ -> failwith "Expected a variable" in
+                     (MlLetIn (ecfgx_name, MlApp (MlApp (ev_step, e1'), ecfg1'),
+                               MlTupleLst [MlApp (asst, ecfgx); ecfgx]), ecfgx)
+                     
+                     (* let ecfgx = mk_fresh_var "cfg" in *)
+                     (* (MlApp (MlRec (None, [ecfgx], *)
+                     (*                MlBinOp (Seq, MlApp (asst, ecfgx), MlTupleLst [MlConst UnitLit; ecfgx])), *)
+                     (*         MlApp (MlApp (ev_step, e1'), ecfg1')), *)
+                     (*  mk_fresh_var "dummy_cfg") *)
+                )
  
     | AnnAssert (e1, pos, a) ->
        fst @@ get_trtuple e1 ecfg (fun (e1', ecfg1') ->
@@ -216,6 +223,29 @@ let parse_aut_spec file =
 let parse_property_spec prop_file = 
   let spec = parse_aut_spec prop_file in
   spec
+
+let fv_spec acc e = 
+  let rec fv bvs acc = function
+    | MlConst _ -> acc
+    | MlVar x -> if StringSet.mem x bvs then acc else StringSet.add x acc
+    | MlRec (f_opt, xs, e) ->
+       let bvs1 = Option.map (fun f -> StringSet.add f bvs) f_opt |> Opt.get_or_else bvs in
+       let bvs2 = List.fold_left (fun acc e -> fv StringSet.empty acc e) bvs1 xs in
+       fv bvs2 acc e 
+    | MlApp (e1, e2) | MlBinOp (_, e1, e2) -> List.fold_left (fv bvs) acc [e1; e2]
+    | MlUnOp (_, e) -> fv bvs acc e
+    | MlIte (e1, e2, e3) -> List.fold_left (fv bvs) acc [e1; e2; e3]
+    | MlPatMat (e1, ps) ->
+       let acc1 = fv bvs acc e1 in
+       List.fold_left (fun acc (MlCase (p, ce)) -> let bvs1 = fv StringSet.empty bvs p in fv bvs1 acc ce) acc1 ps 
+    | MlTupleLst es -> List.fold_left (fv bvs) acc es
+    | MlEvent e | MlAssert (e, _) -> fv bvs acc e
+    | MlNonDet -> acc
+    | MlLetIn (x, e1, e2) ->
+       fv bvs acc e1 |> (fun acc' -> fv (StringSet.add x bvs) acc' e2)
+    | MlGDefs _ | MlGDefMain _ -> failwith "MlGDef or MlGDefMain should not occur in the specs"
+  in
+  fv StringSet.empty acc e
 
 let run (mle: mlterm) = 
   (* Run analysis after converting mlterm into term and labeling all sub-expressions *)

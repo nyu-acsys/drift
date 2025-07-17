@@ -50,7 +50,9 @@ module Fact =
       | TTop -> Format.fprintf ppf "\u{22A4}"         (* \top_t*)
       | TBase -> Format.fprintf ppf "t" 
       | TFun (v1, v2, eff) -> Format.fprintf ppf "@[(%a -%a-> %a)@]" pr_ty v1 pr_eff eff pr_ty v2
-      | TTuple vs -> Format.pp_print_list ~pp_sep: (fun _ () -> Format.printf ";@ ") pr_ty ppf vs
+      | TTuple vs -> 
+         let pr_vs ppf vs = Format.pp_print_list ~pp_sep: (fun _ () -> Format.printf ";@ ") pr_ty ppf vs in
+         Format.fprintf ppf "@[[%a]@]" pr_vs vs
 
     let rec join_ty v1 v2 = 
       let res = match v1, v2 with
@@ -59,7 +61,7 @@ module Fact =
         | TBase , TBase -> TBase
         | TFun (v1i, v1o, a1), TFun (v2i, v2o, a2) -> TFun (join_ty v1i v2i, join_ty v1o v2o, join_eff a1 a2)
         | TTuple vs1, TTuple vs2 -> List.combine vs1 vs2 |> List.map (fun (v1, v2) -> join_ty v1 v2) |> (fun vs' -> TTuple vs') 
-        | _, _ -> raise (CFAError "Not supported")
+        | _, _ -> failwith (Format.asprintf "Not supported : @[%a@ jOIN@ %a@]" pr_ty v1 pr_ty v2)
       in
       (* Format.fprintf Format.std_formatter "\n@[<hv>v1: %a@ JOIN@ v2: %a = %a@]@." 
         pr_ty v1 pr_ty v2 pr_ty res; *)
@@ -197,7 +199,7 @@ let get_binop_type (bop: binop) =
     | Eq | Ne 
     | Lt | Gt | Ge | Le 
     | And | Or -> (Fact.TBase, Fact.TBase, Fact.TBase)
-    | Seq -> (Fact.TBase, Fact.TBase, Fact.TBase)
+    | Seq -> (Fact.TBase, Fact.TBot, Fact.TBot)
     | Cons | Null -> raise (CFAError "Cons and NULL binop not supported")
 
 (* unary op type *)
@@ -328,10 +330,21 @@ let rec flow (env : env) (e : term) (m : CFAMap.t) : CFAMap.t =
        let m'' = flow env e2 m' in
        let v1, eff1 = extract_v_eff (find_map m'' (loc e1)) in
        let v2, eff2 = extract_v_eff (find_map m'' (loc e2)) in
-       let bop_v1, bop_v2, bop_v = get_binop_type bop in
-       update_map (loc e1) (Val (join_ty v1 bop_v1, eff1)) m''
-       |> update_map (loc e2) (Val (join_ty v2 bop_v2, eff2))
-       |> update_map l (Val (bop_v, join_eff eff1 eff2))
+       begin match bop with
+       | Seq -> 
+          update_map (loc e1) (Val (join_ty v1 TBase, eff1)) m''
+          |> (fun m''' ->
+           let ve, ve2 = find_map m''' l, find_map m''' (loc e2) in
+           let ve2', ve' = Fact.prop ve2 ve in
+           let v', eff' = extract_v_eff ve' in
+           let v2', eff2' = extract_v_eff ve2' in
+           update_map (loc e2) ve2' m''' |> update_map l (Val (v2', join_eff (join_eff eff' eff1) eff2')))
+       | _ -> 
+          let bop_v1, bop_v2, bop_v = get_binop_type bop in
+          update_map (loc e1) (Val (join_ty v1 bop_v1, eff1)) m''
+          |> update_map (loc e2) (Val (join_ty v2 bop_v2, eff2))
+          |> update_map l (Val (bop_v, join_eff eff1 eff2))
+       end
     | UnOp (uop, e1, l) ->
        let m' = flow env e1 m in
        let v1, eff1 = extract_v_eff (find_map m' (loc e1)) in
@@ -354,17 +367,55 @@ let rec flow (env : env) (e : term) (m : CFAMap.t) : CFAMap.t =
        |> update_map l (Val (join_ty v1 v2, join_eff eff0 (join_eff eff1 eff2)))
     | PatMat (e, patlst, l) ->
        let m' = flow env e m in
-       let v, eff = extract_v_eff (find_map m' (loc e)) in
-       let v', eff', m' = 
-         List.fold_left (fun (v', eff', m') (Case (e1, e2)) ->
-             match e1 with
-             | Const (c, l) -> 
-                failwith "CFA support for PatMat with Const pattern not implemented"
-             | Var (x, l) -> failwith "CFA support for PatMat with Var pattern not implemented"
-             | TupleLst (es, l) -> failwith "CFA support for PatMat with Tuple pattern not implemented"
-             | _ -> raise (CFAError "Pattern Matching: not supported patterns other than const/var/tuples of vars" ) 
-           ) (v, eff, m') patlst in
-       update_map l (Val (v', eff')) m'
+       List.fold_left (fun m' (Case (e1, e2)) ->
+           let is_tuple_var es = List.for_all (fun e -> match e with Var _ -> true | _ -> false) es in
+           match e1 with
+           | Const (c, cl) ->
+              failwith "CFA support for PatMat with Const pattern not implemented"
+           | Var (x, xl) -> failwith "CFA support for PatMat with Var pattern not implemented"
+           | TupleLst (es, tpl) when is_tuple_var es ->
+              let v, eff = extract_v_eff (find_map m' (loc e)) in
+              let vs = begin match v with 
+                            | TBot -> List.map (fun _ -> TBot) es 
+                            | TTuple vs -> vs
+                            | _ -> failwith "Expected a product type"
+                            end in
+              let v1, eff1 = extract_v_eff (find_map m' (loc e1)) in
+              let v1s = begin match v1 with
+                          | TBot -> List.map (fun _ -> TBot) es 
+                          | TTuple v1s -> v1s
+                          | _ -> failwith "Expected a product type"
+                        end in
+              Logs.debug (fun m -> m "PatMat^%s, Tuple Prop |-> (e: %a) PROP (e1: %a)@." l
+                                     pr_t (Val (v, eff)) pr_t (Val (v1, eff1))); 
+              let m', env', vs', v1s' = List.fold_left2 (fun (m', env', vs', v1s') ei (vi, v1i) ->
+                                        match ei with
+                                        | Var (x, lx) ->
+                                           let vi', v1i' = Fact.prop_ty vi v1i in
+                                           let vex = find_map m' lx in
+                                           let vx, _ = extract_v_eff vex in
+                                           let v1i'', vx' = Fact.prop_ty v1i' vx in
+                                           let env'' = extend_env env' x lx in
+                                           let m'' = update_map lx (Val (vx', EBot)) m' in
+                                           (m'', env'', vi'::vs', v1i''::v1s')
+                                        | _ -> failwith "Tuple pattern support only for variables"
+                                      ) (m', env, [], []) es (zip_list vs v1s) in
+              let vs', v1s' = List.rev vs', List.rev v1s' in
+              let v', _ = Fact.prop_ty (TTuple vs) (TTuple vs') in
+              let eff1' = Fact.join_eff eff eff1 in
+
+              let m' = update_map (loc e) (Val (v', eff)) m' |> update_map (loc e1) (Val (TTuple v1s', eff1')) in
+              let m'' = flow env' e2 m' in
+              let ve2 = find_map m'' (loc e2) in
+              let vpm = find_map m'' l in
+              Logs.debug (fun m -> m "PatMat^%s, Tuple Prop Oper ve2->vpm |-> (e2: %a) PROP ((patmat..e): %a)@." l
+                                     pr_t ve2 pr_t vpm);
+              let ve2', vpm' = Fact.prop ve2 vpm in
+              Logs.debug (fun m -> m "PatMat^%s, Tuple Prop Oper RES ve2->vpm |-> (e2= %a), (patmat..e: %a)@." l
+                                     pr_t ve2' pr_t vpm');
+              update_map (loc e2) ve2' m'' |> update_map l vpm'                
+           | _ -> raise (CFAError "Pattern Matching: not supported patterns other than const/var/tuples of vars" )
+         ) m' patlst
     | Assert (e, _, l) -> 
        let m' = flow env e m in
        let v, eff = extract_v_eff (find_map m' (loc e)) in

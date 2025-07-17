@@ -14,7 +14,10 @@ let pr_relation ppf = function
 
 let pr_label pl ppf l = if pl then Format.fprintf ppf "^%s" l else ()
 
-let pr_const ppf value = Format.fprintf ppf "%s" (str_of_val value)
+let pr_const ppf value = 
+  match value with
+  | Integer i when i < 0 -> Format.fprintf ppf "(%s)" (str_of_val value)
+  | _ -> Format.fprintf ppf "%s" (str_of_val value)
 
 let pr_op ppf op = Format.fprintf ppf "%s" (string_of_op op)
 
@@ -356,14 +359,19 @@ let rec pr_mlterm ppf = function
   | MlRec (Some f, xs, e) -> Format.fprintf ppf "(@[<v 2>let rec %s %a =@;%a@ in %s@])" 
                               f pr_mlrec_params xs pr_mlterm e f
   | MlIte (e0, e1, e2) -> Format.fprintf ppf 
-                           "@[<v>@[<hv 2>if@ @[%a@]@ then@;@[<v>%a@]@]@;@[<hv 2>else@;@[<v>%a@]@]@]"
+                           "@[<v>(@[<hv 2>if@ @[%a@]@ then@;@[<v>%a@]@]@;@[<hv 2>else@;@[<v>%a@]@])@]"
                            pr_mlterm e0 pr_mlterm e1 pr_mlterm e2
   | MlBinOp (bop, e1, e2) -> Format.fprintf ppf "(@[%a@] %a @[%a@])" 
                               pr_mlterm e1 pr_ml_op bop pr_mlterm e2
   | MlUnOp (uop, e1) -> Format.fprintf ppf "(%a @[%a@])" pr_unop uop pr_mlterm e1
-  | MlNonDet -> Format.fprintf ppf "(nondet_op)"
+  | MlNonDet -> Format.fprintf ppf "(Random.int (0) > 0)"
+  | MlLetIn (name, MlRec (Some f, xs, e1), e2) when name = f ->
+     Format.fprintf ppf "@[<v 2>let rec %s@ %a =@;@[%a@] in @;@[%a@]@]"
+       f pr_mlrec_params xs pr_mlterm e1 pr_mlterm e2
   | MlLetIn (name, e1, e2) -> Format.fprintf ppf "@[<v>let @[%s@] = @[%a@] in @;@[%a@]@]"
                                name pr_mlterm e1 pr_mlterm e2
+  | MlPatMat (e, [MlCase (MlTupleLst [x1; x2], MlTupleLst [MlBinOp (Seq, _, x1'); x2'])])
+       when x1 = x1' && x2 = x2' -> pr_mlterm ppf e
   | MlPatMat (e, pcs) -> Format.fprintf ppf "(@[<v>match @[%a@] with @;@[<v 2>%a@]@])"
                           pr_mlterm e pr_mlcases pcs
   | MlTupleLst xs -> Format.fprintf ppf "@[(%a)@]" pr_mltuple xs
