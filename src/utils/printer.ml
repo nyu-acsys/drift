@@ -364,7 +364,7 @@ let rec pr_mlterm ppf = function
   | MlBinOp (bop, e1, e2) -> Format.fprintf ppf "(@[%a@] %a @[%a@])" 
                               pr_mlterm e1 pr_ml_op bop pr_mlterm e2
   | MlUnOp (uop, e1) -> Format.fprintf ppf "(%a @[%a@])" pr_unop uop pr_mlterm e1
-  | MlNonDet -> Format.fprintf ppf "(Random.int (0) > 0)"
+  | MlNonDet -> Format.fprintf ppf "nondet"
   | MlLetIn (name, MlRec (Some f, xs, e1), e2) when name = f ->
      Format.fprintf ppf "@[<v 2>let rec %s@ %a =@;@[%a@] in @;@[%a@]@]"
        f pr_mlrec_params xs pr_mlterm e1 pr_mlterm e2
