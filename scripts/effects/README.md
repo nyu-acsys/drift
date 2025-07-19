@@ -21,6 +21,8 @@ https://github.com/sosy-lab/benchexec
 cpan -i Statistics::Basic
 cpan -i List::Util
 cpan -i Math::Complex
+cpan -i DateTime
+cpan -i Time::ParseDate
 ```
 
 ### 2. Set up BenchExec
@@ -40,15 +42,13 @@ sudo ln -s $DRIFT_REPO/drift.exe /usr/local/bin
 nano $DRIFT_REPO/scripts/benchexec-drifttoolinfo/drifttoolinfo/coarmochi.py
 nano $DRIFT_REPO/scripts/benchexec-drifttoolinfo/drifttoolinfo/mochi.py
 nano $DRIFT_REPO/scripts/benchexec-drifttoolinfo/drifttoolinfo/drift.py
+nano $DRIFT_REPO/scripts/benchexec-drifttoolinfo/drifttoolinfo/driftwrapper.py
 ```
-* Build the BenchExec toolinfo modules:
+* Build and install the BenchExec toolinfo modules:
 
 ```
-# May need to be root.
 cd $DRIFT_REPO/scripts/benchexec-drifttoolinfo
-sudo pip uninstall drifttoolinfo # (if needed)
-sudo python3 setup.py sdist bdist_wheel
-sudo pip install .
+make
 ```
 
 
@@ -80,6 +80,15 @@ benchexec benchmark-mochi.xml @benchexec.cfg
 ```
 
 It will then tell you what `table-generator` command to run.
+
+#### 3.d Running Rethfl
+
+```
+export MOCHI_EXE="$HOME/MoCHi/src/mochi.exe"
+cd $DRIFT_REPO/scripts/effects/
+perl ml_rethfl_translate.pl $MOCHI_EXE ../../tests/effects/tr_tuple_mochi/ ../../tests/effects/tr_tuple_hflz
+benchexec benchmark-rethfl.xml @benchexec.cfg
+```
 
 ### 4. Generating LaTeX
 
