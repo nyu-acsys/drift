@@ -30,7 +30,7 @@ foreach my $bench (sort keys %$d) {
         next if $rd !~ /TL1/; # CA on June 25th said for TP only do TL=1
         my $BEST = ($rd =~ /TPfalse/i ? 'BEST_TPOFF' : 'BEST_TPON');
         $BEST = $BEST.($rd =~ /TRtrans/ ? '_DRIFT' : '_EVDRIFT');
-        print "checking for update to $BEST\n";
+        #print "checking for update to $BEST\n";
         # we have nothing yet, so we take it
         if (not defined $d->{$bench}->{$BEST}) {
             $d = newBest($d,$BEST,$bench,$rd);
@@ -62,9 +62,9 @@ foreach my $b (sort keys %$d) {
     $tt =~ s/negated/neg/;
     print TP "$ct. \\texttt{\\scriptsize $tt} "; ++$ct;
     #warn "tool rd: ".Dumper($b,$d->{$b},$d->{$b}->{BEST_TRANS},$d->{$b}->{BEST_TRANS}->{rd});
-    warn "rd1: $d->{$b}->{BEST_TPON_DRIFT}->{rd}\n";
-    warn "rd2: $d->{$b}->{BEST_TPOFF_EVDRIFT}->{rd}\n";
-    warn "rd3: $d->{$b}->{BEST_TPON_EVDRIFT}->{rd}\n";
+    # warn "rd1: $d->{$b}->{BEST_TPON_DRIFT}->{rd}\n";
+    # warn "rd2: $d->{$b}->{BEST_TPOFF_EVDRIFT}->{rd}\n";
+    # warn "rd3: $d->{$b}->{BEST_TPON_EVDRIFT}->{rd}\n";
     # Best Drift+TP
     print TP sprintf("& %-5s & %3.1f & %s ", # & %3.1f 
            cleanRes($d->{$b}->{BEST_TPON_DRIFT}->{res}),
