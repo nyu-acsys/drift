@@ -1317,7 +1317,7 @@ module SemanticsDomain =
     and stren_Tuple_Eff u ae = 
       List.map (fun v -> stren_VE_Eff v ae) u
     and add_tuple_item_Tuple u v =
-      v :: u
+      u @ [v]
     and proj_Tuple u (acc_vars, qset) vars = 
       List.map (fun v -> proj_VE v (acc_vars, qset) vars) u
     and forget_Tuple var u =
@@ -1358,11 +1358,14 @@ module SemanticsDomain =
           Format.printf "\n";
           end
         ); *)
-        let v = wid_VE v1 v2 in
-        (* if get_label_snode n = "38" then
-          Format.fprintf Format.std_formatter "sem line 1230 @,v: @[%a@]@, @,v1: @[%a@]@, @,v2: @[%a@]@" 
-          pr_value_and_eff v pr_value_and_eff v1 pr_value_and_eff v2; *)
-        v
+        if extract_v v1 |> is_table then
+
+          let v = wid_VE v1 v2 in
+          (* if get_label_snode n = "38" then
+            Format.fprintf Format.std_formatter "sem line 1230 @,v: @[%a@]@, @,v1: @[%a@]@, @,v2: @[%a@]@" 
+            pr_value_and_eff v pr_value_and_eff v1 pr_value_and_eff v2; *)
+          v
+        else v2
         ) m1 m2
     let leq_M (m1: exec_map_t) (m2: exec_map_t) : bool =
       NodeMap.for_all (fun n v1 (*untie to node -> value*) -> 

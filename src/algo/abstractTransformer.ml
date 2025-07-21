@@ -774,7 +774,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
       ); *)
       (* if optmization m n find then m else *)
       let n = loc term |> construct_enode env |> construct_snode trace in
-      let te = find n m in (* M[env*l] *)
+      (* let te = find n m in (* M[env*l] *)
       let update_t t =  
         if leq_V ae t then t
         else
@@ -782,8 +782,9 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           let t' = join_V t ct in
           (stren_V t' ae)
       in
-      let update_e eff = join_Eff eff (stren_Eff (Effect ec) ae) in
-      let te' = temap (update_t, update_e) te in
+      let update_e eff = join_Eff eff (stren_Eff (Effect ec) ae) in *)
+      let t = stren_V (init_V_c c) ae in
+      let te' = TypeAndEff (t, Effect ec) in
       m |> update false n te', [create_empty_trace] (* {v = c ^ aE}*)
   | NonDet _ ->
       let t = Relation (Bool (AbstractValue.from_int 1, AbstractValue.from_int 0)) in
@@ -1139,11 +1140,13 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                           |> prepare_veo'
                           (* |> fun ve -> (
                             if io_effects () then
-                              let z = get_trace_data cs_trace in
-                              let ei = extract_eff te_arg' in
-                              let vals = get_effmap ei |> get_input_eff_relations z in
-                              let l = List.map (fun v -> stren_VE_Eff ve (Relation v)) vals in
-                              List.fold_left (fun ve1 ve2 -> join_VE_Eff ve1 ve2) (List.hd l) (List.tl l)
+                              if only_shape_VE ve then ve
+                              else
+                                let z = get_trace_data cs_trace in
+                                let ei = extract_eff te_arg' in
+                                let vals = get_effmap ei |> get_input_eff_relations z in
+                                let l = List.map (fun v -> stren_VE_Eff ve (Relation v)) vals in
+                                List.fold_left (fun ve1 ve2 -> join_VE_Eff ve1 ve2) (List.hd l) (List.tl l)
                             else ve) *)
                         in
                         (if !debug then
@@ -2252,8 +2255,8 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
           join_VE te cte in
         m |> update false n te', [create_empty_trace]
       else
-        let tp, m',  _, ec' = List.fold_right 
-          (fun (te, e) (tep', m, ae, ec) -> 
+        let tp, m',  _, ec' = List.fold_left 
+          (fun (tep', m, ae, ec) (te, e) -> 
             let m', tails = step e env trace ec ae assertion is_rec m prev_m in
             let tee = merge_traces e tails m' in
             let ae' = get_ae_from_ve tee in
@@ -2264,7 +2267,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             let ec' = extract_ec tee in
             (* let ec' = stren_Eff (Effect ec') ae |> get_effmap in *)
             te',  m'', ae', ec'
-          ) (zip_list tlist termlst) (Tuple [], m, ae, ec) in
+          ) (Tuple [], m, ae, ec) (zip_list tlist termlst) in
         let tep = TypeAndEff (tp, Effect ec') in
         m' |> update false n tep, [create_empty_trace]
   | PatMat (e, patlst,  _) ->
