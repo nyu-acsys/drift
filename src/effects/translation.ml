@@ -173,6 +173,7 @@ let tr (e: term) (a: term) (acfg: term) (asst: term option) (asstFinal: term opt
                 (PatMat (e1x, (List.map (fun (Case (p, e2)) -> Case (p, tr_ e2 acfg1x)) patlist), l)) 
             ], "")
       end
+    | _ -> failwith "Invalid expression"
   in
   let tr_e = match asstFinal with
     | None -> tr_ e acfg

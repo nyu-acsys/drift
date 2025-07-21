@@ -45,6 +45,11 @@ let rec pr_exp pl ppf = function
       (pr_exp pl) e1
       (pr_exp pl) e2
       (pr_label pl) l
+| MultiApp (e1, termlist, l) ->
+    Format.fprintf ppf "@[<2>(%a@ %a)%a@]"
+      (pr_exp pl) e1
+      (pr_multiappargs pl) termlist
+      (pr_label pl) l
 | Rec (None, (x, lx), e, l) ->
     Format.fprintf ppf "@[<2>(lambda %s%a.@ %a)%a@]"
       x (pr_label pl) lx
@@ -54,6 +59,17 @@ let rec pr_exp pl ppf = function
     Format.fprintf ppf "@[<2>(mu %s%a %s%a.@ %a)%a@]"
       f (pr_label pl) lf
       x (pr_label pl) lx
+      (pr_exp pl) e
+      (pr_label pl) l
+| MultiRec (None, xlist, e, l) ->
+    Format.fprintf ppf "@[<2>(lambda%a.@ %a)%a@]"
+      (pr_multirecargs pl) xlist
+      (pr_exp pl) e
+      (pr_label pl) l
+| MultiRec (Some (f, lf), xlist, e, l) ->
+    Format.fprintf ppf "@[<2>(mu %s%a%a.@ %a)%a@]"
+      f (pr_label pl) lf
+      (pr_multirecargs pl) xlist
       (pr_exp pl) e
       (pr_label pl) l
 | Ite (e1, e2, e3, l) ->
@@ -94,6 +110,14 @@ and pr_pm pl ppf = function
   | hd::tl -> Format.fprintf ppf "%a@ |@ %a" (pr_pattern pl) hd (pr_pm pl) tl
 and pr_pattern pl ppf (Case (e1, e2)) = 
   Format.fprintf ppf "@[<2>%a@ ->@ %a@]" (pr_exp pl) e1 (pr_exp pl) e2
+and pr_multiappargs pl ppf = function
+  | [] -> ()
+  | (e1, e2)::tl ->
+    Format.fprintf ppf "@[<2>%a@ %a@]" (pr_exp pl) e2 (pr_multiappargs pl) tl
+and pr_multirecargs pl ppf = function
+  | [] -> ()
+  | (x, lx)::xlist ->
+    Format.fprintf ppf "@[<2> %s%a%a@]" x (pr_label pl) lx (pr_multirecargs pl) xlist
 
 let print_exp out_ch e =
   let ppf = Format.formatter_of_out_channel out_ch in 
@@ -125,7 +149,7 @@ let pr_ary ppf ary =
   let (l,e), (rl, ve) = ary in
   Format.fprintf ppf "@[<1>{@ cur_v:@ Int Array (%s, %s)@ |@ len:@ %a,@ item:@ %a@ }@]" l e pr_agg_val rl pr_agg_val ve
 
-let rec shape_value = function
+(* let rec shape_value = function
   | Bot -> "Bot"
   | Top -> "Top"
   | Relation r -> (match r with
@@ -161,7 +185,7 @@ and shape_value_and_eff = function
   | TEBot -> "Bot"
   | TETop -> "Top"
   | TypeAndEff (v, e) -> "("^ (shape_value v) ^","^ (shape_eff e) ^ ")"
-and shape_fout fout = let (_, vo) = get_full_fout fout in shape_value_and_eff vo
+and shape_fout fout = let (_, vo) = get_full_fout fout in shape_value_and_eff vo *)
 
 let rec pr_value ppf v = match v with
   | Bot -> Format.fprintf ppf "_|_"
@@ -170,7 +194,7 @@ let rec pr_value ppf v = match v with
   | Table t -> print_table t ppf pr_value_and_eff pr_relation
   | Tuple u -> Format.fprintf ppf "(%a)" pr_tuple u
   | Ary ary -> pr_ary ppf ary
-  | Lst lst -> pr_lst ppf lst
+  | Lst lst -> failwith "Lists are not supported at the moment" (* pr_lst ppf lst *)
 and pr_value_and_eff ppf ve = match ve with
   | TEBot -> Format.fprintf ppf "_|_"
   | TETop -> Format.fprintf ppf "T"
@@ -193,9 +217,9 @@ and pr_eff_acc_binding ppf (_, r) =
   Format.fprintf ppf "@[<1>%a@]" pr_relation r
 and pr_eff_binding ppf ((Q q), acc) = 
   Format.fprintf ppf "@[<1>(@ %s@ |->@ @[<v>%a@])@]" (string_of_int q) pr_eff_acc acc
-and pr_lst ppf lst =
+(* and pr_lst ppf lst =
     let (l,e), (rl, ve) = lst in
-    Format.fprintf ppf "@[<1>{@ cur_v:@ %s List (%s, %s)@ |@ len:@ %a,@ item:@ %a@ }@]" (shape_value_and_eff ve) l e pr_agg_val rl pr_value_and_eff ve
+    Format.fprintf ppf "@[<1>{@ cur_v:@ %s List (%s, %s)@ |@ len:@ %a,@ item:@ %a@ }@]" (shape_value_and_eff ve) l e pr_agg_val rl pr_value_and_eff ve *)
 and pr_tuple ppf u = 
   if List.length u = 0 then Format.fprintf ppf "@[<1>Unit@]"
   else 

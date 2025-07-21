@@ -166,6 +166,8 @@ let is_subtrace (call_trace1, part_trace1) (call_trace2, part_trace2) =
 
 let trace_isempty (call_trace, part_trace) = List.length call_trace = 0 && List.length part_trace = 0
 
+let sort_uniq_traces traces = List.flatten traces |> List.sort_uniq comp_trace
+
 (* let sort_trees tree_list = List.sort (fun t1 t2 -> comp_loc_token (get_trace_tree_token t1) (get_trace_tree_token t2)) tree_list *)
 
 (* type loc_tree = 

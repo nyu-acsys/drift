@@ -69,6 +69,12 @@ module Opt = struct
     | Some _ -> true
 end
 
+let rec last_element lst =
+  match lst with
+  | [] -> None |> Opt.get
+  | [x] -> Some x |> Opt.get
+  | _ :: tl -> last_element tl
+
 let first_n n =
   let rec first_n_helper n = 
     if n = 0 then []

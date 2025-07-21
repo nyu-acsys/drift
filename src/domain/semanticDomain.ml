@@ -911,16 +911,16 @@ module SemanticsDomain =
       | Relation r -> get_ae_from_R r
       | Tuple u -> get_ae_from_Tuple u
       | Table t -> Relation (get_env_T t)
-      | Bot -> Bot
+      | Bot -> Relation (bot_Env)
       | _ -> raise (Invalid_argument "get_ae_from_v: Wrong base type")
     and get_ae_from_ve ve = match ve with
-      | TEBot | TETop -> Bot
+      | TEBot | TETop -> Relation (bot_Env)
       | TypeAndEff (v, _) -> get_ae_from_v v
     and get_ae_from_ev v = match v with
       | Relation r -> get_ae_from_R r
       | Tuple u -> get_ae_from_Tuple u
       | Table t -> Relation (get_env_T t)
-      | Bot -> Bot
+      | Bot -> Relation (bot_Env)
       | _ -> raise (Invalid_argument "get_ae_from_v: Wrong base type")
     and get_unit_from_v v = match v with
       | Relation r -> Relation (convert_r_to_unit r)

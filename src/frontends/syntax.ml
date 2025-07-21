@@ -151,11 +151,13 @@ type term =
   | NonDet of loc                      (* To introduce non-determinism *)
   | Var of var * loc                   (* x (variable) *)
   | App of term * term * loc           (* t1 t2 (function application) *)
+  | MultiApp of term * (term * term) list * loc
   | UnOp of unop * term * loc          (* uop t (unary operator) *)
   | BinOp of binop * term * term * loc (* t1 bop t2 (binary infix operator) *)
   | PatMat of term * patcase list * loc     (* match t1 with t2 -> t3 | ... *)
   | Ite of term * term * term * loc    (* if t1 then t2 else t3 (conditional) *)
   | Rec of (var * loc) option * (var * loc) * term * loc (*lambda and recursive function*)
+  | MultiRec of (var * loc) option * (var * loc) list * term * loc
   | Event of term * loc                (* event *)
   | Assert of term * pos * loc
 and patcase = 
@@ -167,11 +169,13 @@ let loc = function
   | NonDet l -> l
   | Var (_, l)
   | App (_, _, l)
+  | MultiApp (_, _, l)
   | BinOp (_, _, _, l)
   | UnOp (_, _, l)
   | Ite (_, _, _, l)
   | PatMat (_, _, l)
   | Rec (_, _, _, l)
+  | MultiRec (_, _, _, l)
   | Event (_, l) -> l
   | Assert (_, _, l) -> l
 
@@ -256,6 +260,7 @@ let rev_op = function
 
 let label e =
     let rec l k = function
+      | MultiApp _ | MultiRec _ -> failwith "shouldn't be declared yet"
       | TupleLst (e, _) ->
         let e', k' = List.fold_left (fun (ne, nk) ie ->
           let ie', nk' = l nk ie in 
@@ -334,6 +339,7 @@ let mk_fresh_var = compose mk_var fresh_var
     
 let fv_acc acc e =
   let rec fv bvs acc = function
+    | MultiApp _ | MultiRec _ -> failwith "shouldn't be declared yet"
     | Const _ -> acc
     | Var (x, _) ->
         if StringSet.mem x bvs
@@ -365,6 +371,7 @@ let fv e = fv_acc StringSet.empty e
 let fo e =
   let inc acc x = StringMap.update x (function Some x -> Some (x + 1) | None -> Some 1) acc in
   let rec fv bvs acc = function
+    | MultiApp _ | MultiRec _ -> failwith "shouldn't be declared yet"
     | Const _ | NonDet _ -> acc
     | Var (x, _) ->
         if StringMap.mem x bvs
@@ -495,6 +502,7 @@ let subst sm =
   let rec subst sm e =
     let s = subst sm in
     match e with
+      | MultiApp _ | MultiRec _ -> failwith "shouldn't be declared yet"
       | Const _ | NonDet _ as e -> e
       | Var (y, _) as v ->
           StringMap.find_opt y sm |> Opt.get_or_else v
@@ -538,6 +546,7 @@ let simplify =
     Opt.get_or_else 0
   in
   let rec simp = function
+  | MultiApp _ | MultiRec _ -> failwith "shouldn't be declared yet"
   | (Var _ | Const _ | NonDet _) as e -> e
   | App (e1, e2, l) ->
       (match simp e1, simp e2 with
@@ -567,6 +576,71 @@ let simplify =
   | Event (e, l) -> Event (simp e, l)
   | Assert (e, ps, l) -> Assert (simp e, ps, l)
   in simp
+
+let rec coalesce_app e =
+  match e with
+  | TupleLst (termlist, l) ->
+    TupleLst (List.map coalesce_app termlist, l)
+  | Const _
+  | NonDet _
+  | Var _
+  | MultiApp _ -> e
+  | BinOp (bop, e1, e2, l) ->
+    BinOp (bop, coalesce_app e1, coalesce_app e2, l)
+  | UnOp (uop, e1, l) ->
+    UnOp (uop, coalesce_app e1, l)
+  | Ite (e0, e1, e2, l) ->
+    Ite (coalesce_app e0, coalesce_app e1, coalesce_app e2, l)
+  | PatMat (e, patlst, l) ->
+    let coalesce_patcase p = match p with
+      | Case (e1, e2) -> Case (e1, coalesce_app e2)
+    in
+    PatMat (coalesce_app e, List.map coalesce_patcase patlst, l)
+  | Event (e, l) -> Event (coalesce_app e, l)
+  | Rec (f_opt, (x, lx), e1, l) ->
+    Rec (f_opt, (x, lx), coalesce_app e1, l)
+  | MultiRec (f_opt, xlist, e1, l) ->
+    MultiRec (f_opt, xlist, coalesce_app e1, l)
+  | Assert (e, pos, l) -> Assert (coalesce_app e, pos, l)
+  | App (e1, e2, l) ->
+    let e2 = coalesce_app e2 in
+    let e1 = coalesce_app e1 in
+    match e1 with
+    | MultiApp (e_fun, e_args, _) ->
+      MultiApp (e_fun, e_args @ [(e, e2)], l)
+    | _ -> MultiApp (e1, [(e, e2)], l)
+
+let rec coalesce_rec e =
+  match e with
+  | TupleLst (termlist, l) ->
+    TupleLst (List.map coalesce_rec termlist, l)
+  | Const _
+  | NonDet _
+  | Var _ 
+  | MultiRec _ -> e
+  | BinOp (bop, e1, e2, l) ->
+    BinOp (bop, coalesce_rec e1, coalesce_rec e2, l)
+  | UnOp (uop, e1, l) ->
+    UnOp (uop, coalesce_rec e1, l)
+  | Ite (e0, e1, e2, l) ->
+    Ite (coalesce_rec e0, coalesce_rec e1, coalesce_rec e2, l)
+  | PatMat (e, patlst, l) ->
+    let coalesce_patcase p = match p with
+      | Case (e1, e2) -> Case (e1, coalesce_rec e2)
+    in
+    PatMat (coalesce_rec e, List.map coalesce_patcase patlst, l)
+  | Event (e, l) -> Event (coalesce_rec e, l)
+  | App (e1, e2, l) ->
+    App (coalesce_rec e1, coalesce_rec e2, l)
+  | MultiApp (e1, termlist, l) ->
+    MultiApp (coalesce_rec e1, List.map (fun (e1, e2) -> (e1, coalesce_rec e2)) termlist, l)
+  | Assert (e, pos, l) -> Assert (coalesce_rec e, pos, l)
+  | Rec (f_opt, (x, lx), e1, l) ->
+    let e1 = coalesce_rec e1 in
+    match e1 with
+    | MultiRec (_, xlist, e1, _) ->
+      MultiRec (f_opt, (x, lx)::xlist, e1, l)
+    | _ -> MultiRec (f_opt, [x, lx], e1, l)
 
 (******************)
 (* CPS Conversion *)
