@@ -420,6 +420,7 @@ let rec flow (env : env) (e : term) (m : CFAMap.t) : CFAMap.t =
        let m' = flow env e m in
        let v, eff = extract_v_eff (find_map m' (loc e)) in
        update_map l (Val (TBase, eff)) m'
+    | _ -> failwith "Invalid expression"
                           
          
 (* Fixpoint *)
@@ -516,6 +517,7 @@ let rec fterm_of_term e m =
   | Event (e, l) -> AnnEvent (fterm_of_term e m, get_fact m l)
   | Assert (e, pos, l) -> AnnAssert (fterm_of_term e m, pos, get_fact m l)
   | TupleLst (es, l) -> AnnTupleLst (List.map (fun e -> fterm_of_term e m) es, get_fact m l) 
+  | _ -> failwith "Invalid expression"
                                            
 (* Control Flow Analysis for marking program with Effect Annotations *)
 let annotate_eff e =
