@@ -68,10 +68,9 @@ in
 
 let rev l cfg2 =
   let rec aux
-    l_aux =
-    (fun l_acc cfg3 ->
+    l_aux l_acc cfg3 =
        (if (l_aux = 0) then (l_acc,cfg3)
-       else (((aux (l_aux - 1)) (l_acc + 1)) ((ev_step0 2) cfg3)))) in 
+       else (((aux (l_aux - 1)) (l_acc + 1)) ((ev_step0 2) cfg3))) in 
     (((aux l) 0) cfg2)
 in
 

@@ -55,7 +55,7 @@ let pred x =
   (x - 1) 
 
 
-let main (n:int(*-:{cur_v:Int | true = true}*)) =
+let main (n:int(*-:{v:Int | true}*)) =
   (match (match (((apply pred) n) (0,0)) with 
           (x1,cfg5) -> let _ = x1 in 
                        ((() ; 0),((ev_step0 2) cfg5))) with 

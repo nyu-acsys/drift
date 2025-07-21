@@ -49,7 +49,7 @@ let sum x cfg3 =
                           (x + y))),cfg5)) 
 
 
-let main (u:unit(*-:{cur_v:Unit | unit = unit}*)) =
+let main (u: unit(*-:{v:Unit | unit}*)) = 
   (match (match let cfg7 = ((ev_step0 2) (0,0)) in 
                 ((ev_step_asst0 cfg7),cfg7) with 
           (x1,cfg8) -> (match (match (match (match let cfg9 = ((ev_step0 3) cfg8) in 

@@ -218,6 +218,6 @@ let rec life x cfg16 =
       else ((life x) cfg16)) 
 
 
-let main (v:int(*-:{cur_v:Int | true = true}*)) =
+let main (v: int(*-:{v: Int | true}*)) = 
   (match ((life v) (0,0)) with 
    (e0,cfg22) -> ((asst_final0 cfg22) ; e0))

@@ -67,6 +67,6 @@ let rec f x pos neg cfg2 =
                 else ((((f (x - 2)) (pos + 1)) (neg - 1)) cfg5))) 
 
 
-let main (v:int(*-:{cur_v:Int | true = true}*)) (p:int(*-:{cur_v:Int | true = true}*)) (n:int(*-:{cur_v:Int | true = true}*)) =
+let main (v:int(*-:{v:Int | true}*)) (p:int(*-:{v:Int | true}*)) (n:int(*-:{v:Int | true}*)) =
   (if ((p > 0) && (n < 0)) then ((((f v) p) n) (0,0))
   else (0,(0,0)))

@@ -26,13 +26,13 @@ delta  = fun evx (q, acc) -> (q, (acc+evx));
  
 IniCfg = (0, 0);
 
-assertFinal = fun (q, acc) -> (acc = prefgl_t/prefgl_d);
+assertFinal = fun (q, acc) -> (acc = gl_t/gl_d);
  
 
 
 *)
 
-let main (prefgl_t:int(*-:{cur_v:Int | true = true}*)) (prefgl_d:int(*-:{cur_v:Int | true = true}*)) =
+let main (gl_t:int(*-:{v:Int | true}*)) (gl_d:int(*-:{v:Int | true}*)) =
 
 let ev_step0 evx cfg0 =
   (match cfg0 with 
@@ -41,7 +41,7 @@ in
 
 let asst_final0 cfg1 =
   (match cfg1 with 
-   (q,acc) -> assert (acc = (prefgl_t / prefgl_d)))
+   (q,acc) -> assert (acc = (gl_t / gl_d)))
 in
 
 let rec shrink t f d cfg2 =
@@ -52,6 +52,6 @@ let rec shrink t f d cfg2 =
 in
 
 
-  (match ((((shrink prefgl_t) (fun x ->
-                             prefgl_t)) prefgl_d) ((ev_step0 (prefgl_t / prefgl_d)) (0,0))) with 
+  (match ((((shrink gl_t) (fun x ->
+                             gl_t)) gl_d) ((ev_step0 (gl_t / gl_d)) (0,0))) with 
    (e0,cfg4) -> ((asst_final0 cfg4) ; e0))

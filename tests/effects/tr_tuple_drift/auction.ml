@@ -112,6 +112,6 @@ let idf _ cfg15 =
   ((),cfg15) 
 
 
-let main (u:unit(*-:{cur_v:Unit | unit = unit}*)) =
+let main (u: unit(*-:{v: Unit | unit}*)) =
   (match ((((bid 1) 1) idf) (0,(0,0))) with 
    (e0,cfg16) -> ((asst_final0 cfg16) ; e0))

@@ -64,6 +64,6 @@ let rec busy n t cfg2 =
   else (((busy (n - 1)) t) cfg2)) 
 
 
-let main (x:int(*-:{cur_v:Int | true = true}*)) (n:int(*-:{cur_v:Int | true = true}*)) =
+let main (x:int(*-:{v:Int | true}*)) (n:int(*-:{v:Int | true}*)) =
   (match (((busy n) x) ((ev_step0 x) (0,0))) with 
    (e0,cfg3) -> ((asst_final0 cfg3) ; e0))

@@ -51,7 +51,7 @@ let rec mono t x cfg2 =
   else (((mono (t + x)) (x - 1)) ((ev_step0 t) cfg2))) 
 
 
-let main (u:int(*-:{cur_v:Int | true = true}*)) =
+let main (u:int(*-:{v:Int | true}*)) = 
   (match (if (u > 0) then (((mono 1) u) (0,0))
          else (0,(0,0))) with 
    (e0,cfg4) -> ((asst_final0 cfg4) ; e0))

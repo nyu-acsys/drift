@@ -43,7 +43,7 @@ let rec spend n cfg2 =
                 else ((spend (n - 1)) cfg4))) 
 
 
-let main (gas:int(*-:{cur_v:Int | true = true}*)) (n:int(*-:{cur_v:Int | true = true}*)) =
+let main (gas:int(*-:{v:Int | true}*)) (n:int(*-:{v:Int | true}*)) =
   (if
      ((gas > n) && (n >= 0))
      then

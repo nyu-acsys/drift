@@ -124,5 +124,5 @@ let rec listener i npool pend cfg2 =
              (x0,cfg4) -> ((((listener i) npool) pend) cfg4)))) 
 
 
-let main (npool:int(*-:{cur_v:Int | true = true}*)) (i0:int(*-:{cur_v:Int | true = true}*)) =
+let main (npool:int(*-:{v:Int | true}*)) (i0:int(*-:{v:Int | true}*)) =
   ((((listener i0) npool) 0) (0,(0,0)))

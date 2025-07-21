@@ -41,7 +41,7 @@ assertFinal = fun (q, acc) -> q = 0 && acc <= 3*prefn;
 
 *)
 
-let main (prefn:int(*-:{cur_v:Int | cur_v = 0}*)) =
+let main (n:int(*-:{v:Int | v>0}*)) = 
 
 let ev_step0 evx cfg0 =
   (match cfg0 with 
@@ -51,7 +51,7 @@ in
 
 let asst_final0 cfg1 =
   (match cfg1 with 
-   (q,acc) -> assert ((q = 0) && (acc <= (3 * prefn))))
+   (q,acc) -> assert ((q = 0) && (acc <= (3 * n))))
 in
 
 let choose x cfg2 =
@@ -66,5 +66,5 @@ let rec sum n cfg3 =
         (x0,cfg4) -> ((sum (n - 1)) cfg4))) 
 in
 
-  (match ((sum prefn) (0,0)) with 
+  (match ((sum n) (0,0)) with 
    (e0,cfg6) -> ((asst_final0 cfg6) ; e0))

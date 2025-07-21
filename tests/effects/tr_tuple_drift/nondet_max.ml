@@ -40,7 +40,7 @@ assert = fun (q, acc) -> q = 0 && acc <= prefn;
 
 *)
 
-let main (prefn:int(*-:{cur_v:Int | cur_v = 0}*)) =
+let main (n:int(*-:{v:Int | v>0}*)) =
 
 let ev_step0 evx cfg0 =
   (match cfg0 with 
@@ -51,7 +51,7 @@ in
 
 let ev_step_asst0 cfg1 =
   (match cfg1 with 
-   (q,acc) -> assert ((q = 0) && (acc <= prefn)))
+   (q,acc) -> assert ((q = 0) && (acc <= n)))
 in
 
 let rec make_list n f cfg2 =
@@ -66,4 +66,4 @@ in
     (if (n1 = 0) then 0
     else (if (nondet) then (get_random_int (n1 - 1))
          else n1)) in 
-    (((make_list prefn) get_random_int) (0,0))
+    (((make_list n) get_random_int) (0,0))

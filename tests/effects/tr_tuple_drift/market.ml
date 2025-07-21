@@ -99,7 +99,7 @@ let rec repeat n4 cfg19 =
                                     (x11,cfg22) -> ((1 + x11),cfg22))))) 
 
 
-let main (budget:int(*-:{cur_v:Int | cur_v = 0}*)) (stock:int(*-:{cur_v:Int | cur_v = 0}*)) (n:int(*-:{cur_v:Int | cur_v = 0}*)) =
+let main (budget:int(*-:{v:Int | v >= 0}*)) (stock:int(*-:{v:Int | v >= 0}*)) (n:int(*-:{v:Int | v > 0}*)) =
   (if
      ((stock >= budget) && (budget >= n))
      then

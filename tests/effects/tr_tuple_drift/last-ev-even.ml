@@ -45,7 +45,7 @@ let rec foo vv f cfg2 =
   else (((foo (vv - 1)) f) ((ev_step0 vv) cfg2))) 
 
 
-let main (v:int(*-:{cur_v:Int | true = true}*)) (final:int(*-:{cur_v:Int | true = true}*)) =
+let main (v:int(*-:{v:Int | true}*)) (final:int(*-:{v:Int | true}*)) =
   (match (if ((final mod 2) = 0) then (((foo v) final) (0,0))
          else (((foo v) (if (v >= 0) then (final + 1)
                         else final)) (0,0))) with 

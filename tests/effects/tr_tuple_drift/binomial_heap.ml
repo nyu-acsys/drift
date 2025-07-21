@@ -64,13 +64,13 @@ IniCfg = (0, (0, 0));
 
 assert = fun (q, (carries, size)) -> q < 3;
 
-assertFinal = fun (q, (carries, size)) -> size = prefh - carries + 1;  
+assertFinal = fun (q, (carries, size)) -> size = h - carries + 1;  
 
 
 
 *)
 
-let main (prefh:int(*-:{cur_v:Int | cur_v = 0}*)) (prefj:int(*-:{cur_v:Int | cur_v = 0}*)) =
+let main (h:int(*-:{v:Int | v >= 0 }*)) (j:int(*-:{v:Int | v >= 0 }*)) =
 
 let ev_step0 evx cfg0 =
   (match cfg0 with 
@@ -94,7 +94,7 @@ in
 let asst_final0 cfg2 =
   (match cfg2 with 
    (q,acc2) -> (match acc2 with 
-                (carries,size) -> assert (size = ((prefh - carries) + 1))))
+                (carries,size) -> assert (size = ((h - carries) + 1))))
 in
 
 let link r cfg3 =
@@ -119,7 +119,7 @@ let rec insTree i k l cfg6 =
                              (x4,cfg11) -> ((x4 (l - 1)) cfg11)))) 
 in
 
-  (match (match let cfg16 = ((ev_step0 prefh) (0,(0,0))) in 
+  (match (match let cfg16 = ((ev_step0 h) (0,(0,0))) in 
                 ((ev_step_asst0 cfg16),cfg16) with 
-          (x7,cfg17) -> ((((insTree 0) prefj) prefh) cfg17)) with 
+          (x7,cfg17) -> ((((insTree 0) j) h) cfg17)) with 
          (e0,cfg15) -> ((asst_final0 cfg15) ; e0))

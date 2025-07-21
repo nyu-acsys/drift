@@ -52,6 +52,6 @@ let rec sum x cfg2 =
                       (x1,cfg5) -> ((x + x1),cfg5)))) 
 
 
-let main (v:int(*-:{cur_v:Int | true = true}*)) =
+let main (v:int(*-:{v:Int | true}*)) =
   (if (v < 0) then ((sum (0 - v)) (0,0))
   else ((sum v) (0,0)))

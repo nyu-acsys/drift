@@ -27,11 +27,11 @@ assert = fun (q, acc) -> (acc >= 0);
 
 *)
 
-let main (prefv:int(*-:{cur_v:Int | true = true}*)) =
+let main (v:int(*-:{v:Int | true}*)) =
 
 let ev_step0 evx cfg0 =
   (match cfg0 with 
-   (q,acc) -> (if (evx > prefv) then (q,(acc + evx))
+   (q,acc) -> (if (evx > v) then (q,(acc + evx))
               else (q,acc)))
 in
 
@@ -42,7 +42,7 @@ in
 
 
   (if
-     (prefv = 0)
+     (v = 0)
      then
      (match let cfg2 = ((ev_step0 1) (0,0)) in 
             ((ev_step_asst0 cfg2),cfg2) with 

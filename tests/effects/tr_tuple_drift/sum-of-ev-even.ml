@@ -51,7 +51,7 @@ let rec sum x cfg3 =
                 else ((sum (x - 2)) cfg5))) 
 
 
-let main (v:int(*-:{cur_v:Int | true = true}*)) =
+let main (v:int(*-:{v:Int | true}*)) =
   (match (if ((v mod 2) = 0) then ((sum v) (0,0))
          else ((sum (v + 1)) (0,0))) with 
    (e0,cfg7) -> ((asst_final0 cfg7) ; e0))

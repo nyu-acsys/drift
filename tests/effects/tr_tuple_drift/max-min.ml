@@ -60,7 +60,7 @@ let rec compute vv bound1 inc cfg2 =
   else ((((compute (inc vv)) bound1) inc) ((ev_step0 vv) cfg2))) 
 
 
-let main (v:int(*-:{cur_v:Int | true = true}*)) (w:int(*-:{cur_v:Int | true = true}*)) (m:int(*-:{cur_v:Int | true = true}*)) =
+let main (v:int(*-:{v:Int | true}*)) (w:int(*-:{v:Int | true}*)) (m:int(*-:{v:Int | true}*)) =
   (match let f = (fun t ->
                     (if (v >= 0) then (t - 1)
                     else (t + 1))) in 

@@ -41,13 +41,13 @@ delta = fun evx (q, (enq, deq, tick)) ->
 
 IniCfg = (0, (0,0,0));
 
-assertFinal = fun (q, (enq, deq, tick)) -> q=0 && tick = enq+prefl2 && tick = deq-prefl1;
+assertFinal = fun (q, (enq, deq, tick)) -> q=0 && tick = enq+l2 && tick = deq-prefl1;
 (* assertFinal = fun (q, (enq, deq, tick)) -> q=0 && tick = enq+prefl2; *)
 
 
 *)
 
-let main (prefn:int(*-:{cur_v:Int | cur_v = 0}*)) (prefl1:int(*-:{cur_v:Int | cur_v = 0}*)) (prefl2:int(*-:{cur_v:Int | cur_v = 0}*)) =
+let main (n:int(*-:{v:Int | v >= 0 }*)) (l1:int(*-:{v:Int | v >= 0 }*)) (l2:int(*-:{v:Int | v >= 0 }*)) =
 
 let ev_step0 evx cfg0 =
   (match cfg0 with 
@@ -63,15 +63,14 @@ in
 let asst_final0 cfg1 =
   (match cfg1 with 
    (q,acc1) -> (match acc1 with 
-                (enq,deq,tick) -> assert (((q = 0) && (tick = (enq + prefl2))) && (tick = (deq - prefl1)))))
+                (enq,deq,tick) -> assert (((q = 0) && (tick = (enq + l2))) && (tick = (deq - l1)))))
 in
 
 let rev l cfg2 =
-  let rec aux
-    l_aux =
-    (fun l_acc cfg3 ->
+  let rec aux 
+    l_aux l_acc cfg3 =
        (if (l_aux = 0) then (l_acc,cfg3)
-       else (((aux (l_aux - 1)) (l_acc + 1)) ((ev_step0 2) cfg3)))) in 
+       else (((aux (l_aux - 1)) (l_acc + 1)) ((ev_step0 2) cfg3))) in 
     (((aux l) 0) cfg2)
 in
 
@@ -99,6 +98,6 @@ let rec enqueue n_r x2 cfg9 =
 in
 
 
-  (match (match (((enqueue prefn) (prefl1,prefl2)) (0,(0,0,0))) with 
+  (match (match (((enqueue n) (l1,l2)) (0,(0,0,0))) with 
           (x9,cfg12) -> ((dequeue x9) cfg12)) with 
          (e0,cfg11) -> ((asst_final0 cfg11) ; e0))
