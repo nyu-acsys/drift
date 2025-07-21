@@ -94,7 +94,6 @@ let proj_VE e = measure_call "proj_VE" (proj_VE e)
 let sat_equal_VE e = measure_call "sat_equal_VE" (sat_equal_VE e)
 let ev penv e = measure_call "ev" (AbstractEv.ev penv e)
 let leq_M m1 = measure_call "leq_M" (leq_M m1)
-let hashtblcopy = measure_call "Hashtbl.copy" (Hashtbl.copy)
 let eff0 = measure_call "eff0" (eff0)
 
 let get_effmap = function Effect ec -> ec | EffBot | EffTop -> StateMap.empty
@@ -342,91 +341,6 @@ and prop_v (v1: value_tt) (v2: value_tt): (value_tt * value_tt) = match v1, v2 w
     | _, _ -> if leq_V v1 v2 then v1, v2 else v1, join_V v1 v2
 
 let prop p = measure_call "prop" (prop p)
-
-let multiprop_io l_cs (l_ve1i, ve1o) (l_ve2i, ve2o) =
-  let pad_lvei l_vei =
-    if List.length l_cs < List.length l_vei then failwith "input1 list too big"
-    else if List.length l_cs > List.length l_vei then
-      begin print_endline "huh";
-      let padding = List.init (List.length l_vei - List.length l_cs) (fun _ -> TEBot) in
-      l_vei @ padding end
-    else l_vei  
-  in
-  let l_ve1i = pad_lvei l_ve1i in
-  let l_ve2i = pad_lvei l_ve2i in
-  let l_z = List.map get_trace_data l_cs in
-  let l_ve1i', l_ve2i', ve1o', ve2o' = 
-    let l_ve2i', l_ve1i' =
-      List.map (fun (ve1i, ve2i) ->
-        let opt_i = false
-                    || (ve1i <> TEBot && ve2i <> TEBot && eq_VE ve2i ve1i) in
-        if opt_i then ve2i, ve1i else 
-          prop ve2i ve1i 
-      ) (List.combine l_ve1i l_ve2i)
-      |> List.split
-    in
-    let opt_o = false
-                || (ve2o <> TEBot && ve1o <> TEBot && eq_VE ve1o ve2o)
-    in
-    let ve1o', ve2o' =
-      let l_v2i, l_e2i =
-        List.map (
-          function
-          | TEBot -> Bot, EffBot
-          | TypeAndEff (v, e) -> v, e
-          | TETop -> Top, EffTop
-        ) l_ve2i |> List.split
-      in
-      
-      let ve1o', ve2o' =
-        if (List.fold_left (fun res v2i -> if res then res else only_shape_V v2i) false l_v2i) then
-          TEBot, TEBot
-        else
-          if opt_o then ve1o, ve2o else
-            let prepare_veo veo = 
-              let vals = 
-                if io_effects () then 
-                  (List.combine l_z l_e2i)
-                  |> List.map (fun (z, e2i) -> get_effmap e2i |> get_input_eff_relations z)
-                  |> List.concat
-                else []
-              in
-              List.combine l_z l_v2i
-              |> List.fold_left (fun veo (z, v2i) -> arrow_VE z veo v2i) veo
-              |> fun ve -> (
-                if io_effects () then
-                  let l = List.map (fun v -> stren_VE_Eff ve (Relation v)) vals in
-                  List.fold_left (fun ve1 ve2 -> join_VE_Eff ve1 ve2) (List.hd l) (List.tl l)
-                else ve)
-            in
-            let ve1 = prepare_veo ve1o in
-            let ve2 = prepare_veo ve2o in
-            if ve_have_effects () && extract_eff ve1 |> is_bot_Eff && (extract_v ve1 |> only_shape_V |> not)
-            then TEBot, TEBot else prop ve1 ve2
-      in
-        
-      let ve2o' = 
-        if extract_v ve2o' |> only_shape_V |> not && extract_eff ve2o' |> is_bot_Eff
-          then temap (id, 
-            (fun _ -> 
-              List.combine l_z l_v2i
-              |> List.fold_left (fun e2i (z, v2i) ->
-                arrow_EffV z e2i v2i) (last_element l_e2i)
-              ))
-            ve2o'
-          else ve2o'
-      in
-
-      ve1o', ve2o'
-    in
-    let ve1o', ve2o' = 
-      if opt_o then ve1o', ve2o' else (join_VE ve1o ve1o', join_VE ve2o ve2o')
-    in
-    l_ve1i', l_ve2i', ve1o', ve2o'
-  in
-  (l_ve1i', ve1o'), (l_ve2i', ve2o')
-
-let multiprop_io p = measure_call "multiprop_io" (multiprop_io p)
         
 (* let lc_env env1 env2 = 
     Array.fold_left (fun a id -> if Array.mem id a then a else Array.append a [|id|] ) env2 env1 *)
@@ -922,7 +836,6 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                  let pr = Format.fprintf Format.std_formatter in
                  pr "\nLINE 645, App, te1: @[%a@]@." pr_value_and_eff te1); *)
               let ec' = extract_ec te1 in
-              let ec' = stren_Eff (Effect ec') ae1 |> get_effmap in (* TODO: try removing this line *)
               (* (if true then
                  let pr = Format.fprintf Format.std_formatter in
                  pr "@.LINE 688, App, loc: %s @,te1:@[%a@]@,@,ec':@[%a@]@,@,ae1:@[%a@]@."
@@ -1342,8 +1255,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             if is_bot_VE te1 then (m1', [tail1]) 
             else 
               begin
-                let ec' = find n1 m1 |> extract_ec in
-                let ec' = stren_Eff (Effect ec') ae1 |> get_effmap in (* TODO: try removing this line *)
+                let ec' = extract_ec te1 in
                 let m2, tails2 = step e2 env trace1 ec' ae1 assertion is_rec m1 prev_m in
                 let te1 = find n1 m2 in
                 let map, tails = 
@@ -1529,7 +1441,6 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
               ); *)
               let t_false = extrac_bool_V (extract_v te0) false |> meet_V ae0 in
               let ec' = extract_ec te0 in
-              let ec' = stren_Eff (Effect ec') ae0 |> get_effmap in (* TODO: try removing this line *)
               let ec_true = extrac_bool_V (extract_v te0) true |> stren_Eff (Effect ec') |> get_effmap in
               let ec_false = extrac_bool_V (extract_v te0) false |> stren_Eff (Effect ec') |> get_effmap in
               (* (if true then
@@ -2227,7 +2138,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
         | TEBot -> m
         | _ -> failwith ("Expected table/bot")
     in
-    update_and_step xlist px_te env' (hashtblcopy m) ae ec [], [create_empty_trace]
+    update_and_step xlist px_te env' m ae ec [], [create_empty_trace]
 
   | TupleLst (termlst,  _) ->
       (* (if !debug then
@@ -2263,7 +2174,6 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
             let m'' = update false ne tee' m' in
             let te' = add_tuple_item_V tep' tee' in
             let ec' = extract_ec tee in
-            (* let ec' = stren_Eff (Effect ec') ae |> get_effmap in *)
             te',  m'', ae', ec'
           ) (Tuple [], m, ae, ec) (zip_list tlist termlst) in
         let tep = TypeAndEff (tp, Effect ec') in
@@ -2288,7 +2198,6 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
         let tee = find ne m0' in
         let ae0 = get_ae_from_ve tee in
         let ec0 = extract_ec tee in
-        let ec0 = stren_Eff (Effect ec0) ae0 |> get_effmap in (* TODO: try removing this line *)
         let m0' = update false ne tee m0' in
         (* (if !debug && (get_label_snode ne = "EN: 95;(z18*)") then 
           Format.fprintf Format.std_formatter "Line 1370 %a" pr_exec_map m'
@@ -2828,7 +2737,7 @@ let rec fix stage env e (k: int) (m:exec_map_t) (assertion:bool): string * exec_
         (* else (ae, ec, pvs) *)
       ) env (Relation init_Env, AbstractEv.eff0 (), VarDefMap.empty) in
   let _ = AbstractEv.program_pre_vars := pre_vars_vs in
-  let m_t = hashtblcopy m in
+  let m_t = Hashtbl.copy m in
   (* (if !debug then
      let pr = Format.fprintf Format.std_formatter in
      pr "@.ae = @[%a@]" pr_value ae); *)
