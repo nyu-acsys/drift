@@ -52,8 +52,8 @@ assert = fun (q, (budget, stock)) -> q < 3 && budget >=0 && stock >=0 && stock >
 let main prefstock prefn prefbudget = 
   let ev = fun k0 q budget stock evx ->
              if (((q = 0) && (evx > 0)) && (evx < 3)) then k0 evx budget stock () 
-             else if ((q = 1) && (evx != 0)) then k0 q (budget - evx) stock () 
-                  else if ((q = 2) && (evx != 0)) then k0 q budget (stock - evx) () 
+             else if ((q = 1) && (evx <> 0)) then k0 q (budget - evx) stock () 
+                  else if ((q = 2) && (evx <> 0)) then k0 q budget (stock - evx) () 
                        else if (((q = 1) || (q = 2)) && (evx = 0)) then k0 0 budget stock () 
                             else k0 3 budget stock () in 
   let ev_assert = fun k1 q0 budget0 stock0 x0 ->

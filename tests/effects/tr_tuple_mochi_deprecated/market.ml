@@ -53,8 +53,8 @@ let ev_step0 evx cfg0 =
    (q,acc0) -> (match acc0 with 
                 (budget,stock) -> if (((q = 0) && (evx > 0)) && (evx < 3)) then (evx,(budget,stock))
                                   else
-                                    if ((q = 1) && (evx != 0)) then (q,((budget - evx),stock))
-                                    else if ((q = 2) && (evx != 0)) then (q,(budget,(stock - evx)))
+                                    if ((q = 1) && (evx <> 0)) then (q,((budget - evx),stock))
+                                    else if ((q = 2) && (evx <> 0)) then (q,(budget,(stock - evx)))
                                          else if (((q = 1) || (q = 2)) && (evx = 0)) then (0,(budget,stock))
                                               else (3,(budget,stock))))
 

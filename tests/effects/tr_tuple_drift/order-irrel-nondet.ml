@@ -61,7 +61,7 @@ let rec order d c b cfg2 =
   else (0,cfg2)) 
 
 
-let main (dd:int(*-:{v:Int | true}*)) (cc:int(*-:{cur_v:Int | cur_v = 0}*)) =
+let main (dd:int(*-:{v:Int | true}*)) (cc:int(*-:{v:Int | v > 0}*)) = 
   (match let bb = (if (nondet) then 1
                   else 0) in 
          ((((order dd) cc) bb) (0,0)) with 

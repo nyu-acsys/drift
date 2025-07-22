@@ -51,14 +51,14 @@ assert = fun (q, (budget, stock)) -> q < 3 && budget >=0 && stock >=0 && stock >
 let ev_step0 evx cfg0 =
   (match cfg0 with 
    (q,acc0) -> (match acc0 with 
-                (budget,stock) -> (if (((q = 0) && (evx > 0)) && (evx < 3)) then (evx,(budget,stock))
+                (budget,stock) -> if (((q = 0) && (evx > 0)) && (evx < 3)) then (evx,(budget,stock))
                                   else
-                                    (if ((q = 1) && (evx != 0)) then (q,((budget - evx),stock))
+                                    (if ((q = 1) && (evx <> 0)) then (q,((budget - evx),stock))
                                     else
-                                      (if ((q = 2) && (evx != 0)) then (q,(budget,(stock - evx)))
+                                      (if ((q = 2) && (evx <> 0)) then (q,(budget,(stock - evx)))
                                       else
                                         (if (((q = 1) || (q = 2)) && (evx = 0)) then (0,(budget,stock))
-                                        else (3,(budget,stock))))))))
+                                        else (3,(budget,stock)))))))
 
 
 let ev_step_asst0 cfg1 =
