@@ -488,6 +488,10 @@ module SemanticsDomain =
     and is_table (v:value_tt) = match v with
       | Table _ -> true
       | _ -> false
+    and has_table (v:value_tt) = match v with
+      | Table _ -> true
+      | Tuple u1 -> has_table_tuple u1
+      | _ -> false
     and is_bool_V (v:value_tt) = match v with
       | Relation r -> is_bool_R r
       | _ -> false
@@ -1326,6 +1330,8 @@ module SemanticsDomain =
       List.map (fun v -> bot_shape_VE v) u
     and get_tuple_list u = 
       u
+    and has_table_tuple u =
+      List.exists (fun ve -> extract_v ve |> has_table) u
     and get_vars_Tuple var u =
       List.map (fun i -> var^"."^(string_of_int i)) (List.length u |> first_n)
     and only_shape_Tuple u = 
@@ -1358,7 +1364,7 @@ module SemanticsDomain =
           Format.printf "\n";
           end
         ); *)
-        if extract_v v1 |> is_table then
+        if extract_v v1 |> has_table then
 
           let v = wid_VE v1 v2 in
           (* if get_label_snode n = "38" then

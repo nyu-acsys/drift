@@ -22,7 +22,7 @@ let domain = ref "Oct" (*Default: Octagon domain*)
 let use_threshold = ref false
 
 let trace_len = ref 0
-let quick_prop = ref false
+let quick_prop = ref true
 let if_part = ref false
 let effect_on = ref false
 let io_effect_on = ref false
@@ -44,7 +44,7 @@ let cmd_options_spec =
   (* ("-delay-wid", Arg.Int (fun s -> delay_wid := s), ": Set number of delay widening steps (depricated)"); *)
   (* ("-nar", Arg.String (fun s -> if s = "true" then narrow:=true else narrow:=false), ": Use narrowing procedure (depricated)"); *)
   ("-prop", Arg.String (fun s -> effect_on := true; prop_file := s), ": Automata specification of safety property for effect analysis");
-  ("-ev-trans", Arg.String (fun s -> if s = "true" then (ev_trans := true; quick_prop := false) else (ev_trans := false; quick_prop := true)), ": Translate Ev expressions");
+  ("-ev-trans", Arg.String (fun s -> if s = "true" then (ev_trans := true; quick_prop := true) else (ev_trans := false; quick_prop := true)), ": Translate Ev expressions");
   ("-io-effects", Arg.String (fun s -> if (s = "true" && !effect_on && (not !ev_trans)) then io_effect_on := true else io_effect_on := false), ": Input-output relations for effects for greater precision");  
   ("-cps-convert", Arg.String (fun s -> if s = "true" then (convert_to_cps:=true; ev_trans := false) 
                                     else convert_to_cps:=false), ": Convert prog to CPS");
