@@ -953,6 +953,12 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
         | TypeAndEff (v, e) -> v, e
         | TETop -> Top, EffTop 
       in
+      (if !debug then
+        let pr = Format.fprintf Format.std_formatter in
+        pr "@.LINE 721, App, veo: @[%a@]@,@,vi: @[%a@]@."
+          pr_value_and_eff veo
+          pr_value vi
+      );
       arrow_VE z veo vi
       |> fun ve -> (
         if io_effects () then
@@ -1024,7 +1030,18 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                         te_arg
                         |> temap (id, fun eff -> arrow_EffV (get_trace_data cs_trace) eff (extract_v te_arg)) 
                       in
-                      let prepare_veo'' = fun ve -> prepare_veo (get_trace_data cs_trace) te_arg' (prepare_veo' ve) in
+                      let prepare_veo'' = 
+                        fun ve -> 
+                          let ve' = (prepare_veo' ve) in
+                          (if !debug then
+                            let pr = Format.fprintf Format.std_formatter in
+                            pr "@.LINE 721, App, cs_trace: %s,@,ve': @[%a@]@,ae_arg: @[%a@]@.,te_arg': @[%a@]@."
+                              (loc e_arg)
+                              pr_value_and_eff ve'
+                              pr_value ae_arg
+                              pr_value_and_eff te_arg'
+                          );
+                          prepare_veo (get_trace_data cs_trace) te_arg' ve' in
 
                       match termlist with
                       | [] ->
@@ -1047,6 +1064,12 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                             pr_value_and_eff te_arg'
                             pr_fout fout_temp
                         );
+                        (if !debug then
+                          let pr = Format.fprintf Format.std_formatter in
+                          pr "@.LINE 721, App, cs_trace: %s,@,ae_arg: @[%a@]@."
+                            (loc e_arg)
+                            pr_value ae_arg
+                        );
 
                         let te_fun_temp = 
                           Table (construct_table cs_trace (te_arg', fout_temp) (get_Relation ae_arg)) |> init_VE_v
@@ -1068,6 +1091,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                             (get_trace_data cs_trace)
                             pr_value_and_eff te_fun_temp
                         );
+                        if only_shape_VE te_fun_temp then m_arg', [] else
                         let te_fun', te_fun_temp' = 
                           prop te_fun te_fun_temp
                         in
@@ -1124,6 +1148,7 @@ let rec step term (env: env_t) (trace: trace_t) (ec: effect_t) (ae: value_tt) (a
                             pr_value_and_eff te_fun
                             pr_value_and_eff te_fun_temp
                         ); *)
+                        if only_shape_VE te_fun_temp then m_arg', [] else
                         let te_fun', te_fun_temp' = 
                           prop te_fun te_fun_temp
                         in
