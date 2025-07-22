@@ -84,7 +84,7 @@ let string_of_op = function
   | Modc  (* mod const *) -> "mod"
   | Minus (* - *) -> "-"
   | Eq    (* = *) -> "="
-  | Ne    (* <> *) -> "<>"
+  | Ne    (* <> *) -> "!="
   | Lt    (* < *) -> "<"
   | Gt    (* > *) -> ">"
   | Le    (* <= *) -> "<="
