@@ -71,7 +71,7 @@ sub run2tool {
     return 'Tuple+Rethfl' if $rdName eq 'default.rethflbenchmarks';
     return 'CPS+COaRRCaml' if $rdName eq 'default.mochibenchmarks';
     return 'Tuple+Mochi' if $rdName eq 'default.realmochibenchmarks';
-    if($rdName =~ /NOTE(.*)-TL(.*)-TP(.*)-TH(.*)-DM(.*)-IO([^-]+)-TR([^\.]*)(\.effects)?/) {
+    if($rdName =~ /NOTE(.*)-TL(.*)-TP(.*)-TH(.*)-DM(.*)-IO([^-]+)-TR([^\.]*)(\.(ev)?drifttasks)?/) {
         my $tp = ($3 eq 'true' ? 'T' : 'F');
         my $th = ($4 eq 'true' ? 'T' : 'F');
         my $io = ($6 eq 'true' ? 'T' : 'F');
@@ -91,7 +91,7 @@ my %dm2domain = (
 );
 sub cfg2cmd {
     my ($subdir,$benchname, $cfg) = @_;
-    if ($cfg =~ /TL([^-]+)-TP([^-]+)-TH([^-]+)-DM([^-]+)-IO([^-]+)-TR([^-]+)\.effects/) {
+    if ($cfg =~ /TL([^-]+)-TP([^-]+)-TH([^-]+)-DM([^-]+)-IO([^-]+)-TR([^-]+)\.(ev)?drifttasks/) {
         my ($tl,$tp,$th,$dm,$io,$tr) = ($1,$2,$3,$4,$5,$6);
         return join(' ', (
             './drift.exe',
@@ -180,6 +180,8 @@ sub parseResultsFile {
             next if $bench =~ /higher-order-disj/;
             next if $bench =~ /traffic/;
             next if $bench =~ /kobayashi/;
+            next if $bench =~ /intro-ord3/;
+            next if $bench =~ /num_evens/;
             $bench =~ s/cps_// if $isCoarMochi;
             $bench =~ s/\.y?ml$//;
             # traverse the columns 
