@@ -32,7 +32,8 @@ class Tool(benchexec.tools.template.BaseTool2):
     def cmdline(self, executable, options, task, rlimits):
         #assert len(list(task.input_files)) == 1
         # -use-temp so it doesn't write to the (read-only) benchexec mounted filesystem
-        cmd = [executable] + options + ["-use-temp"] + [task.single_input_file]
+        # 20250727 - no longer "["-use-temp"] + " because not supported in Mochi anymore
+        cmd = [executable] + options + [task.single_input_file]
         if task.property_file:
             print ("mochi.py: todo: cmdline property\n")
             cmd += ["-eff-aut", task.property_file]

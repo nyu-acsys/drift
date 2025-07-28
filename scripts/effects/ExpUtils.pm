@@ -171,11 +171,13 @@ sub parseResultsFile {
             #die Dumper(\@runSets) if $isDriftWrap;
 
         } else {
+            print;
             chomp($_);
             # trim off the first column, saving it as the bench name
             my ($bench,@RCWs) = split /\t/, $_;
-            # trim another column for Drift
-            shift @RCWs unless ($isCoarMochi || $isRealMochi || $isRethfl || $isDriftWrap);
+            # trim another column if it is a property
+            shift @RCWs if $RCWs[0] =~ /yml/;
+            # shift @RCWs unless ($isCoarMochi || $isRealMochi || $isRethfl || $isDriftWrap);
             # ignore some benchmarks
             next if $bench =~ /higher-order-disj/;
             next if $bench =~ /traffic/;
@@ -192,6 +194,14 @@ sub parseResultsFile {
                 $d->{$bench}->{$runSets[$i]}->{mem} = 'missing-BE'; # $RCWMs[$i+3];
                 $d->{$bench}->{$runSets[$i]}->{rd}  = $runSets[$i];
                 $d->{$bench}->{$runSets[$i]}->{bench}  = $bench;
+                # sanity check
+                die "parsing error: runset $runSets[$i] no CPU.".Dumper(\@RCWs)
+                   unless $RCWs[$i+1] =~ /\d\.\d/;
+                die "parsing error: runset $runSets[$i] no Wall.".Dumper(\@RCWs)
+                   unless $RCWs[$i+2] =~ /\d\.\d/;
+                die "parsing error: runset $runSets[$i] no result.".Dumper(\@RCWs)
+                   unless $RCWs[$i] =~ /unknown|TIMEOUT|OUT OF MEMORY|ERROR|true/;
+                   print Dumper($d->{$bench}->{$runSets[$i]});
             }
         }
     }
