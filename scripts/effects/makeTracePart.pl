@@ -6,7 +6,7 @@ use Data::Dumper;
 use ExpUtils qw/parse_results_files compute_best_drift newBest/;
 
 if (@ARGV == 0) {
-    die "usage: makeTracePart.pl results/results.2025-03-24_09-39-21.table.csv\n";
+    die "usage: makeTracePart.pl (drift results table.csv) (evdrift results table.csv)\n";
 }
 my $VERBOSE = 0;
 
@@ -62,9 +62,9 @@ foreach my $b (sort keys %$d) {
     $tt =~ s/negated/neg/;
     print TP "$ct. \\texttt{\\scriptsize $tt} "; ++$ct;
     #warn "tool rd: ".Dumper($b,$d->{$b},$d->{$b}->{BEST_TRANS},$d->{$b}->{BEST_TRANS}->{rd});
-    # warn "rd1: $d->{$b}->{BEST_TPON_DRIFT}->{rd}\n";
-    # warn "rd2: $d->{$b}->{BEST_TPOFF_EVDRIFT}->{rd}\n";
-    # warn "rd3: $d->{$b}->{BEST_TPON_EVDRIFT}->{rd}\n";
+     warn "rd1: $d->{$b}->{BEST_TPON_DRIFT}->{rd}\n";
+     warn "rd2: $d->{$b}->{BEST_TPOFF_EVDRIFT}->{rd}\n";
+     warn "rd3: $d->{$b}->{BEST_TPON_EVDRIFT}->{rd}\n";
     # Best Drift+TP
     print TP sprintf("& %-5s & %3.1f & %s ", # & %3.1f 
            cleanRes($d->{$b}->{BEST_TPON_DRIFT}->{res}),

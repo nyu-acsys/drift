@@ -27,10 +27,13 @@ best_config_csvs:
 	@echo "  "
 	@echo "    3. Copy the resulting best_configs_[ev]drift.csvs into the root folder."
 	@echo "  "
+	@echo "    4. Go into scripts/effects/ and run:"
+	@echo "  "
+	@echo "            perl makeTracePart.pl (names of the TWO generated .table.csv file above) "
+	@echo "  "
+	@echo "    5. Copy the resulting tp(on|off)_best_configs_[ev]drift.csvs into the root folder."
+	@echo "  "
  
-best_trace_part_configs:
-	perl makeTracePart.pl `ls -t results/results.202*.table.csv | head -n 1`
-
 precise:
 	perl makeYamls.pl
 	benchexec benchmark-driftwrapper.xml @benchexec.cfg
