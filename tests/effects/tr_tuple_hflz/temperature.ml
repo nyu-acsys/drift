@@ -11,14 +11,8 @@ MoCHi: Model Checker for Higher-Order Programs
 */
 
 %HES
-MAIN_21  =v
-  (arg2_187 <= 0 \/ arg3_245 >= 0)
-  \/ F arg1_286 0 0
-      (\x4_282.
-        \x41_283.
-         \x42_284.
-          x4_282 arg2_187 x41_283 x42_284
-           (\p0_182.\p10_183.\p11_184.p0_182 arg3_245 p10_183 p11_184 (\main0_275.\main10_276.\main11_277.true))).
+MAIN_10  =v
+  (arg2_100 <= 0 \/ arg3_122 >= 0) \/ F arg1_127 arg2_100 arg3_122 0 0 (\main0_123.\main10_124.\main11_125.true).
 EV_STEP0 evx cfg00 cfg01 k =v
   ((cfg00 != 0 \/ evx <= 0) \/ k 1 evx)
   /\ (cfg00 = 0 /\ evx > 0
@@ -28,55 +22,22 @@ EV_STEP0 evx cfg00 cfg01 k =v
                 /\ (cfg00 = 1 /\ evx > cfg01
                     \/ ((cfg00 != 2 \/ evx >= cfg01) \/ k 2 evx) /\ (cfg00 = 2 /\ evx < cfg01 \/ k 3 evx)))).
 EV_STEP_ASST0 cfg10 cfg11 k =v (cfg10 >= 3 \/ k true) /\ cfg10 < 3.
-F x cfg20 cfg21 k =v
-  k
-   (\pos_172.
-     \cfg30_173.
-      \cfg31_174.
-       \k_175.
-        k_175
-         (\neg_238.
-           \cfg40_239.
-            \cfg41_240.
-             \k_241.
-              Forall
-               (\n_357.
-                 (n_357 != 0
-                  \/ EV_STEP0 pos_172 cfg40_239 cfg41_240
-                      (\x0_297.
-                        \x1_298.
-                         EV_STEP_ASST0 x0_297 x1_298
-                          (\u_200.
-                            (x > 0 \/ k_241 0 x0_297 x1_298)
-                            /\ (x <= 0
-                                \/ F (x - 2) x0_297 x1_298
-                                    (\x2_324.
-                                      \x21_325.
-                                       \x22_326.
-                                        x2_324 (pos_172 + 1) x21_325 x22_326
-                                         (\x3_229.
-                                           \x31_230.
-                                            \x32_231.
-                                             x3_229 (neg_238 - 1) x31_230 x32_231
-                                              (\p01_272.\p101_273.\p111_274.k_241 0 p101_273 p111_274)))))))
-                 /\ (n_357 = 0
-                     \/ EV_STEP0 neg_238 cfg40_239 cfg41_240
-                         (\x0_309.
-                           \x1_310.
-                            EV_STEP_ASST0 x0_309 x1_310
-                             (\u_213.
-                               (x > 0 \/ k_241 0 x0_309 x1_310)
-                               /\ (x <= 0
-                                   \/ F (x - 2) x0_309 x1_310
-                                       (\x2_324.
-                                         \x21_325.
-                                          \x22_326.
-                                           x2_324 (pos_172 + 1) x21_325 x22_326
-                                            (\x3_229.
-                                              \x31_230.
-                                               \x32_231.
-                                                x3_229 (neg_238 - 1) x31_230 x32_231
-                                                 (\p01_272.\p101_273.\p111_274.k_241 0 p101_273 p111_274)))))))))
-         cfg30_173 cfg31_174)
-   cfg20 cfg21.
+F x pos neg cfg20 cfg21 k =v
+  Forall
+   (\n_157.
+     (n_157 != 0
+      \/ EV_STEP0 pos cfg20 cfg21
+          (\cfg40_134.
+            \cfg41_135.
+             EV_STEP_ASST0 cfg40_134 cfg41_135
+              (\x1_109.
+                (x > 0 \/ k 0 cfg40_134 cfg41_135) /\ (x <= 0 \/ F (x - 2) (pos + 1) (neg - 1) cfg40_134 cfg41_135 k))))
+     /\ (n_157 = 0
+         \/ EV_STEP0 neg cfg20 cfg21
+             (\cfg30_142.
+               \cfg31_143.
+                EV_STEP_ASST0 cfg30_142 cfg31_143
+                 (\x1_118.
+                   (x > 0 \/ k 0 cfg30_142 cfg31_143)
+                   /\ (x <= 0 \/ F (x - 2) (pos + 1) (neg - 1) cfg30_142 cfg31_143 k))))).
 Forall p      =v ∀n. p n.

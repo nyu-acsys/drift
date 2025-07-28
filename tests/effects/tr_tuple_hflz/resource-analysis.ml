@@ -11,13 +11,11 @@ MoCHi: Model Checker for Higher-Order Programs
 */
 
 %HES
-MAIN_10  =v
-  (arg1_98 <= arg2_62 \/ arg2_62 < 0)
-  \/ EV_STEP_ASST0 0 (0 + arg1_98) (\u_59.SPEND arg2_62 0 (0 + arg1_98) (\r_76.\r1_77.\r2_78.true)).
+MAIN_8  =v
+  (arg1_63 <= arg2_46 \/ arg2_46 < 0)
+  \/ EV_STEP_ASST0 0 (0 + arg1_63) (\x_43.SPEND arg2_46 0 (0 + arg1_63) (\main0_54.\main10_55.\main11_56.true)).
 EV_STEP_ASST0 cfg10 cfg11 k =v (cfg11 < 0 \/ k true) /\ cfg11 >= 0.
 SPEND n cfg20 cfg21 k =v
   EV_STEP_ASST0 0 (cfg21 + (-1))
-   (\u_69.
-     (n > 0 \/ k 0 0 (cfg21 + (-1)))
-     /\ (n <= 0 \/ SPEND (n - 1) 0 (cfg21 + (-1)) (\p0_86.\p10_87.\p11_88.k 0 p10_87 p11_88))).
+   (\x_53.(n > 0 \/ k 0 0 (cfg21 + (-1))) /\ (n <= 0 \/ SPEND (n - 1) 0 (cfg21 + (-1)) k)).
 Forall p      =v ∀n. p n.

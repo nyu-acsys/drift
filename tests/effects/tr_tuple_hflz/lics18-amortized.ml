@@ -11,120 +11,46 @@ MoCHi: Model Checker for Higher-Order Programs
 */
 
 %HES
-MAIN_33  =v
-  (arg1_693 < 0 \/ (arg2_363 < 0 \/ arg3_469 < 0))
-  \/ ENQUEUE arg2_363 arg3_469 arg1_693 arg1_693 0 0 0 0
-      (\x10_687.
-        \x101_688.
-         \x102_689.
-          \x103_690.
-           \x104_691.
-            x10_687 arg2_363 arg3_469 x101_688 x102_689 x103_690 x104_691
-             (\x11_355.
-               \x111_356.
-                \x112_357.
-                 \x113_358.
-                  \x114_359.
-                   \x115_360.
-                    DEQUEUE arg2_363 arg3_469 arg1_693 x11_355 x111_356
-                     (\x_465.
-                       x_465 x112_357 x113_358 x114_359 x115_360
-                        (\p0_588.
-                          \p10_589.
-                           \p110_590.
-                            \p111_591.
-                             \p112_592.
-                              (p10_589 = 0 /\ p112_592 = p110_590 + arg3_469) /\ p112_592 = p111_591 - arg2_363)))).
-AUX cfg90 cfg910 cfg911 cfg912 p0 p1 prefl1 prefl2 prefn l cfg50 cfg510 cfg511 cfg512 k =v
-  k
-   (\l1_652.
-     \cfg60_653.
-      \cfg610_654.
-       \cfg611_655.
-        \cfg612_656.
-         \k_657.
-          (l != 0 \/ k_657 l1_652 cfg60_653 cfg610_654 cfg611_655 cfg612_656)
-          /\ (l = 0
-              \/ EV_STEP0 prefl1 prefl2 prefn 2 cfg60_653 cfg610_654 cfg611_655 cfg612_656
-                  (\x0_295.
-                    \x10_296.
-                     \x11_297.
-                      \x12_298.
-                       AUX cfg90 cfg910 cfg911 cfg912 p0 p1 prefl1 prefl2 prefn (l - 1) x0_295 x10_296 x11_297 x12_298
-                        (\x3_388.
-                          \x31_389.
-                           \x32_390.
-                            \x33_391.
-                             \x34_392.
-                              x3_388 (l1_652 + 1) x31_389 x32_390 x33_391 x34_392
-                               (\p01_498.
-                                 \p10_499.
-                                  \p110_500.\p111_501.\p112_502.k_657 p01_498 p10_499 p110_500 p111_501 p112_502)))))
-   cfg50 cfg510 cfg511 cfg512.
-DEQUEUE prefl1 prefl2 prefn p0 p1 k =v
-  k
-   (\cfg90_663.
-     \cfg910_664.
-      \cfg911_665.
-       \cfg912_666.
-        \k_667.
-         (p0 <= 0
-          \/ EV_STEP0 prefl1 prefl2 prefn 1 cfg90_663 cfg910_664 cfg911_665 cfg912_666
-              (\x0_309.
-                \x10_310.
-                 \x11_311.
-                  \x12_312.
-                   DEQUEUE prefl1 prefl2 prefn (p0 - 1) p1
-                    (\x_407.
-                      x_407 x0_309 x10_310 x11_311 x12_312
-                       (\r_517.\r1_518.\r2_519.\r3_520.\r4_521.k_667 0 r1_518 r2_519 r3_520 r4_521))))
-         /\ (p0 > 0
-             \/ ((p0 != 0 \/ p1 <= 0)
-                 \/ AUX cfg90_663 cfg910_664 cfg911_665 cfg912_666 p0 p1 prefl1 prefl2 prefn p1 cfg90_663 cfg910_664
-                     cfg911_665 cfg912_666
-                     (\r_422.
-                       \r1_423.
-                        \r2_424.
-                         \r3_425.
-                          \r4_426.
-                           r_422 0 r1_423 r2_424 r3_425 r4_426
-                            (\x5_540.
-                              \x51_541.
-                               \x52_542.
-                                \x53_543.
-                                 \x54_544.
-                                  DEQUEUE prefl1 prefl2 prefn x5_540 0
-                                   (\x_616.x_616 x51_541 x52_542 x53_543 x54_544 k_667))))
-                /\ (p0 = 0 /\ p1 > 0 \/ k_667 0 cfg90_663 cfg910_664 cfg911_665 cfg912_666))).
-ENQUEUE prefl1 prefl2 prefn n cfg130 cfg1310 cfg1311 cfg1312 k =v
-  k
-   (\p0_676.
-     \p1_677.
-      \cfg140_678.
-       \cfg1410_679.
-        \cfg1411_680.
-         \cfg1412_681.
-          \k_682.
-           (n != 0 \/ k_682 p0_676 p1_677 cfg140_678 cfg1410_679 cfg1411_680 cfg1412_681)
-           /\ (n = 0
-               \/ EV_STEP0 prefl1 prefl2 prefn 0 cfg140_678 cfg1410_679 cfg1411_680 cfg1412_681
-                   (\x0_343.
-                     \x10_344.
-                      \x11_345.
-                       \x12_346.
-                        ENQUEUE prefl1 prefl2 prefn (n - 1) x0_343 x10_344 x11_345 x12_346
-                         (\x8_446.
-                           \x81_447.
-                            \x82_448.
-                             \x83_449.
-                              \x84_450.
-                               x8_446 p0_676 (p1_677 + 1) x81_447 x82_448 x83_449 x84_450
-                                (\p00_568.
-                                  \p01_569.
-                                   \p10_570.
-                                    \p110_571.
-                                     \p111_572.\p112_573.k_682 p00_568 p01_569 p10_570 p110_571 p111_572 p112_573)))))
-   cfg130 cfg1310 cfg1311 cfg1312.
+MAIN_16  =v
+  ENQUEUE arg2_163 arg3_183 arg1_259 arg1_259 arg2_163 arg3_183 0 0 0 0
+   (\x9_252.
+     \x91_253.
+      \x92_254.
+       \x93_255.
+        \x94_256.
+         \x95_257.
+          DEQUEUE arg2_163 arg3_183 arg1_259 x9_252 x91_253 x92_254 x93_255 x94_256 x95_257
+           (\p0_156.
+             \p10_157.
+              \p110_158.
+               \p111_159.\p112_160.(p10_157 = 0 /\ p112_160 = p110_158 + arg3_183) /\ p112_160 = p111_159 - arg2_163)).
+AUX cfg20 cfg210 cfg211 cfg212 l prefl1 prefl2 prefn l1 l2 cfg30 cfg310 cfg311 cfg312 k =v
+  (l1 != 0 \/ k l2 cfg30 cfg310 cfg311 cfg312)
+  /\ (l1 = 0
+      \/ EV_STEP0 prefl1 prefl2 prefn 2 cfg30 cfg310 cfg311 cfg312
+          (\x0_200.
+            \x10_201.
+             \x11_202.
+              \x12_203.
+               AUX cfg20 cfg210 cfg211 cfg212 l prefl1 prefl2 prefn (l1 - 1) (l2 + 1) x0_200 x10_201 x11_202 x12_203 k)).
+DEQUEUE prefl1 prefl2 prefn x30 x31 cfg50 cfg510 cfg511 cfg512 k =v
+  (x30 <= 0
+   \/ EV_STEP0 prefl1 prefl2 prefn 1 cfg50 cfg510 cfg511 cfg512
+       (\x0_214.\x10_215.\x11_216.\x12_217.DEQUEUE prefl1 prefl2 prefn (x30 - 1) x31 x0_214 x10_215 x11_216 x12_217 k))
+  /\ (x30 > 0
+      \/ ((x30 != 0 \/ x31 <= 0)
+          \/ AUX cfg50 cfg510 cfg511 cfg512 x31 prefl1 prefl2 prefn x31 0 cfg50 cfg510 cfg511 cfg512
+              (\x5_228.
+                \x51_229.
+                 \x52_230.\x53_231.\x54_232.DEQUEUE prefl1 prefl2 prefn x5_228 0 x51_229 x52_230 x53_231 x54_232 k))
+         /\ (x30 = 0 /\ x31 > 0 \/ k 0 cfg50 cfg510 cfg511 cfg512)).
+ENQUEUE prefl1 prefl2 prefn n x20 x21 cfg90 cfg910 cfg911 cfg912 k =v
+  (n != 0 \/ k x20 x21 cfg90 cfg910 cfg911 cfg912)
+  /\ (n = 0
+      \/ EV_STEP0 prefl1 prefl2 prefn 0 cfg90 cfg910 cfg911 cfg912
+          (\x0_244.
+            \x10_245.
+             \x11_246.\x12_247.ENQUEUE prefl1 prefl2 prefn (n - 1) x20 (x21 + 1) x0_244 x10_245 x11_246 x12_247 k)).
 EV_STEP0 prefl1 prefl2 prefn evx cfg00 cfg010 cfg011 cfg012 k =v
   ((cfg00 != 0 \/ evx != 0) \/ k cfg00 (cfg010 + 1) cfg011 cfg012)
   /\ (cfg00 = 0 /\ evx = 0

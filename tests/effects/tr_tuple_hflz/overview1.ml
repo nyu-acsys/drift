@@ -11,21 +11,9 @@ MoCHi: Model Checker for Higher-Order Programs
 */
 
 %HES
-MAIN_11  =v
-  EV_STEP0 arg1_129 0 0
-   (\x0_126.
-     \x1_127.
-      BUSY arg2_93 x0_126 x1_127
-       (\x11_88.\x12_89.\x13_90.x11_88 arg1_129 x12_89 x13_90 (\x2_101.\x21_102.\x22_103.x21_102 = 2))).
-BUSY n cfg20 cfg21 k =v
-  k
-   (\t_119.
-     \cfg30_120.
-      \cfg31_121.
-       \k_122.
-        (n > 0 \/ EV_STEP0 (0 - t_119) cfg30_120 cfg31_121 (\x0_71.\x1_72.k_122 0 x0_71 x1_72))
-        /\ (n <= 0 \/ BUSY (n - 1) cfg30_120 cfg31_121 (\r_80.\r1_81.\r2_82.r_80 t_119 r1_81 r2_82 k_122)))
-   cfg20 cfg21.
+MAIN_10  =v EV_STEP0 arg1_82 0 0 (\x0_79.\x1_80.BUSY arg2_58 arg1_82 x0_79 x1_80 (\r_53.\r1_54.\r2_55.r1_54 = 2)).
+BUSY n t cfg20 cfg21 k =v
+  (n > 0 \/ EV_STEP0 (0 - t) cfg20 cfg21 (\x0_74.\x1_75.k 0 x0_74 x1_75)) /\ (n <= 0 \/ BUSY (n - 1) t cfg20 cfg21 k).
 EV_STEP0 evx cfg00 cfg01 k =v
   (cfg00 != 0 \/ k 1 evx)
   /\ (cfg00 = 0

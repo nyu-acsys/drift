@@ -11,34 +11,35 @@ MoCHi: Model Checker for Higher-Order Programs
 */
 
 %HES
-MAIN_13  =v
-  arg1_161 <= 0
-  \/ REENT arg1_161 0 0
-      (\r_157.\r1_158.\r2_159.EV_STEP0 (-1) r1_158 r2_159 (\x0_100.\x1_101.EV_STEP_ASST0 x0_100 x1_101 (\u_130.true))).
+MAIN_11  =v
+  REENT arg1_148 0 0
+   (\r_86.
+     \r1_87.
+      \r2_88.EV_STEP0 (-1) r1_87 r2_88 (\cfg100_115.\cfg101_116.EV_STEP_ASST0 cfg100_115 cfg101_116 (\x_132.true))).
 EV_STEP0 evx cfg00 cfg01 k =v
   ((cfg00 != 0 \/ cfg01 + evx < 0) \/ k cfg00 (cfg01 + evx))
   /\ (cfg00 = 0 /\ cfg01 + evx >= 0
       \/ ((cfg00 != 0 \/ cfg01 + evx >= 0) \/ k 1 (cfg01 + evx)) /\ (cfg00 = 0 /\ cfg01 + evx < 0 \/ k cfg00 cfg01)).
 EV_STEP_ASST0 cfg10 cfg11 k =v (cfg10 != 0 \/ k true) /\ cfg10 = 0.
-K_REENT_P cfg20 cfg21 d u x0 x1 k x =v
-  (x = 0
-   \/ REENT (d - 1) x0 x1
-       (\x2_152.
-         \x21_153.
-          \x22_154.
-           EV_STEP0 (-1) x21_153 x22_154 (\x01_93.\x11_94.EV_STEP_ASST0 x01_93 x11_94 (\u1_122.k true x01_93 x11_94))))
-  /\ (x != 0 \/ k true x0 x1).
+K_REENT cfg20 cfg21 cfg30 cfg31 d x k x1 =v
+  (x1 = 0
+   \/ REENT (d - 1) cfg30 cfg31
+       (\r_144.
+         \r1_145.
+          \r2_146.
+           EV_STEP0 (-1) r1_145 r2_146
+            (\cfg60_82.\cfg61_83.EV_STEP_ASST0 cfg60_82 cfg61_83 (\x2_109.k x2_109 cfg60_82 cfg61_83))))
+  /\ (x1 != 0 \/ k true cfg30 cfg31).
 REENT d cfg20 cfg21 k =v
   EV_STEP0 1 cfg20 cfg21
-   (\x0_174.
-     \x1_175.
-      EV_STEP_ASST0 x0_174 x1_175
-       (\u_108.
+   (\cfg30_153.
+     \cfg31_154.
+      EV_STEP_ASST0 cfg30_153 cfg31_154
+       (\x_95.
          (d <= 0
           \/ Forall
-              (\x_169.
-                (\f_189.(x_169 != 0 \/ f_189 1) /\ (x_169 = 0 \/ f_189 0))
-                 (\x_188.
-                   K_REENT_P cfg20 cfg21 d u_108 x0_174 x1_175 (\p0_138.\p10_139.\p11_140.k true p10_139 p11_140) x_188)))
-         /\ (d > 0 \/ K_REENT_P cfg20 cfg21 d u_108 x0_174 x1_175 (\p0_138.\p10_139.\p11_140.k true p10_139 p11_140) 0))).
+              (\x1_124.
+                (\f_159.(x1_124 != 0 \/ f_159 1) /\ (x1_124 = 0 \/ f_159 0))
+                 (\x_158.K_REENT cfg20 cfg21 cfg30_153 cfg31_154 d x_95 k x_158)))
+         /\ (d > 0 \/ K_REENT cfg20 cfg21 cfg30_153 cfg31_154 d x_95 k 0))).
 Forall p      =v ∀n. p n.

@@ -11,26 +11,15 @@ MoCHi: Model Checker for Higher-Order Programs
 */
 
 %HES
-MAIN_22  =v
-  (arg1_597 < 0 \/ arg2_306 < 0)
-  \/ EV_STEP0 arg1_597 arg2_306 arg1_597 0 0 0
-      (\x0_593.
-        \x10_594.
-         \x11_595.
-          EV_STEP_ASST0 arg1_597 arg2_306 x0_593 x10_594 x11_595
-           (\u_303.
-             INSTREE arg1_597 arg2_306 0 x0_593 x10_594 x11_595
-              (\x111_350.
-                \x112_351.
-                 \x113_352.
-                  \x114_353.
-                   x111_350 arg2_306 x112_351 x113_352 x114_353
-                    (\x12_402.
-                      \x121_403.
-                       \x122_404.
-                        \x123_405.
-                         x12_402 arg1_597 x121_403 x122_404 x123_405
-                          (\x101_441.\x102_442.\x103_443.\x104_444.x104_444 = (arg1_597 - x103_443) + 1))))).
+MAIN_14  =v
+  EV_STEP0 arg1_374 arg2_211 arg1_374 0 0 0
+   (\cfg160_370.
+     \cfg1610_371.
+      \cfg1611_372.
+       EV_STEP_ASST0 arg1_374 arg2_211 cfg160_370 cfg1610_371 cfg1611_372
+        (\x_208.
+          INSTREE arg1_374 arg2_211 0 arg2_211 arg1_374 cfg160_370 cfg1610_371 cfg1611_372
+           (\p0_235.\p10_236.\p110_237.\p111_238.p111_238 = (arg1_374 - p110_237) + 1))).
 EV_STEP0 prefh prefj evx cfg00 cfg010 cfg011 k =v
   (cfg00 != 0 \/ k 1 cfg010 evx)
   /\ (cfg00 = 0
@@ -41,51 +30,25 @@ EV_STEP0 prefh prefj evx cfg00 cfg010 cfg011 k =v
                     \/ ((cfg00 != 1 \/ evx != 3) \/ k 2 cfg010 (cfg011 + 1))
                        /\ (cfg00 = 1 /\ evx = 3 \/ k 3 cfg010 cfg011)))).
 EV_STEP_ASST0 prefh prefj cfg10 cfg110 cfg111 k =v (cfg10 >= 3 \/ k true) /\ cfg10 < 3.
-INSTREE prefh prefj i cfg70 cfg710 cfg711 k =v
-  k
-   (\k_585.
-     \cfg80_586.
-      \cfg810_587.
-       \cfg811_588.
-        \k1_589.
-         k1_589
-          (\l_292.
-            \cfg90_293.
-             \cfg910_294.
-              \cfg911_295.
-               \k1_296.
-                (i < k_585
-                 \/ EV_STEP0 prefh prefj 3 cfg90_293 cfg910_294 cfg911_295
-                     (\x0_322.
-                       \x10_323.
-                        \x11_324.
-                         EV_STEP_ASST0 prefh prefj x0_322 x10_323 x11_324 (\u_372.k1_296 0 x0_322 x10_323 x11_324)))
-                /\ (i >= k_585
-                    \/ EV_STEP0 prefh prefj 2 cfg90_293 cfg910_294 cfg911_295
-                        (\x0_340.
-                          \x10_341.
-                           \x11_342.
-                            EV_STEP_ASST0 prefh prefj x0_340 x10_341 x11_342
-                             (\u_391.
-                               EV_STEP0 prefh prefj 1 x0_340 x10_341 x11_342
-                                (\x01_425.
-                                  \x101_426.
-                                   \x111_427.
-                                    EV_STEP_ASST0 prefh prefj x01_425 x101_426 x111_427
-                                     (\u1_467.
-                                       INSTREE prefh prefj (i + 1) x01_425 x101_426 x111_427
-                                        (\x5_540.
-                                          \x51_541.
-                                           \x52_542.
-                                            \x53_543.
-                                             x5_540 k_585 x51_541 x52_542 x53_543
-                                              (\x6_574.
-                                                \x61_575.
-                                                 \x62_576.
-                                                  \x63_577.
-                                                   x6_574 (l_292 - 1) x61_575 x62_576 x63_577
-                                                    (\p0_278.
-                                                      \p10_279.\p110_280.\p111_281.k1_296 0 p10_279 p110_280 p111_281)))))))))
-          cfg80_586 cfg810_587 cfg811_588)
-   cfg70 cfg710 cfg711.
+INSTREE prefh prefj i k l cfg60 cfg610 cfg611 k1 =v
+  (i < k
+   \/ EV_STEP0 prefh prefj 3 cfg60 cfg610 cfg611
+       (\cfg130_352.
+         \cfg1310_353.
+          \cfg1311_354.
+           EV_STEP_ASST0 prefh prefj cfg130_352 cfg1310_353 cfg1311_354
+            (\x_188.k1 (l + 1) cfg130_352 cfg1310_353 cfg1311_354)))
+  /\ (i >= k
+      \/ EV_STEP0 prefh prefj 2 cfg60 cfg610 cfg611
+          (\cfg70_364.
+            \cfg710_365.
+             \cfg711_366.
+              EV_STEP_ASST0 prefh prefj cfg70_364 cfg710_365 cfg711_366
+               (\x_201.
+                 EV_STEP0 prefh prefj 1 cfg70_364 cfg710_365 cfg711_366
+                  (\cfg40_225.
+                    \cfg410_226.
+                     \cfg411_227.
+                      EV_STEP_ASST0 prefh prefj cfg40_225 cfg410_226 cfg411_227
+                       (\x1_255.INSTREE prefh prefj (i + 1) k (l - 1) cfg40_225 cfg410_226 cfg411_227 k1))))).
 Forall p      =v ∀n. p n.

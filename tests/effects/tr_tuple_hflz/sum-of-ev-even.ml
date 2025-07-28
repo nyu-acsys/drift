@@ -11,8 +11,8 @@ MoCHi: Model Checker for Higher-Order Programs
 */
 
 %HES
-MAIN_10  =v
-  (n_65 != 0 \/ SUM arg1_48 0 0 (\p0_44.\p10_45.\p11_46.Forall (\n_66.n_66 = 0)))
-  /\ (n_65 = 0 \/ SUM (arg1_48 + 1) 0 0 (\p0_44.\p10_45.\p11_46.Forall (\n_67.n_67 = 0))).
-SUM x cfg30 cfg31 k =v (x > 0 \/ k 0 0 0) /\ (x <= 0 \/ SUM (x - 2) 0 0 (\p0_53.\p10_54.\p11_55.k 0 p10_54 p11_55)).
+MAIN_6  =v
+  (n_45 != 0 \/ SUM arg1_34 0 0 (\p0_37.\p10_38.\p11_39.Forall (\n_46.n_46 = 0)))
+  /\ (n_45 = 0 \/ SUM (arg1_34 + 1) 0 0 (\p0_37.\p10_38.\p11_39.Forall (\n_47.n_47 = 0))).
+SUM x cfg30 cfg31 k =v (x > 0 \/ k 0 0 0) /\ (x <= 0 \/ SUM (x - 2) 0 0 k).
 Forall p      =v ∀n. p n.

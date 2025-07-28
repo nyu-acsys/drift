@@ -11,14 +11,12 @@ MoCHi: Model Checker for Higher-Order Programs
 */
 
 %HES
-MAIN_13  =v arg1_110 <= 0 \/ SUM arg1_110 arg1_110 0 0 (\r_106.\r1_107.\r2_108.r1_107 = 0 /\ r2_108 <= 3 * arg1_110).
-BR_CHOOSE_46 prefn x cfg20 cfg21 k =v
+MAIN_10  =v SUM arg1_91 arg1_91 0 0 (\r_87.\r1_88.\r2_89.r1_88 = 0 /\ r2_89 <= 3 * arg1_91).
+BR_CHOOSE_38 prefn x cfg20 cfg21 k =v
   ((((cfg20 != 0 \/ 1 > 3) \/ k 0 0 (1 + cfg21)) /\ (cfg20 = 0 /\ 1 <= 3 \/ k 0 1 cfg21))
    /\ (((cfg20 != 0 \/ 2 > 3) \/ k 0 0 (2 + cfg21)) /\ (cfg20 = 0 /\ 2 <= 3 \/ k 0 1 cfg21)))
   /\ (((cfg20 != 0 \/ 3 > 3) \/ k 0 0 (3 + cfg21)) /\ (cfg20 = 0 /\ 3 <= 3 \/ k 0 1 cfg21)).
 SUM prefn n cfg30 cfg31 k =v
   (n != 0 \/ k 0 cfg30 cfg31)
-  /\ (n = 0
-      \/ BR_CHOOSE_46 prefn true cfg30 cfg31
-          (\r_116.\r1_117.\r2_118.SUM prefn (n - 1) r1_117 r2_118 (\r3_79.\r4_80.\r5_81.k 0 r4_80 r5_81))).
+  /\ (n = 0 \/ BR_CHOOSE_38 prefn true cfg30 cfg31 (\r_97.\r1_98.\r2_99.SUM prefn (n - 1) r1_98 r2_99 k)).
 Forall p      =v ∀n. p n.

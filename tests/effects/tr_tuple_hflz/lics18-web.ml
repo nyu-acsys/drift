@@ -11,14 +11,7 @@ MoCHi: Model Checker for Higher-Order Programs
 */
 
 %HES
-MAIN_19  =v
-  LISTENER 0 0 0 0
-   (\x12_359.
-     \x121_360.
-      \x122_361.
-       \x123_362.
-        x12_359 arg1_654 x121_360 x122_361 x123_362
-         (\p0_434.\p10_435.\p110_436.\p111_437.p0_434 0 p10_435 p110_436 p111_437 (\main0_591.\main1_592.true))).
+MAIN_8  =v LISTENER 0 arg1_212 0 0 0 0 (\main_177.true).
 EV_STEP0 evx cfg00 cfg010 cfg011 k =v
   (((cfg00 != 0 \/ cfg011 >= 42) \/ evx != 1) \/ k 0 (cfg010 + 1) (cfg011 + 1))
   /\ ((cfg00 = 0 /\ cfg011 < 42) /\ evx = 1
@@ -40,78 +33,34 @@ EV_STEP0 evx cfg00 cfg010 cfg011 k =v
                                                           /\ ((cfg00 = 42 \/ cfg00 = 666) \/ k cfg00 cfg010 cfg011))))))))).
 EV_STEP_ASST0 cfg10 cfg110 cfg111 k =v
   (cfg10 != 666 /\ cfg110 > cfg111 \/ k true) /\ (cfg10 = 666 \/ cfg110 <= cfg111).
-K_LISTENER cfg20 cfg210 cfg211 cfg30 cfg310 cfg311 cfg40 cfg410 cfg411 i npool pend k x =v
+K_LISTENER cfg20 cfg210 cfg211 i npool pend k x =v
   (x = 0
-   \/ EV_STEP0 1 cfg40 cfg410 cfg411
-       (\x0_624.
-         \x10_625.
-          \x11_626.
-           EV_STEP_ASST0 x0_624 x10_625 x11_626
-            (\u_325.
-              LISTENER 0 x0_624 x10_625 x11_626
-               (\x101_425.
-                 \x102_426.
-                  \x103_427.
-                   \x104_428.
-                    x101_425 npool x102_426 x103_427 x104_428
-                     (\x111_509.
-                       \x112_510.
-                        \x113_511.\x114_512.x111_509 (pend + 1) x112_510 x113_511 x114_512 (\p0_589.\p1_590.k 0 0))))))
+   \/ EV_STEP0 1 cfg20 cfg210 cfg211
+       (\cfg90_186.
+         \cfg910_187.
+          \cfg911_188.
+           EV_STEP_ASST0 cfg90_186 cfg910_187 cfg911_188
+            (\x1_152.LISTENER 0 npool (pend + 1) cfg90_186 cfg910_187 cfg911_188 k)))
   /\ (x != 0
       \/ (pend <= 0
-          \/ EV_STEP0 2 cfg40 cfg410 cfg411
-              (\x0_641.
-                \x10_642.
-                 \x11_643.
-                  EV_STEP_ASST0 x0_641 x10_642 x11_643
-                   (\u_343.
-                     LISTENER 0 x0_641 x10_642 x11_643
-                      (\x6_381.
-                        \x61_382.
-                         \x62_383.
-                          \x63_384.
-                           x6_381 npool x61_382 x62_383 x63_384
-                            (\x7_459.
-                              \x71_460.
-                               \x72_461.\x73_462.x7_459 (pend - 1) x71_460 x72_461 x73_462 (\p0_537.\p1_538.k 0 0))))))
+          \/ EV_STEP0 2 cfg20 cfg210 cfg211
+              (\cfg60_197.
+                \cfg610_198.
+                 \cfg611_199.
+                  EV_STEP_ASST0 cfg60_197 cfg610_198 cfg611_199
+                   (\x1_164.LISTENER 0 npool (pend - 1) cfg60_197 cfg610_198 cfg611_199 k)))
          /\ (pend > 0
-             \/ EV_STEP0 3 cfg40 cfg410 cfg411
-                 (\x0_607.
-                   \x10_608.
-                    \x11_609.
-                     EV_STEP_ASST0 x0_607 x10_608 x11_609
-                      (\u_307.
-                        LISTENER 0 x0_607 x10_608 x11_609
-                         (\x2_403.
-                           \x21_404.
-                            \x22_405.
-                             \x23_406.
-                              x2_403 npool x21_404 x22_405 x23_406
-                               (\x3_484.
-                                 \x31_485.\x32_486.\x33_487.x3_484 pend x31_485 x32_486 x33_487 (\p0_563.\p1_564.k 0 0))))))).
-LISTENER i cfg20 cfg210 cfg211 k =v
-  k
-   (\npool_648.
-     \cfg30_649.
-      \cfg310_650.
-       \cfg311_651.
-        \k_652.
-         k_652
-          (\pend_352.
-            \cfg40_353.
-             \cfg410_354.
-              \cfg411_355.
-               \k_356.
-                Forall
-                 (\n_658.
-                   (\f_660.(pend_352 >= npool_648 \/ f_660 1) /\ (pend_352 < npool_648 \/ f_660 0))
-                    (\x_659.
-                      (n_658 != 0
-                       \/ K_LISTENER cfg20 cfg210 cfg211 cfg30_649 cfg310_650 cfg311_651 cfg40_353 cfg410_354
-                           cfg411_355 i npool_648 pend_352 k_356 x_659)
-                      /\ (n_658 = 0
-                          \/ K_LISTENER cfg20 cfg210 cfg211 cfg30_649 cfg310_650 cfg311_651 cfg40_353 cfg410_354
-                              cfg411_355 i npool_648 pend_352 k_356 0))))
-          cfg30_649 cfg310_650 cfg311_651)
-   cfg20 cfg210 cfg211.
+             \/ EV_STEP0 3 cfg20 cfg210 cfg211
+                 (\cfg30_208.
+                   \cfg310_209.
+                    \cfg311_210.
+                     EV_STEP_ASST0 cfg30_208 cfg310_209 cfg311_210
+                      (\x1_176.LISTENER 0 npool pend cfg30_208 cfg310_209 cfg311_210 k)))).
+LISTENER i npool pend cfg20 cfg210 cfg211 k =v
+  Forall
+   (\n_216.
+     (\f_218.(pend >= npool \/ f_218 1) /\ (pend < npool \/ f_218 0))
+      (\x_217.
+        (n_216 != 0 \/ K_LISTENER cfg20 cfg210 cfg211 i npool pend k x_217)
+        /\ (n_216 = 0 \/ K_LISTENER cfg20 cfg210 cfg211 i npool pend k 0))).
 Forall p      =v ∀n. p n.

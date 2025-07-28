@@ -11,16 +11,16 @@ MoCHi: Model Checker for Higher-Order Programs
 */
 
 %HES
-MAIN_16  =v
+MAIN_3  =v
   EV_STEP_ASST0 0 (2 + 0)
-   (\u_159.
+   (\x_180.
      EV_STEP_ASST0 0 (3 + (2 + 0))
-      (\u1_170.
+      (\x1_191.
         EV_STEP_ASST0 0 (1 + (3 + (2 + 0)))
-         (\u2_187.
+         (\x2_208.
            EV_STEP_ASST0 0 (4 + (1 + (3 + (2 + 0))))
-            (\u3_210.
+            (\x3_260.
               EV_STEP_ASST0 0 ((10 + 20) + (4 + (1 + (3 + (2 + 0)))))
-               (\u4_137.(10 + 20) + (4 + (1 + (3 + (2 + 0)))) = 40))))).
+               (\x6_158.(10 + 20) + (4 + (1 + (3 + (2 + 0)))) = 40))))).
 EV_STEP_ASST0 cfg10 cfg11 k =v (cfg11 < 0 \/ k true) /\ cfg11 >= 0.
 Forall p      =v ∀n. p n.
