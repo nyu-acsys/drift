@@ -3,7 +3,7 @@
 use lib '.';
 use strict;
 use Data::Dumper;
-use ExpUtils qw/parse_results_files run2tool cleanRes/;
+use ExpUtils qw/parse_results_files run2tool run2toolBest cleanRes/;
 
 #
 # Generates Latex Results output
@@ -75,14 +75,13 @@ foreach my $b (sort keys %$d) {
     die "don't have a $COARMOCHI_RD rundef for $b" unless $d->{$b}->{$COARMOCHI_RD}->{rd} =~ /[a-z]/;
     die "don't have a $RETHFL_RD rundef for $b" unless $d->{$b}->{$RETHFL_RD}->{rd} =~ /[a-z]/;
     die "don't have a BEST_DRIFTEV rundef for $b" unless $d->{$b}->{BEST_DRIFTEV}->{rd} =~ /[a-z]/;
-    print SCRIPT "\n#\n# Benchmark: $b\n#\n";
 
     # Trans-Drift
     print BODY sprintf("& %-5s & %3.1f & %s ", # %3.1f & 
            cleanRes($d->{$b}->{BEST_TRANS}->{res}),
            $d->{$b}->{BEST_TRANS}->{cpu},
            #$d->{$b}->{BEST_TRANS}->{mem},
-           run2tool($d->{$b}->{BEST_TRANS}->{rd}));
+           run2toolBest($d->{$b}->{BEST_TRANS}->{rd},$b));
     # Trans-COARMochi
     print BODY sprintf("& %-5s & %3.1f ", # %3.1f & 
            cleanRes($d->{$b}->{$COARMOCHI_RD}->{res}),
@@ -106,7 +105,7 @@ foreach my $b (sort keys %$d) {
            cleanRes($d->{$b}->{BEST_DRIFTEV}->{res}),
            $d->{$b}->{BEST_DRIFTEV}->{cpu},
            #$d->{$b}->{BEST_DRIFTEV}->{mem},
-           run2tool($d->{$b}->{BEST_DRIFTEV}->{rd}));
+           run2toolBest($d->{$b}->{BEST_DRIFTEV}->{rd},$b));
     #printf "best EDrift result for %-40s : %-10s : %s\n", $b, $d->{$b}->{BEST_DRIFTEV}->{res}, $d->{$b}->{BEST_DRIFTEV}->{rd};
     printf "  %-20s | Dr: %-10s | eDr: %-10s | Mo: %-10s | RC: %-10s | Reth: %-10s \n",
                  $b,
@@ -191,7 +190,7 @@ print STATS join("\n", (
    ('\newcommand\expSpeedupEVoverDrift{'.sprintf("%0.1f", $speedupEVoverDrift).'}'),
    ('\newcommand\expSpeedupEVoverRcaml{'.sprintf("%0.1f", $speedupEVoverRcaml).'}'),
    ('\newcommand\expSpeedupEVoverRethfl{'.sprintf("%0.1f", $speedupEVoverRethfl).'}'),
-   ('\newcommand\expSpeedupEVoverRealMochi{'.$speedupEVoverRealMochi.'}'),
+   ('\newcommand\expSpeedupEVoverRealMochi{'.sprintf("%0.1f", $speedupEVoverRealMochi).'}'),
 #   ('\newcommand\expSpeedupEvtrans{'.sprintf("%0.1f", geometric_mean(@geos_evtrans)/geometric_mean(@geos_direct)).'}'),
 #   ('\newcommand\expSpeedupMochi{'.sprintf("%0.1f", geometric_mean(@geos_mochi)/geometric_mean(@geos_direct)).'}'),
    ('\newcommand\expNewOverCoarMochi{'.$newOverCoarMochi.'}'),

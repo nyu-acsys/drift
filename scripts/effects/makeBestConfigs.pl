@@ -35,7 +35,7 @@ foreach my $b (sort keys %$d) {
         my $drift = ($tool =~ /TRtrans/ ? '\drift' : '\evdrift');
         my $isBest = ($d->{$b}->{BEST_DRIFTEV}->{rd} eq $tool ? '\hl ' : '    ');
         #warn "run2tool($tool)\n";
-        print Dumper($d->{$b}->{$tool});
+        #print Dumper($d->{$b}->{$tool});
         print EXT sprintf("& $drift & $isBest %s & $isBest %-5s & $isBest %3.2f \\\\\n", #  & $isBest %3.2f 
            run2tool($tool),
            cleanRes($d->{$b}->{$tool}->{res}),

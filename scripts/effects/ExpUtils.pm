@@ -5,7 +5,7 @@ use DateTime;
 use Time::ParseDate;
 
 use Exporter qw/import/;
-our @EXPORT_OK = qw/compute_best_drift cleanRes geometric_mean run2tool %dm2domain cfg2cmd parse_results_files/;
+our @EXPORT_OK = qw/compute_best_drift cleanRes geometric_mean run2tool run2toolBest %dm2domain cfg2cmd parse_results_files/;
 use strict;
 
 
@@ -82,6 +82,19 @@ sub run2tool {
     } else {
         die "don't know how to parse rundef: $rdName\n";
     }
+}
+sub run2toolBest {
+    my ($rdName, $bench) = @_;
+    my $fn = '../../best_configs_'.($rdName =~ /ev/ ? 'ev' : '').'drift.csv';
+    open F, $fn or die "run2toolBest could not load config from $fn - $!";
+    while(<F>) {
+        chomp;
+        my ($b,$args,$rd) = split /\|/, $_;
+        next unless $b =~ /$bench\.ml/;
+        return run2tool($rd);
+    }
+    close F;
+    die "run2toolBest - could not find $bench in $fn\n";
 }
 my %dm2domain = (
     ls => 'Polka_ls',
@@ -171,7 +184,6 @@ sub parseResultsFile {
             #die Dumper(\@runSets) if $isDriftWrap;
 
         } else {
-            print;
             chomp($_);
             # trim off the first column, saving it as the bench name
             my ($bench,@RCWs) = split /\t/, $_;
@@ -201,7 +213,7 @@ sub parseResultsFile {
                    unless $RCWs[$i+2] =~ /\d\.\d/;
                 die "parsing error: runset $runSets[$i] no result.".Dumper(\@RCWs)
                    unless $RCWs[$i] =~ /unknown|TIMEOUT|OUT OF MEMORY|ERROR|true/;
-                   print Dumper($d->{$bench}->{$runSets[$i]});
+                #print Dumper($d->{$bench}->{$runSets[$i]});
             }
         }
     }
