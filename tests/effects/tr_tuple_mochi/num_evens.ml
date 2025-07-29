@@ -50,7 +50,7 @@ let ev_step_asst0 cfg1 =
    (q,acc) -> assert ((q = 0) && ((2 * acc) <= m))) 
 in
 
-
+if m > 0 then begin
   let flip = (fun x ->
                 (if (x = 1) then 0
                 else 1)) in 
@@ -68,3 +68,6 @@ in
                    else ((f (m1 - 1)),cfg2)) with 
                 (x1,cfg5) -> ((x1 (flip flag)) cfg5)))) in 
        (((f m) 0) (0,0))
+  end
+else 
+  ((), (0, 0))
