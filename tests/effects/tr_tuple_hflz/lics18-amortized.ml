@@ -12,7 +12,7 @@ MoCHi: Model Checker for Higher-Order Programs
 
 %HES
 MAIN_16  =v
-  (arg2_163 < 0 \/ arg3_183 < 0)
+  (arg1_259 < 0 \/ (arg2_163 < 0 \/ arg3_183 < 0))
   \/ ENQUEUE arg2_163 arg3_183 arg1_259 arg1_259 arg2_163 arg3_183 0 0 0 0
       (\r_252.
         \r1_253.
