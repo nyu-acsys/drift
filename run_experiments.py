@@ -8,14 +8,17 @@ import sys
 smoke_configs = [
     "./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
     "./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
+    "./mochi.exe -trans HFLz tests/effects/tr_tuple_mochi/all-ev-pos.ml > tests/effects/tr_tuple_hflz/all-ev-pos; rethfl -use-solver eldarica tests/effects/tr_tuple_hflz/all-ev-pos.ml",
     "./mochi.exe -only-result tests/effects/tr_tuple_mochi/all-ev-pos.ml",
     "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/all-ev-pos.ml",
     "./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
     "./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true",
+    "./mochi.exe -trans HFLz tests/effects/tr_tuple_mochi/depend.ml > tests/effects/tr_tuple_hflz/depend; rethfl -use-solver eldarica tests/effects/tr_tuple_hflz/depend.ml",
     "./mochi.exe -only-result tests/effects/tr_tuple_mochi/depend.ml",
     "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/depend.ml",
     "./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans true -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
     "./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
+    "./mochi.exe -trans HFLz tests/effects/tr_tuple_mochi/overview1.ml > tests/effects/tr_tuple_hflz/overview1; rethfl -use-solver eldarica tests/effects/tr_tuple_hflz/overview1.ml",
     "./mochi.exe -only-result tests/effects/tr_tuple_mochi/overview1.ml",
     "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/overview1.ml"
 ]
@@ -191,11 +194,14 @@ for config in configs:
             mode = "drift"
         else:
             mode = "evDrift"
+    elif "rethfl" in config:
+        name = config.split("tests/effects/tr_tuple_hflz/")[1].split(".ml")[0]
+        mode = "rethfl"
     elif "mochi" in config:
-        config.split("tests/effects/tr_tuple_mochi/")[1].split(".ml")[0]
+        name = config.split("tests/effects/tr_tuple_mochi/")[1].split(".ml")[0]
         mode = "mochi"
     else:
-        config.split("tests/effects/tr_tuple_rcaml/")[1].split(".ml")[0]
+        name = config.split("tests/effects/tr_tuple_rcaml/")[1].split(".ml")[0]
         mode = "rcaml"
 
     output_file = results_folder + name + "_" + mode + ".txt"
@@ -224,6 +230,9 @@ for config in configs:
             mode = "drift"
         else:
             mode = "evDrift"
+    elif "rethfl" in config:
+        name = config.split("tests/effects/tr_tuple_hflz/")[1].split(".ml")[0]
+        mode = "rethfl"
     elif "mochi" in config:
         name = config.split("tests/effects/tr_tuple_mochi/")[1].split(".ml")[0]
         mode = "mochi"
@@ -233,7 +242,7 @@ for config in configs:
 
     output_file = results_folder + name + "_" + mode + ".txt"
     if name not in table:
-        table[name] = {"drift": "", "evDrift": "", "mochi": "", "rcaml": ""}
+        table[name] = {"drift": "", "evDrift": "", "rethfl": "", "mochi": "", "rcaml": ""}
     try:
         with open(output_file, 'r') as f:
             content = f.read().strip()
@@ -268,6 +277,17 @@ for config in configs:
                     result = "memout/error"
                 else:
                     result = "memout/error"
+            elif mode == "rethfl":
+                if "TimeoutExpired" in content:
+                    result = "timeout"
+                elif "Invalid" in content:
+                    result = "unknown"
+                elif "Valid" in content:
+                    result = "verif."
+                elif "MemoryError" in content:
+                    result = "memout/error"
+                else:
+                    result = "memout/error"
             else:
                 result = "memout/error"
 
@@ -275,10 +295,10 @@ for config in configs:
         result = "memout/error"
     table[name][mode] = result
 
-header = ["name", "drift", "rcaml", "mochi", "evDrift"]
+header = ["name", "drift", "rcaml", "mochi", "rethfl", "evDrift"]
 rows = []
 for name in sorted(table.keys()):
-    row = [name, table[name]["drift"], table[name]["rcaml"], table[name]["mochi"], table[name]["evDrift"]]
+    row = [name, table[name]["drift"], table[name]["rcaml"], table[name]["mochi"], table[name]["rethfl"], table[name]["evDrift"]]
     rows.append(row)
 
 col_widths = [max(len(str(row[i])) for row in ([header] + rows)) for i in range(len(header))]

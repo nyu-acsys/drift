@@ -9,8 +9,9 @@ An example SAA property can be seen in `tests/effects/overview.yml.prp`
 
 In addition, one can use our tuple-based product translation to 
 transform these two inputs into an effectless program with assertions,
-and use the Drift tool (POPL 2020). This can be done by suppling
-`-ev-trans true` as a commandline argument (see details below).
+and use the Drift tool (POPL 2020). This can be done by first translating
+the program using `-tuple-convert true` as a commandline argument, and 
+then running the tool on the program. (see details below).
 
 ## Installation Requirements
 
@@ -64,10 +65,10 @@ usage: ./drift.exe [-file <file path>] [-domain <Oct/Polka_st/Polka_ls/PolkaGrid
   -if-part : Partition traces on if tokens. Increases precision, but also increases running time.
   -trace-len : Number of call-sites and if-partitions (if enabled) remembered. 0 -> not context sensitive. Increasing this increases precision, but also increases running time.
   -prop : Automata specification file path.
-  -ev-trans : Translate Ev expressions (run Drift with tuple translation).
+  -ev-trans : Translate Ev expressions (run Drift with unoptimized tuple translation).
   -io-effects : Input-output relations for effects for greater precision. Increases precision, but also increases running time. Has no effect when ev-trans is true.
   -cps-convert : Convert prog to CPS
-  -tuple-convert : Convert prog to tuple-encoding of the product program
+  -tuple-convert : Convert prog to tuple-encoding of the product program. (optimized tuple translation)
   -out : Output result level (See below for a description of what this output means).
     0: Output map after each step
     1: Output map only for the last step
@@ -90,7 +91,38 @@ See the Drift paper [[1]](#1) for more details.
 
 #### Config file
 
-TODO
+The user can define the set of possible states, a transition function, the initial configuration of the automaton.
+The user can also define assertions that may be checked after every call to the transition function, i.e. assertions that should hold true at all times, or assertions that should hold true at the end.
+It is fine to only specify assertions of one kind, or none at all.
+The transition function must be defined without any function definitions or calls.
+An example configuration file is as follows:
+
+```
+  (* List of colon (;) separated states *)
+  QSet = [0; 1; 2; 3; 4; 5; 6]; 
+
+  (* Transition function. evx is the new event argument. q is the current state, acc is the current accumulator. *)
+  (* The accumulator can also be a tuple. *)
+  delta = fun evx (q, acc) -> 
+            if (q = 0 && evx = 1) then (1, acc)
+      else if (q = 1 && evx = 1) then (1, acc)
+      else if (q = 1 && evx = 2) then (2, acc)
+      else if (q = 2 && evx = 2) then (2, acc)
+      else if (q = 2 && evx = 3) then (3, acc)
+      else if (q = 1 && evx = 4) then (4, acc)
+      else if (q = 4 && evx = 4) then (4, acc)
+      else if (q = 4 && evx = 5) then (5, acc)
+      else (6, acc);
+      
+  (* Initial configuration. (State, Accumulator) *)
+  IniCfg = (0, 0);
+
+  (* This assertion is checked after every transition function is executed. *)
+  assert = fun (q, acc) -> q < 6;
+
+  (* This assertion is checked after the OCaml program finishes. *)
+  assertFinal = fun (q, acc) -> (q = 3) || (q = 5);
+```
 
 ### Output levels
 - Level 2: Only returns the result: whether the program is "safe", i.e. all assertions are satisfied. Or, the program "might be unsafe", i.e., some assertions may or may not be satisfied.
