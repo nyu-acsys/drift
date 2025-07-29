@@ -5,170 +5,81 @@ import signal
 import re
 import sys
 
+def make_rethfl_config(name):
+    return f"rethfl --solver=eldarica tests/effects/tr_tuple_hflz/{name}.ml"
+
+def make_mochi_config(name):
+    return f"./mochi.exe -only-result tests/effects/tr_tuple_mochi/{name}.ml"
+
+def make_rcaml_config(name):
+    return f"./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/{name}.ml"
+
 smoke_configs = [
-    "./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
+    "./drift.exe -file tests/effects/tr_tuple_drift/all-ev-pos.ml -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
     "./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -trans HFLz tests/effects/tr_tuple_mochi/all-ev-pos.ml > tests/effects/tr_tuple_hflz/all-ev-pos; rethfl -use-solver eldarica tests/effects/tr_tuple_hflz/all-ev-pos.ml",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/all-ev-pos.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/all-ev-pos.ml",
-    "./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
+    make_rethfl_config("all-ev-pos"),
+    make_mochi_config("all-ev-pos"),
+    make_rcaml_config("all-ev-pos"),
+
+    "./drift.exe -file tests/effects/tr_tuple_drift/depend.ml -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
     "./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -trans HFLz tests/effects/tr_tuple_mochi/depend.ml > tests/effects/tr_tuple_hflz/depend; rethfl -use-solver eldarica tests/effects/tr_tuple_hflz/depend.ml",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/depend.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/depend.ml",
-    "./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans true -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
+    make_rethfl_config("depend"),
+    make_mochi_config("depend"),
+    make_rcaml_config("depend"),
+    
+    "./drift.exe -file tests/effects/tr_tuple_drift/overview1.ml -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
     "./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -trans HFLz tests/effects/tr_tuple_mochi/overview1.ml > tests/effects/tr_tuple_hflz/overview1; rethfl -use-solver eldarica tests/effects/tr_tuple_hflz/overview1.ml",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/overview1.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/overview1.ml"
+    make_rethfl_config("overview1"),
+    make_mochi_config("overview1"),
+    make_rcaml_config("overview1"),
 ]
 
-table1_configs = [
-
-    "./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./drift.exe -file tests/effects/all-ev-pos.ml -prop tests/effects/all-ev-pos.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/all-ev-pos.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/all-ev-pos.ml",
-
-    "./drift.exe -file tests/effects/alt-inev.ml -prop tests/effects/alt-inev.yml.prp -ev-trans true -trace-len 1 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false",
-    "./drift.exe -file tests/effects/alt-inev.ml -prop tests/effects/alt-inev.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/alt-inev.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/alt-inev.ml",
-
-    "./drift.exe -file tests/effects/auction.ml -prop tests/effects/auction.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./drift.exe -file tests/effects/auction.ml -prop tests/effects/auction.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/auction.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/auction.ml",
-
-    "./drift.exe -file tests/effects/binomial_heap.ml -prop tests/effects/binomial_heap.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false",
-    "./drift.exe -file tests/effects/binomial_heap.ml -prop tests/effects/binomial_heap.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/binomial_heap.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/binomial_heap.ml",
-
-    "./drift.exe -file tests/effects/concurrent_sum.ml -prop tests/effects/concurrent_sum.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false",
-    "./drift.exe -file tests/effects/concurrent_sum.ml -prop tests/effects/concurrent_sum.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/concurrent_sum.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/concurrent_sum.ml",
-
-    "./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./drift.exe -file tests/effects/depend.ml -prop tests/effects/depend.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/depend.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/depend.ml",
-
-    "./drift.exe -file tests/effects/disj.ml -prop tests/effects/disj.yml.prp -ev-trans true -trace-len 1 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false",
-    "./drift.exe -file tests/effects/disj.ml -prop tests/effects/disj.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain PolkaGrid -thold false",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/disj.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/disj.ml",
-
-    "./drift.exe -file tests/effects/disj-gte.ml -prop tests/effects/disj-gte.yml.prp -ev-trans true -trace-len 1 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false",
-    "./drift.exe -file tests/effects/disj-gte.ml -prop tests/effects/disj-gte.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/disj-gte.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/disj-gte.ml",
-
-    "./drift.exe -file tests/effects/disj-nondet.ml -prop tests/effects/disj-nondet.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false",
-    "./drift.exe -file tests/effects/disj-nondet.ml -prop tests/effects/disj-nondet.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/disj-nondet.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/disj-nondet.ml",
-
-    "./drift.exe -file tests/effects/higher-order.ml -prop tests/effects/higher-order.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./drift.exe -file tests/effects/higher-order.ml -prop tests/effects/higher-order.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/higher-order.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/higher-order.ml",
-
-    "./drift.exe -file tests/effects/last-ev-even.ml -prop tests/effects/last-ev-even.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./drift.exe -file tests/effects/last-ev-even.ml -prop tests/effects/last-ev-even.yml.prp -ev-trans false -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/last-ev-even.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/last-ev-even.ml",
-
-    "./drift.exe -file tests/effects/lics18-amortized.ml -prop tests/effects/lics18-amortized.yml.prp -ev-trans true -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./drift.exe -file tests/effects/lics18-amortized.ml -prop tests/effects/lics18-amortized.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/lics18-amortized.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/lics18-amortized.ml",
-
-    "./drift.exe -file tests/effects/lics18-hoshrink.ml -prop tests/effects/lics18-hoshrink.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false",
-    "./drift.exe -file tests/effects/lics18-hoshrink.ml -prop tests/effects/lics18-hoshrink.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/lics18-hoshrink.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/lics18-hoshrink.ml",
-
-    "./drift.exe -file tests/effects/lics18-web.ml -prop tests/effects/lics18-web.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false",
-    "./drift.exe -file tests/effects/lics18-web.ml -prop tests/effects/lics18-web.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/lics18-web.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/lics18-web.ml",
-
-    "./drift.exe -file tests/effects/market.ml -prop tests/effects/market.yml.prp -ev-trans true -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./drift.exe -file tests/effects/market.ml -prop tests/effects/market.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects true -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/market.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/market.ml",
-
-    "./drift.exe -file tests/effects/max-min.ml -prop tests/effects/max-min.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false",
-    "./drift.exe -file tests/effects/max-min.ml -prop tests/effects/max-min.yml.prp -ev-trans false -trace-len 1 -if-part true -io-effects true -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/max-min.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/max-min.ml",
-
-    "./drift.exe -file tests/effects/monotonic.ml -prop tests/effects/monotonic.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./drift.exe -file tests/effects/monotonic.ml -prop tests/effects/monotonic.yml.prp -ev-trans false -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/monotonic.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/monotonic.ml",
-
-    "./drift.exe -file tests/effects/nondet_max.ml -prop tests/effects/nondet_max.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./drift.exe -file tests/effects/nondet_max.ml -prop tests/effects/nondet_max.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/nondet_max.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/nondet_max.ml",
-
-    "./drift.exe -file tests/effects/order-irrel.ml -prop tests/effects/order-irrel.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false",
-    "./drift.exe -file tests/effects/order-irrel.ml -prop tests/effects/order-irrel.yml.prp -ev-trans false -trace-len 1 -if-part true -io-effects false -out 2 -domain PolkaGrid -thold false",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/order-irrel.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/order-irrel.ml",
-
-    "./drift.exe -file tests/effects/order-irrel-nondet.ml -prop tests/effects/order-irrel-nondet.yml.prp -ev-trans true -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./drift.exe -file tests/effects/order-irrel-nondet.ml -prop tests/effects/order-irrel-nondet.yml.prp -ev-trans false -trace-len 1 -if-part true -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/order-irrel-nondet.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/order-irrel-nondet.ml",
-
-    "./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans true -trace-len 1 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./drift.exe -file tests/effects/overview1.ml -prop tests/effects/overview1.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/overview1.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/overview1.ml",
-
-    "./drift.exe -file tests/effects/reentr.ml -prop tests/effects/reentr.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./drift.exe -file tests/effects/reentr.ml -prop tests/effects/reentr.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/reentr.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/reentr.ml",
-
-    "./drift.exe -file tests/effects/resource-analysis.ml -prop tests/effects/resource-analysis.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./drift.exe -file tests/effects/resource-analysis.ml -prop tests/effects/resource-analysis.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/resource-analysis.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/resource-analysis.ml",
-
-    "./drift.exe -file tests/effects/sum-appendix.ml -prop tests/effects/sum-appendix.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain Polka_ls -thold true",
-    "./drift.exe -file tests/effects/sum-appendix.ml -prop tests/effects/sum-appendix.yml.prp -ev-trans false -trace-len 1 -if-part true -io-effects true -out 2 -domain Polka_ls -thold true",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/sum-appendix.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/sum-appendix.ml",
-
-    "./drift.exe -file tests/effects/sum-of-ev-even.ml -prop tests/effects/sum-of-ev-even.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false",
-    "./drift.exe -file tests/effects/sum-of-ev-even.ml -prop tests/effects/sum-of-ev-even.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/sum-of-ev-even.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/sum-of-ev-even.ml",
-
-    "./drift.exe -file tests/effects/temperature.ml -prop tests/effects/temperature.yml.prp -ev-trans true -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false",
-    "./drift.exe -file tests/effects/temperature.ml -prop tests/effects/temperature.yml.prp -ev-trans false -trace-len 0 -if-part false -io-effects false -out 2 -domain PolkaGrid -thold false",
-    "./mochi.exe -only-result tests/effects/tr_tuple_mochi/temperature.ml",
-    "./rcaml.exe -c config/solver/rcaml_wopp_spacer.json -p ml    tests/effects/tr_tuple_rcaml/temperature.ml"
-]
+run_mode = sys.argv[1]
 
 if len(sys.argv) > 1 and sys.argv[1] == "smoke":
-    configs = smoke_configs
-elif len(sys.argv) > 1 and sys.argv[1] == "all":
-    configs = table1_configs
+    configs = [(line.split(".ml")[0].split("/")[-1], line) for line in smoke_configs]
+elif len(sys.argv) > 1 and sys.argv[1] == "table1":
+    drift_configs = [line.split("|")[1] for line in open("best_configs_drift.csv").readlines() if line.strip()]
+    evdrift_configs = [line.split("|")[1] for line in open("best_configs_evdrift.csv").readlines() if line.strip()]
+    names = [line.split(".ml")[0].split("/")[-1] for line in drift_configs]
+    rethfl_configs = [make_rethfl_config(name) for name in names]
+    mochi_configs = [make_mochi_config(name) for name in names]
+    rcaml_configs = [make_rcaml_config(name) for name in names]
+    configs = []
+    for items in zip(names, drift_configs, evdrift_configs, rethfl_configs, mochi_configs, rcaml_configs):
+        name = items[0]
+        items = [(name, item) for item in items[1:]]
+        configs.extend(items)
+elif len(sys.argv) > 1 and sys.argv[1] == "table2":
+    drift_off_configs = [line.split("|")[1] for line in open("tpoff_best_configs_drift.csv").readlines() if line.strip()]
+    drift_on_configs = [line.split("|")[1] for line in open("tpon_best_configs_drift.csv").readlines() if line.strip()]
+    evdrift_off_configs = [line.split("|")[1] for line in open("tpoff_best_configs_evdrift.csv").readlines() if line.strip()]
+    evdrift_on_configs = [line.split("|")[1] for line in open("tpon_best_configs_evdrift.csv").readlines() if line.strip()]
+    names = [line.split(".ml")[0].split("/")[-1] for line in drift_off_configs]
+    configs = []
+    for items in zip(names, drift_off_configs, drift_on_configs, evdrift_off_configs, evdrift_on_configs):
+        name = items[0]
+        items = [(name, item) for item in items[1:]]
+        configs.extend(items)
 else:
-    configs = table1_configs
+    raise ValueError("Invalid experiment type (smoke/table1/table2)")
 
 results_folder = "result/"
 TIME_LIMIT = 900
 MEMORY_LIMIT = 2 * 1024 * 1024 * 1024
 
 def set_limits():
-    resource.setrlimit(resource.RLIMIT_AS, (MEMORY_LIMIT, MEMORY_LIMIT))
+    # Use RLIMIT_DATA for macOS, RLIMIT_AS for Linux
+    if sys.platform == "darwin":
+        try:
+            resource.setrlimit(resource.RLIMIT_DATA, (MEMORY_LIMIT, MEMORY_LIMIT))
+        except Exception as e:
+            pass  # Ignore errors on macOS
+    else:
+        try:
+            resource.setrlimit(resource.RLIMIT_AS, (MEMORY_LIMIT, MEMORY_LIMIT))
+        except Exception as e:
+            pass  # Ignore errors on Linux
 
 def run_command_with_limits(cmd):
     try:
@@ -187,22 +98,30 @@ def run_command_with_limits(cmd):
     except Exception as e:
         return -1, "", str(e)
 
-for config in configs:
-    if "drift" in config:
-        name = config.split("tests/effects/")[1].split(".ml")[0]
-        if "-ev-trans true" in config:
-            mode = "drift"
+for (name, config) in configs:
+    if run_mode == "table2":
+        if "tr_tuple" in config:
+            if "if-part false" in config:
+                mode = "drift_false"
+            else:
+                mode = "drift_true"
         else:
-            mode = "evDrift"
-    elif "rethfl" in config:
-        name = config.split("tests/effects/tr_tuple_hflz/")[1].split(".ml")[0]
-        mode = "rethfl"
-    elif "mochi" in config:
-        name = config.split("tests/effects/tr_tuple_mochi/")[1].split(".ml")[0]
-        mode = "mochi"
+            if "if-part false" in config:
+                mode = "evdrift_false"
+            else:
+                mode = "evdrift_true"
     else:
-        name = config.split("tests/effects/tr_tuple_rcaml/")[1].split(".ml")[0]
-        mode = "rcaml"
+        if "drift" in config:
+            if "tr_tuple" in config:
+                mode = "drift"
+            else:
+                mode = "evDrift"
+        elif "rethfl" in config:
+            mode = "rethfl"
+        elif "mochi" in config:
+            mode = "mochi"
+        else:
+            mode = "rcaml"
 
     output_file = results_folder + name + "_" + mode + ".txt"
     cmd = config
@@ -223,22 +142,30 @@ table = {}
 pgood_rcaml = re.compile('sat,-?\d+\s+\@assert')
 pexcep_rcaml = re.compile('Uncaught exception')
 
-for config in configs:
-    if "drift" in config:
-        name = config.split("tests/effects/")[1].split(".ml")[0]
-        if "-ev-trans true" in config:
-            mode = "drift"
+for (name, config) in configs:
+    if run_mode == "table2":
+        if "tr_tuple" in config:
+            if "if-part false" in config:
+                mode = "drift_false"
+            else:
+                mode = "drift_true"
         else:
-            mode = "evDrift"
-    elif "rethfl" in config:
-        name = config.split("tests/effects/tr_tuple_hflz/")[1].split(".ml")[0]
-        mode = "rethfl"
-    elif "mochi" in config:
-        name = config.split("tests/effects/tr_tuple_mochi/")[1].split(".ml")[0]
-        mode = "mochi"
+            if "if-part false" in config:
+                mode = "evdrift_false"
+            else:
+                mode = "evdrift_true"
     else:
-        name = config.split("tests/effects/tr_tuple_rcaml/")[1].split(".ml")[0]
-        mode = "rcaml"
+        if "drift" in config:
+            if "tr_tuple" in config:
+                mode = "drift"
+            else:
+                mode = "evDrift"
+        elif "rethfl" in config:
+            mode = "rethfl"
+        elif "mochi" in config:
+            mode = "mochi"
+        else:
+            mode = "rcaml"
 
     output_file = results_folder + name + "_" + mode + ".txt"
     if name not in table:
@@ -246,7 +173,7 @@ for config in configs:
     try:
         with open(output_file, 'r') as f:
             content = f.read().strip()
-            if mode in ["drift", "evDrift"]:
+            if run_mode == "table2":
                 if "TimeoutExpired" in content:
                     result = "timeout"
                 elif "The input program is safe" in content:
@@ -257,48 +184,67 @@ for config in configs:
                     result = "memout/error"
                 else:
                     result = "memout/error"
-            elif mode == "rcaml":
-                if "TimeoutExpired" in content:
-                    result = "timeout"
-                elif pgood_rcaml.match(content):
-                    result = "verif."
-                elif pexcep_rcaml.match(content):
-                    result = "Excep"
-                elif "MemoryError" in content:
-                    result = "memout/error"
-                else:
-                    result = "memout/error"
-            elif mode == "mochi":
-                if "TimeoutExpired" in content:
-                    result = "timeout"
-                elif "Safe!" in content:
-                    result = "verif."
-                elif "MemoryError" in content:
-                    result = "memout/error"
-                else:
-                    result = "memout/error"
-            elif mode == "rethfl":
-                if "TimeoutExpired" in content:
-                    result = "timeout"
-                elif "Invalid" in content:
-                    result = "unknown"
-                elif "Valid" in content:
-                    result = "verif."
-                elif "MemoryError" in content:
-                    result = "memout/error"
-                else:
-                    result = "memout/error"
             else:
-                result = "memout/error"
+                if mode in ["drift", "evDrift"]:
+                    if "TimeoutExpired" in content:
+                        result = "timeout"
+                    elif "The input program is safe" in content:
+                        result = "verif."
+                    elif "The program may not be safe" in content:
+                        result = "unknown"
+                    elif "MemoryError" in content:
+                        result = "memout/error"
+                    else:
+                        result = "memout/error"
+                elif mode == "rcaml":
+                    if "TimeoutExpired" in content:
+                        result = "timeout"
+                    elif pgood_rcaml.match(content):
+                        result = "verif."
+                    elif pexcep_rcaml.match(content):
+                        result = "Excep"
+                    elif "MemoryError" in content:
+                        result = "memout/error"
+                    else:
+                        result = "memout/error"
+                elif mode == "mochi":
+                    if "TimeoutExpired" in content:
+                        result = "timeout"
+                    elif "Safe!" in content:
+                        result = "verif."
+                    elif "MemoryError" in content:
+                        result = "memout/error"
+                    else:
+                        result = "memout/error"
+                elif mode == "rethfl":
+                    if "TimeoutExpired" in content:
+                        result = "timeout"
+                    elif "Invalid" in content:
+                        result = "unknown"
+                    elif "Valid" in content:
+                        result = "verif."
+                    elif "MemoryError" in content:
+                        result = "memout/error"
+                    else:
+                        result = "memout/error"
+                else:
+                    result = "memout/error"
 
     except Exception:
         result = "memout/error"
     table[name][mode] = result
 
-header = ["name", "drift", "rcaml", "mochi", "rethfl", "evDrift"]
+if run_mode == "table2":
+    header = ["name", "drift-off", "drift-on", "evdrift-off", "evdrift-on"]
+else:
+    header = ["name", "drift", "rcaml", "mochi", "rethfl", "evDrift"]
+
 rows = []
 for name in sorted(table.keys()):
-    row = [name, table[name]["drift"], table[name]["rcaml"], table[name]["mochi"], table[name]["rethfl"], table[name]["evDrift"]]
+    if run_mode == "table2":
+        row = [name, table[name]["drift-off"], table[name]["drift-on"], table[name]["evdrift-off"], table[name]["evdrift-on"]]
+    else:
+        row = [name, table[name]["drift"], table[name]["rcaml"], table[name]["mochi"], table[name]["rethfl"], table[name]["evDrift"]]
     rows.append(row)
 
 col_widths = [max(len(str(row[i])) for row in ([header] + rows)) for i in range(len(header))]
