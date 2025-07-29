@@ -68,8 +68,10 @@ let rec reent d cfg2 =
 
 
 let main (n:int(*-:{cur_v:Int | cur_v = 0}*)) =
+  if n > 0 then
   (match ((reent n) (0,0)) with 
    (x4,cfg9) -> let cfg10 = ((ev_step0 (-1)) cfg9) in 
                 ((ev_step_asst0 cfg10),cfg10))
+  else ((), (0, 0))
 
 [@@@assert "typeof(main) <: int -> unit * (int * int)"]

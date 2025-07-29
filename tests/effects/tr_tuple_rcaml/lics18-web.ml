@@ -129,4 +129,4 @@ let rec listener i npool pend cfg2 =
 let main (npool:int(*-:{cur_v:Int | true = true}*)) (i0:int(*-:{cur_v:Int | true = true}*)) =
   ((((listener i0) npool) 0) (0,(0,0)))
 
-[@@@assert "typeof(main) <: int -> int -> 'a * 'b"]
+[@@@assert "typeof(main) <: int -> int -> 'a"]

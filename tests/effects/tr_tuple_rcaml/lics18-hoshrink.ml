@@ -54,3 +54,5 @@ in
   (match ((((shrink prefgl_t) (fun x ->
                              prefgl_t)) prefgl_d) ((ev_step0 (prefgl_t / prefgl_d)) (0,0))) with 
    (e0,cfg4) -> ((asst_final0 cfg4) ; e0))
+
+[@@@assert "typeof(main) <: int -> int -> int"]

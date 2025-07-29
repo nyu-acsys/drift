@@ -69,4 +69,4 @@ let main (i:int(*-:{cur_v:Int | true = true}*)) (j:int(*-:{cur_v:Int | true = tr
          ((ev_step_asst0 cfg7),cfg7) with 
    (x0,cfg8) -> ((((((app3 i) check) i) (app i)) j) cfg8))
 
-[@@@assert "typeof(main) <: int -> int -> unit"]
+[@@@assert "typeof(main) <: int -> int -> unit * (int * int)"]

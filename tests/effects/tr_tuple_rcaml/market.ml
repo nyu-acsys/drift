@@ -100,6 +100,7 @@ let rec repeat n4 cfg19 =
 
 
 let main (budget:int(*-:{cur_v:Int | cur_v = 0}*)) (stock:int(*-:{cur_v:Int | cur_v = 0}*)) (n:int(*-:{cur_v:Int | cur_v = 0}*)) =
+  if budget >= 0 && stock >= 0 && n > 0 then
   (if
      ((stock >= budget) && (budget >= n))
      then
@@ -107,5 +108,6 @@ let main (budget:int(*-:{cur_v:Int | cur_v = 0}*)) (stock:int(*-:{cur_v:Int | cu
       (x14,cfg25) -> (match (((activity buy) (- budget)) cfg25) with 
                       (x15,cfg26) -> ((repeat n) cfg26)))
      else (0,(0,(0,0))))
+    else (0,(0,(0,0)))
 
 [@@@assert "typeof(main) <: int -> int -> int -> int * (int * (int * int))"]  

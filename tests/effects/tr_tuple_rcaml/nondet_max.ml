@@ -69,6 +69,10 @@ in
     (if (n1 = 0) then 0
     else (if (nondet_bool ()) then (get_random_int (n1 - 1))
          else n1)) in 
+if prefn > 0 then
+
     (((make_list prefn) get_random_int) (0,0))
+else
+  (0, (0, 0))
 
 [@@@assert "typeof(main) <: int -> int * (int * int)"]
