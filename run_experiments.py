@@ -39,8 +39,8 @@ run_mode = sys.argv[1]
 if len(sys.argv) > 1 and sys.argv[1] == "smoke":
     configs = [(line.split(".ml")[0].split("/")[-1], line) for line in smoke_configs]
 elif len(sys.argv) > 1 and sys.argv[1] == "table1":
-    drift_configs = [line.split("|")[1] for line in open("best_configs_drift.csv").readlines() if line.strip()]
-    evdrift_configs = [line.split("|")[1] for line in open("best_configs_evdrift.csv").readlines() if line.strip()]
+    drift_configs = [("drift.exe "+line.split("|")[1]) for line in open("best_configs_drift.csv").readlines() if line.strip()]
+    evdrift_configs = [("drift.exe "+line.split("|")[1]) for line in open("best_configs_evdrift.csv").readlines() if line.strip()]
     names = [line.split(".ml")[0].split("/")[-1] for line in drift_configs]
     rethfl_configs = [make_rethfl_config(name) for name in names]
     mochi_configs = [make_mochi_config(name) for name in names]
@@ -51,10 +51,10 @@ elif len(sys.argv) > 1 and sys.argv[1] == "table1":
         items = [(name, item) for item in items[1:]]
         configs.extend(items)
 elif len(sys.argv) > 1 and sys.argv[1] == "table2":
-    drift_off_configs = [line.split("|")[1] for line in open("tpoff_best_configs_drift.csv").readlines() if line.strip()]
-    drift_on_configs = [line.split("|")[1] for line in open("tpon_best_configs_drift.csv").readlines() if line.strip()]
-    evdrift_off_configs = [line.split("|")[1] for line in open("tpoff_best_configs_evdrift.csv").readlines() if line.strip()]
-    evdrift_on_configs = [line.split("|")[1] for line in open("tpon_best_configs_evdrift.csv").readlines() if line.strip()]
+    drift_off_configs = [("drift.exe "+line.split("|")[1]) for line in open("tpoff_best_configs_drift.csv").readlines() if line.strip()]
+    drift_on_configs = [("drift.exe "+line.split("|")[1]) for line in open("tpon_best_configs_drift.csv").readlines() if line.strip()]
+    evdrift_off_configs = [("drift.exe "+line.split("|")[1]) for line in open("tpoff_best_configs_evdrift.csv").readlines() if line.strip()]
+    evdrift_on_configs = [("drift.exe "+line.split("|")[1]) for line in open("tpon_best_configs_evdrift.csv").readlines() if line.strip()]
     names = [line.split(".ml")[0].split("/")[-1] for line in drift_off_configs]
     configs = []
     for items in zip(names, drift_off_configs, drift_on_configs, evdrift_off_configs, evdrift_on_configs):

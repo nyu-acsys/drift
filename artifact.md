@@ -230,11 +230,11 @@ python3 run_expeeriments.py smoke
 This will detect any technical issues during the smoke test phase. 
 If finished successfully, the evaluation script should print
 ```
-name        drift   rcaml   mochi   evDrift
--------------------------------------------
-all-ev-pos  verif.  verif.  verif.  verif. 
-depend      verif.  verif.  verif.  verif. 
-overview1   verif.  verif.  verif.  verif. 
+name        drift   rcaml   mochi   rethfl  evDrift
+---------------------------------------------------
+all-ev-pos  verif.  verif.  verif.  verif.  verif.
+depend      verif.  verif.  verif.  verif.  verif.
+overview1   verif.  verif.  verif.  verif.  verif.
 ```
 
 ## Running full experiments 
