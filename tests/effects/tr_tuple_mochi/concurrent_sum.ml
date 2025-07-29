@@ -66,5 +66,9 @@ let rec sum n cfg3 =
         (x0,cfg4) -> ((sum (n - 1)) cfg4))) 
 in
 
+if (prefn > 0) then begin
   (match ((sum prefn) (0,0)) with 
    (e0,cfg6) -> ((asst_final0 cfg6) ; e0))
+end
+else 
+  0

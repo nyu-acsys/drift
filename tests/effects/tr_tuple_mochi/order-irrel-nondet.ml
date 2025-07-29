@@ -62,7 +62,11 @@ let rec order d c b cfg2 =
 
 
 let main (dd:int(*-:{cur_v:Int | true = true}*)) (cc:int(*-:{cur_v:Int | cur_v = 0}*)) =
+if (cc > 0) then begin
   (match let bb = (if (Random.int(0) > 0) then 1
                   else 0) in 
          ((((order dd) cc) bb) (0,0)) with 
    (e0,cfg4) -> ((asst_final0 cfg4) ; e0))
+end
+else
+  0

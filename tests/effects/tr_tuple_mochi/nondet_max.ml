@@ -62,8 +62,12 @@ let rec make_list n f cfg2 =
      (x0,cfg4) -> (((make_list (n - 1)) f) cfg4))) 
 in
 
+if (prefn > 0) then begin
   let rec get_random_int n1 =
     (if (n1 = 0) then 0
     else (if (Random.int(0) > 0) then (get_random_int (n1 - 1))
          else n1)) in 
     (((make_list prefn) get_random_int) (0,0))
+end
+else
+  (0, (0,0))

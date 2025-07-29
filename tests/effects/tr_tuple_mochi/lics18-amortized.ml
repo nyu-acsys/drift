@@ -97,7 +97,10 @@ let rec enqueue n_r x2 cfg9 =
                     else (((enqueue (n_r - 1)) (l1_eq,(l2_eq + 1))) ((ev_step0 0) cfg9)))) 
 in
 
-
+if (prefl1 >= 0 && prefl2 >= 0) then begin
   (match (match (((enqueue prefn) (prefl1,prefl2)) (0,(0,0,0))) with 
           (x9,cfg12) -> ((dequeue x9) cfg12)) with 
          (e0,cfg11) -> ((asst_final0 cfg11) ; e0))
+  end
+else
+  0
