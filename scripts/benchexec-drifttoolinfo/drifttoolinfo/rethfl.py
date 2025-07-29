@@ -44,7 +44,7 @@ class Tool(benchexec.tools.template.BaseTool2):
 
     def cmdline(self, executable, options, task, rlimits):
         #assert len(list(task.input_files)) == 1
-        cmd = [executable] + options + [task.single_input_file]
+        cmd = [executable] + options + ['--solver=eldarica'] + [task.single_input_file]
         return cmd
 
     def version(self, executable):
