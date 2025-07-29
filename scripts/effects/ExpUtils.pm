@@ -209,8 +209,8 @@ sub parseResultsFile {
             next if $bench =~ /higher-order-disj/;
             next if $bench =~ /traffic/;
             next if $bench =~ /kobayashi/;
-            next if $bench =~ /intro-ord3/;
-            next if $bench =~ /num_evens/;
+#            next if $bench =~ /intro-ord3/;
+#            next if $bench =~ /num_evens/;
             $bench =~ s/cps_// if $isCoarMochi;
             $bench =~ s/\.y?ml$//;
             # traverse the columns 
