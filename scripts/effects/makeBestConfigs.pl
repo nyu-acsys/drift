@@ -65,6 +65,7 @@ foreach my $b (sort keys %$d) {
     # save the best configurations for Drift/evDrift:
     my $args = cfg2cmd('',$b,$d->{$b}->{BEST_TRANS}->{rd});
     $args =~ s/^\.\/drift.exe //; $args =~ s/\n//;
+    $args =~ s/-ev-trans trans //;
     print CFG_DRIFT "tests/effects/$b.ml|$args|$d->{$b}->{BEST_TRANS}->{rd}\n";
     $args = cfg2cmd('',$b,$d->{$b}->{BEST_DRIFTEV}->{rd});
     $args =~ s/^\.\/drift.exe //; $args =~ s/\n//;

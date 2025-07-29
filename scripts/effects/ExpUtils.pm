@@ -106,18 +106,33 @@ sub cfg2cmd {
     my ($subdir,$benchname, $cfg) = @_;
     if ($cfg =~ /TL([^-]+)-TP([^-]+)-TH([^-]+)-DM([^-]+)-IO([^-]+)-TR([^-]+)\.(ev)?drifttasks/) {
         my ($tl,$tp,$th,$dm,$io,$tr) = ($1,$2,$3,$4,$5,$6);
-        return join(' ', (
-            './drift.exe',
-            '-file', "tests/effects/$subdir$benchname.ml",
-            '-prop', "tests/effects/$subdir$benchname.yml.prp",
-            '-ev-trans', $tr,
-            '-trace-len', $tl,
-            '-if-part', $tp,
-            '-io-effects', $io,
-            '-out', 2,
-            '-domain', $dm2domain{$dm},
-            '-thold', $th
-        ))."\n";
+        if ($tr eq 'trans') {
+            return join(' ', (
+                './drift.exe',
+                '-file', "tests/effects/tr_tuple_drift/$benchname.ml",
+#                '-prop', "tests/effects/$subdir$benchname.yml.prp",
+#                '-ev-trans', $tr,
+                '-trace-len', $tl,
+                '-if-part', $tp,
+                '-io-effects', $io,
+                '-out', 2,
+                '-domain', $dm2domain{$dm},
+                '-thold', $th
+            ))."\n";
+        } else {
+            return join(' ', (
+                './drift.exe',
+                '-file', "tests/effects/$subdir$benchname.ml",
+                '-prop', "tests/effects/$subdir$benchname.yml.prp",
+                '-ev-trans', $tr,
+                '-trace-len', $tl,
+                '-if-part', $tp,
+                '-io-effects', $io,
+                '-out', 2,
+                '-domain', $dm2domain{$dm},
+                '-thold', $th
+            ))."\n";
+        }
     }
 }
 
