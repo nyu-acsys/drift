@@ -86,7 +86,7 @@ def run_command_with_limits(cmd):
         result = subprocess.run(
             cmd,
             shell=True,
-            preexec_fn=set_limits,
+            preexec_fn=None,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             timeout=TIME_LIMIT + 2,
