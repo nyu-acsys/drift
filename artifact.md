@@ -253,7 +253,7 @@ To avoid the need to install and configure BenchExec, we have created
 a script that simply run the best-performing configurations, which are those reported in Table 1. To reproduce the results in the paper, run:
 
 ```
-python3 run_expeeriments.py all
+python3 run_experiments.py all
 ```
 
 The output for each run can be found at: `/oopsla25/evDrift/result/<benchmark_name>_<tool_name>.txt`.

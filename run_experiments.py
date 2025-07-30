@@ -6,7 +6,7 @@ import re
 import sys
 
 def make_rethfl_config(name):
-    return f"rethfl --solver=eldarica tests/effects/tr_tuple_hflz/{name}.ml"
+    return f"./rethfl.exe --solver=eldarica tests/effects/tr_tuple_hflz/{name}.ml"
 
 def make_mochi_config(name):
     return f"./mochi.exe -only-result tests/effects/tr_tuple_mochi/{name}.ml"

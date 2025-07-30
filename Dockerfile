@@ -127,7 +127,7 @@ ENV PATH="/oopsla25/eldarica:${PATH}"
 WORKDIR /oopsla25/evDrift
 RUN ln -s /oopsla25/MoCHi/src/mochi.exe mochi.exe
 RUN ln -s /oopsla25/coar/_build/default/main.exe rcaml.exe
-RUN ln -s /oopsla25/rethfl/rethfl/_build/default/bin/main.exe rethfl.exe
+RUN ln -s /oopsla25/rethfl/_build/default/bin/main.exe rethfl.exe
 RUN ln -s /oopsla25/coar/config config
 
  
