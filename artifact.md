@@ -2,7 +2,7 @@
 
 This artifact includes the instructions to run the experiments and reproduce the results presented in Table 1 (Section 8) and Table 2 (Appendix F).
 
-We claim the available and reusable badges for `evDrift`.
+We claim all badges for `evDrift`:  available, functional, reusable, and reproducible.
 
 We use BenchExec https://github.com/sosy-lab/benchexec/), which is a nearly industral-level
 benchmarking tool, that uses Linux CGroups to measure CPU and memory
