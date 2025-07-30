@@ -57,8 +57,8 @@ foreach my $b (sort keys %$d) {
     #next if $b =~ /order-irrel-nondet/;
     next if $b =~ /mochi-sum/;
     next if $b =~ /mochi-test/;
-    next if $b =~ /nums_evens/;
-    next if $b =~ /num_evens/;
+    #next if $b =~ /nums_evens/;
+    #next if $b =~ /num_evens/;
     #next if $b =~ /disj-nondet/;
 
     # next if $b =~ /auction/;

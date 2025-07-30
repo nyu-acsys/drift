@@ -1,0 +1,31 @@
+tool	rethfl 	rethfl 	rethfl 
+run set	default.rethflbenchmarks	default.rethflbenchmarks	default.rethflbenchmarks
+../../tests/effects/tr_tuple_hflz/	status	cputime (s)	walltime (s)
+all-ev-pos.ml	true	2.476815	2.6673000399023294
+alt-inev.ml	true	4.705078	4.810240119928494
+auction.ml	true	18.633109	19.951947106048465
+binomial_heap.ml	true	4.278622	4.29914294811897
+concurrent_sum.ml	true	4.152243	6.761519972933456
+depend.ml	true	1.901247	2.7707567310426384
+disj-gte.ml	true	4.892956	6.284175586886704
+disj-nondet.ml	true	3.847318	6.5955729191191494
+disj.ml	unknown	8.303837	11.168039417127147
+higher-order.ml	true	3.394819	4.752465361030772
+intro-ord3.ml	unknown	8.106899	10.259667900856584
+last-ev-even.ml	unknown	4.948138	9.223258201032877
+lics18-amortized.ml	TIMEOUT	901.066294	903.9041542389896
+lics18-hoshrink.ml	unknown	3.688123	4.275281104957685
+lics18-web.ml	true	11.217562	11.847254312830046
+market.ml	OUT OF MEMORY	5.463581	6.263950721826404
+max-min.ml	true	78.547663	81.23404154018499
+monotonic.ml	true	4.091009	6.400026511168107
+nondet_max.ml	TIMEOUT	901.018708	902.9404937040526
+num_evens.ml	true	4.252512	5.527955305064097
+order-irrel-nondet.ml	true	8.624509	9.9590981581714
+order-irrel.ml	unknown	13.804744	15.483634208794683
+overview1.ml	true	2.536901	4.829665564931929
+reentr.ml	true	6.658243	7.6049784468486905
+resource-analysis.ml	true	2.579698	4.887409900082275
+sum-appendix.ml	true	1.833779	3.234468328068033
+sum-of-ev-even.ml	unknown	5.008746	8.918628755956888
+temperature.ml	unknown	9.615943	12.779302001930773

@@ -1,0 +1,31 @@
+tool	mochi 	mochi 	mochi 
+run set	default.realmochibenchmarks	default.realmochibenchmarks	default.realmochibenchmarks
+../../tests/effects/tr_tuple_mochi/	status	cputime (s)	walltime (s)
+all-ev-pos.ml	true	0.804294	3.5865544308908284
+alt-inev.ml	unknown	69.205174	75.07754040602595
+auction.ml	unknown	90.73316	96.50921128992923
+binomial_heap.ml	OUT OF MEMORY	581.247521	586.5932182979304
+concurrent_sum.ml	unknown	190.742949	192.78100951388478
+depend.ml	true	0.671451	3.562795463949442
+disj-gte.ml	true	198.635472	201.15033519198187
+disj-nondet.ml	true	44.994533	49.21896356088109
+disj.ml	unknown	19.693042	21.68847258319147
+higher-order.ml	true	16.434392	18.67065095482394
+intro-ord3.ml	unknown	64.104379	65.66664418112487
+last-ev-even.ml	unknown	1.106733	3.7651426349766552
+lics18-amortized.ml	OUT OF MEMORY	228.782906	231.7504246321041
+lics18-hoshrink.ml	unknown	1.302656	1.5487197409383953
+lics18-web.ml	TIMEOUT	901.166866	904.3534053771291
+market.ml	TIMEOUT	901.126547	904.4282616621349
+max-min.ml	TIMEOUT	900.934387	901.1074283989146
+monotonic.ml	true	2.783004	4.4480966629926115
+nondet_max.ml	TIMEOUT	901.063512	902.1708705949131
+num_evens.ml	true	17.160389	20.087578495033085
+order-irrel-nondet.ml	true	61.92231	63.98123227409087
+order-irrel.ml	unknown	3.833818	5.574488699901849
+overview1.ml	true	3.458562	4.946250061970204
+reentr.ml	unknown	590.203821	591.6198601350188
+resource-analysis.ml	true	1.344118	3.3040867689996958
+sum-appendix.ml	true	1.156238	3.843797503039241
+sum-of-ev-even.ml	unknown	1.036978	1.5119037358090281
+temperature.ml	unknown	16.391673	17.165155965834856

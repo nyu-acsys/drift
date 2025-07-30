@@ -1,0 +1,34 @@
+tool	drift_benchmark 0.1	drift_benchmark 0.1	drift_benchmark 0.1
+run set	drift-best.drifttasks	drift-best.drifttasks	drift-best.drifttasks
+../../tests/effects/	status	cputime (s)	walltime (s)
+all-ev-pos.ml	true	0.63795	0.6407437690068036
+alt-inev.ml	unknown	60.824402	60.8577198991552
+auction.ml	unknown	55.06309	55.09802682790905
+binomial_heap.ml	unknown	544.095186	544.2976666148752
+concurrent_sum.ml	true	1.675139	3.1407795399427414
+depend.ml	true	0.050825	1.7943316050805151
+disj-gte.ml	unknown	35.848092	36.14244075585157
+disj-nondet.ml	unknown	10.126065	10.987507472047582
+disj.ml	unknown	10.813353	11.645721828797832
+higher-order.ml	true	1.519214	2.975860031088814
+intro-ord3.ml	true	23.972053	26.604671283857897
+last-ev-even.ml	unknown	7.468491	11.81505665089935
+lics18-amortized.ml	unknown	273.590696	275.6422499269247
+lics18-hoshrink.ml	unknown	9.859499	14.475226348033175
+lics18-web.ml	unknown	55.045551	57.67367701604962
+market.ml	unknown	276.910868	278.0793030948844
+max-min.ml	unknown	143.32314	144.78016349091195
+mochi-sum.ml	ERROR (255)	0.00934	3.465235459152609
+mochi-test.ml	ERROR (255)	0.010547	1.4666297289077193
+monotonic.ml	true	2.270685	2.829918700037524
+nondet_max.ml	true	2.26576	6.314413256011903
+num_evens.ml	true	9.162537	11.505481511820108
+order-irrel-nondet.ml	unknown	26.162762	27.01586395292543
+order-irrel.ml	unknown	9.874717	9.898971166927367
+overview1.ml	true	1.824171	3.8337822761386633
+reentr.ml	true	3.430422	3.4322720889467746
+resource-analysis.ml	true	2.871401	5.4849013248458505
+sum-appendix.ml	true	1.299966	3.6299227410927415
+sum-of-ev-even.ml	true	2.443066	5.090331816114485
+temperature.ml	true	64.014447	66.62671758094802
+traffic_light.ml	ERROR (255)	0.010607	2.029907464981079
