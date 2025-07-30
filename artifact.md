@@ -255,7 +255,7 @@ a script that simply runs the best-performing configurations, which are those re
 python3 run_experiments.py table1
 ```
 
-The results in Table 2 can be produced by running
+The results in Table 2 can be re-produced by running the following:
 
 ```
 python3 run_experiments.py table2
