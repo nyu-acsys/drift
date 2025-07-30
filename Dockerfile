@@ -1,8 +1,11 @@
 # Base image
 FROM ubuntu:22.04
 
-# Create a user
+# Avoid some interactive prompts
+ARG DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
 
+# Create a user
 ARG USERNAME=evdrift
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
@@ -21,6 +24,8 @@ RUN groupadd --gid $USER_GID $USERNAME \
 RUN apt-get update -y && apt-get install -y \
   git \
   curl \
+  gnupg \
+  openjdk-17-jdk \
   build-essential \
   ca-certificates \
   libppl-dev \
@@ -45,8 +50,8 @@ RUN mkdir /oopsla25
 WORKDIR /oopsla25
 
 # Set up OCaml env (required by Drift) 
-RUN opam init -y --disable-sandboxing --compiler 4.11.1
-RUN opam switch 4.11.1
+RUN opam init -y --disable-sandboxing --compiler 4.14.1
+RUN opam switch 4.14.1
 
 # Set environment variables
 RUN export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPAM_SWITCH_PREFIX/share/apron/lib"
@@ -94,10 +99,35 @@ RUN opam install -y dune \
   && opam install . --deps-only -y \
   && dune build main.exe
 
+#ReTHFL
+WORKDIR /oopsla25
+RUN git clone https://github.com/hopv/rethfl.git
+WORKDIR /oopsla25/rethfl
+RUN opam switch create rethfl 4.14.1
+RUN opam install -y dune \
+  && eval $(opam env --switch=rethfl) \
+  && opam install . --deps-only -y \
+  && dune build
+# Dep: Eldarica
+WORKDIR /oopsla25
+RUN git clone https://github.com/uuverifiers/eldarica.git
+WORKDIR /oopsla25/eldarica
+# install sbt
+RUN curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x642AC823" \
+  | gpg --dearmor -o /usr/share/keyrings/sbt.gpg && \
+  echo "deb [signed-by=/usr/share/keyrings/sbt.gpg] https://repo.scala-sbt.org/scalasbt/debian all main" \
+  > /etc/apt/sources.list.d/sbt.list && \
+  apt-get update -y && \
+  apt-get install -y --no-install-recommends sbt && \
+  apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN sbt assembly
+ENV PATH="/oopsla25/eldarica:${PATH}"
+
 # Symbolic links needed for running the tools
 WORKDIR /oopsla25/evDrift
 RUN ln -s /oopsla25/MoCHi/src/mochi.exe mochi.exe
 RUN ln -s /oopsla25/coar/_build/default/main.exe rcaml.exe
+RUN ln -s /oopsla25/rethfl/rethfl/_build/default/bin/main.exe rethfl.exe
 RUN ln -s /oopsla25/coar/config config
 
  
