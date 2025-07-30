@@ -22,6 +22,8 @@ The simplified variant requires `Docker` to be installed on your machine. Docume
 
 ## A. Precise Results 
 
+(Again, note that this involves the use of BenchExec. If you are looking to simply run the various tools without intensive, precise benchmarking, you may want to skip to section B". Simplified" below.)
+
 ### 1. Install dependencies
 
 1. Install BenchExec, per the instructions found at:
