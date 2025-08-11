@@ -89,19 +89,22 @@ foreach my $b (@nonMod,@modBenches) {
            cleanRes($d->{$b}->{$COARMOCHI_RD}->{res}),
            $d->{$b}->{$COARMOCHI_RD}->{cpu},
            #$d->{$b}->{$COARMOCHI_RD}->{mem}
-           );
+           ) unless $isModBench{$b};
+    print BODY " & & " if $isModBench{$b};
     # Trans-Mochi
     print BODY sprintf("& %-5s & %3.1f ", # %3.1f & 
            cleanRes($d->{$b}->{$REALMOCHI_RD}->{res}),
            $d->{$b}->{$REALMOCHI_RD}->{cpu},
            #$d->{$b}->{$REALMOCHI_RD}->{mem}
-           );
+           ) unless $isModBench{$b};
+    print BODY " & & " if $isModBench{$b};
     # Trans-Rethfl
     print BODY sprintf("& %-5s & %3.1f ", # %3.1f & 
            cleanRes($d->{$b}->{$RETHFL_RD}->{res}),
            $d->{$b}->{$RETHFL_RD}->{cpu},
            #$d->{$b}->{$REALMOCHI_RD}->{mem}
-           );
+           ) unless $isModBench{$b};
+    print BODY " & & " if $isModBench{$b};
     # DriftEV
     print BODY sprintf("& %-5s & %3.1f & %s \\\\ \n",# %3.1f & 
            cleanRes($d->{$b}->{BEST_DRIFTEV}->{res}),
