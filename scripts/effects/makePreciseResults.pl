@@ -50,23 +50,25 @@ my $newOverCoarMochi = 0; my $newOverRealMochi = 0; my $newOverRethfl = 0; my $n
 my $driftVerified = 0; my $evdriftVerified = 0;
 my $realmochiVerified = 0; my $rcamlVerified = 0; my $rethflVerified = 0;
 my @bothSolved; my @evAndMochiSolved; my @evAndRcamlSolved; my @evAndRethflSolved; 
-foreach my $b (sort keys %$d) {
+# order of keys. benchmarks with mod go last.
+my @modBenches = qw/disj last-ev-even order-irrel sum-of-ev-even temperature/;
+my %isModBench = map { $_ => 1 } @modBenches;
+my @nonMod = sort grep { !$isModBench{$_} } (keys %$d);
+
+foreach my $b (@nonMod,@modBenches) {
     # new benchmarks
-    #next if $b =~ /concurrent_sum/;
-    #next if $b =~ /nondet_max/;
-    #next if $b =~ /order-irrel-nondet/;
     next if $b =~ /mochi-sum/;
     next if $b =~ /mochi-test/;
-    #next if $b =~ /nums_evens/;
-    #next if $b =~ /num_evens/;
-    #next if $b =~ /disj-nondet/;
-
-    # next if $b =~ /auction/;
-    # next if $b =~ /binomial_heap/;
-    # next if $b =~ /ho-shrink/; # old name;
     my $tt = $b; $tt =~ s/\_/\\_/g;
     $tt =~ s/negated/neg/;
     #warn "b: $b\n".Dumper($d->{$b});
+
+    # close and re-open if we are at disj
+    if ($b eq 'disj') {
+      close BODY;
+      open BODY, ">exp-body-mod.tex" or die $!;
+    }
+
     my $footnote = ($b =~ /^(last-ev-even|order-irrel|temperature|sum-of-ev-even|disj)$/ ? "\$^+\$" : '');
     print BODY "$ct. \\texttt{\\scriptsize $tt$footnote} "; ++$ct;
     #warn "tool rd: ".Dumper($b,$d->{$b},$d->{$b}->{BEST_TRANS},$d->{$b}->{BEST_TRANS}->{rd});
@@ -107,7 +109,8 @@ foreach my $b (sort keys %$d) {
            #$d->{$b}->{BEST_DRIFTEV}->{mem},
            run2toolBest($d->{$b}->{BEST_DRIFTEV}->{rd},$b));
     #printf "best EDrift result for %-40s : %-10s : %s\n", $b, $d->{$b}->{BEST_DRIFTEV}->{res}, $d->{$b}->{BEST_DRIFTEV}->{rd};
-    printf "  %-20s | Dr: %-10s | eDr: %-10s | Mo: %-10s | RC: %-10s | Reth: %-10s \n",
+    printf "%2d.  %-20s | Dr: %-10s | eDr: %-10s | Mo: %-10s | RC: %-10s | Reth: %-10s \n",
+                ($ct-1),
                  $b,
                  $d->{$b}->{BEST_TRANS}->{res},
                  $d->{$b}->{BEST_DRIFTEV}->{res},
@@ -116,6 +119,10 @@ foreach my $b (sort keys %$d) {
                  $d->{$b}->{$RETHFL_RD}->{res};
 #    printf "best Drift   result for %-40s : %-10s : %s\n", $b, $d->{$b}->{BEST_TRANS}->{res}, $d->{$b}->{BEST_TRANS}->{rd};
 #    printf "best evDrift result for %-40s : %-10s : %s\n", $b, $d->{$b}->{BEST_DRIFTEV}->{res}, $d->{$b}->{BEST_DRIFTEV}->{rd};
+
+    # skip statistics for Mod benchmarks
+    next if $isModBench{$b};
+
     # save the runtimes for statistics
     push @geos_evtrans, $d->{$b}->{BEST_TRANS}->{cpu}
       if $d->{$b}->{BEST_TRANS}->{res} eq 'true' && $d->{$b}->{BEST_TRANS}->{cpu} < 900 && $d->{$b}->{BEST_TRANS}->{cpu} > 0;
