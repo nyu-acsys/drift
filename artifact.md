@@ -2,7 +2,7 @@
 
 This artifact includes the instructions to run the experiments and reproduce the results presented in Table 1 (Section 8) and Table 2 (Appendix F).
 
-We claim the available and reusable badges for `evDrift`.
+We claim all badges for `evDrift`:  available, functional, reusable, and reproducible.
 
 We use BenchExec https://github.com/sosy-lab/benchexec/), which is a nearly industral-level
 benchmarking tool, that uses Linux CGroups to measure CPU and memory
@@ -245,15 +245,20 @@ The sources can be found in `/oopsla25/evDrift/tests/effects/*.ml`, along with p
 in `/oopsla25/evDrift/tests/effects/*.yml.prp`. Unsafe versions of the benchmarks are 
 found in `/oopsla25/evDrift/tests/effects/unsafe/*.ml`.
 
-The scripts to re-produce the experiments that are reported in Table 1 are described below. Note that we have used BenchExec
-(https://github.com/sosy-lab/benchexec/), which is a nearly industral-level benchmarking tool, that uses Linux CGroups to measure CPU and memory usage with high precision. We use BenchExec to run Drift and evDrift across all possible configurations. If interested, these full experiments can be reproduced according to the instructions found in
-`/oopsla25/evDrift/scripts/effects/README.md`.
+The scripts to re-produce the experiments that are reported in Table 1 are described below. 
+Note that for this simplified variant we limit the reproducibility of the results solely to the success/failure of verification tasks.
 
 To avoid the need to install and configure BenchExec, we have created
-a script that simply run the best-performing configurations, which are those reported in Table 1. To reproduce the results in the paper, run:
+a script that simply runs the best-performing configurations, which are those reported in Table 1. To reproduce the results in the paper, run:
 
 ```
-python3 run_expeeriments.py all
+python3 run_experiments.py table1
+```
+
+The results in Table 2 can be re-produced by running the following:
+
+```
+python3 run_experiments.py table2
 ```
 
 The output for each run can be found at: `/oopsla25/evDrift/result/<benchmark_name>_<tool_name>.txt`.
